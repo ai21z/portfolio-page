@@ -625,55 +625,154 @@
   }
 }
 
-/* Responsive: centered grid of bubbles on smaller screens (3 on top, 2 below) */
+/* Responsive: Simple icon row for mobile - no effects, no animations */
 @media (max-width: 900px) {
   .living-sigils {
-    position: relative; /* Changed from static to relative for proper grid item behavior */
-    left: 0;
-    top: 0;
-    transform: none;
-    display: grid;
-    grid-template-columns: repeat(3, max-content);
-    justify-content: center; /* center the whole grid */
-    justify-items: center; /* center each cell */
-    gap: clamp(12px, 3vw, 20px);
-    width: 100%; /* Ensure full width for centering */
-    padding: calc(var(--gap-small) * 0.5) var(--gap-small) calc(var(--gap) * 0.6);
-    align-content: center;
+    position: absolute;              /* or relative—either works */
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);     /* center the whole row */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(16px, 4vw, 24px);
+    width: max-content;
+    padding: calc(var(--gap-small) * 0.5) 0 calc(var(--gap) * 0.6);
     z-index: 5;
   }
 
   .sigil-vine {
-    display: none; /* Hide vertical vine in horizontal layout */
+    display: none;
   }
 
-  /* Ensure vials scale appropriately on very small screens */
+  /* Remove all bubble effects - show only icons */
   .sigil-vial,
   .sigil-vial-split {
-    width: clamp(40px, 11vw, 52px);
-    height: clamp(40px, 11vw, 52px);
+    width: 44px;
+    height: 44px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-self: center;
+    transform: none !important;
+    animation: none !important;
   }
 
+  /* Show container but remove bubble styling */
+  .vial-container {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Hide the glass bubble layers */
   .vial-glass {
-    width: clamp(36px, 10vw, 48px);
-    height: clamp(36px, 10vw, 48px);
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+  }
+
+  .vial-matter,
+  .vial-lightning {
+    display: none !important;
+  }
+
+  /* Extract and show the icon directly from the link */
+  .sigil-vial .vial-icon {
+    position: static !important;
+    transform: none !important;
+    width: 28px !important;
+    height: 28px !important;
+    color: rgba(63, 255, 159, 0.9) !important;
+    opacity: 1 !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
+    transition: none !important;
+    animation: none !important;
+    display: block !important;
+  }
+
+  /* No hover effects on mobile */
+  .sigil-vial:hover {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .sigil-vial:hover .vial-icon {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
+    transform: none !important;
+    color: rgba(63, 255, 159, 0.9) !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  /* Show split bubble as single PDF icon */
+  .sigil-vial-split {
+    display: flex !important;
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Hide the split bubbles, show only the container */
+  .vial-split-bubble {
+    display: none !important;
+  }
+
+  /* Show a single PDF icon in the split container */
+  .sigil-vial-split::after {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='rgba(63,255,159,0.9)' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  .vial-label {
+    display: none;
   }
 
   /* add breathing room between bubbles and the name */
-  .name { margin-top: calc(var(--gap) * 0.6); }
+  .name { 
+    margin: 60px auto 0 auto !important; /* Top spacing + horizontal centering */
+  }
 }
 
 /* Very small phones - additional constraints */
 @media (max-width: 480px) {
   .living-sigils {
-    gap: clamp(8px, 2.5vw, 12px);
-    grid-template-columns: repeat(3, max-content);
-    padding: calc(var(--gap-small) * 0.25) var(--gap-small) calc(var(--gap) * 0.4);
+    gap: clamp(12px, 3vw, 18px);
+    padding: calc(var(--gap-small) * 0.25) 0 calc(var(--gap) * 0.4);
   }
 
   .sigil-vial,
   .sigil-vial-split {
-    width: clamp(36px, 10vw, 44px);
-    height: clamp(36px, 10vw, 44px);
+    width: 40px;
+    height: 40px;
+  }
+
+  .vial-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sigil-vial-split::after {
+    width: 24px;
+    height: 24px;
   }
 }

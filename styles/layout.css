@@ -100,41 +100,39 @@
     justify-self: stretch; /* Allow full width so internal justify-content works */
   }
   
-  .name{
-    grid-column: 1;
-    grid-row: 2; /* Shift name to row 2 */
-    font-size: clamp(32px, 7vw, 42px);
-    padding-bottom: calc(var(--gap-small));
-    text-align: center;
-    white-space: normal !important; /* Override desktop nowrap */
-    overflow: visible !important; /* Allow wrapping */
-    text-overflow: clip !important; /* No ellipsis on mobile */
-    word-break: normal;
-    hyphens: auto;
+  
+  .name {
+    grid-column: 1 / -1 !important;
+    place-self: start center !important;
+    display: block;
     margin: 0 auto;
-    max-width: 90vw;
+    text-align: center !important;
+    white-space: normal !important;        
+    inline-size: clamp(14ch, 92vw, 20ch); 
+    text-wrap: balance;                    
   }
   
+  
   .portrait-wrap {
-    grid-column: 1;
-    grid-row: 3; /* Shift portrait to row 3 */
-    justify-self: center !important; /* Override desktop start alignment */
-    align-self: center;
-    margin: calc(var(--gap) * 1.5) auto; /* Center with auto margins too */
+    grid-column: 1 / -1 !important;
+    place-self: center !important;          /* align-self + justify-self */
     width: 100%;
-    display: flex;
-    justify-content: center;
+    display: flex;                           /* center its child */
+    justify-content: center;                 /* horizontal center */
+    margin: calc(var(--gap) * 1.5) auto;
   }
   
   .portrait {
-    width: 100%;
-    max-width: min(280px, 75vw); /* Smaller default for standard phones */
+    display: block;
+    margin-inline: auto;                     /* center inside wrapper */
+    width: auto !important;                  /* beat desktop clamp */
+    max-width: clamp(260px, 70vw, 320px);    /* responsive size */
     height: auto;
   }
   
   .text-column{
     grid-column: 1;
-    grid-row: 4; /* Shift text to row 4 */
+    grid-row: 4; /* Text follows portrait */
     margin-top: 0;
     justify-self: center; /* Center on mobile */
     text-align: center;

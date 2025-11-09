@@ -216,4 +216,4 @@ Barcelona-based software engineer from Greece
 
 ---
 
-**Built with ❤️ in Barcelona**
+**Built with ❤️**

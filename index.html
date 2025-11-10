@@ -46,6 +46,19 @@
     <div class="fungi-ambient" aria-hidden="true"></div>
 
     <section class="grid">
+
+      <!-- Mobile Myco Strip (placeholder row) -->
+      <div class="myco-strip" id="myco-strip">
+        <button id="myco-sigil-btn"
+                class="myco-sigil"
+                aria-haspopup="dialog"
+                aria-controls="necro-menu"
+                aria-expanded="false">
+          <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="Open menu" />
+          <span class="sr-only">Open menu</span>
+        </button>
+      </div>
+
       <!-- Centered name -->
       <h1 class="name glitch-text">Vissarion Zounarakis</h1>
 
@@ -621,6 +634,18 @@
   <div id="paper-backdrop" class="paper-backdrop" aria-hidden="true"></div>
   <!-- Thin breathing ring that appears only when hovering a clickable paper -->
   <div id="cursor-ring" class="cursor-ring" aria-hidden="true"></div>
+
+  <dialog id="necro-menu" class="necro-menu" aria-label="Main menu">
+  <button class="necro-close" data-close aria-label="Close menu">✕</button>
+  <nav class="necro-menu-list">
+    <a href="#about"   data-nav-open="about">About</a>
+    <a href="#skills"  data-nav-open="skills">Skills</a>
+    <a href="#now"     data-nav-open="now">Now</a>
+    <a href="#blog"    data-nav-open="blog">Blog</a>
+    <a href="#work"    data-nav-open="work">Work</a>
+    <a href="#contact" data-nav-open="contact">Contact</a>
+  </nav>
+</dialog>
 
   <!-- Main JavaScript -->
   <script>

@@ -749,7 +749,7 @@
 
   /* add breathing room between bubbles and the name */
   .name { 
-    margin: 60px auto 0 auto !important; /* Top spacing + horizontal centering */
+    margin: 0 auto 0 auto !important; /* Top spacing + horizontal centering */
   }
 }
 

@@ -1208,6 +1208,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-map-article')?.addEventListener('click', exitToMap);
 });
 
+// Mobile sigil menu
+const sigilBtn = document.getElementById('myco-sigil-btn');
+const menuDlg  = document.getElementById('necro-menu');
+
+if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
+  sigilBtn.addEventListener('click', () => {
+    menuDlg.showModal();                          // native modal + backdrop
+    sigilBtn.setAttribute('aria-expanded', 'true');
+  });
+
+  // Close handlers
+  menuDlg.addEventListener('click', (e) => {
+    if (e.target === menuDlg) menuDlg.close();    // click backdrop
+  });
+  menuDlg.querySelector('[data-close]')?.addEventListener('click', () => menuDlg.close());
+  menuDlg.addEventListener('close', () => sigilBtn.setAttribute('aria-expanded','false'));
+
+  // Wire menu items (hash + custom event for your router)
+  menuDlg.querySelectorAll('[data-nav-open]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const section = a.getAttribute('data-nav-open');
+      // optional: let your existing app.js listen for this
+      document.dispatchEvent(new CustomEvent('open-section', { detail: section }));
+      // basic fallback: update hash (you can hook hashchange)
+      if (section) location.hash = section;
+      menuDlg.close();
+    });
+  });
+}
+
 // ━━━ Post-load layout (fonts & image settling) ━━━
 window.addEventListener('load', () => {
   // Ensure cover is recomputed after all assets settle

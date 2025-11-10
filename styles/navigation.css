@@ -155,3 +155,107 @@ body.has-paper-open-global #network-nav {
     height: 48px;
   }
 }
+
+/* --- kill network graph on phones --- */
+@media (max-width: 900px){
+  #network-nav{ display:none !important; }
+}
+
+/* --- Myco strip row (phones only) --- */
+.myco-strip{ display:none; }
+@media (max-width: 900px){
+  .grid{
+    /* add one extra row for the strip: [sigils][myco-strip][name][portrait][text][spacer][footer] */
+    grid-template-rows: auto auto auto auto auto 1fr auto;
+  }
+  .myco-strip{
+    grid-column: 1 / -1;
+    grid-row: 2;                /* between social icons (row 1) and name */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;           /* placeholder height for future mycelium art */
+    position: relative;
+    z-index: 6;
+  }
+  .name{ grid-row: 3 !important; }
+  .portrait-wrap{ grid-row: 4 !important; }
+  .text-column{ grid-row: 5 !important; }
+}
+
+/* --- Sigil button (ominous pulse) --- */
+.myco-sigil{
+  -webkit-tap-highlight-color: transparent;
+  appearance: none; border: 0; background: transparent; padding: 0;
+  width: 64px; height: 64px; border-radius: 50%; position: relative; cursor: pointer;
+  filter: drop-shadow(0 0 10px rgba(122,174,138,.25));
+}
+.myco-sigil img{
+  width: 100%; height: 100%; display:block; mix-blend-mode: screen; opacity:.95;
+  transition: transform .35s cubic-bezier(.16,1,.3,1), filter .35s;
+}
+.myco-sigil::before,
+.myco-sigil::after{
+  content:""; position:absolute; inset:-6px; border-radius:50%;
+  background: radial-gradient(60% 60% at 55% 45%, rgba(63,255,159,.20), transparent 70%),
+              radial-gradient(80% 80% at 45% 55%, rgba(143,180,255,.12), transparent 80%);
+  filter: blur(6px); opacity:.5; z-index:-1;
+  animation: myco-breathe 3.2s ease-in-out infinite;
+}
+.myco-sigil::after{
+  inset:-10px; filter: blur(12px); opacity:.35; animation-delay: .8s;
+}
+.myco-sigil:active img{ transform: scale(.96); }
+@media (prefers-reduced-motion: reduce){ .myco-sigil::before, .myco-sigil::after{ animation:none; } }
+@keyframes myco-breathe{
+  0%,100%{ transform: scale(1);   opacity:.45; }
+  50%   { transform: scale(1.06); opacity:.75; }
+}
+
+/* --- Dialog menu (native <dialog>) --- */
+.necro-menu{
+  border: 1px solid rgba(143,180,255,.22);
+  border-radius: 16px;
+  padding: 22px 18px 16px;
+  color: var(--bone);
+  width: min(92vw, 520px);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(11,11,12,.92) 0%, rgba(11,11,12,.94) 60%, rgba(11,11,12,.98) 100%),
+    radial-gradient(35% 45% at 65% 35%, rgba(122,174,138,.10), transparent 70%),
+    radial-gradient(45% 55% at 35% 65%, rgba(143,180,255,.10), transparent 80%);
+  box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 24px rgba(63,255,159,.12);
+  animation: menu-in .28s cubic-bezier(.16,1,.3,1);
+}
+.necro-menu::backdrop{
+  background: radial-gradient(120% 120% at 50% 35%, rgba(2,4,6,.75), rgba(2,4,6,.88) 60%, rgba(2,4,6,.95) 100%);
+  backdrop-filter: blur(2px) saturate(.7);
+}
+/* menu content */
+.necro-menu-list{
+  display:grid; gap: 10px; padding: 8px 6px 2px;
+}
+.necro-menu-list a{
+  display:block; text-decoration:none; color:var(--bone);
+  padding: 10px 12px; border-radius: 10px;
+  letter-spacing:.02em; font: 400 18px "Special Elite", monospace;
+  background: linear-gradient(180deg, rgba(63,255,159,.06), rgba(143,180,255,.04));
+  border: 1px solid rgba(122,174,138,.15);
+  filter: drop-shadow(0 0 0 transparent);
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), filter .2s, background .2s, border-color .2s;
+}
+.necro-menu-list a:focus-visible,
+.necro-menu-list a:hover{
+  transform: translateY(-2px);
+  border-color: rgba(122,174,138,.35);
+  background: linear-gradient(180deg, rgba(63,255,159,.12), rgba(143,180,255,.08));
+  filter: drop-shadow(0 6px 14px rgba(63,255,159,.18));
+}
+.necro-close{
+  position:absolute; top:8px; right:10px; font-size: 22px; line-height: 1;
+  background: transparent; border:0; color: rgba(230,227,216,.8); cursor: pointer;
+}
+@keyframes menu-in{ from{ transform: translateY(-6px) scale(.98); opacity:0 } to{ transform:none; opacity:1 } }
+@media (prefers-reduced-motion: reduce){ .necro-menu{ animation:none; } }
+
+/* tiny helper for screen readers you already use */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }

@@ -337,3 +337,47 @@
     padding: var(--gap) var(--gap-small);
   }
 }
+
+/* === Mobile fixes ======================================================= */
+@media (max-width: 900px) {
+  /* 1) Text column: truly centered + sensible width */
+  .text-column{
+    grid-column: 1 / -1 !important;
+    place-self: start center !important;   /* grid-centering (inline + block) */
+    max-width: min(92vw, 42ch) !important; /* readable lines */
+    text-align: center !important;
+  }
+  .text-column::before{ display: none !important; } /* remove left accent line */
+  .tape{
+    display: block !important;
+    text-align: center !important;
+    transform-origin: center !important;   /* avoid left-origin pull */
+  }
+
+  /* 2) Living sigils: make them a real grid item, not abs-pos */
+  .living-sigils{
+    position: static !important;           /* stop absolute positioning */
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    justify-self: center !important;       /* center as a grid child */
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: max-content !important;
+  }
+  .sigil-vine{ display: none !important; } /* keep the clean row on mobile */
+
+  /* 3) Footer: hide coords + smaller type on phones */
+  .foot-coords{ display: none !important; }
+  .foot{
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px !important;
+    gap: var(--unit) !important;
+    padding: var(--gap) var(--gap-small) var(--gap-small) !important;
+    text-align: center !important;
+  }
+  .foot small{ font-size: 0.85rem !important; line-height: 1.5; }
+  .footer-sigil{ height: 2.6em !important; }
+}

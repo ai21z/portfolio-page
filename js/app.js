@@ -1460,6 +1460,65 @@ mqMobile.addEventListener('change', e => {
   });
 })();
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MOBILE BLUR TOGGLE FOR SKILLS SECTION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(function() {
+  const mqMobile = window.matchMedia('(max-width: 900px)');
+  const altarSel = '#skills .altar';
+
+  function bindSkillsFrontToggle() {
+    const altar = document.querySelector(altarSel);
+    if (!altar || altar.__frontBound) return;
+    altar.__frontBound = true;
+
+    altar.addEventListener('click', (e) => {
+      const card = e.target.closest('.slab.paper');
+
+      // 1) Clicked the background → clear everything (no blur)
+      if (!card) {
+        altar.classList.remove('has-front');
+        altar.querySelectorAll('.slab.paper.is-front')
+             .forEach(el => el.classList.remove('is-front'));
+        return;
+      }
+
+      // 2) Don't toggle when clicking real controls inside the card
+      if (e.target.closest('a,button,[role="button"]')) return;
+
+      // 3) Toggle front: if card is already front → clear; else set it front
+      const isFront = card.classList.contains('is-front');
+      
+      // Always clear all is-front classes first
+      altar.querySelectorAll('.slab.paper.is-front')
+           .forEach(el => el.classList.remove('is-front'));
+      
+      // If card was NOT front, set it as front and add has-front to altar
+      // If card WAS front, remove has-front from altar (clears blur on all cards)
+      if (!isFront) {
+        altar.classList.add('has-front');
+        card.classList.add('is-front');
+      } else {
+        // Remove has-front class - CSS will handle blur clearing automatically
+        altar.classList.remove('has-front');
+      }
+    }, { passive: true });
+  }
+
+  function unbindState() {
+    const altar = document.querySelector(altarSel);
+    if (!altar) return;
+    altar.classList.remove('has-front');
+    altar.querySelectorAll('.slab.paper.is-front')
+         .forEach(el => el.classList.remove('is-front'));
+  }
+
+  if (mqMobile.matches) bindSkillsFrontToggle();
+  mqMobile.addEventListener('change', e => {
+    if (e.matches) bindSkillsFrontToggle(); else unbindState();
+  });
+})();
+
 // [AA-FIX] Watch for DPR changes (zoom/display scaling)
 let lastDPR = window.devicePixelRatio || 1;
 setInterval(() => {

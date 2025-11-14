@@ -1364,15 +1364,101 @@ document.addEventListener('click', (e) => {
   showSectionWithEffects('intro');
 });
 
-// ━━━ About: Paper focus (zoom to center + backdrop dim) ━━━
-initAboutPaperFocus();
-initSkillsPaperFocus();
-initNow();
-initWorkGlobe();
-// Resume spirals disabled for now
-// TODO: Re-enable later by uncommenting: initResumeSpirals();
-// initResumeSpirals();
-initPaperHoverRing();
+// ━━━ About: Paper focus (desktop only) ━━━
+const mqWide = window.matchMedia('(min-width: 901px)');
+if (mqWide.matches) {
+  initAboutPaperFocus();       // desktop/tablet-wide only
+  initSkillsPaperFocus();      // desktop/tablet-wide only
+}
+mqWide.addEventListener('change', (e) => {
+  if (e.matches) {
+    initAboutPaperFocus();          // re-enable when growing past 900
+    initSkillsPaperFocus();         // re-enable when growing past 900
+  }
+  // When shrinking to mobile, simply don't bind zoom. If one is open,
+  // the user can close it with the close/backdrop already in the DOM.
+});
+
+const mqMobile = window.matchMedia('(max-width: 900px)');
+
+function aboutMobileInertify() {
+  const papers = document.querySelectorAll('#about [data-paper]');
+  papers.forEach(el => {
+    // Remove keyboard focus on mobile; keep inner links (mailto) usable
+    if (el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
+    el.setAttribute('aria-disabled', 'true'); // a11y hint (visuals unchanged)
+  });
+}
+
+function aboutRestoreFocusForWide() {
+  const papers = document.querySelectorAll('#about [data-paper]');
+  papers.forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.removeAttribute('aria-disabled');
+  });
+}
+
+if (mqMobile.matches) aboutMobileInertify();
+mqMobile.addEventListener('change', e => {
+  if (e.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
+});
+
+// Mobile: front-card blur toggle
+(function () {
+  const mqMobile = window.matchMedia('(max-width: 900px)');
+  const altarSel = '#about .altar';
+
+  function bindAboutFrontToggle() {
+    const altar = document.querySelector(altarSel);
+    if (!altar || altar.__frontBound) return;
+    altar.__frontBound = true;
+
+    altar.addEventListener('click', (e) => {
+      const card = e.target.closest('.slab.paper');
+
+      // 1) Clicked the background → clear everything (no blur)
+      if (!card) {
+        altar.classList.remove('has-front');
+        altar.querySelectorAll('.slab.paper.is-front')
+             .forEach(el => el.classList.remove('is-front'));
+        return;
+      }
+
+      // 2) Don’t toggle when clicking real controls inside the card
+      if (e.target.closest('a,button,[role="button"]')) return;
+
+      // 3) Toggle front: if card is already front → clear; else set it front
+      const isFront = card.classList.contains('is-front');
+      
+      // Always clear all is-front classes first
+      altar.querySelectorAll('.slab.paper.is-front')
+           .forEach(el => el.classList.remove('is-front'));
+      
+      // If card was NOT front, set it as front and add has-front to altar
+      // If card WAS front, remove has-front from altar (clears blur on all cards)
+      if (!isFront) {
+        altar.classList.add('has-front');
+        card.classList.add('is-front');
+      } else {
+        // Remove has-front class - CSS will handle blur clearing automatically
+        altar.classList.remove('has-front');
+      }
+    }, { passive: true });
+  }
+
+  function unbindState() {
+    const altar = document.querySelector(altarSel);
+    if (!altar) return;
+    altar.classList.remove('has-front');
+    altar.querySelectorAll('.slab.paper.is-front')
+         .forEach(el => el.classList.remove('is-front'));
+  }
+
+  if (mqMobile.matches) bindAboutFrontToggle();
+  mqMobile.addEventListener('change', e => {
+    if (e.matches) bindAboutFrontToggle(); else unbindState();
+  });
+})();
 
 // [AA-FIX] Watch for DPR changes (zoom/display scaling)
 let lastDPR = window.devicePixelRatio || 1;
@@ -1437,6 +1523,9 @@ function initPaperFocusForSection(sectionId){
     if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
     
     p.addEventListener('click', () => {
+      // CRITICAL: Desktop zoom only - don't run on mobile (≤900px)
+      if (window.innerWidth <= 900) return;
+      
       // Toggle: if this paper is already open, close it; otherwise open it
       if (p.classList.contains('paper-open')) {
         closePaper();
@@ -1445,6 +1534,9 @@ function initPaperFocusForSection(sectionId){
       }
     });
     p.addEventListener('keydown', (e) => {
+      // CRITICAL: Desktop zoom only - don't run on mobile (≤900px)
+      if (window.innerWidth <= 900) return;
+      
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (p.classList.contains('paper-open')) {

@@ -981,7 +981,9 @@ function loadCategoryContent(hubId) {
   // Wire article clicks
   content.querySelectorAll('.blog-article-item').forEach(item => {
     const articleId = item.dataset.article;
+    console.log(`[Blog Nav] Wiring article: hubId="${hubId}", articleId="${articleId}"`);
     const activateArticle = () => {
+      console.log(`[Blog Nav] 🖱️ Article clicked: hubId="${hubId}", articleId="${articleId}"`);
       enterBlogArticle(hubId, articleId);
     };
     
@@ -996,20 +998,30 @@ function loadCategoryContent(hubId) {
 }
 
 function enterBlogArticle(hubId, articleId) {
-  console.log('[Blog Nav] Entering article:', hubId, articleId);
+  console.log(`[Blog Nav] 📄 Entering article: hubId="${hubId}", articleId="${articleId}"`);
   
   // Hide category view
-  document.getElementById('blog-category-view')?.setAttribute('hidden', '');
+  const categoryView = document.getElementById('blog-category-view');
+  if (categoryView) {
+    categoryView.setAttribute('hidden', '');
+    console.log('[Blog Nav] Category view hidden');
+  } else {
+    console.error('[Blog Nav] Category view element not found!');
+  }
   
   // Show article view
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
     articleView.removeAttribute('hidden');
+    console.log('[Blog Nav] Article view shown');
     loadArticleContent(hubId, articleId);
+  } else {
+    console.error('[Blog Nav] Article view element not found!');
   }
   
   // Update URL
   history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
+  console.log(`[Blog Nav] URL updated to: #blog/${hubId}/${articleId}`);
 }
 
 function exitBlogArticle() {
@@ -1032,17 +1044,32 @@ function exitBlogArticle() {
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
   const titleEl = document.getElementById('blog-article-title');
-  if (!content) return;
+  if (!content) {
+    console.error('[Blog Nav] blog-article-content element NOT FOUND');
+    return;
+  }
+  
+  const path = `./blog/${hubId}/${articleId}.html`;
+  console.log(`[Blog Nav] Loading article: ${path}`);
+  console.log(`[Blog Nav] Article ID: "${articleId}", Hub ID: "${hubId}"`);
   
   // Load from existing HTML files
-  fetch(`./blog/${hubId}/${articleId}.html`)
-    .then(res => res.text())
+  fetch(path)
+    .then(res => {
+      console.log(`[Blog Nav] Fetch response: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      return res.text();
+    })
     .then(html => {
+      console.log(`[Blog Nav] HTML loaded, length: ${html.length}`);
       // Extract body content (simple parser)
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const article = doc.querySelector('.article-container');
       if (article) {
+        console.log('[Blog Nav] Article container found, injecting content');
         content.innerHTML = article.innerHTML;
         // Update header title from article's h1
         const articleTitle = article.querySelector('h1');
@@ -1053,14 +1080,26 @@ function loadArticleContent(hubId, articleId) {
         // Wire up breadcrumb and back button navigation
         setupArticleNavigation(content, hubId);
       } else {
+        console.error('[Blog Nav] No .article-container found in HTML');
         content.innerHTML = '<p>Article not found.</p>';
         if (titleEl) titleEl.textContent = 'Article Not Found';
       }
     })
     .catch(err => {
       console.error('[Blog Nav] Failed to load article:', err);
-      content.innerHTML = '<p>Failed to load article.</p>';
-      if (titleEl) titleEl.textContent = 'Error';
+      content.innerHTML = `
+        <div style="padding: 40px; text-align: center;">
+          <p style="color: rgba(201, 194, 179, 0.7); margin-bottom: 16px;">Failed to load article.</p>
+          <p style="color: rgba(201, 194, 179, 0.5); font-size: 0.9em;">
+            ${err.message || 'Network error'}<br>
+            <small>Path: ./blog/${hubId}/${articleId}.html</small>
+          </p>
+          <p style="color: rgba(201, 194, 179, 0.4); font-size: 0.85em; margin-top: 24px;">
+            Note: This page requires a local server (e.g., <code>npx serve</code> or VS Code Live Server)
+          </p>
+        </div>
+      `;
+      if (titleEl) titleEl.textContent = 'Error Loading Article';
     });
 }
 

@@ -629,63 +629,141 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 }
 
 /* ━━━ Responsive Design ━━━ */
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   #contact {
-    padding: 2rem 1rem;
+    padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
+    /* Ensure section is scrollable on mobile */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .contact-close {
-    top: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
+    top: 12px;
+    right: 12px;
+    width: 44px; /* Maintain 44px minimum touch target */
+    height: 44px;
     font-size: 18px;
   }
 
   .wax-seal {
-    top: 8px;
-    width: 75px;
-    height: 75px;
+    top: 6px;
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
   }
 
   .seal-sigil {
-    width: 75px;
-    height: 75px;
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
   }
 
   .notebook-page {
-    padding: 4.5rem 1.5rem 1.5rem 3.5rem; /* Adjusted top padding for seal, keep left padding for spiral holes */
+    max-width: 100%;
+    width: 100%;
+    /* Mobile-optimized padding: more top space for seal, comfortable sides, left space for spiral */
+    padding: clamp(4rem, 12vw, 5rem) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
+    /* Slightly reduce rotation on mobile for better alignment */
+    transform: rotate(-0.3deg);
   }
 
   .notebook-page::before {
-    left: 20px; /* Adjust hole position for mobile */
+    left: clamp(16px, 5vw, 24px); /* Adjust spiral holes position */
+    width: clamp(10px, 3vw, 16px);
+    background-size: clamp(10px, 3vw, 16px) clamp(10px, 3vw, 16px);
+    background-position: 0 clamp(32px, 8vw, 40px);
   }
 
   .notebook-header {
-    font-size: 1.5rem;
+    font-size: clamp(1.4rem, 5vw, 1.7rem);
+    margin-top: 0;
+    margin-bottom: 0.3rem;
   }
 
   .notebook-subheader {
-    font-size: 0.85rem;
+    font-size: clamp(0.8rem, 3.5vw, 0.9rem);
+    margin-bottom: 1.2rem;
+    line-height: 1.4;
+  }
+
+  .notebook-label {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 0.35rem;
   }
 
   .notebook-input,
   .notebook-textarea {
-    font-size: 0.95rem;
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+    line-height: clamp(28px, 8vw, 32px); /* Slightly tighter line height for mobile */
+    /* Ensure minimum touch-friendly input height */
+    min-height: 44px;
+    padding: 0.5rem 0;
   }
 
-  .notebook-submit {
-    padding: 0.55rem 1.5rem;
-    font-size: 0.8rem;
-    letter-spacing: 1.2px;
+  .notebook-textarea {
+    min-height: clamp(120px, 30vw, 160px); /* Responsive textarea height */
+    line-height: clamp(28px, 8vw, 32px);
+  }
+
+  .char-counter {
+    margin-top: 0.5rem;
+  }
+
+  .char-count {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+  }
+
+  .validation-msg {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+    margin-top: 0.35rem;
   }
 
   .form-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 1.2rem;
+    margin-top: 1.2rem;
   }
 
   .turnstile-field {
     width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .notebook-submit {
+    /* Ensure minimum 44px touch target height */
+    min-height: 44px;
+    padding: 0.7rem 1.8rem;
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    letter-spacing: clamp(1px, 0.3vw, 1.5px);
+    width: 100%; /* Full width button on mobile */
+    /* Larger touch area for mobile */
+    touch-action: manipulation;
+  }
+
+  .notebook-submit::before {
+    top: -3px;
+    left: -4px;
+    right: -4px;
+    bottom: -3px;
+  }
+
+  .notebook-submit::after {
+    top: -4px;
+    left: -5px;
+    right: -5px;
+    bottom: -4px;
+  }
+
+  .notebook-spinner {
+    width: 14px;
+    height: 14px;
+    margin-left: 0.6rem;
+  }
+
+  .form-status {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 1rem;
+    min-height: 1rem;
   }
 }

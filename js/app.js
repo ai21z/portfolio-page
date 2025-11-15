@@ -1348,7 +1348,7 @@ window.verifyAlignment = function() {
 // ━━━ Hash change listener (back/forward navigation) ━━━
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.slice(1);
-  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills'];
+  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash);
   } else if (!hash) {

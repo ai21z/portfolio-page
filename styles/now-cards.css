@@ -99,16 +99,17 @@
   text-align: center;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 901px) {
   .now-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .now-card-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: clamp(20px, 5vw, 28px);
+    padding: 0 clamp(16px, 4vw, 20px) clamp(40px, 10vw, 60px);
   }
 }
 
@@ -119,6 +120,13 @@
   aspect-ratio: 1.4 / 1;
   perspective: 1000px;
   transition: opacity 300ms ease, filter 300ms ease;
+}
+
+@media (max-width: 900px) {
+  .now-card {
+    aspect-ratio: unset;
+    min-height: clamp(240px, 50vw, 320px);
+  }
 }
 
 .now-card[data-hidden="true"] {
@@ -438,45 +446,70 @@
 }
 
 /* ━━━ Mobile Adjustments ━━━ */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .now-filters {
-    gap: 8px;
+    gap: clamp(8px, 2vw, 12px);
     flex-wrap: wrap;
-    margin-bottom: 30px;
+    margin-bottom: clamp(24px, 6vw, 32px);
+    padding: 0 clamp(16px, 4vw, 20px);
   }
   
   .now-filter-chip {
-    padding: 6px 14px;
-    font-size: 13px;
+    /* Ensure 44px minimum touch target */
+    padding: clamp(10px, 3vw, 12px) clamp(16px, 4vw, 20px);
+    font-size: clamp(13px, 3.5vw, 14px);
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .now-card-front {
-    padding: 24px 20px;
+    padding: clamp(20px, 5vw, 24px);
   }
   
   .now-card-logo {
-    max-height: 72px;
+    max-height: clamp(60px, 15vw, 80px);
   }
   
   .now-card-back {
-    padding: 28px 24px;
+    padding: clamp(24px, 6vw, 32px);
+    /* Enable scrolling for long content */
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .now-card-title {
-    font-size: 18px;
+    font-size: clamp(17px, 4.5vw, 20px);
+    margin-bottom: clamp(12px, 3vw, 16px);
   }
   
   .now-card-bullets li {
-    font-size: 13px;
+    font-size: clamp(13px, 3.5vw, 14px);
+    line-height: 1.5;
   }
   
   .now-card-line {
-    font-size: 13px;
+    font-size: clamp(13px, 3.5vw, 14px);
   }
   
-  /* Ensure dialog fits on small screens */
+  .now-card-status {
+    font-size: clamp(11px, 3vw, 12px);
+  }
+  
+  .now-card-cta {
+    /* Ensure 44px minimum touch target */
+    min-height: 44px;
+    padding: clamp(10px, 3vw, 12px) clamp(20px, 5vw, 24px);
+    font-size: clamp(13px, 3.5vw, 14px);
+    touch-action: manipulation;
+  }
+  
+  /* Ensure dialog fits on small screens with comfortable margins */
   .now-card.active {
-    max-height: 90dvh !important;
+    max-height: 85dvh !important;
+    max-width: 95vw !important;
   }
 }
 

@@ -202,32 +202,41 @@
 
 /* ━━━ Responsive ━━━ */
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .now-stage {
-    padding-top: 60px;
+    padding-top: clamp(70px, 15vw, 90px);
+    /* Enable smooth scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
   
   .now-header {
-    margin-bottom: 30px;
+    margin-bottom: clamp(24px, 6vw, 36px);
+    padding: 0 clamp(16px, 4vw, 20px);
   }
   
   .now-title {
-    font-size: clamp(28px, 6vw, 36px);
+    font-size: clamp(26px, 7vw, 36px);
+    margin-bottom: clamp(8px, 2vw, 12px);
   }
   
   .now-subtitle {
-    font-size: clamp(14px, 3vw, 18px);
+    font-size: clamp(14px, 3.5vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 16px);
   }
   
   .now-chamber {
-    height: 50dvh;
+    height: auto;
+    min-height: 50dvh;
   }
   
   .now-close {
-    top: 16px;
-    right: 16px;
-    width: 42px;
-    height: 42px;
+    /* Ensure it doesn't overlap with status bar */
+    top: clamp(12px, 3vw, 16px);
+    right: clamp(12px, 3vw, 16px);
+    /* Maintain 44px minimum touch target */
+    width: 44px;
+    height: 44px;
     font-size: 24px;
   }
 }

@@ -400,9 +400,9 @@ function openCard(card, stream) {
   
   // Calculate target dimensions (proper dialog size, not scaled)
   const { w: viewportWidth, h: viewportHeight } = viewportSize();
-  const isMobile = viewportWidth <= 768;
-  const maxWidth = isMobile ? viewportWidth * 0.95 : Math.min(600, viewportWidth * 0.9);
-  const maxHeight = isMobile ? viewportHeight * 0.8 : Math.min(700, viewportHeight * 0.85);
+  const isMobile = viewportWidth <= 900;
+  const maxWidth = isMobile ? Math.min(viewportWidth * 0.92, 480) : Math.min(600, viewportWidth * 0.9);
+  const maxHeight = isMobile ? Math.min(viewportHeight * 0.75, 640) : Math.min(700, viewportHeight * 0.85);
   
   // Calculate actual position of filters (they're in document flow now)
   const navFilters = document.querySelector('.now-filters');
@@ -730,4 +730,11 @@ function emitBackgroundEvent(event, data) {
   if (typeof window.mycoBg?.emit === 'function') {
     window.mycoBg.emit(event, data);
   }
+}
+
+// ━━━ Auto-initialize when module loads ━━━
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNowCards);
+} else {
+  initNowCards();
 }

@@ -1151,10 +1151,28 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Honor hash on load, or default to intro
   const hash = window.location.hash.slice(1);
-  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills'];
-  const initialSection = validSections.includes(hash) ? hash : 'intro';
-  console.log(`🎯 Page Load: hash="${hash}", showing section="${initialSection}"`);
-  showSectionWithEffects(initialSection);
+  
+  // Handle blog sub-routes on initial load
+  if (hash.startsWith('blog/')) {
+    const parts = hash.split('/');
+    const hubId = parts[1];
+    const articleId = parts[2];
+    
+    console.log(`🎯 Page Load: blog sub-route detected - hubId="${hubId}", articleId="${articleId || 'none'}"`);
+    showSectionWithEffects('blog');
+    
+    // Navigate to category or article after blog section loads
+    if (articleId) {
+      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+    } else if (hubId) {
+      setTimeout(() => enterHub(hubId), 100);
+    }
+  } else {
+    const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
+    const initialSection = validSections.includes(hash) ? hash : 'intro';
+    console.log(`🎯 Page Load: hash="${hash}", showing section="${initialSection}"`);
+    showSectionWithEffects(initialSection);
+  }
 
   if (hudEnabled) {
     initHUD();
@@ -1348,6 +1366,27 @@ window.verifyAlignment = function() {
 // ━━━ Hash change listener (back/forward navigation) ━━━
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.slice(1);
+  
+  // Handle blog sub-routes (e.g., #blog/craft, #blog/cosmos/article-slug)
+  if (hash.startsWith('blog/')) {
+    const parts = hash.split('/');
+    const hubId = parts[1]; // craft, cosmos, convergence, codex
+    const articleId = parts[2]; // optional article slug
+    
+    // First ensure blog section is visible
+    showSectionWithEffects('blog');
+    
+    // Then navigate to the specific category or article
+    if (articleId) {
+      // Navigate to article view
+      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+    } else if (hubId) {
+      // Navigate to category view
+      setTimeout(() => enterHub(hubId), 100);
+    }
+    return;
+  }
+  
   const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash);

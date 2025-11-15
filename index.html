@@ -427,7 +427,44 @@
     <!-- SR-only status for hover announcements -->
     <div id="hub-status" class="sr-only" aria-live="polite"></div>
     
-    <!-- Dish-first map container -->
+    <!-- Mobile Specimen Grid (only visible on mobile ≤900px) -->
+    <div class="blog-mobile">
+      <div class="blog-specimen-grid">
+        <a class="specimen-slide slide-craft" href="#blog/craft" data-specimen="CRF-001" aria-label="Craft — Process, patterns, and disciplined practice">
+          <div class="specimen-orb" aria-hidden="true"></div>
+          <div class="specimen-text">
+            <div class="specimen-title">CRAFT</div>
+            <div class="specimen-desc">Process, patterns, and disciplined practice.</div>
+          </div>
+        </a>
+
+        <a class="specimen-slide slide-cosmos" href="#blog/cosmos" data-specimen="CSM-002" aria-label="Cosmos — Systems, perception, emergent phenomena">
+          <div class="specimen-orb" aria-hidden="true"></div>
+          <div class="specimen-text">
+            <div class="specimen-title">COSMOS</div>
+            <div class="specimen-desc">Systems, perception, emergent phenomena.</div>
+          </div>
+        </a>
+
+        <a class="specimen-slide slide-convergence" href="#blog/convergence" data-specimen="CVG-003" aria-label="Convergence — Where art, code, and thought intersect">
+          <div class="specimen-orb" aria-hidden="true"></div>
+          <div class="specimen-text">
+            <div class="specimen-title">CONVERGENCE</div>
+            <div class="specimen-desc">Where art, code, and thought intersect.</div>
+          </div>
+        </a>
+
+        <a class="specimen-slide slide-codex" href="#blog/codex" data-specimen="CDX-004" aria-label="Codex — Technical deep-dives and reproducible notes">
+          <div class="specimen-orb" aria-hidden="true"></div>
+          <div class="specimen-text">
+            <div class="specimen-title">CODEX</div>
+            <div class="specimen-desc">Technical deep-dives and reproducible notes.</div>
+          </div>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Dish-first map container (desktop only) -->
     <div id="blog-map" class="blog-map">
       <!-- WebGL Canvas (base layer, z:20) -->
       <canvas id="blog-network-canvas" class="blog-network-canvas"></canvas>

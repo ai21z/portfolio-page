@@ -825,6 +825,332 @@
   margin-bottom: 12px;
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MOBILE SPECIMEN CARDS (≤900px) — Laboratory Slide Aesthetic
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 900px) {
+  /* Hide Petri dish elements on mobile */
+  #blog-map,
+  .blog-intro-caption {
+    display: none !important;
+  }
+
+  /* Mobile container with scrolling */
+  .blog-mobile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: clamp(60px, 15vh, 80px) 16px 24px;
+    background: #0B0C0D;
+    z-index: 25;
+  }
+
+  /* Grid of specimen slides */
+  .blog-specimen-grid {
+    display: grid;
+    gap: 20px;
+    max-width: 460px;
+    margin: 0 auto;
+    content-visibility: auto;
+    contain-intrinsic-size: 320px 180px;
+  }
+
+  /* Specimen card - laboratory slide aesthetic */
+  .specimen-slide {
+    --edge-corrosion: #4a5a4a;
+    --glass-tint: rgba(11, 12, 13, 0.88);
+    --membrane: rgba(150, 120, 220, 0.04);
+    
+    position: relative;
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    align-items: center;
+    gap: 16px;
+    min-height: clamp(160px, 42vh, 240px);
+    padding: 20px 18px;
+    text-decoration: none;
+    color: #C9C2B3;
+    
+    /* Organic glass slide with etched edges */
+    background: 
+      /* Fingerprint smudge */
+      radial-gradient(ellipse at 25% 30%, rgba(200, 180, 140, 0.02), transparent 45%),
+      /* Specimen stain spreading from orb */
+      radial-gradient(circle at 88px 50%, var(--stain-color), transparent 55%),
+      /* Membrane texture */
+      repeating-linear-gradient(
+        87deg,
+        transparent,
+        transparent 3px,
+        var(--membrane) 3px,
+        var(--membrane) 4px
+      ),
+      /* Glass substrate */
+      linear-gradient(107deg, 
+        var(--glass-tint),
+        rgba(11, 12, 13, 0.92) 40%,
+        var(--glass-tint)
+      );
+    
+    /* Corroded metal rim */
+    border: 1.6px solid;
+    border-image: linear-gradient(
+      135deg,
+      #b99a5e 0%,
+      var(--edge-corrosion) 25%,
+      #8a6a3e 50%,
+      var(--edge-corrosion) 75%,
+      #b99a5e 100%
+    ) 1;
+    
+    /* Irregular specimen edge */
+    clip-path: polygon(
+      0.5% 2%, 98.5% 0%, 
+      100% 98%, 1.5% 100%,
+      0% calc(100% - 2px)
+    );
+    
+    border-radius: 4px;
+    
+    /* Shadow with color bleed */
+    box-shadow:
+      0 0 0 0.5px rgba(0, 0, 0, 0.6) inset,
+      0 4px 14px rgba(0, 0, 0, 0.7),
+      0 0 32px var(--glow-color),
+      0 16px 28px -8px var(--stain-shadow);
+    
+    transition: transform 150ms ease, box-shadow 200ms ease;
+  }
+
+  /* Specimen ID label (top-right corner) */
+  .specimen-slide::before {
+    content: attr(data-specimen);
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font: 9px/1 "Courier New", monospace;
+    letter-spacing: 0.12em;
+    color: rgba(201, 194, 179, 0.25);
+    text-transform: uppercase;
+  }
+
+  /* Petri colony (living orb) */
+  .specimen-orb {
+    grid-row: span 2;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    position: relative;
+    align-self: center;
+    justify-self: center;
+    
+    /* Living colony with nucleus */
+    background:
+      /* Bright nucleus */
+      radial-gradient(circle at 42% 42%, 
+        rgba(255, 255, 255, 0.9) 0%, 
+        transparent 10%
+      ),
+      /* Cytoplasm gradient */
+      radial-gradient(circle at 50% 50%, 
+        var(--orb-core) 0%, 
+        transparent 62%
+      ),
+      /* Cell membrane */
+      radial-gradient(circle at 50% 50%, 
+        transparent 58%, 
+        var(--orb-membrane) 62%, 
+        transparent 68%
+      ),
+      /* Outer glow */
+      radial-gradient(circle at 50% 50%,
+        var(--orb-haze) 0%,
+        transparent 100%
+      );
+    
+    filter: drop-shadow(0 0 12px var(--orb-glow));
+    transform: translateZ(0);
+    animation: colony-pulse var(--pulse-speed, 6s) ease-in-out infinite;
+  }
+
+  /* Growth veins spreading from colony */
+  .specimen-orb::after {
+    content: '';
+    position: absolute;
+    inset: -22px;
+    background: 
+      radial-gradient(circle at 50% 50%,
+        transparent 28%,
+        var(--vein-color) 32%,
+        transparent 33%,
+        transparent 42%,
+        var(--vein-color) 44%,
+        transparent 45%
+      );
+    opacity: 0.3;
+    animation: vein-spread 8s ease-in-out infinite;
+  }
+
+  /* Text content wrapper */
+  .specimen-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Text content */
+  .specimen-title {
+    font: 700 clamp(18px, 5.2vw, 21px) "Special Elite", monospace;
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    margin-bottom: 2px;
+  }
+
+  .specimen-desc {
+    font-size: clamp(13px, 4vw, 15px);
+    line-height: 1.45;
+    opacity: 0.78;
+    color: rgba(201, 194, 179, 0.85);
+    max-width: 42ch;
+  }
+
+  /* Category-specific theming */
+  .slide-craft {
+    --orb-core: #4cc9a6;
+    --orb-membrane: rgba(76, 201, 166, 0.4);
+    --orb-haze: rgba(76, 201, 166, 0.15);
+    --orb-glow: rgba(76, 201, 166, 0.3);
+    --glow-color: rgba(76, 201, 166, 0.18);
+    --stain-color: rgba(76, 201, 166, 0.03);
+    --stain-shadow: rgba(76, 201, 166, 0.12);
+    --vein-color: rgba(76, 201, 166, 0.08);
+    --pulse-speed: 5.5s;
+  }
+
+  .slide-cosmos {
+    --orb-core: #b596ff;
+    --orb-membrane: rgba(181, 150, 255, 0.4);
+    --orb-haze: rgba(181, 150, 255, 0.15);
+    --orb-glow: rgba(181, 150, 255, 0.35);
+    --glow-color: rgba(181, 150, 255, 0.2);
+    --stain-color: rgba(181, 150, 255, 0.03);
+    --stain-shadow: rgba(181, 150, 255, 0.12);
+    --vein-color: rgba(181, 150, 255, 0.08);
+    --pulse-speed: 7s;
+  }
+
+  .slide-convergence {
+    --orb-core: #ff7a3a;
+    --orb-membrane: rgba(255, 122, 58, 0.4);
+    --orb-haze: rgba(255, 122, 58, 0.15);
+    --orb-glow: rgba(255, 122, 58, 0.3);
+    --glow-color: rgba(255, 122, 58, 0.18);
+    --stain-color: rgba(255, 122, 58, 0.03);
+    --stain-shadow: rgba(255, 122, 58, 0.12);
+    --vein-color: rgba(255, 122, 58, 0.08);
+    --pulse-speed: 6.2s;
+  }
+
+  .slide-codex {
+    --orb-core: #ffc84a;
+    --orb-membrane: rgba(255, 200, 74, 0.4);
+    --orb-haze: rgba(255, 200, 74, 0.15);
+    --orb-glow: rgba(255, 200, 74, 0.3);
+    --glow-color: rgba(255, 200, 74, 0.18);
+    --stain-color: rgba(255, 200, 74, 0.03);
+    --stain-shadow: rgba(255, 200, 74, 0.12);
+    --vein-color: rgba(255, 200, 74, 0.08);
+    --pulse-speed: 5.8s;
+  }
+
+  /* Hover/tap feedback */
+  .specimen-slide:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) {
+    .specimen-slide:hover {
+      box-shadow:
+        0 0 0 0.5px rgba(0, 0, 0, 0.6) inset,
+        0 6px 18px rgba(0, 0, 0, 0.8),
+        0 0 48px var(--glow-color),
+        0 20px 36px -8px var(--stain-shadow);
+    }
+    
+    .specimen-slide:hover .specimen-orb {
+      animation-duration: calc(var(--pulse-speed) * 0.4);
+    }
+  }
+
+  /* Animations */
+  @keyframes colony-pulse {
+    0%, 100% { 
+      transform: scale(1); 
+      opacity: 0.9;
+    }
+    50% { 
+      transform: scale(1.08); 
+      opacity: 1;
+    }
+  }
+
+  @keyframes vein-spread {
+    0%, 100% { 
+      transform: scale(1) rotate(0deg); 
+      opacity: 0.3;
+    }
+    50% { 
+      transform: scale(1.12) rotate(180deg); 
+      opacity: 0.5;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .specimen-orb,
+    .specimen-orb::after {
+      animation: none;
+    }
+    
+    .specimen-slide {
+      transition: none;
+    }
+  }
+
+  /* Close button positioning adjustment for mobile */
+  .blog-close {
+    top: 12px;
+    right: 12px;
+  }
+}
+
+/* Very small screens - tighter spacing */
+@media (max-width: 480px) {
+  .blog-mobile {
+    padding: 56px 12px 20px;
+  }
+
+  .blog-specimen-grid {
+    gap: 16px;
+  }
+
+  .specimen-slide {
+    grid-template-columns: 76px 1fr;
+    gap: 12px;
+    padding: 16px 14px;
+  }
+
+  .specimen-orb {
+    width: 60px;
+    height: 60px;
+  }
+}
+
 .blog-article-item .excerpt {
   font-size: 0.95rem;
   line-height: 1.6;

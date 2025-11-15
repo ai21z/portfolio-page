@@ -697,17 +697,16 @@
   display: none;
 }
 
-/* Category/Article Header with Map button */
-.blog-category-header,
-.blog-article-header {
+/* Category Header with Map button */
+.blog-category-header {
   position: fixed;
   top: 24px;
   left: 50%;
   transform: translateX(-50%);
   max-width: 800px;
-  width: calc(100% - 48px);
+  width: auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 16px 24px;
   background: rgba(15, 16, 20, 0.85);
@@ -718,13 +717,29 @@
   pointer-events: auto;
 }
 
-.blog-category-title,
-.blog-article-title {
+.blog-category-title {
   font-family: var(--font-display);
   font-size: 1.5rem;
   margin: 0;
-  color: rgba(122, 174, 138, 0.95); /* Ominous necrotic green */
+  color: rgba(122, 174, 138, 0.95); /* Default fallback */
   letter-spacing: 0.05em;
+}
+
+/* Category-specific title colors matching orbs */
+.blog-category-view[data-category="craft"] .blog-category-title {
+  color: #3da88a;
+}
+
+.blog-category-view[data-category="cosmos"] .blog-category-title {
+  color: #9a7ee6;
+}
+
+.blog-category-view[data-category="convergence"] .blog-category-title {
+  color: #e66830;
+}
+
+.blog-category-view[data-category="codex"] .blog-category-title {
+  color: #e6b03a;
 }
 
 .blog-map-btn {
@@ -741,8 +756,10 @@
   transition: all 150ms ease;
   white-space: nowrap;
   pointer-events: auto;
-  position: relative;
-  z-index: 10;
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 101;
 }
 
 .blog-map-btn:hover,
@@ -770,7 +787,7 @@
 .blog-category-content h2 {
   font-family: var(--font-display);
   font-size: 2rem;
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
   color: rgba(122, 174, 138, 0.95); /* Ominous necrotic green */
   letter-spacing: 0.05em;
 }
@@ -790,8 +807,8 @@
 .blog-article-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 32px;
+  gap: 20px;
+  margin-top: 0;
   pointer-events: auto;
 }
 
@@ -816,7 +833,24 @@
   font-family: var(--font-display);
   font-size: 1.3rem;
   margin: 0 0 8px 0;
-  color: rgba(122, 174, 138, 0.95); /* Ominous necrotic green */
+  color: rgba(122, 174, 138, 0.95); /* Default fallback */
+}
+
+/* Category-specific article title colors matching orbs */
+.blog-category-view[data-category="craft"] .blog-article-item h3 {
+  color: #3da88a;
+}
+
+.blog-category-view[data-category="cosmos"] .blog-article-item h3 {
+  color: #9a7ee6;
+}
+
+.blog-category-view[data-category="convergence"] .blog-article-item h3 {
+  color: #e66830;
+}
+
+.blog-category-view[data-category="codex"] .blog-article-item h3 {
+  color: #e6b03a;
 }
 
 .blog-article-item .meta {

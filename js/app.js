@@ -893,6 +893,7 @@ function enterHub(hubId) {
   // Show category view
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
+    categoryView.setAttribute('data-category', hubId);
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
     console.log('[Blog Nav] Category view opened for:', hubId);
@@ -1043,7 +1044,6 @@ function exitBlogArticle() {
 
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
-  const titleEl = document.getElementById('blog-article-title');
   if (!content) {
     console.error('[Blog Nav] blog-article-content element NOT FOUND');
     return;
@@ -1071,11 +1071,6 @@ function loadArticleContent(hubId, articleId) {
       if (article) {
         console.log('[Blog Nav] Article container found, injecting content');
         content.innerHTML = article.innerHTML;
-        // Update header title from article's h1
-        const articleTitle = article.querySelector('h1');
-        if (titleEl && articleTitle) {
-          titleEl.textContent = articleTitle.textContent;
-        }
         
         // Wire up breadcrumb and back button navigation
         setupArticleNavigation(content, hubId);

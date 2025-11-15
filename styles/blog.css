@@ -846,7 +846,10 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: clamp(60px, 15vh, 80px) 16px 24px;
-    background: #0B0C0D;
+    background: 
+      radial-gradient(ellipse 120% 120% at 85% 10%, rgba(45,212,175,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse 120% 120% at 10% 90%, rgba(255,122,51,0.03) 0%, transparent 50%),
+      rgba(8,9,10,0.75); /* Match altar-screen background for consistency */
     z-index: 25;
   }
 

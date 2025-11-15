@@ -208,6 +208,52 @@
   pointer-events: auto; /* Enable clicks when visible */
 }
 
+/* Mobile-specific positioning */
+.work-location-info.mobile {
+  transform: translate(-50%, 0) scale(0.92);
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.work-location-info.mobile.visible {
+  transform: translate(-50%, 0) scale(1);
+}
+
+/* Mobile close button */
+.work-info-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  background: rgba(101, 67, 33, 0.15);
+  border: 2px solid rgba(101, 67, 33, 0.35);
+  border-radius: 50%;
+  color: #2A251F;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  padding: 0;
+  line-height: 1;
+}
+
+.work-info-close:hover,
+.work-info-close:focus {
+  background: rgba(101, 67, 33, 0.25);
+  border-color: rgba(101, 67, 33, 0.5);
+  transform: scale(1.05);
+}
+
+.work-info-close:active {
+  transform: scale(0.95);
+}
+
 /* Small torn corner accent (top right) */
 .work-location-info::after {
   content: '';
@@ -380,22 +426,31 @@
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .work-globe-container {
-    width: 90vmin;
-    height: 90vmin;
+    width: 100%;
+    height: 100%;
+    max-width: 90vmin;
+    max-height: 90vmin;
+    margin: auto;
   }
   
   .work-close {
     top: 1rem;
     right: 1rem;
-    width: 40px;
-    height: 40px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
     font-size: 20px;
   }
   
   .work-location-info {
-    max-width: calc(100vw - 60px);
+    max-width: calc(100vw - 40px);
     min-width: 280px;
-    padding: 1.75rem 1.75rem 1.25rem 3rem;
+    padding: 3rem 1.75rem 1.25rem 2.5rem;
+  }
+  
+  .work-location-info.mobile {
+    max-height: 60vh;
   }
   
   .work-location-header {
@@ -421,8 +476,10 @@
 
 @media (max-width: 600px) {
   .work-globe-container {
-    width: 95vmin;
-    height: 95vmin;
+    width: 100%;
+    height: 100%;
+    max-width: 95vmin;
+    max-height: 95vmin;
   }
   
   .work-location-info {

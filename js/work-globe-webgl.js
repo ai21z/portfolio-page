@@ -52,6 +52,14 @@ let autoRotate = true;
 let time = 0;
 let lastFrameTime = 0; // Track time for delta calculation
 
+// Mobile detection
+let isMobile = false;
+
+function updateMobileState() {
+  isMobile = window.innerWidth <= 900;
+  return isMobile;
+}
+
 // Textures
 let earthTexture = null;
 let fogTexture = null;
@@ -92,6 +100,9 @@ export function initWorkGlobe() {
     console.error('WebGL2 not supported');
     return;
   }
+
+  // Initialize mobile state
+  updateMobileState();
 
   resizeCanvas();
 
@@ -291,13 +302,16 @@ export function initWorkGlobe() {
   
   moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS);
 
+  // Adjust camera distance based on viewport - mobile needs more distance for full view
+  const cameraDistance = isMobile ? 6 : 3.5;
+  
   projectionMatrix = mat4.perspective(
     Math.PI / 4,
     canvas.width / canvas.height,
     0.1,
     100.0
   );
-  viewMatrix = mat4.lookAt([0, 0, 3.5], [0, 0, 0], [0, 1, 0]); // Moved back from 3 to 3.5 (+17% farther)
+  viewMatrix = mat4.lookAt([0, 0, cameraDistance], [0, 0, 0], [0, 1, 0]);
   modelMatrix = mat4.create();
 
   gl.enable(gl.DEPTH_TEST);
@@ -362,7 +376,10 @@ export function initWorkGlobe() {
     }
   }, { passive: true });
   
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    updateMobileState();
+    resizeCanvas();
+  });
   
   // Poll for DPR changes (e.g., moving window between displays with different zoom)
   let lastDPR = currentDPR();
@@ -1068,16 +1085,18 @@ function showLocationInfo(pin) {
     infoBubble.className = 'work-location-info';
     document.body.appendChild(infoBubble);
     
-    // Add click handler to close when clicking outside
-    document.addEventListener('click', (e) => {
-      const bubble = document.querySelector('.work-location-info');
-      if (bubble && bubble.classList.contains('visible')) {
-        // Check if click is outside the bubble
-        if (!bubble.contains(e.target)) {
-          hideLocationInfo();
+    // Add click handler to close when clicking outside (desktop only)
+    if (!isMobile) {
+      document.addEventListener('click', (e) => {
+        const bubble = document.querySelector('.work-location-info');
+        if (bubble && bubble.classList.contains('visible')) {
+          // Check if click is outside the bubble
+          if (!bubble.contains(e.target)) {
+            hideLocationInfo();
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   const location = WORK_LOCATIONS[pin.key];
@@ -1085,8 +1104,14 @@ function showLocationInfo(pin) {
   
   console.log('[Work Globe] Building content for:', location.name);
   
-  // Build content
-  let html = `
+  // Build content with close button for mobile
+  let html = '';
+  
+  if (isMobile) {
+    html += '<button class="work-info-close" aria-label="Close">✕</button>';
+  }
+  
+  html += `
     <div class="work-location-header">
       <span class="work-location-icon">${icon}</span>
       ${location.name}
@@ -1107,11 +1132,35 @@ function showLocationInfo(pin) {
   });
 
   infoBubble.innerHTML = html;
+  
+  // Add mobile-specific class for different positioning
+  if (isMobile) {
+    infoBubble.classList.add('mobile');
+    
+    // Wire up mobile close button
+    const closeBtn = infoBubble.querySelector('.work-info-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideLocationInfo();
+      });
+    }
+  } else {
+    infoBubble.classList.remove('mobile');
+  }
 
-  // Position centered on screen like about/skills sections
-  infoBubble.style.left = '50%';
-  infoBubble.style.top = '50%';
-  console.log('[Work Globe] Positioned at screen center');
+  // Position: center on desktop, bottom on mobile
+  if (isMobile) {
+    infoBubble.style.left = '50%';
+    infoBubble.style.top = 'auto';
+    infoBubble.style.bottom = '20px';
+  } else {
+    infoBubble.style.left = '50%';
+    infoBubble.style.top = '50%';
+    infoBubble.style.bottom = 'auto';
+  }
+  
+  console.log('[Work Globe] Positioned for', isMobile ? 'mobile' : 'desktop');
   
   // Show with animation
   requestAnimationFrame(() => {
@@ -1283,6 +1332,19 @@ function resizeCanvas() {
   const container = canvas.parentElement;
   const width = container.clientWidth;
   const height = container.clientHeight;
+  
+  // Check if container has valid dimensions
+  if (width === 0 || height === 0) {
+    console.warn(`[Work Globe] Container has invalid dimensions: ${width}×${height} - skipping resize`);
+    // Retry after a short delay
+    setTimeout(() => {
+      if (canvas && canvas.parentElement) {
+        resizeCanvas();
+      }
+    }, 100);
+    return;
+  }
+  
   const dpr = currentDPR(); // Dynamic DPR
 
   canvas.width = Math.floor(width * dpr);
@@ -1290,7 +1352,7 @@ function resizeCanvas() {
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
 
-  console.log(`[Work Globe] Canvas resized: ${width}×${height} (DPR: ${dpr}, buffer: ${canvas.width}×${canvas.height})`);
+  console.log(`[Work Globe] Canvas resized: ${width}×${height} (DPR: ${dpr}, buffer: ${canvas.width}×${canvas.height}), mobile: ${isMobile}`);
 
   if (gl) {
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -1338,4 +1400,60 @@ export function cleanupWorkGlobe() {
   }
 
   console.log('[Work Globe] Cleanup complete');
+}
+
+// ━━━ AUTO-INITIALIZATION ━━━
+// Initialize when the Work section becomes active
+function autoInit() {
+  console.log('[Work Globe] autoInit called');
+  
+  const workSection = document.getElementById('work');
+  if (!workSection) {
+    console.warn('[Work Globe] Work section not found, skipping auto-init');
+    return;
+  }
+
+  console.log('[Work Globe] Work section found:', workSection.id);
+
+  // Use MutationObserver to detect when work section gets active-section class
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const hasActiveClass = workSection.classList.contains('active-section');
+        
+        console.log('[Work Globe] Class mutation detected, hasActiveClass:', hasActiveClass, 'gl:', !!gl);
+        
+        if (hasActiveClass && !gl) {
+          // Section just became active and globe not initialized
+          console.log('[Work Globe] Auto-initializing on section activation');
+          initWorkGlobe();
+        } else if (!hasActiveClass && gl) {
+          // Section just became inactive and globe is initialized
+          console.log('[Work Globe] Auto-cleanup on section deactivation');
+          cleanupWorkGlobe();
+        }
+      }
+    });
+  });
+
+  observer.observe(workSection, { attributes: true });
+  console.log('[Work Globe] MutationObserver set up');
+  
+  // Check initial state
+  const initiallyActive = workSection.classList.contains('active-section');
+  console.log('[Work Globe] Initial state check - active:', initiallyActive);
+  
+  if (initiallyActive) {
+    console.log('[Work Globe] Section already active, initializing immediately');
+    initWorkGlobe();
+  }
+}
+
+// Run auto-init when DOM is ready
+if (document.readyState === 'loading') {
+  console.log('[Work Globe] Waiting for DOMContentLoaded');
+  document.addEventListener('DOMContentLoaded', autoInit);
+} else {
+  console.log('[Work Globe] DOM already loaded, calling autoInit immediately');
+  autoInit();
 }

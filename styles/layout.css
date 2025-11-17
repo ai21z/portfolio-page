@@ -97,7 +97,7 @@
   .living-sigils {
     grid-column: 1;
     grid-row: 1; /* Place bubbles in first row */
-    justify-self: stretch; /* Allow full width so internal justify-content works */
+    justify-self: center; /* Let the nav size to its content and center itself */
   }
   
   
@@ -364,7 +364,9 @@
     left: auto !important;
     top: auto !important;
     transform: none !important;
-    width: max-content !important;
+    width: 100% !important;                /* allow responsive centering */
+    max-width: min(520px, 100%) !important;
+    margin-inline: auto !important;
   }
   .sigil-vine{ display: none !important; } /* keep the clean row on mobile */
 

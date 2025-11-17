@@ -128,6 +128,7 @@
     width: auto !important;                  /* beat desktop clamp */
     max-width: clamp(260px, 70vw, 320px);    /* responsive size */
     height: auto;
+    filter: brightness(1.15) !important;
   }
   
   .text-column{

@@ -170,14 +170,137 @@ body.has-paper-open-global #network-nav {
   }
   .myco-strip{
     grid-column: 1 / -1;
-    grid-row: 2;                /* between social icons (row 1) and name */
+    grid-row: 2;                /* between social icons and name */
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-height: 64px;           /* placeholder height for future mycelium art */
+    justify-content: center;    /* center ONLY the sigil */
+    min-height: 80px;
     position: relative;
-    z-index: 6;
+    overflow: visible;
+    z-index: 6;                 /* above background, below dialogs */
   }
+
+  /* Horizontal mycelium strip behind the sigil */
+  /* Removed .myco-strip::before - now using SVG rail instead */
+
+  /* SVG rail: full-row, behind the sigil, not part of flex layout */
+  .myco-rail{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 400px);  /* responsive width, max 400px to match viewBox */
+    height: 80px;
+    pointer-events: none;
+    z-index: 0;
+    display: block;
+  }
+
+  /* Animated traveling spores */
+  .spore-travel{
+    opacity: 0;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+
+  /* Spores traveling from LEFT to center */
+  .spore-left-1{
+    animation: spore-left 2.5s ease-in-out infinite;
+    animation-delay: 0s;
+  }
+  .spore-left-2{
+    animation: spore-left 2.8s ease-in-out infinite;
+    animation-delay: 0.9s;
+  }
+  .spore-left-3{
+    animation: spore-left 2.6s ease-in-out infinite;
+    animation-delay: 1.7s;
+  }
+
+  /* Spores traveling from RIGHT to center */
+  .spore-right-1{
+    animation: spore-right 2.7s ease-in-out infinite;
+    animation-delay: 0.4s;
+  }
+  .spore-right-2{
+    animation: spore-right 2.9s ease-in-out infinite;
+    animation-delay: 1.2s;
+  }
+  .spore-right-3{
+    animation: spore-right 2.5s ease-in-out infinite;
+    animation-delay: 2.0s;
+  }
+
+  /* Animation: left → center (following rail curve) */
+  @keyframes spore-left {
+    0% {
+      cx: 10;
+      cy: 40;
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.9;
+    }
+    45% {
+      cx: 180;
+      cy: 40;
+      opacity: 1;
+    }
+    55% {
+      cx: 200;
+      cy: 40;
+      opacity: 0.8;
+    }
+    70% {
+      opacity: 0;
+    }
+    100% {
+      cx: 220;
+      cy: 40;
+      opacity: 0;
+    }
+  }
+
+  /* Animation: right → center (following rail curve) */
+  @keyframes spore-right {
+    0% {
+      cx: 390;
+      cy: 40;
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.9;
+    }
+    45% {
+      cx: 220;
+      cy: 40;
+      opacity: 1;
+    }
+    55% {
+      cx: 200;
+      cy: 40;
+      opacity: 0.8;
+    }
+    70% {
+      opacity: 0;
+    }
+    100% {
+      cx: 180;
+      cy: 40;
+      opacity: 0;
+    }
+  }
+
+  /* Disable animations for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .spore-travel {
+      animation: none !important;
+      display: none;
+    }
+  }
+
+  /* optional: a softer outer haze */
+  /* Removed .myco-strip::after - now using SVG rail instead */
+
   .name{ grid-row: 3 !important; }
   .portrait-wrap{ grid-row: 4 !important; }
   .text-column{ grid-row: 5 !important; }
@@ -189,6 +312,7 @@ body.has-paper-open-global #network-nav {
   appearance: none; border: 0; background: transparent; padding: 0;
   width: 64px; height: 64px; border-radius: 50%; position: relative; cursor: pointer;
   filter: drop-shadow(0 0 10px rgba(122,174,138,.25));
+  z-index: 1; /* sits above the rail */
 }
 .myco-sigil img{
   width: 100%; height: 100%; display:block; mix-blend-mode: screen; opacity:.95;

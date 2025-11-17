@@ -268,6 +268,26 @@ body.has-paper-open-global #network-nav {
     animation-delay: 2.0s;
   }
 
+  /* Spores traveling along UPPER RAIL from LEFT */
+  .spore-upper-left-1{
+    animation: spore-upper-left 2.6s ease-in-out infinite;
+    animation-delay: 0.5s;
+  }
+  .spore-upper-left-2{
+    animation: spore-upper-left 2.8s ease-in-out infinite;
+    animation-delay: 1.4s;
+  }
+
+  /* Spores traveling along UPPER RAIL from RIGHT */
+  .spore-upper-right-1{
+    animation: spore-upper-right 2.7s ease-in-out infinite;
+    animation-delay: 0.8s;
+  }
+  .spore-upper-right-2{
+    animation: spore-upper-right 2.5s ease-in-out infinite;
+    animation-delay: 1.8s;
+  }
+
   /* Animation: left → center (following rail curve) */
   @keyframes spore-left {
     0% {
@@ -276,29 +296,51 @@ body.has-paper-open-global #network-nav {
       opacity: 0;
     }
     10% {
+      cx: 80;
+      cy: 30;
       opacity: 0.9;
     }
-    45% {
-      cx: 180;
-      cy: 40;
+    25% {
+      cx: 140;
+      cy: 50;
       opacity: 1;
     }
+    35% {
+      cx: 168;
+      cy: 48;
+      opacity: 1;
+    }
+    45% {
+      cx: 183;  /* curve up around sigil */
+      cy: 62;
+      opacity: 0.95;
+    }
     55% {
-      cx: 200;
-      cy: 40;
+      cx: 200;  /* top of arc around sigil */
+      cy: 75;
       opacity: 0.8;
     }
-    70% {
+    65% {
+      cx: 217;  /* descending */
+      cy: 62;
+      opacity: 0.5;
+    }
+    75% {
+      cx: 232;
+      cy: 48;
+      opacity: 0.2;
+    }
+    85% {
       opacity: 0;
     }
     100% {
-      cx: 220;
-      cy: 40;
+      cx: 260;
+      cy: 50;
       opacity: 0;
     }
   }
 
-  /* Animation: right → center (following rail curve) */
+  /* Animation: right → center (following LOWER rail curve) */
   @keyframes spore-right {
     0% {
       cx: 380;  /* spawn from right hub */
@@ -306,23 +348,143 @@ body.has-paper-open-global #network-nav {
       opacity: 0;
     }
     10% {
+      cx: 320;
+      cy: 30;
       opacity: 0.9;
     }
-    45% {
-      cx: 220;
-      cy: 40;
+    25% {
+      cx: 260;
+      cy: 50;
       opacity: 1;
     }
+    35% {
+      cx: 232;
+      cy: 48;
+      opacity: 1;
+    }
+    45% {
+      cx: 217;  /* curve up around sigil */
+      cy: 62;
+      opacity: 0.95;
+    }
     55% {
-      cx: 200;
-      cy: 40;
+      cx: 200;  /* top of arc around sigil */
+      cy: 75;
       opacity: 0.8;
     }
-    70% {
+    65% {
+      cx: 183;  /* descending */
+      cy: 62;
+      opacity: 0.5;
+    }
+    75% {
+      cx: 168;
+      cy: 48;
+      opacity: 0.2;
+    }
+    85% {
       opacity: 0;
     }
     100% {
+      cx: 140;
+      cy: 50;
+      opacity: 0;
+    }
+  }
+
+  /* Animation: left → center (following UPPER rail curve) */
+  @keyframes spore-upper-left {
+    0% {
+      cx: 168;  /* start from split point */
+      cy: 40;
+      opacity: 0;
+    }
+    15% {
+      cx: 175;
+      cy: 29;
+      opacity: 0.9;
+    }
+    30% {
       cx: 180;
+      cy: 24;
+      opacity: 1;
+    }
+    45% {
+      cx: 183;  /* curve up around sigil top */
+      cy: 14;
+      opacity: 0.95;
+    }
+    55% {
+      cx: 200;  /* top of arc */
+      cy: 9;
+      opacity: 0.9;
+    }
+    65% {
+      cx: 217;  /* descending */
+      cy: 14;
+      opacity: 0.8;
+    }
+    75% {
+      cx: 232;
+      cy: 28;
+      opacity: 0.5;
+    }
+    85% {
+      cx: 250;
+      cy: 25;
+      opacity: 0.2;
+    }
+    100% {
+      cx: 310;
+      cy: 32;
+      opacity: 0;
+    }
+  }
+
+  /* Animation: right → center (following UPPER rail curve) */
+  @keyframes spore-upper-right {
+    0% {
+      cx: 380;  /* spawn from right hub */
+      cy: 40;
+      opacity: 0;
+    }
+    15% {
+      cx: 310;
+      cy: 32;
+      opacity: 0.9;
+    }
+    30% {
+      cx: 250;
+      cy: 25;
+      opacity: 1;
+    }
+    45% {
+      cx: 232;
+      cy: 28;
+      opacity: 1;
+    }
+    55% {
+      cx: 217;  /* curve down to arc */
+      cy: 14;
+      opacity: 0.95;
+    }
+    65% {
+      cx: 200;  /* top of arc around sigil */
+      cy: 9;
+      opacity: 0.9;
+    }
+    75% {
+      cx: 183;  /* continuing around */
+      cy: 14;
+      opacity: 0.7;
+    }
+    85% {
+      cx: 175;
+      cy: 29;
+      opacity: 0.3;
+    }
+    100% {
+      cx: 168;
       cy: 40;
       opacity: 0;
     }

@@ -245,15 +245,34 @@
             fill="none"
             filter="url(#myco-tendril-fx)" />
 
-          <!-- main rail -->
+          <!-- main rail - curves around sigil perimeter (lower path) - INVISIBLE but guides spores -->
           <path
-            d="M 10 40 
-              C 80 22, 140 58, 200 40
-              S 320 22, 390 40"
+            d="M 168 40
+              C 170 44 175 51 180 56
+              C 180 56 183 62 183 62
+              A 25 25 0 0 1 217 62
+              C 220 56 225 51 232 48
+              C 260 58 320 22 390 40"
             stroke="url(#myco-rail-grad)"
             stroke-width="6"
             stroke-linecap="round"
             fill="none"
+            opacity="0"
+            filter="url(#myco-rail-fx)" />
+
+          <!-- second rail - curves around upper edge of sigil - INVISIBLE but guides spores -->
+          <path
+            d="M 168 40
+              C 170 36 175 29 180 24
+              C 180 24 183 14 183 14
+              A 25 25 0 0 1 217 14
+              C 220 20 225 25 232 28
+              C 250 25 310 32 380 40"
+            stroke="url(#myco-rail-grad)"
+            stroke-width="6"
+            stroke-linecap="round"
+            fill="none"
+            opacity="0"
             filter="url(#myco-rail-fx)" />
 
           <!-- static spores along the rail -->
@@ -262,15 +281,23 @@
           <circle cx="250" cy="35" r="3.1" fill="rgba(63,255,159,0.7)" />
           <circle cx="330" cy="46" r="2.6" fill="rgba(143,180,255,0.55)" />
 
-          <!-- traveling spores (from left) -->
+          <!-- traveling spores - LOWER RAIL (from left) -->
           <circle class="spore-travel spore-left-1" r="2.8" fill="rgba(63,255,159,0.85)" />
           <circle class="spore-travel spore-left-2" r="2.4" fill="rgba(143,180,255,0.75)" />
           <circle class="spore-travel spore-left-3" r="3.0" fill="rgba(63,255,159,0.8)" />
           
-          <!-- traveling spores (from right) -->
+          <!-- traveling spores - LOWER RAIL (from right) -->
           <circle class="spore-travel spore-right-1" r="2.6" fill="rgba(143,180,255,0.8)" />
           <circle class="spore-travel spore-right-2" r="2.9" fill="rgba(63,255,159,0.85)" />
           <circle class="spore-travel spore-right-3" r="2.5" fill="rgba(143,180,255,0.75)" />
+          
+          <!-- traveling spores - UPPER RAIL (from left) -->
+          <circle class="spore-travel spore-upper-left-1" r="2.6" fill="rgba(143,180,255,0.85)" />
+          <circle class="spore-travel spore-upper-left-2" r="2.8" fill="rgba(63,255,159,0.8)" />
+          
+          <!-- traveling spores - UPPER RAIL (from right) -->
+          <circle class="spore-travel spore-upper-right-1" r="2.7" fill="rgba(63,255,159,0.85)" />
+          <circle class="spore-travel spore-upper-right-2" r="2.5" fill="rgba(143,180,255,0.8)" />
         </svg>
 
         <!-- Sigil button sitting on top -->

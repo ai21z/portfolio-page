@@ -99,6 +99,32 @@
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+
+            <!-- Comet tail effect for traveling spores - electric teal streak -->
+            <filter id="spore-comet-fx" x="-300%" y="-300%" width="700%" height="700%">
+              <!-- Create directional motion blur (horizontal tail) -->
+              <feGaussianBlur in="SourceAlpha" stdDeviation="8 2" result="blur-tail" />
+              
+              <!-- Color the tail electric teal/cyan -->
+              <feFlood flood-color="rgba(63,255,159,0.8)" result="teal-color" />
+              <feComposite in="teal-color" in2="blur-tail" operator="in" result="teal-tail" />
+              
+              <!-- Add cyan/blue tint -->
+              <feFlood flood-color="rgba(143,180,255,0.6)" result="cyan-color" />
+              <feGaussianBlur in="SourceAlpha" stdDeviation="5 1.5" result="blur-mid" />
+              <feComposite in="cyan-color" in2="blur-mid" operator="in" result="cyan-glow" />
+              
+              <!-- Sharp spore core with glow -->
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="core-glow" />
+              
+              <!-- Stack: tail (back) → mid glow → core glow → sharp core (front) -->
+              <feMerge>
+                <feMergeNode in="teal-tail" />
+                <feMergeNode in="cyan-glow" />
+                <feMergeNode in="core-glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
           <!-- LEFT SPORE HUB - where all left tendrils converge -->
@@ -282,22 +308,22 @@
           <circle cx="330" cy="46" r="2.6" fill="rgba(143,180,255,0.55)" />
 
           <!-- traveling spores - LOWER RAIL (from left) -->
-          <circle class="spore-travel spore-left-1" r="2.8" fill="rgba(63,255,159,0.85)" />
-          <circle class="spore-travel spore-left-2" r="2.4" fill="rgba(143,180,255,0.75)" />
-          <circle class="spore-travel spore-left-3" r="3.0" fill="rgba(63,255,159,0.8)" />
+          <circle class="spore-travel spore-left-1" r="1.8" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-left-2" r="1.6" fill="rgba(143,180,255,0.75)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-left-3" r="2.0" fill="rgba(63,255,159,0.8)" filter="url(#spore-comet-fx)" />
           
           <!-- traveling spores - LOWER RAIL (from right) -->
-          <circle class="spore-travel spore-right-1" r="2.6" fill="rgba(143,180,255,0.8)" />
-          <circle class="spore-travel spore-right-2" r="2.9" fill="rgba(63,255,159,0.85)" />
-          <circle class="spore-travel spore-right-3" r="2.5" fill="rgba(143,180,255,0.75)" />
+          <circle class="spore-travel spore-right-1" r="1.7" fill="rgba(143,180,255,0.8)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-right-2" r="1.9" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-right-3" r="1.6" fill="rgba(143,180,255,0.75)" filter="url(#spore-comet-fx)" />
           
           <!-- traveling spores - UPPER RAIL (from left) -->
-          <circle class="spore-travel spore-upper-left-1" r="2.6" fill="rgba(143,180,255,0.85)" />
-          <circle class="spore-travel spore-upper-left-2" r="2.8" fill="rgba(63,255,159,0.8)" />
+          <circle class="spore-travel spore-upper-left-1" r="1.7" fill="rgba(143,180,255,0.85)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-upper-left-2" r="1.8" fill="rgba(63,255,159,0.8)" filter="url(#spore-comet-fx)" />
           
           <!-- traveling spores - UPPER RAIL (from right) -->
-          <circle class="spore-travel spore-upper-right-1" r="2.7" fill="rgba(63,255,159,0.85)" />
-          <circle class="spore-travel spore-upper-right-2" r="2.5" fill="rgba(143,180,255,0.8)" />
+          <circle class="spore-travel spore-upper-right-1" r="1.8" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
+          <circle class="spore-travel spore-upper-right-2" r="1.6" fill="rgba(143,180,255,0.8)" filter="url(#spore-comet-fx)" />
         </svg>
 
         <!-- Sigil button sitting on top -->

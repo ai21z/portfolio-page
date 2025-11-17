@@ -13,6 +13,7 @@ import { buildGraphFromPaths, aStarPath } from './graph.js';
 import { initNow, destroyNow } from './now-cultivating.js';
 import { initWorkGlobe, cleanupWorkGlobe } from './work-globe-webgl.js';
 import socialIconsAnimation from './social-icons-animation.js';
+import { initHubToIcons } from './hub-to-icons.js';
 // Blog network now uses WebGL version loaded directly in HTML
 // import blogNetwork from './blog-network.js';
 // Resume spirals - DISABLED FOR NOW
@@ -1300,6 +1301,9 @@ window.addEventListener('load', () => {
     layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
     if (hudEnabled) renderHUD();
   }
+  
+  // Initialize hub-to-icons spore system (mobile only)
+  initHubToIcons();
 });
 
 // ━━━ Glitch Text Effect Setup ━━━

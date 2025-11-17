@@ -237,55 +237,54 @@ body.has-paper-open-global #network-nav {
   /* Animated traveling spores */
   .spore-travel{
     opacity: 0;
-    filter: drop-shadow(0 0 4px currentColor);
   }
 
   /* Spores traveling from LEFT to center */
   .spore-left-1{
-    animation: spore-left 2.5s ease-in-out infinite;
-    animation-delay: 0s;
+    animation: spore-left 2.8s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 0.3s;
   }
   .spore-left-2{
-    animation: spore-left 2.8s ease-in-out infinite;
-    animation-delay: 0.9s;
+    animation: spore-left 3.2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 1.1s;
   }
   .spore-left-3{
-    animation: spore-left 2.6s ease-in-out infinite;
-    animation-delay: 1.7s;
+    animation: spore-left 2.4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 2.0s;
   }
 
   /* Spores traveling from RIGHT to center */
   .spore-right-1{
-    animation: spore-right 2.7s ease-in-out infinite;
-    animation-delay: 0.4s;
+    animation: spore-right 2.6s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 0.7s;
   }
   .spore-right-2{
-    animation: spore-right 2.9s ease-in-out infinite;
-    animation-delay: 1.2s;
+    animation: spore-right 3.1s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 1.5s;
   }
   .spore-right-3{
-    animation: spore-right 2.5s ease-in-out infinite;
-    animation-delay: 2.0s;
+    animation: spore-right 2.9s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 0.2s;
   }
 
   /* Spores traveling along UPPER RAIL from LEFT */
   .spore-upper-left-1{
-    animation: spore-upper-left 2.6s ease-in-out infinite;
-    animation-delay: 0.5s;
+    animation: spore-upper-left 3.0s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 0.9s;
   }
   .spore-upper-left-2{
-    animation: spore-upper-left 2.8s ease-in-out infinite;
-    animation-delay: 1.4s;
+    animation: spore-upper-left 2.5s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 1.8s;
   }
 
   /* Spores traveling along UPPER RAIL from RIGHT */
   .spore-upper-right-1{
-    animation: spore-upper-right 2.7s ease-in-out infinite;
-    animation-delay: 0.8s;
+    animation: spore-upper-right 2.7s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 0.4s;
   }
   .spore-upper-right-2{
-    animation: spore-upper-right 2.5s ease-in-out infinite;
-    animation-delay: 1.8s;
+    animation: spore-upper-right 3.3s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+    animation-delay: 1.3s;
   }
 
   /* Animation: left → center (following rail curve) */
@@ -516,88 +515,88 @@ body.has-paper-open-global #network-nav {
   .burst-right-7 { animation: burst-spore-right-7 4.5s ease-out infinite; animation-delay: 2.25s; transform-origin: 380px 40px; }
   .burst-right-8 { animation: burst-spore-right-8 4.5s ease-out infinite; animation-delay: 2.25s; transform-origin: 380px 40px; }
 
-  /* Burst animations - LEFT HUB (at x:20): particles drift right toward sigil center (x:200, y:40) */
+  /* Burst animations - LEFT HUB (at x:20): particles shoot upward only */
   @keyframes burst-spore-left-1 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }  /* burst moment */
-    100% { transform: translate(180px, -15px) scale(0.3); opacity: 0; }  /* reach sigil from slight up angle */
+    100% { transform: translate(-15px, -45px) scale(0.3); opacity: 0; }  /* up-left */
   }
   @keyframes burst-spore-left-2 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(180px, 15px) scale(0.3); opacity: 0; }  /* reach sigil from slight down angle */
+    100% { transform: translate(5px, -50px) scale(0.3); opacity: 0; }  /* up-slight-right */
   }
   @keyframes burst-spore-left-3 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(180px, 0) scale(0.2); opacity: 0; }  /* reach sigil straight across */
+    100% { transform: translate(0, -55px) scale(0.2); opacity: 0; }  /* straight up */
   }
   @keyframes burst-spore-left-4 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(180px, -25px) scale(0.3); opacity: 0; }  /* reach sigil from upper angle */
+    100% { transform: translate(-20px, -40px) scale(0.3); opacity: 0; }  /* up-left diagonal */
   }
   @keyframes burst-spore-left-5 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(180px, 25px) scale(0.3); opacity: 0; }  /* reach sigil from lower angle */
+    100% { transform: translate(10px, -42px) scale(0.3); opacity: 0; }  /* up-right diagonal */
   }
   @keyframes burst-spore-left-6 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(180px, 10px) scale(0.2); opacity: 0; }  /* reach sigil from slight down */
+    100% { transform: translate(-8px, -48px) scale(0.2); opacity: 0; }  /* up-slight-left */
   }
   @keyframes burst-spore-left-7 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(180px, -10px) scale(0.3); opacity: 0; }  /* reach sigil from slight up */
+    100% { transform: translate(3px, -52px) scale(0.3); opacity: 0; }  /* up-slight-right */
   }
   @keyframes burst-spore-left-8 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(180px, 5px) scale(0.3); opacity: 0; }  /* reach sigil center */
+    100% { transform: translate(-5px, -47px) scale(0.3); opacity: 0; }  /* up-slight-left */
   }
 
-  /* Burst animations - RIGHT HUB (at x:380): particles drift left toward sigil center (x:200, y:40) */
+  /* Burst animations - RIGHT HUB (at x:380): particles shoot upward only */
   @keyframes burst-spore-right-1 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }  /* burst moment */
-    100% { transform: translate(-180px, -15px) scale(0.3); opacity: 0; }  /* reach sigil from slight up angle */
+    100% { transform: translate(15px, -45px) scale(0.3); opacity: 0; }  /* up-right */
   }
   @keyframes burst-spore-right-2 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-180px, 15px) scale(0.3); opacity: 0; }  /* reach sigil from slight down angle */
+    100% { transform: translate(-5px, -50px) scale(0.3); opacity: 0; }  /* up-slight-left */
   }
   @keyframes burst-spore-right-3 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(-180px, 0) scale(0.2); opacity: 0; }  /* reach sigil straight across */
+    100% { transform: translate(0, -55px) scale(0.2); opacity: 0; }  /* straight up */
   }
   @keyframes burst-spore-right-4 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-180px, -25px) scale(0.3); opacity: 0; }  /* reach sigil from upper angle */
+    100% { transform: translate(20px, -40px) scale(0.3); opacity: 0; }  /* up-right diagonal */
   }
   @keyframes burst-spore-right-5 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-180px, 25px) scale(0.3); opacity: 0; }  /* reach sigil from lower angle */
+    100% { transform: translate(-10px, -42px) scale(0.3); opacity: 0; }  /* up-left diagonal */
   }
   @keyframes burst-spore-right-6 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1.2); opacity: 1; }
-    100% { transform: translate(-180px, 10px) scale(0.2); opacity: 0; }  /* reach sigil from slight down */
+    100% { transform: translate(8px, -48px) scale(0.2); opacity: 0; }  /* up-slight-right */
   }
   @keyframes burst-spore-right-7 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-180px, -10px) scale(0.3); opacity: 0; }  /* reach sigil from slight up */
+    100% { transform: translate(-3px, -52px) scale(0.3); opacity: 0; }  /* up-slight-left */
   }
   @keyframes burst-spore-right-8 {
     0%, 48% { transform: translate(0, 0) scale(0); opacity: 0; }
     50% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-180px, 5px) scale(0.3); opacity: 0; }  /* reach sigil center */
+    100% { transform: translate(5px, -47px) scale(0.3); opacity: 0; }  /* up-slight-right */
   }
 
   /* Disable animations for users who prefer reduced motion */
@@ -608,6 +607,91 @@ body.has-paper-open-global #network-nav {
     }
     .spore-hub {
       animation: none !important;
+    }
+    .hub-spore {
+      display: none !important;
+    }
+  }
+
+  /* ━━━ Hub-to-Icons Spore System ━━━ */
+  .hub-spore {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--spore-color, rgba(63,255,159,0.9));
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    box-shadow: 
+      0 0 6px var(--spore-color, rgba(63,255,159,0.9)),
+      0 0 12px rgba(63,255,159,0.5),
+      0 0 18px rgba(143,180,255,0.3);
+    filter: blur(0.5px);
+  }
+
+  .hub-spore.flying {
+    animation: spore-fly var(--duration, 1s) cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
+
+  @keyframes spore-fly {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.5);
+    }
+    10% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    90% {
+      opacity: 1;
+      transform: translate(
+        calc(var(--target-x) - var(--start-x, 0px)),
+        calc(var(--target-y) - var(--start-y, 0px))
+      ) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(
+        calc(var(--target-x) - var(--start-x, 0px)),
+        calc(var(--target-y) - var(--start-y, 0px))
+      ) scale(0.5);
+    }
+  }
+
+  /* Icon glow effect when hit by spore - target the vial-glass for proper effect */
+  .sigil-vial.spore-hit .vial-glass,
+  .sigil-vial.spore-hit .vial-split-bubble .vial-glass {
+    animation: icon-spore-hit 1.2s ease-out forwards;
+  }
+
+  @keyframes icon-spore-hit {
+    0% {
+      filter: 
+        drop-shadow(0 0 2px rgba(63,255,159,0.4))
+        drop-shadow(0 0 6px rgba(143,180,255,0.3));
+      transform: scale(1);
+    }
+    20% {
+      filter: 
+        drop-shadow(0 0 8px rgba(63,255,159,1))
+        drop-shadow(0 0 16px rgba(63,255,159,0.8))
+        drop-shadow(0 0 28px rgba(143,180,255,0.6))
+        drop-shadow(0 0 40px rgba(143,180,255,0.4));
+      transform: scale(1.12);
+    }
+    40% {
+      filter: 
+        drop-shadow(0 0 6px rgba(63,255,159,0.9))
+        drop-shadow(0 0 14px rgba(63,255,159,0.7))
+        drop-shadow(0 0 24px rgba(143,180,255,0.5));
+      transform: scale(1.06);
+    }
+    100% {
+      filter: 
+        drop-shadow(0 0 2px rgba(63,255,159,0.4))
+        drop-shadow(0 0 6px rgba(143,180,255,0.3));
+      transform: scale(1);
     }
   }
 

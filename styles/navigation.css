@@ -196,6 +196,32 @@ body.has-paper-open-global #network-nav {
     display: block;
   }
 
+  /* Luminous spore generator hubs */
+  .spore-hub {
+    animation: hub-pulse 2.5s ease-in-out infinite;
+  }
+
+  .hub-left {
+    animation-delay: 0s;
+    transform-origin: 20px 40px;  /* lock scale origin to hub center */
+  }
+
+  .hub-right {
+    animation-delay: 0.8s;
+    transform-origin: 380px 40px;  /* lock scale origin to hub center */
+  }
+
+  @keyframes hub-pulse {
+    0%, 100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
   /* Animated traveling spores */
   .spore-travel{
     opacity: 0;
@@ -233,7 +259,7 @@ body.has-paper-open-global #network-nav {
   /* Animation: left → center (following rail curve) */
   @keyframes spore-left {
     0% {
-      cx: 10;
+      cx: 20;  /* spawn from left hub */
       cy: 40;
       opacity: 0;
     }
@@ -263,7 +289,7 @@ body.has-paper-open-global #network-nav {
   /* Animation: right → center (following rail curve) */
   @keyframes spore-right {
     0% {
-      cx: 390;
+      cx: 380;  /* spawn from right hub */
       cy: 40;
       opacity: 0;
     }
@@ -295,6 +321,9 @@ body.has-paper-open-global #network-nav {
     .spore-travel {
       animation: none !important;
       display: none;
+    }
+    .spore-hub {
+      animation: none !important;
     }
   }
 

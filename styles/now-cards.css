@@ -107,9 +107,9 @@
 
 @media (max-width: 900px) {
   .now-card-grid {
-    grid-template-columns: 1fr;
-    gap: clamp(20px, 5vw, 28px);
-    padding: 0 clamp(16px, 4vw, 20px) clamp(40px, 10vw, 60px);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0 16px 60px;
   }
 }
 
@@ -124,8 +124,9 @@
 
 @media (max-width: 900px) {
   .now-card {
-    aspect-ratio: unset;
-    min-height: clamp(240px, 50vw, 320px);
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    height: auto;
   }
 }
 
@@ -137,6 +138,10 @@
   opacity: 0.3;
   filter: blur(2px);
   pointer-events: none;
+}
+
+.now-card.active {
+  aspect-ratio: auto !important;
 }
 
 /* Card inner (flips) - JS controls transform */
@@ -163,7 +168,7 @@
 .now-card-front {
   display: grid;
   place-items: center;
-  padding: clamp(24px, 4vw, 56px);
+  padding: 24px;
   cursor: pointer;
   border: 2px solid rgba(25, 203, 179, 0.15);
   box-shadow: 
@@ -172,6 +177,12 @@
     0 0 8px rgba(25, 203, 179, 0.3),
     0 0 16px rgba(25, 203, 179, 0.15);
   transition: all 250ms ease;
+}
+
+@media (max-width: 900px) {
+  .now-card-front {
+    padding: 16px;
+  }
 }
 
 .now-card-front:hover,
@@ -202,6 +213,13 @@
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
 }
 
+@media (max-width: 900px) {
+  .now-card-logo {
+    width: 85%;
+    max-width: 140px;
+  }
+}
+
 /* True Rolls - Bigger for visual balance */
 .now-card[data-id="truerolls"] .now-card-front {
   display: flex;
@@ -212,6 +230,14 @@
 .now-card[data-id="truerolls"] .now-card-logo {
   width: clamp(300px, 65%, 600px);
   margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .now-card[data-id="truerolls"] .now-card-logo {
+    width: 100%;
+    max-width: none;
+    transform: scale(2.2);
+  }
 }
 
 /* TMT - Full bleed background */

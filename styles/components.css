@@ -719,9 +719,13 @@
     transform: none !important;
     width: 28px !important;
     height: 28px !important;
-    color: rgba(63, 255, 159, 0.9) !important;
+    color: rgba(105, 160, 160, 0.85) !important;
     opacity: 1 !important;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
+    filter: 
+      drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7))
+      drop-shadow(0 0 1px rgba(105, 160, 160, 0.2))
+      contrast(1.15)
+      brightness(0.8) !important;
     transition: none !important;
     animation: none !important;
     display: block !important;
@@ -740,9 +744,13 @@
 
   .sigil-vial:hover .vial-icon,
   .vial-split-bubble:hover .vial-icon {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
+    filter: 
+      drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7))
+      drop-shadow(0 0 2px rgba(105, 160, 160, 0.3))
+      contrast(1.2)
+      brightness(0.85) !important;
     transform: none !important;
-    color: rgba(63, 255, 159, 0.9) !important;
+    color: rgba(105, 160, 160, 0.95) !important;
     opacity: 1 !important;
     animation: none !important;
   }

@@ -787,16 +787,13 @@ body.has-paper-open-global #network-nav {
 
 /* --- Dialog menu (native <dialog>) --- */
 .necro-menu{
-  border: 1px solid rgba(143,180,255,.22);
+  border: none;
   border-radius: 16px;
   padding: 22px 18px 16px;
   color: var(--bone);
   width: min(92vw, 520px);
-  background:
-    radial-gradient(120% 100% at 50% 0%, rgba(11,11,12,.92) 0%, rgba(11,11,12,.94) 60%, rgba(11,11,12,.98) 100%),
-    radial-gradient(35% 45% at 65% 35%, rgba(122,174,138,.10), transparent 70%),
-    radial-gradient(45% 55% at 35% 65%, rgba(143,180,255,.10), transparent 80%);
-  box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 24px rgba(63,255,159,.12);
+  background: transparent;
+  box-shadow: none;
   animation: menu-in .28s cubic-bezier(.16,1,.3,1);
 }
 .necro-menu::backdrop{
@@ -806,15 +803,17 @@ body.has-paper-open-global #network-nav {
 /* menu content */
 .necro-menu-list{
   display:grid; gap: 10px; padding: 8px 6px 2px;
+  justify-items: center;
 }
 .necro-menu-list a{
-  display:block; text-decoration:none; color:var(--bone);
+  display:inline-block; text-decoration:none; color:var(--bone);
   padding: 10px 12px; border-radius: 10px;
   letter-spacing:.02em; font: 400 18px "Special Elite", monospace;
-  background: linear-gradient(180deg, rgba(63,255,159,.06), rgba(143,180,255,.04));
-  border: 1px solid rgba(122,174,138,.15);
+  background: transparent;
+  border: none;
   filter: drop-shadow(0 0 0 transparent);
   transition: transform .2s cubic-bezier(.2,.8,.2,1), filter .2s, background .2s, border-color .2s;
+  text-align: center;
 }
 .necro-menu-list a:focus-visible,
 .necro-menu-list a:hover{

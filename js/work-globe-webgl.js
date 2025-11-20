@@ -1111,12 +1111,8 @@ function showLocationInfo(pin) {
   
   console.log('[Work Globe] Building content for:', location.name);
   
-  // Build content with close button for mobile
-  let html = '';
-  
-  if (isMobile) {
-    html += '<button class="work-info-close" aria-label="Close">✕</button>';
-  }
+  // Build content with close button (unified style)
+  let html = '<button class="close-btn" aria-label="Close">✕</button>';
   
   html += `
     <div class="work-location-header">
@@ -1140,18 +1136,18 @@ function showLocationInfo(pin) {
 
   infoBubble.innerHTML = html;
   
+  // Wire up close button (for both desktop and mobile)
+  const closeBtn = infoBubble.querySelector('.close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideLocationInfo();
+    });
+  }
+  
   // Add mobile-specific class for different positioning
   if (isMobile) {
     infoBubble.classList.add('mobile');
-    
-    // Wire up mobile close button
-    const closeBtn = infoBubble.querySelector('.work-info-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hideLocationInfo();
-      });
-    }
   } else {
     infoBubble.classList.remove('mobile');
   }
@@ -1219,24 +1215,27 @@ function showProjectPanel(moon) {
     projectPanel.className = 'project-panel necrographic-card';
     document.body.appendChild(projectPanel);
     
-    // Add click handler to close when clicking outside
-    document.addEventListener('click', (e) => {
-      const panel = document.querySelector('.project-panel');
-      if (panel && panel.classList.contains('visible')) {
-        if (!panel.contains(e.target)) {
-          hideProjectPanel();
+    // Add click handler to close when clicking outside (desktop only)
+    if (!isMobile) {
+      document.addEventListener('click', (e) => {
+        const panel = document.querySelector('.project-panel');
+        if (panel && panel.classList.contains('visible')) {
+          if (!panel.contains(e.target)) {
+            hideProjectPanel();
+          }
         }
-      }
-    });
+      });
+    }
   }
   
   const project = moon.project;
   
   // Build content
-  let html = `
+  let html = '<button class="close-btn" aria-label="Close">✕</button>';
+  
+  html += `
     <div class="project-header">
       <h3>${project.name}</h3>
-      <button class="close-btn" onclick="window.hideProjectPanel()">✕</button>
     </div>
     <p class="project-description">${project.description}</p>
     <div class="tech-badges">
@@ -1249,14 +1248,39 @@ function showProjectPanel(moon) {
   
   projectPanel.innerHTML = html;
   
+  // Wire up close button
+  const closeBtn = projectPanel.querySelector('.close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideProjectPanel();
+    });
+  }
+  
   // Pause moon orbit
   moonOrbitSystem.pauseMoon(moon, true);
   
-  // Position at center
-  projectPanel.style.position = 'fixed';
-  projectPanel.style.left = '50%';
-  projectPanel.style.top = '50%';
-  projectPanel.style.transform = 'translate(-50%, -50%)';
+  // Add mobile-specific class
+  if (isMobile) {
+    projectPanel.classList.add('mobile');
+  } else {
+    projectPanel.classList.remove('mobile');
+  }
+  
+  // Position
+  if (isMobile) {
+    projectPanel.style.left = '50%';
+    projectPanel.style.top = 'auto';
+    projectPanel.style.bottom = '20px';
+  } else {
+    projectPanel.style.left = '50%';
+    projectPanel.style.top = '50%';
+    projectPanel.style.bottom = 'auto';
+  }
+  
+  // Clear any inline transform so CSS classes control it
+  projectPanel.style.transform = '';
+  projectPanel.style.position = 'fixed'; // Ensure fixed positioning
   
   // Show with animation
   requestAnimationFrame(() => {

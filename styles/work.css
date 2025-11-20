@@ -210,14 +210,16 @@
 }
 
 /* Mobile-specific positioning */
-.work-location-info.mobile {
+.work-location-info.mobile,
+.project-panel.mobile {
   transform: translate(-50%, 0) scale(0.92);
   max-height: 50vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.work-location-info.mobile.visible {
+.work-location-info.mobile.visible,
+.project-panel.mobile.visible {
   transform: translate(-50%, 0) scale(1);
 }
 
@@ -227,27 +229,30 @@
 
 /* Close button (matches altar-close) */
 .work-close {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  width: 48px;
-  height: 48px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(14,16,19,0.8);
-  color: rgba(230,227,216,0.7);
-  font: 700 24px/1 system-ui;
-  cursor: var(--cursor-spore), pointer;
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  background: rgba(15,16,20,0.7);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 50%;
-  transition: all 0.2s ease;
+  display: grid;
+  place-items: center;
+  cursor: var(--cursor-spore), pointer;
+  color: rgba(232,232,234,0.7);
+  font-size: 20px;
+  line-height: 1;
+  transition: all 150ms ease;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
 }
 
 .work-close:hover {
-  background: rgba(122,174,138,0.15);
-  border-color: var(--decay-green);
+  background: rgba(15,16,20,0.9);
+  border-color: rgba(45,212,175,0.45);
   color: var(--decay-green);
-  box-shadow: 0 0 16px rgba(122,174,138,0.3);
+  transform: rotate(90deg);
 }
 
 .work-close:focus-visible {
@@ -487,13 +492,15 @@
     font-size: 20px;
   }
   
-  .work-location-info {
+  .work-location-info,
+  .project-panel {
     max-width: calc(100vw - 40px);
     min-width: 280px;
     padding: 3rem 1.75rem 1.25rem 2.5rem;
   }
   
-  .work-location-info.mobile {
+  .work-location-info.mobile,
+  .project-panel.mobile {
     max-height: 60vh;
   }
   
@@ -641,30 +648,34 @@
   line-height: 1.3;
   text-shadow: 0 1px 0 rgba(255,255,255,0.3);
   flex: 1;
-  padding-right: 1rem;
+  padding-right: 4rem;
 }
 
 .close-btn {
-  background: rgba(101, 67, 33, 0.15);
-  border: 1px solid rgba(101, 67, 33, 0.3);
-  color: #2A251F;
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  background: rgba(15,16,20,0.7);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  cursor: var(--cursor-spore), pointer;
+  color: rgba(232,232,234,0.7);
+  font-size: 20px;
+  line-height: 1;
+  transition: all 150ms ease;
+  z-index: 10;
   pointer-events: auto;
 }
 
 .close-btn:hover {
-  background: rgba(101, 67, 33, 0.25);
-  transform: scale(1.1);
+  background: rgba(15,16,20,0.9);
+  border-color: rgba(45,212,175,0.45);
+  color: var(--decay-green);
+  transform: rotate(90deg);
 }
 
 .project-description {
@@ -672,7 +683,7 @@
   line-height: 1.7;
   color: #3A342E;
   margin-bottom: 1.5rem;
-  text-align: justify;
+  text-align: left;
 }
 
 .tech-badges {
@@ -717,5 +728,14 @@
   border-color: rgba(168, 85, 247, 0.6);
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(101, 67, 33, 0.3);
+}
+
+/* Ensure mobile styles override base styles for project panel */
+@media (max-width: 900px) {
+  .project-panel {
+    max-width: calc(100vw - 40px);
+    min-width: 280px;
+    padding: 3rem 1.75rem 1.25rem 2.5rem;
+  }
 }
 

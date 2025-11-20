@@ -847,10 +847,40 @@
     <div class="work-globe-container">
       <canvas id="work-globe-canvas"></canvas>
       
-      <!-- Helper text -->
-      <!-- <div class="work-helper-text" aria-hidden="true">
-        Drag to explore • Click spores for details
-      </div> -->
+      <!-- Desktop HUD: Memorandum -->
+      <div class="work-memorandum desktop-only">
+        <div class="memorandum-header">
+          <span class="memorandum-title">SYSTEM MEMORANDUM</span>
+        </div>
+        <div class="memorandum-list">
+          <div class="memorandum-row">
+            <div class="icon-box">
+              <div class="icon-cone"></div>
+            </div>
+            <div class="memorandum-text">
+              <span class="mem-label">LOCATION CONES</span>
+              <span class="mem-sub">Click green spires to view</span>
+            </div>
+          </div>
+          <div class="memorandum-row">
+            <div class="icon-box">
+              <div class="icon-moon"></div>
+            </div>
+            <div class="memorandum-text">
+              <span class="mem-label">PROJECT MOONS</span>
+              <span class="mem-sub">Click orbiting moons to view</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile HUD: Auto-Writer Log -->
+      <div class="work-auto-writer mobile-only">
+        <div class="writer-container">
+          <div class="writer-icon-zone"></div>
+          <div class="writer-line">INITIALIZING...</div>
+        </div>
+      </div>
     </div>
     
     <script type="module" src="./js/work-globe-webgl.js"></script>

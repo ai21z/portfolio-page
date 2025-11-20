@@ -87,21 +87,27 @@ export class MoonOrbitSystem {
     gl.bindVertexArray(null);
   }
   
-  update(dt, globalPaused = false) {
+  update(dt) {
+    const isMobile = window.innerWidth <= 768;
+
     this.moons.forEach(moon => {
-      // Update orbital angle (only if not paused)
-      if (!moon.paused && !globalPaused) {
-        moon.angle += moon.rotationSpeed * dt;
-        
-        // Wrap angle to 0-360 range
-        if (moon.angle >= 360) moon.angle -= 360;
-        if (moon.angle < 0) moon.angle += 360;
-      }
+      // Update orbit angle
+      moon.angle += moon.rotationSpeed * dt;
+      if (moon.angle > 360) moon.angle -= 360;
       
       // Update scale animation (for hover effect)
-      const scaleDiff = moon.targetScale - moon.scale;
+      let targetScale = moon.targetScale;
+
+      // Heartbeat for mobile (pulsing scale)
+      // Only apply if not currently hovered (targetScale is 1.0)
+      if (isMobile && Math.abs(moon.targetScale - 1.0) < 0.01) {
+         const pulse = Math.sin(Date.now() / 1000 * 3) * 0.5 + 0.5;
+         targetScale = 1.0 + pulse * 0.15;
+      }
+
+      const scaleDiff = targetScale - moon.scale;
       if (Math.abs(scaleDiff) < 0.001) {
-        moon.scale = moon.targetScale;
+        moon.scale = targetScale;
       } else {
         moon.scale += scaleDiff * 0.12;
       }

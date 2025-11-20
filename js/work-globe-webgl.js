@@ -392,6 +392,13 @@ export function initWorkGlobe() {
     }
   }, 500);
 
+  // Initialize HUD animations
+  try {
+    initAutoWriter();
+  } catch (e) {
+    console.warn('[Work Globe] Auto-writer init failed:', e);
+  }
+
   // Start animation
   animate();
   
@@ -1329,6 +1336,7 @@ function currentDPR() {
 }
 
 function resizeCanvas() {
+  updateMobileState();
   const container = canvas.parentElement;
   const width = container.clientWidth;
   const height = container.clientHeight;
@@ -1456,4 +1464,66 @@ if (document.readyState === 'loading') {
 } else {
   console.log('[Work Globe] DOM already loaded, calling autoInit immediately');
   autoInit();
+}
+
+function initAutoWriter() {
+  const writer = document.querySelector('.work-auto-writer .writer-line');
+  const iconZone = document.querySelector('.work-auto-writer .writer-icon-zone');
+  if (!writer) return;
+
+  const messages = [
+    {
+      text: "MEMORANDUM DECRYPTED",
+      icon: ""
+    },
+    {
+      text: "LOCATION CONES\nClick green spires",
+      icon: "icon-cone"
+    },
+    {
+      text: "PROJECT MOONS\nClick orbiting moons",
+      icon: "icon-moon"
+    },
+    {
+      text: "TAP NODES TO ACCESS",
+      icon: ""
+    }
+  ];
+  
+  let msgIndex = 0;
+  let charIndex = 0;
+  let isDeleting = false;
+  let typeSpeed = 60;
+  
+  function type() {
+    const currentMsg = messages[msgIndex];
+    
+    // Update icon
+    if (iconZone) {
+      iconZone.innerHTML = currentMsg.icon ? `<div class="${currentMsg.icon}"></div>` : '';
+    }
+
+    if (isDeleting) {
+      writer.textContent = currentMsg.text.substring(0, charIndex - 1);
+      charIndex--;
+      typeSpeed = 30;
+    } else {
+      writer.textContent = currentMsg.text.substring(0, charIndex + 1);
+      charIndex++;
+      typeSpeed = 60;
+    }
+    
+    if (!isDeleting && charIndex === currentMsg.text.length) {
+      isDeleting = true;
+      typeSpeed = 2500; // Pause at end
+    } else if (isDeleting && charIndex === 0) {
+      isDeleting = false;
+      msgIndex = (msgIndex + 1) % messages.length;
+      typeSpeed = 500; // Pause before next
+    }
+    
+    setTimeout(type, typeSpeed);
+  }
+  
+  type();
 }

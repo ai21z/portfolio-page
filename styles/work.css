@@ -28,6 +28,7 @@
 .work-globe-container {
   position: relative;
   width: 100vw;   /* Full viewport width */
+  height: 100dvh; /* Explicit height for child percentage resolution */
   min-height: 100dvh;  /* Full viewport height */
   aspect-ratio: auto; /* Let it use full screen, don't force square */
 }
@@ -220,137 +221,9 @@
   transform: translate(-50%, 0) scale(1);
 }
 
-/* Mobile close button */
-.work-info-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 44px;
-  height: 44px;
-  background: rgba(101, 67, 33, 0.15);
-  border: 2px solid rgba(101, 67, 33, 0.35);
-  border-radius: 50%;
-  color: #2A251F;
-  font-size: 20px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 10;
-  padding: 0;
-  line-height: 1;
-}
-
-.work-info-close:hover,
-.work-info-close:focus {
-  background: rgba(101, 67, 33, 0.25);
-  border-color: rgba(101, 67, 33, 0.5);
-  transform: scale(1.05);
-}
-
-.work-info-close:active {
-  transform: scale(0.95);
-}
-
-/* Small torn corner accent (top right) */
-.work-location-info::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: 25px;
-  width: 30px;
-  height: 30px;
-  background: 
-    linear-gradient(135deg, transparent 0%, transparent 40%, #D5CBB0 40%, #D5CBB0 100%);
-  clip-path: polygon(100% 0%, 0% 0%, 100% 100%);
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-/* Location header */
-.work-location-header {
-  font-size: 15px;
-  font-weight: 700;
-  color: #2A251F;
-  margin-bottom: 18px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid rgba(101, 67, 33, 0.25);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
-}
-
-.work-location-icon {
-  font-size: 18px;
-  filter: drop-shadow(0 1px 2px rgba(101, 67, 33, 0.3));
-}
-
-/* Work entries in bubble */
-.work-entry {
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(101, 67, 33, 0.15);
-}
-
-.work-entry:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.work-company {
-  font-size: 15px;
-  font-weight: 700;
-  color: #2A251F;
-  margin-bottom: 6px;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
-}
-
-.work-position {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(101, 67, 33, 0.9);
-  margin-bottom: 4px;
-}
-
-.work-period {
-  font-size: 11px;
-  color: rgba(42, 37, 31, 0.6);
-  font-style: italic;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px dashed rgba(101, 67, 33, 0.2);
-}
-
-/* Work responsibilities list */
-.work-responsibilities {
-  font-size: 12px;
-  line-height: 1.6;
-  color: rgba(42, 37, 31, 0.75);
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-}
-
-.work-responsibilities li {
-  margin-bottom: 4px;
-  padding-left: 14px;
-  position: relative;
-}
-
-.work-responsibilities li::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: rgba(101, 67, 33, 0.7);
-  font-weight: bold;
-}
+/* ━━━ Mobile Bottom Sheet Adaptation ━━━ */
+/* REVERTED: User preferred the original paper aesthetic */
+/* @media (max-width: 900px) { ... } */
 
 /* Close button (matches altar-close) */
 .work-close {
@@ -423,6 +296,177 @@
   opacity: 0;
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HUD ELEMENTS (Manifest & Signal Log)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Desktop Memorandum (Top-Left) */
+.work-memorandum {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 280px;
+  background: rgba(10, 12, 14, 0.85);
+  border: 1px solid rgba(63, 255, 159, 0.3);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: 'Space Mono', monospace;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  animation: hudFadeIn 1s ease-out 0.5s forwards;
+}
+
+.memorandum-header {
+  border-bottom: 1px solid rgba(63, 255, 159, 0.3);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+.memorandum-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: rgba(63, 255, 159, 0.6);
+  text-transform: uppercase;
+  display: block;
+}
+
+.memorandum-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.memorandum-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.icon-box {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(63, 255, 159, 0.05);
+  border-radius: 4px;
+}
+
+/* CSS Shapes for Icons */
+.icon-cone {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid #2DD4AF; /* Green cone pointing UP */
+  filter: drop-shadow(0 0 4px rgba(45, 212, 175, 0.6));
+  transform: translateY(-2px);
+}
+
+.icon-moon {
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 35% 35%, #3FFF9F, #1a6b45);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(63, 255, 159, 0.6);
+}
+
+.memorandum-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.mem-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 5px rgba(63, 255, 159, 0.3);
+}
+
+.mem-sub {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(63, 255, 159, 0.6);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* Mobile Auto-Writer (Center) */
+.work-auto-writer {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 300px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: screen;
+}
+
+.writer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.writer-icon-zone {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.writer-line {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
+  color: rgba(63, 255, 159, 0.9);
+  text-shadow: 0 0 10px rgba(63, 255, 159, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(63, 255, 159, 0.3);
+  display: inline-block;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  white-space: pre-wrap;
+  min-height: 3.6em;
+  width: 100%;
+}
+
+/* Animations */
+@keyframes hudFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; text-shadow: 0 0 5px rgba(63, 255, 159, 0.4); }
+}
+
+@keyframes blinkCursor {
+  from, to { border-color: transparent; }
+  50% { border-color: rgba(63, 255, 159, 0.8); }
+}
+
+/* Responsive Visibility */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+  .work-auto-writer { display: none !important; } /* Redundant but safe */
+}
+
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .work-globe-container {
@@ -474,67 +518,9 @@
   }
 }
 
-@media (max-width: 600px) {
-  .work-globe-container {
-    width: 100%;
-    height: 100%;
-    max-width: 95vmin;
-    max-height: 95vmin;
-  }
-  
-  .work-location-info {
-    max-width: calc(100vw - 40px);
-    min-width: 260px;
-    padding: 1.5rem 1.5rem 1rem 2.75rem;
-  }
-  
-  .work-location-header {
-    font-size: 13px;
-  }
-  
-  .work-company {
-    font-size: 13px;
-  }
-  
-  .work-helper-text {
-    font-size: 10px;
-    bottom: 1rem;
-  }
-}
-
-/* Mobile escape hatch for phones ≤640px */
-@media (max-width: 640px) {
-  .work-globe-screen {
-    overflow: auto; /* Allow scrolling if content exceeds viewport */
-  }
-  
-  .work-globe-container {
-    min-height: 100dvh;
-    padding-bottom: 80px;
-  }
-  
-  .work-helper-text {
-    position: static;
-    margin-top: 12px;
-    text-align: center;
-  }
-}
-
-/* Entrance animation */
-@keyframes work-fade-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.work-globe-screen.active-section {
-  animation: work-fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+/* Mobile-specific "Bottom Sheet" styles for the Project Panel */
+/* REVERTED: User preferred the original paper aesthetic */
+/* @media (max-width: 900px) { ... } */
 
 /* ━━━ PROJECT PANEL (Orbital Moon Details) ━━━ */
 .project-panel {

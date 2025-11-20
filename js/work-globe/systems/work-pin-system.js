@@ -233,10 +233,19 @@ export class WorkPinSystem {
     // - Text billboards: Always visible at full opacity
     // This ensures ambient effects are always visible; hover only affects pin visual feedback
     
+    const isMobile = window.innerWidth <= 768;
+
     // Animate pin heights and scales (hover-responsive)
     this.pins.forEach((pin, i) => {
       // Height animation (subtle on hover)
-      const targetHeight = pin.hovered ? pin.targetHeight * 1.2 : pin.targetHeight;
+      let targetHeight = pin.hovered ? pin.targetHeight * 1.2 : pin.targetHeight;
+      
+      // Heartbeat for mobile (pulsing height)
+      if (isMobile && !pin.hovered) {
+        const pulse = Math.sin(time * 3 + pin.pulsePhase) * 0.5 + 0.5; // 0 to 1
+        targetHeight = pin.targetHeight * (1.0 + pulse * 0.15);
+      }
+
       const heightDiff = targetHeight - pin.currentHeight;
       
       // Snap to target if very close
@@ -248,14 +257,20 @@ export class WorkPinSystem {
       this.instanceHeightData[i] = pin.currentHeight;
       
       // Scale animation (clear hover feedback)
-      const targetScale = pin.hovered ? 1.4 : 1.0;
+      let targetScale = pin.hovered ? 1.3 : 1.0;
+
+      // Heartbeat for mobile (pulsing scale)
+      if (isMobile && !pin.hovered) {
+        const pulse = Math.sin(time * 3 + pin.pulsePhase) * 0.5 + 0.5;
+        targetScale = 1.0 + pulse * 0.2;
+      }
+
       const scaleDiff = targetScale - pin.currentScale;
       
-      // Snap to target if very close
       if (Math.abs(scaleDiff) < 0.001) {
         pin.currentScale = targetScale;
       } else {
-        pin.currentScale += scaleDiff * 0.15;
+        pin.currentScale += scaleDiff * 0.12;
       }
       this.instanceScaleData[i] = pin.currentScale;
       
@@ -489,6 +504,13 @@ export class WorkPinSystem {
     gl.disable(gl.DEPTH_TEST); // Render on top of everything
     
     gl.useProgram(program);
+    
+    // Mobile check
+    const isMobile = window.innerWidth <= 900;
+    
+    // If mobile, skip rendering text billboards entirely
+    if (isMobile) return;
+    
     gl.bindVertexArray(this.billboardVAO);
     
     // Set matrices

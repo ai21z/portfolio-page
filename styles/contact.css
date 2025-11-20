@@ -636,6 +636,8 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    /* Fix keyboard trap: align to top so content doesn't get pushed off-screen */
+    align-items: flex-start; 
   }
 
   .contact-close {
@@ -697,6 +699,13 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     /* Ensure minimum touch-friendly input height */
     min-height: 44px;
     padding: 0.5rem 0;
+  }
+
+  /* Improve placeholder contrast for outdoor visibility */
+  .notebook-input::placeholder,
+  .notebook-textarea::placeholder {
+    color: rgba(58, 53, 48, 0.85);
+    opacity: 1;
   }
 
   .notebook-textarea {
@@ -765,5 +774,26 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     font-size: clamp(0.75rem, 3vw, 0.85rem);
     margin-bottom: 1rem;
     min-height: 1rem;
+  }
+
+  /* Short screens (landscape mobile): Move seal to corner to save vertical space */
+  @media (max-height: 600px) {
+    .wax-seal {
+      left: auto;
+      right: 20px;
+      top: 10px;
+      width: 40px;
+      height: 40px;
+      transform: none;
+    }
+    
+    .seal-sigil {
+      width: 40px;
+      height: 40px;
+    }
+
+    .notebook-page {
+      padding-top: 2rem; /* Reduce top padding since seal is moved */
+    }
   }
 }

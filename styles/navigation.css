@@ -27,13 +27,13 @@
 .network-node-label{
   position: absolute;
   transform: translate(-50%, -50%);
-  color: rgba(230,227,216,.86);
-  font: 400 12px "Special Elite", monospace;
+  color: rgba(230, 227, 216, 0.9);
+  font: 400 14px "Special Elite", monospace;
   letter-spacing: .04em;
   pointer-events: auto;
   cursor: var(--cursor-spore), pointer;
   opacity: 1;
-  transition: color .2s ease, text-shadow .2s ease;
+  transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 6px 8px;
 }
 
@@ -53,15 +53,26 @@
   top: -18px;
   transform: translateX(-50%);
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+  text-shadow: 
+    0 0 8px rgba(143, 180, 255, 0.6),
+    0 0 12px rgba(122, 174, 138, 0.5),
+    0 0 16px rgba(63, 255, 159, 0.3);
+  filter: drop-shadow(0 0 4px rgba(122, 174, 138, 0.4));
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .network-node-label:hover,
 .network-node-label:focus-visible{
-  color: var(--bone);
-  text-shadow:
-    0 0 8px rgba(143, 180, 255, 0.25),
-    0 0 2px rgba(63, 255, 159, 0.35);
+  color: rgba(180, 210, 230, 1);
+}
+
+.network-node-label:hover .node-label,
+.network-node-label:focus-visible .node-label{
+  text-shadow: 
+    0 0 12px rgba(143, 180, 255, 0.9),
+    0 0 20px rgba(122, 174, 138, 0.7),
+    0 0 28px rgba(63, 255, 159, 0.5);
+  filter: drop-shadow(0 0 8px rgba(143, 180, 255, 0.6));
 }
 
 .network-node-label.active,
@@ -73,6 +84,145 @@
   outline: none;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* Glowing dot at the center of the node */
+.network-node-label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle at center, 
+    rgba(255, 255, 255, 0.4) 0%,
+    var(--decay-green) 40%,
+    rgba(143, 180, 255, 0.5) 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 6px 3px rgba(122, 174, 138, 0.3),
+    0 0 12px 6px rgba(143, 180, 255, 0.25),
+    0 0 18px 6px rgba(122, 174, 138, 0.2),
+    0 0 24px 6px rgba(143, 180, 255, 0.15);
+  pointer-events: none;
+  opacity: 1;
+  transition: all 0.3s ease;
+  animation: sporeBreathing 3s ease-in-out infinite;
+}
+
+@keyframes sporeBreathing {
+  0%, 100% {
+    box-shadow: 
+      0 0 6px 3px rgba(122, 174, 138, 0.3),
+      0 0 12px 6px rgba(143, 180, 255, 0.25),
+      0 0 18px 6px rgba(122, 174, 138, 0.2),
+      0 0 24px 6px rgba(143, 180, 255, 0.15);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px 5px rgba(122, 174, 138, 0.4),
+      0 0 20px 10px rgba(143, 180, 255, 0.35),
+      0 0 30px 10px rgba(122, 174, 138, 0.3),
+      0 0 40px 10px rgba(143, 180, 255, 0.25);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+.network-node-label:hover::after {
+  width: 9px;
+  height: 9px;
+  box-shadow: 
+    0 0 8px 4px rgba(122, 174, 138, 0.5),
+    0 0 16px 8px rgba(143, 180, 255, 0.4),
+    0 0 24px 9px rgba(122, 174, 138, 0.35),
+    0 0 32px 9px rgba(143, 180, 255, 0.3),
+    0 0 40px 9px rgba(63, 255, 159, 0.25);
+  opacity: 1;
+  animation-play-state: paused;
+}
+
+/* ━━━ Color variants for different sections ━━━ */
+
+/* Blog & Contact - Ember Orange glow (#B87242) */
+.network-node-label[data-node="blog"]::after,
+.network-node-label[data-node="contact"]::after {
+  box-shadow: 
+    0 0 6px 3px rgba(184, 114, 66, 0.3),
+    0 0 12px 6px rgba(184, 114, 66, 0.25),
+    0 0 18px 6px rgba(184, 114, 66, 0.2),
+    0 0 24px 6px rgba(184, 114, 66, 0.15);
+  animation: sporeBreathingOrange 3s ease-in-out infinite;
+}
+
+@keyframes sporeBreathingOrange {
+  0%, 100% {
+    box-shadow: 
+      0 0 6px 3px rgba(184, 114, 66, 0.3),
+      0 0 12px 6px rgba(184, 114, 66, 0.25),
+      0 0 18px 6px rgba(184, 114, 66, 0.2),
+      0 0 24px 6px rgba(184, 114, 66, 0.15);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px 5px rgba(184, 114, 66, 0.4),
+      0 0 20px 10px rgba(184, 114, 66, 0.35),
+      0 0 30px 10px rgba(184, 114, 66, 0.3),
+      0 0 40px 10px rgba(184, 114, 66, 0.25);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+.network-node-label[data-node="blog"]:hover::after,
+.network-node-label[data-node="contact"]:hover::after {
+  box-shadow: 
+    0 0 8px 4px rgba(184, 114, 66, 0.5),
+    0 0 16px 8px rgba(184, 114, 66, 0.4),
+    0 0 24px 9px rgba(184, 114, 66, 0.35),
+    0 0 32px 9px rgba(184, 114, 66, 0.3),
+    0 0 40px 9px rgba(184, 114, 66, 0.25);
+}
+
+/* Work & Now - Faded Violet glow (lighter & stronger) */
+.network-node-label[data-node="work"]::after,
+.network-node-label[data-node="now"]::after {
+  box-shadow: 
+    0 0 6px 3px rgba(120, 90, 150, 0.6),
+    0 0 12px 6px rgba(120, 90, 150, 0.5),
+    0 0 18px 6px rgba(120, 90, 150, 0.4),
+    0 0 24px 6px rgba(120, 90, 150, 0.35);
+  animation: sporeBreathingViolet 3s ease-in-out infinite;
+}
+
+@keyframes sporeBreathingViolet {
+  0%, 100% {
+    box-shadow: 
+      0 0 6px 3px rgba(120, 90, 150, 0.6),
+      0 0 12px 6px rgba(120, 90, 150, 0.5),
+      0 0 18px 6px rgba(120, 90, 150, 0.4),
+      0 0 24px 6px rgba(120, 90, 150, 0.35);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px 5px rgba(120, 90, 150, 0.75),
+      0 0 20px 10px rgba(120, 90, 150, 0.65),
+      0 0 30px 10px rgba(120, 90, 150, 0.55),
+      0 0 40px 10px rgba(120, 90, 150, 0.45);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+.network-node-label[data-node="work"]:hover::after,
+.network-node-label[data-node="now"]:hover::after {
+  box-shadow: 
+    0 0 8px 4px rgba(120, 90, 150, 0.8),
+    0 0 16px 8px rgba(120, 90, 150, 0.7),
+    0 0 24px 9px rgba(120, 90, 150, 0.6),
+    0 0 32px 9px rgba(120, 90, 150, 0.5),
+    0 0 40px 9px rgba(120, 90, 150, 0.4);
 }
 
 /* ━━━ Sigil Node (intro replacement) ━━━ */
@@ -831,3 +981,4 @@ body.has-paper-open-global #network-nav {
 
 /* tiny helper for screen readers you already use */
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+

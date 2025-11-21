@@ -240,8 +240,14 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
     el.style.left = `${left}px`;
     el.style.top  = `${top}px`;
     
-    // Labels ONLY use translate(-50%,-50%) translate(dx,dy)
-    el.style.transform = `translate(-50%, -50%) translate(${tx}px, ${ty}px)`;
+    // Keep the DOT (container center) pinned to the node
+    el.style.transform = `translate(-50%, -50%)`;
+    
+    // Move only the TEXT to avoid the mycelium
+    const labelText = el.querySelector('.node-label');
+    if (labelText) {
+      labelText.style.transform = `translateX(-50%) translate(${tx}px, ${ty}px)`;
+    }
     
     // Log each label in static mode
     if (!ritualActive) {
@@ -411,7 +417,13 @@ export function updateMovingLabels(dt, pointAtRoute) {
     el.style.left = `${anchorX}px`;
     el.style.top = `${anchorY}px`;
     
-    // P0 FIX #7: Labels ONLY use translate(-50%,-50%) translate(dx,dy)
-    el.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
+    // Keep the DOT pinned to the anchor
+    el.style.transform = `translate(-50%, -50%)`;
+    
+    // Move only the TEXT along the route
+    const labelText = el.querySelector('.node-label');
+    if (labelText) {
+      labelText.style.transform = `translateX(-50%) translate(${dx}px, ${dy}px)`;
+    }
   }
 }

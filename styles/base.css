@@ -90,8 +90,8 @@ a, button, .sigil-wrap, .ico {
  *  0: #bg (static mycelium image)
  *  1: canvases (spores, reveal, signals)
  *  2: content sections/cards
- * 10: #network-nav (navigation node labels)
- * 9999: skip link focus
+ *  10: #network-nav (navigation node labels)
+ *  9999: skip link focus
  */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

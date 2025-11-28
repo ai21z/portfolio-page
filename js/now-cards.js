@@ -45,13 +45,13 @@ const NOW_STREAMS = [
   {
     id: 'adp',
     logo: LOGO('ADP-noBG.png'),
-    title: 'ADP — Senior Software Engineer',
-    line: 'Backend architecture for HCM SaaS at scale',
+    title: 'ADP - Software Engineer',
+    line: 'Maintenance and development for HCM SaaS at scale',
     status: 'high',
     tags: [], // No tech stack pills for ADP
     bullets: [
       'Large-scale platform, steady SLAs',
-      'Technical leadership & mentoring'
+      'Implementation of new features and bug fixes, testing, code reviews, documentation'
     ],
     links: [{ label: 'Work history', href: '#work' }],
     category: 'engineering'
@@ -62,7 +62,7 @@ const NOW_STREAMS = [
     title: 'LOQ-J — Local-First RAG',
     line: 'Semantic search, zero cloud, pure Java',
     status: 'brewing',
-    tags: ['Java', 'Lucene', 'Ollama'],
+    tags: ['Java', 'Lucene', 'Local LLMs'],
     bullets: [
       'Lucene 10 vectors + BM25 hybrid',
       'Local LLM, reproducible workflows'

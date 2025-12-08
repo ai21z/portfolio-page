@@ -686,48 +686,135 @@
   text-align: left;
 }
 
+/* ━━━ Hand-drawn Tech Tags with wobble ━━━ */
 .tech-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1.5rem;
+  gap: 6px;
+  margin-top: 0.4rem;           /* tiny breathing room above tags */
+  margin-bottom: 1.25rem;
 }
 
 .tech-badge {
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  color: #5B3A8C;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-  box-shadow: 0 2px 4px rgba(101, 67, 33, 0.15);
+  position: relative;
+  padding: 3px 7px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #3a342e;
+
+  background: transparent;
+  border-radius: 0;
+
+  /* Main "ink" line */
+  border: 1px solid rgba(60, 48, 38, 0.85);
+
+  /* Slightly crooked box to kill the "UI" feeling */
+  transform: translateY(0.5px) rotate(-0.4deg) skewX(0.4deg);
+  box-shadow: none;
+  text-shadow: none;
 }
 
+/* 2nd sketch line, a bit offset & skewed */
+.tech-badge::before {
+  content: '';
+  position: absolute;
+  inset: -2px -3px;
+  border: 1px solid rgba(60, 48, 38, 0.45);
+  pointer-events: none;
+
+  /* This is the main static "tremble" */
+  transform: translate(1.2px, 0.8px) rotate(0.9deg) skewX(-0.6deg);
+}
+
+/* Faint dashed inner line – paper pressure / graphite ghost */
+.tech-badge::after {
+  content: '';
+  position: absolute;
+  inset: 1px 2px;
+  border-radius: 0;
+  border: 1px dashed rgba(60, 48, 38, 0.18);
+  pointer-events: none;
+}
+
+/* ━━━ Hand-drawn "View on GitHub" ━━━ */
 .github-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: rgba(168, 85, 247, 0.15);
-  border: 2px solid rgba(168, 85, 247, 0.4);
-  border-radius: 8px;
-  color: #5B3A8C;
+  gap: 6px;
+
+  font-family: 'Special Elite', monospace;
+  font-size: 13px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #2f261f;
+
+  background: transparent;
+  border-radius: 0;
+
+  border: 1px solid rgba(60, 48, 38, 0.9);
+  padding: 6px 12px;
   text-decoration: none;
-  font-weight: 700;
-  font-size: 14px;
-  transition: all 0.25s;
-  box-shadow: 0 4px 8px rgba(101, 67, 33, 0.2);
+
+  box-shadow: none;
+  cursor: pointer;
   pointer-events: auto;
+
+  /* Shift slightly right + crooked baseline */
+  margin-top: 0.75rem;
+  margin-left: 2px;
+  transform: translateY(0.5px) rotate(-0.3deg) skewX(0.3deg);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+/* Second, offset sketch line */
+.github-link::before {
+  content: '';
+  position: absolute;
+  inset: -3px -4px;
+  border: 1px solid rgba(60, 48, 38, 0.4);
+  pointer-events: none;
+
+  transform: translate(1.1px, 1.2px) rotate(0.8deg) skewX(-0.5deg);
+}
+
+/* Gentle shading inside the box (pencil rubbing) */
+.github-link::after {
+  content: '';
+  position: absolute;
+  inset: 2px 3px;
+  background: linear-gradient(
+    to bottom right,
+    rgba(0, 0, 0, 0.03),
+    rgba(0, 0, 0, 0.06)
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .github-link:hover {
-  background: rgba(168, 85, 247, 0.25);
-  border-color: rgba(168, 85, 247, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(101, 67, 33, 0.3);
+  transform: translateY(-1px) rotate(0deg) skewX(0deg);
+  border-color: rgba(60, 48, 38, 1);
+  color: #1f1712;
+  box-shadow: 0 2px 0 rgba(60, 48, 38, 0.6);
+}
+
+/* ━━━ Pencil wobble animation on hover ━━━ */
+@keyframes pencil-wobble {
+  0%   { transform: translate(1.1px, 1.2px) rotate(0.6deg) skewX(-0.5deg); }
+  50%  { transform: translate(0.6px, 1.6px) rotate(1.2deg) skewX(-0.2deg); }
+  100% { transform: translate(1.3px, 0.9px) rotate(0.1deg) skewX(-0.7deg); }
+}
+
+.tech-badge:hover::before,
+.github-link:hover::before {
+  animation: pencil-wobble 260ms ease-in-out infinite alternate;
 }
 
 /* Ensure mobile styles override base styles for project panel */

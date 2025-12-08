@@ -478,25 +478,67 @@
   z-index: 1;
 }
 
+/* ━━━ Hand-drawn Tech Tags (pencil sketch style) ━━━ */
 .tech-stack li {
+  position: relative;
   display: inline-block;
-  --tech-pad-v: 4px;
-  --tech-pad-h: 10px;
+  --tech-pad-v: 3px;
+  --tech-pad-h: 7px;
   padding: calc(var(--tech-pad-v) * var(--k)) calc(var(--tech-pad-h) * var(--k));
-  background: rgba(101, 67, 33, 0.15);
+  
+  /* Pencil ink color - no background fill */
+  background: transparent;
+  color: #3a342e;
+  
+  /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;
-  border: calc(var(--tech-border) * var(--k)) solid rgba(101, 67, 33, 0.3);
-  --tech-radius: 3px;
-  border-radius: calc(var(--tech-radius) * var(--k));
-  color: #2A251F;
+  border: calc(var(--tech-border) * var(--k)) solid rgba(60, 48, 38, 0.85);
+  border-radius: 0;
+  
   font-weight: 400;
-  transition: all 100ms ease;
+  letter-spacing: 0.03em;
+  
+  /* Slightly crooked box to kill the "UI" feeling */
+  transform: translateY(0.5px) rotate(-0.4deg) skewX(0.4deg);
+  transition: transform 100ms ease, border-color 100ms ease;
+}
+
+/* 2nd sketch line, a bit offset & skewed */
+.tech-stack li::before {
+  content: '';
+  position: absolute;
+  inset: -2px -3px;
+  border: 1px solid rgba(60, 48, 38, 0.45);
+  pointer-events: none;
+  
+  /* Static "tremble" effect */
+  transform: translate(1.2px, 0.8px) rotate(0.9deg) skewX(-0.6deg);
+}
+
+/* Faint dashed inner line – paper pressure / graphite ghost */
+.tech-stack li::after {
+  content: '';
+  position: absolute;
+  inset: 1px 2px;
+  border-radius: 0;
+  border: 1px dashed rgba(60, 48, 38, 0.18);
+  pointer-events: none;
 }
 
 .tech-stack li:hover {
-  background: rgba(101, 67, 33, 0.25);
-  border-color: rgba(101, 67, 33, 0.5);
-  transform: translateY(calc(-1px * var(--k)));
+  border-color: rgba(60, 48, 38, 1);
+  transform: translateY(-1px) rotate(0deg) skewX(0deg);
+}
+
+/* Pencil wobble animation on hover */
+.tech-stack li:hover::before {
+  animation: pencil-wobble-altar 260ms ease-in-out infinite alternate;
+}
+
+@keyframes pencil-wobble-altar {
+  0%   { transform: translate(1.1px, 1.2px) rotate(0.6deg) skewX(-0.5deg); }
+  50%  { transform: translate(0.6px, 1.6px) rotate(1.2deg) skewX(-0.2deg); }
+  100% { transform: translate(1.3px, 0.9px) rotate(0.1deg) skewX(-0.7deg); }
 }
 
 button.ghost {

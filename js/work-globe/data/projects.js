@@ -25,9 +25,9 @@ export const PROJECTS = [
   },
   {
     id: 'loqj-cli',
-    name: 'LOQJ CLI',
-    description: 'Command-line tool for structured logging and journaling. A practical utility for developers to maintain organized development logs with tagging and search capabilities.',
-    tech: ['Python', 'CLI', 'SQLite', 'Click'],
+    name: 'LOQ-J — Local-Only RAG CLI',
+    description: 'Local-only Java CLI for RAG over your projects. Indexes your code and docs with Lucene and bge-m3 via Ollama, then answers questions with citation-backed, offline responses. No data ever leaves your machine.',
+    tech: ['Java', 'CLI', 'RAG', 'Lucene', 'Ollama', 'Local LLMs'],
     github: 'https://github.com/ai21z/loqj-cli',
     
     // Orbital configuration
@@ -37,13 +37,13 @@ export const PROJECTS = [
     rotationSpeed: 4.0,     // Same speed - synchronized orbits
     
     // Visual styling
-    color: [0.48, 0.68, 0.54],  // Teal/green to match site theme (#7aae8a)
+    color: [0.48, 0.68, 0.54],  // Teal/green (#7aae8a)
     moonRadius: 0.08,           // Same size
     glowIntensity: 0.3,         // Same glow
     pulseSpeed: 0.5             // Same pulse
   }
   
-  // Future projects (2-4 total):
+  // Future projects (2-4 maximum with current design):
   // Add new projects here with staggered initialAngle values
   // Recommended angles:
   //   2 projects: [0°, 180°]

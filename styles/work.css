@@ -179,6 +179,46 @@
   transform-origin: center center;
 }
 
+/* Coffee stains overlay (matches altar.css) */
+.work-location-info::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    /* Large irregular coffee stains */
+    radial-gradient(ellipse 80px 95px at 82% 18%, rgba(101, 67, 33, 0.35) 0%, rgba(101, 67, 33, 0.2) 35%, transparent 60%),
+    radial-gradient(ellipse 45px 60px at 85% 16%, rgba(101, 67, 33, 0.28) 0%, transparent 55%),
+    /* Medium stains */
+    radial-gradient(ellipse 65px 48px at 22% 28%, rgba(101, 67, 33, 0.3) 0%, rgba(101, 67, 33, 0.15) 40%, transparent 65%),
+    /* Small spatter */
+    radial-gradient(ellipse 28px 35px at 42% 15%, rgba(101, 67, 33, 0.22) 0%, transparent 65%),
+    radial-gradient(circle 18px at 58% 25%, rgba(101, 67, 33, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 32px 24px at 35% 48%, rgba(101, 67, 33, 0.2) 0%, transparent 68%),
+    radial-gradient(circle 22px at 68% 55%, rgba(101, 67, 33, 0.19) 0%, transparent 72%),
+    /* Tiny speckles */
+    radial-gradient(circle 8px at 25% 18%, rgba(101, 67, 33, 0.25) 0%, transparent 80%),
+    radial-gradient(circle 6px at 55% 38%, rgba(101, 67, 33, 0.22) 0%, transparent 85%),
+    radial-gradient(circle 10px at 65% 68%, rgba(101, 67, 33, 0.2) 0%, transparent 80%),
+    /* Edge wear */
+    linear-gradient(to right, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%),
+    linear-gradient(to left, rgba(101, 67, 33, 0.2) 0%, rgba(101, 67, 33, 0.06) 4%, transparent 8%),
+    linear-gradient(to bottom, rgba(101, 67, 33, 0.22) 0%, rgba(101, 67, 33, 0.05) 5%, transparent 10%),
+    linear-gradient(to top, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%);
+  pointer-events: none;
+  border-radius: 8px 3px 12px 5px / 5px 10px 7px 15px;
+  clip-path: polygon(
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
+    100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+    75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+    35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+  );
+}
+
 /* Spiral binding holes (left edge) */
 .work-location-info::before {
   content: '';
@@ -207,6 +247,74 @@
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   pointer-events: auto; /* Enable clicks when visible */
+}
+
+/* ━━━ Work Location Card Typography (smaller text) ━━━ */
+.work-location-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2A251F;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(101, 67, 33, 0.3);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.work-location-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.work-entry {
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.work-entry:last-child {
+  margin-bottom: 0;
+}
+
+.work-company {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2A251F;
+  margin-bottom: 2px;
+}
+
+.work-position {
+  font-size: 11px;
+  color: #4A443E;
+  font-style: italic;
+  margin-bottom: 2px;
+}
+
+.work-period {
+  font-size: 10px;
+  color: rgba(74, 68, 62, 0.7);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.work-responsibilities {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #3A342E;
+}
+
+.work-responsibilities li {
+  margin-bottom: 3px;
+}
+
+.work-responsibilities li:last-child {
+  margin-bottom: 0;
 }
 
 /* Mobile-specific positioning */
@@ -600,6 +708,46 @@
   transform-origin: center center;
 }
 
+/* Coffee stains overlay (matches altar.css) */
+.project-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    /* Large irregular coffee stains */
+    radial-gradient(ellipse 80px 95px at 78% 22%, rgba(101, 67, 33, 0.35) 0%, rgba(101, 67, 33, 0.2) 35%, transparent 60%),
+    radial-gradient(ellipse 50px 65px at 82% 20%, rgba(101, 67, 33, 0.28) 0%, transparent 55%),
+    /* Medium stains */
+    radial-gradient(ellipse 60px 45px at 18% 32%, rgba(101, 67, 33, 0.3) 0%, rgba(101, 67, 33, 0.15) 40%, transparent 65%),
+    /* Small spatter */
+    radial-gradient(ellipse 30px 38px at 45% 12%, rgba(101, 67, 33, 0.22) 0%, transparent 65%),
+    radial-gradient(circle 20px at 62% 28%, rgba(101, 67, 33, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 35px 26px at 38% 52%, rgba(101, 67, 33, 0.2) 0%, transparent 68%),
+    radial-gradient(circle 24px at 72% 58%, rgba(101, 67, 33, 0.19) 0%, transparent 72%),
+    /* Tiny speckles */
+    radial-gradient(circle 9px at 28% 15%, rgba(101, 67, 33, 0.25) 0%, transparent 80%),
+    radial-gradient(circle 7px at 58% 42%, rgba(101, 67, 33, 0.22) 0%, transparent 85%),
+    radial-gradient(circle 11px at 68% 72%, rgba(101, 67, 33, 0.2) 0%, transparent 80%),
+    /* Edge wear */
+    linear-gradient(to right, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%),
+    linear-gradient(to left, rgba(101, 67, 33, 0.2) 0%, rgba(101, 67, 33, 0.06) 4%, transparent 8%),
+    linear-gradient(to bottom, rgba(101, 67, 33, 0.22) 0%, rgba(101, 67, 33, 0.05) 5%, transparent 10%),
+    linear-gradient(to top, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%);
+  pointer-events: none;
+  border-radius: 8px 3px 12px 5px / 5px 10px 7px 15px;
+  clip-path: polygon(
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
+    100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+    75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+    35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+  );
+}
+
 /* Spiral binding holes */
 .project-panel::before {
   content: '';
@@ -634,13 +782,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 2px solid rgba(101, 67, 33, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
 .project-header h3 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: #2A251F;
   margin: 0;
@@ -679,26 +829,30 @@
 }
 
 .project-description {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.6;
   color: #3A342E;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   text-align: left;
+  position: relative;
+  z-index: 1;
 }
 
 /* ━━━ Hand-drawn Tech Tags with wobble ━━━ */
 .tech-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 0.4rem;           /* tiny breathing room above tags */
-  margin-bottom: 1.25rem;
+  gap: 5px;
+  margin-top: 0.3rem;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .tech-badge {
   position: relative;
-  padding: 3px 7px;
-  font-size: 11px;
+  padding: 2px 6px;
+  font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #3a342e;
@@ -742,10 +896,10 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 
   font-family: 'Special Elite', monospace;
-  font-size: 13px;
+  font-size: 11px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: #2f261f;
@@ -754,15 +908,16 @@
   border-radius: 0;
 
   border: 1px solid rgba(60, 48, 38, 0.9);
-  padding: 6px 12px;
+  padding: 5px 10px;
   text-decoration: none;
 
   box-shadow: none;
   cursor: pointer;
   pointer-events: auto;
+  z-index: 1;
 
   /* Shift slightly right + crooked baseline */
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
   margin-left: 2px;
   transform: translateY(0.5px) rotate(-0.3deg) skewX(0.3deg);
   transition:

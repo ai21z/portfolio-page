@@ -1107,7 +1107,9 @@ function showLocationInfo(pin) {
   }
 
   const location = WORK_LOCATIONS[pin.key];
-  const icon = pin.key === 'barcelona' ? '📍' : '🏛️';
+  // Country flags instead of generic icons
+  const countryFlags = { greece: '🇬🇷', spain: '🇪🇸' };
+  const icon = countryFlags[pin.key] || '🏛️';
   
   console.log('[Work Globe] Building content for:', location.name);
   

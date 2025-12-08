@@ -73,7 +73,7 @@ const NOW_STREAMS = [
   {
     id: 'truerolls',
     logo: LOGO('TRUE-ROLLS-noBG.png'),
-    title: 'True Rolls — Verifiable Dice',
+    title: 'True Rolls - Dice',
     line: 'Cryptographic fairness for tabletop',
     status: 'brewing',
     tags: ['HKDF', 'ChaCha20', 'Cryptography'],
@@ -270,30 +270,30 @@ function createCard(stream, index) {
     closeCard(card);
   });
   
+  // Header row (title + status pill inline)
+  const header = document.createElement('div');
+  header.className = 'now-card-header';
+  
   // Title
   const title = document.createElement('h3');
   title.id = `card-title-${stream.id}`;
   title.className = 'now-card-title';
   title.textContent = stream.title;
-  back.appendChild(title);
+  header.appendChild(title);
   
-  // Meta row (status + tagline)
-  const meta = document.createElement('div');
-  meta.className = 'now-card-meta';
-  
-  // Status pill
+  // Status pill (smaller, inline with title)
   const status = document.createElement('div');
   status.className = `now-card-status ${stream.status}`;
   status.innerHTML = `<span aria-hidden="true">${STATUS_EMOJI[stream.status]}</span> ${STATUS_LABEL[stream.status]}`;
-  meta.appendChild(status);
+  header.appendChild(status);
   
-  // One-liner
+  back.appendChild(header);
+  
+  // One-liner (moved out of meta, standalone)
   const line = document.createElement('p');
   line.className = 'now-card-line';
   line.textContent = stream.line;
-  meta.appendChild(line);
-  
-  back.appendChild(meta);
+  back.appendChild(line);
   
   // Tags
   if (stream.tags && stream.tags.length > 0) {
@@ -398,11 +398,21 @@ function openCard(card, stream) {
   // FLIP: First - record initial position
   const first = card.getBoundingClientRect();
   
+  // Cache original position for close animation
+  card._originalRect = {
+    left: first.left,
+    top: first.top,
+    width: first.width,
+    height: first.height
+  };
+  
   // Calculate target dimensions (proper dialog size, not scaled)
   const { w: viewportWidth, h: viewportHeight } = viewportSize();
   const isMobile = viewportWidth <= 900;
-  const maxWidth = isMobile ? Math.min(viewportWidth * 0.92, 480) : Math.min(600, viewportWidth * 0.9);
-  const maxHeight = isMobile ? Math.min(viewportHeight * 0.75, 640) : Math.min(700, viewportHeight * 0.85);
+  // Mobile: 320px width, ~380px height
+  // Desktop: 450px width, ~420px height (closer to original 321px but allows content)
+  const maxWidth = isMobile ? Math.min(viewportWidth * 0.88, 320) : 450;
+  const maxHeight = isMobile ? Math.min(viewportHeight * 0.65, 380) : Math.min(420, viewportHeight * 0.75);
   
   // Calculate actual position of filters (they're in document flow now)
   const navFilters = document.querySelector('.now-filters');
@@ -444,35 +454,57 @@ function openCard(card, stream) {
     return;
   }
   
-  // FLIP animation
+  // FLIP animation - Two-phase for smooth size transition
+  // Phase 1: Move to center (no flip, no size change)
+  // Phase 2: Flip and expand height
   requestAnimationFrame(() => {
     // Start with current position
     card.style.transition = 'none';
-    inner.style.transform = 'rotateY(0deg)';
+    inner.style.transform = 'rotateY(0deg) scale(1)';
     inner.style.transition = 'none';
     
+    // Calculate center position but keep original size initially
+    const centerLeft = (viewportWidth - first.width) / 2;
+    const centerTop = Math.max(navBottom, (viewportHeight - first.height) / 2);
+    
     requestAnimationFrame(() => {
-      // Enable transitions
-      card.style.willChange = 'left, top, width, height';
-      card.style.transition = 'all 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+      // Phase 1: Move to center, slight lift with scale
+      card.style.willChange = 'left, top, width, height, transform';
+      card.style.transition = 'left 280ms ease-out, top 280ms ease-out, transform 280ms ease-out';
       inner.style.willChange = 'transform';
-      inner.style.transition = 'transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
       
-      // Animate to target position and size
-      card.style.left = `${targetLeft}px`;
-      card.style.top = `${targetTop}px`;
-      card.style.width = `${maxWidth}px`;
-      card.style.height = `${maxHeight}px`;
-      inner.style.transform = 'rotateY(180deg)';
+      // Move to center (keep original size)
+      card.style.left = `${centerLeft}px`;
+      card.style.top = `${centerTop}px`;
+      card.style.transform = 'scale(1.02)'; // Slight lift
       
-      // Add flipped class for CSS
-      card.classList.add('flipped');
-      
-      // Remove will-change after animation
+      // Phase 2: After centering, flip and resize
       setTimeout(() => {
-        card.style.willChange = 'auto';
-        inner.style.willChange = 'auto';
-      }, 560);
+        card.style.transition = 'width 320ms ease-in-out, height 320ms ease-in-out, left 320ms ease-in-out, top 320ms ease-in-out, transform 320ms ease-in-out';
+        inner.style.transition = 'transform 400ms cubic-bezier(0.34, 1.2, 0.64, 1)';
+        
+        // Recalculate center for new size
+        const finalLeft = (viewportWidth - maxWidth) / 2;
+        const finalTop = Math.max(navBottom, (viewportHeight - maxHeight) / 2);
+        
+        // Flip, resize, and scale back
+        card.style.left = `${finalLeft}px`;
+        card.style.top = `${finalTop}px`;
+        card.style.width = `${maxWidth}px`;
+        card.style.height = `${maxHeight}px`;
+        card.style.transform = 'scale(1)';
+        inner.style.transform = 'rotateY(180deg)';
+        
+        // Add flipped class for CSS
+        card.classList.add('flipped');
+        
+        // Clean up
+        setTimeout(() => {
+          card.style.willChange = 'auto';
+          inner.style.willChange = 'auto';
+          card.style.transform = '';
+        }, 400);
+      }, 280);
     });
   });
   
@@ -523,18 +555,40 @@ function closeCard(card, restoreFocus = true) {
   const row = Math.floor(index / cardsPerRow);
   const col = index % cardsPerRow;
   
-  // For more accurate positioning, we could cache original positions
-  // For now, animate back with opacity fade
-  
-  // Animate back to origin
-  if (!prefersReducedMotion) {
-    card.style.transition = 'all 560ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 400ms ease';
-    inner.style.transition = 'transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+  // Animate back - Two-phase reverse
+  // Phase 1: Flip back and shrink to original size (while centered)
+  // Phase 2: Move back to grid position
+  if (!prefersReducedMotion && card._originalRect) {
+    const orig = card._originalRect;
+    const { w: viewportWidth, h: viewportHeight } = viewportSize();
+    
+    // Calculate center position for original size
+    const centerLeft = (viewportWidth - orig.width) / 2;
+    const centerTop = (viewportHeight - orig.height) / 2;
+    
+    // Phase 1: Flip back and shrink (stay centered)
+    card.style.transition = 'width 320ms ease-in-out, height 320ms ease-in-out, left 320ms ease-in-out, top 320ms ease-in-out, transform 320ms ease-in-out';
+    inner.style.transition = 'transform 400ms cubic-bezier(0.34, 1.2, 0.64, 1)';
+    
+    // Shrink to original size while centered, flip back
+    card.style.left = `${centerLeft}px`;
+    card.style.top = `${centerTop}px`;
+    card.style.width = `${orig.width}px`;
+    card.style.height = `${orig.height}px`;
+    card.style.transform = 'scale(1.02)';
     inner.style.transform = 'rotateY(0deg)';
-    card.style.opacity = '0';
+    
+    // Phase 2: Move back to grid
+    setTimeout(() => {
+      card.style.transition = 'left 280ms ease-out, top 280ms ease-out, transform 280ms ease-out';
+      
+      card.style.left = `${orig.left}px`;
+      card.style.top = `${orig.top}px`;
+      card.style.transform = 'scale(1)';
+    }, 320);
   }
   
-  // Restore position after animation
+  // Restore position after animation (total: 320 + 280 = 600ms)
   setTimeout(() => {
     card.classList.remove('active');
     card.style.position = '';
@@ -545,9 +599,13 @@ function closeCard(card, restoreFocus = true) {
     card.style.zIndex = '';
     card.style.opacity = '';
     card.style.transition = '';
+    card.style.transform = '';
     inner.style.transform = '';
     inner.style.transition = '';
-  }, prefersReducedMotion ? 300 : 560);
+    
+    // Clean up cached rect
+    delete card._originalRect;
+  }, prefersReducedMotion ? 300 : 620);
   
   // Restore focus
   if (restoreFocus && focusBeforeOpen) {

@@ -68,7 +68,8 @@
 /* ━━━ Card Grid ━━━ */
 .now-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 450px));
+  justify-content: center;  /* Center the cards */
   gap: 32px;
   max-width: 1200px;
   margin: 0 auto;
@@ -107,9 +108,16 @@
 
 @media (max-width: 900px) {
   .now-card-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr;  /* Single column on mobile */
+    gap: 16px;
     padding: 0 16px 60px;
+    justify-items: center;  /* Center single column cards */
+  }
+}
+
+@media (min-width: 500px) and (max-width: 900px) {
+  .now-card-grid {
+    grid-template-columns: repeat(2, 1fr);  /* 2 columns on tablets */
   }
 }
 
@@ -117,14 +125,16 @@
 .now-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.4 / 1;
+  max-width: 450px;
+  aspect-ratio: 1.4 / 1;  /* ~321px height at 450px width */
   perspective: 1000px;
   transition: opacity 300ms ease, filter 300ms ease;
 }
 
 @media (max-width: 900px) {
   .now-card {
-    aspect-ratio: 1 / 1;
+    max-width: 320px;
+    aspect-ratio: 1 / 1;  /* Square: 320px × 320px */
     min-height: 0;
     height: auto;
   }
@@ -248,20 +258,20 @@
   background-repeat: no-repeat;
 }
 
-/* Status Pill */
+/* Status Pill (smaller, inline with title) */
 .now-card-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin: 0;
   width: fit-content;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .now-card-status.high {
@@ -333,10 +343,10 @@
 
 /* One-liner on back */
 .now-card-line {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: rgba(230, 227, 216, 0.75);
-  margin: 0;
+  margin: 0 0 12px 0;
   letter-spacing: 0.01em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-style: italic;
@@ -344,11 +354,21 @@
 
 /* Title */
 .now-card-title {
-  font-size: clamp(18px, 3vw, 22px);
+  font-size: clamp(16px, 2.5vw, 18px);
   font-weight: 600;
   color: #E6E3D8;
-  margin: 0 0 16px 0;
+  margin: 0;
   letter-spacing: -0.01em;
+  flex: 1;
+}
+
+/* Header row (title + status inline) */
+.now-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 /* Bullets */

@@ -656,10 +656,10 @@
 }
 
 .blog-close:hover {
-  background: rgba(25, 26, 30, 0.9);
-  border-color: var(--decay-green);
+  background: rgba(15, 16, 20, 0.9);
+  border-color: rgba(45, 212, 175, 0.45);
   color: var(--decay-green);
-  box-shadow: 0 0 12px rgba(45, 212, 175, 0.3);
+  transform: rotate(90deg);
 }
 
 /* Hide close button when in category or article view */
@@ -925,6 +925,75 @@
   margin: 0 auto;
   color: rgba(200, 201, 197, 0.88);
   line-height: 1.7;
+}
+
+/* Article images and videos (in-app view) */
+.blog-article-content img,
+.blog-article-content video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 24px auto 32px auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ━━━ Article Scroll Navigation ━━━ */
+.article-scroll-nav {
+  position: fixed;
+  left: calc(50% - 480px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Show only when scrolled and not near edges */
+.article-scroll-nav.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scroll-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 16, 20, 0.85);
+  border: 1px solid rgba(63, 255, 159, 0.25);
+  color: rgba(63, 255, 159, 0.6);
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: var(--cursor-spore), pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.scroll-nav-btn:hover {
+  background: rgba(15, 16, 20, 0.95);
+  border-color: rgba(63, 255, 159, 0.6);
+  color: rgba(63, 255, 159, 1);
+  box-shadow: 0 0 12px rgba(63, 255, 159, 0.3);
+  transform: scale(1.1);
+}
+
+.scroll-nav-btn:focus-visible {
+  outline: 2px solid var(--decay-green);
+  outline-offset: 2px;
+}
+
+/* Hide on smaller screens where it would overlap content */
+@media (max-width: 1200px) {
+  .article-scroll-nav {
+    display: none;
+  }
 }
 
 /* Category Header with Map button */
@@ -1676,11 +1745,26 @@
   font-style: italic;
 }
 
-.article-container .article-content video {
+/* Article images */
+.article-container .article-content img,
+.article-container .article-content .article-image {
+  display: block;
   width: 100%;
   max-width: 100%;
+  height: auto;
+  margin: 24px auto 32px auto;
   border-radius: 8px;
-  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Article videos */
+.article-container .article-content video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 24px auto 32px auto;
+  border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 

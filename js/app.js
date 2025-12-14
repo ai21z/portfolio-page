@@ -1027,6 +1027,78 @@ async function loadCategoryContent(hubId) {
   });
 }
 
+// ━━━ Article Scroll Navigation ━━━
+function initArticleScrollNav() {
+  const scrollNav = document.querySelector('.article-scroll-nav');
+  if (!scrollNav) return;
+  
+  const articleView = document.getElementById('blog-article-view');
+  const articleContent = document.getElementById('blog-article-content');
+  if (!articleView || !articleContent) return;
+  
+  const SCROLL_AMOUNT = 300; // ~10 lines
+  const THRESHOLD = 400; // ~15 lines - show/hide threshold
+  
+  // Button click handlers
+  scrollNav.querySelectorAll('.scroll-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      
+      switch (action) {
+        case 'top':
+          articleView.scrollTo({ top: 0, behavior: 'smooth' });
+          break;
+        case 'up':
+          articleView.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'smooth' });
+          break;
+        case 'down':
+          articleView.scrollBy({ top: SCROLL_AMOUNT, behavior: 'smooth' });
+          break;
+        case 'bottom':
+          articleView.scrollTo({ top: articleView.scrollHeight, behavior: 'smooth' });
+          break;
+      }
+    });
+  });
+  
+  // Update nav visibility based on scroll position AND article view visibility
+  const updateScrollNav = () => {
+    // Only show if article view is visible
+    const isArticleVisible = !articleView.hidden && articleView.offsetParent !== null;
+    if (!isArticleVisible) {
+      scrollNav.classList.remove('visible');
+      return;
+    }
+    
+    const scrollTop = articleView.scrollTop;
+    const scrollHeight = articleView.scrollHeight;
+    const clientHeight = articleView.clientHeight;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    
+    // Show nav only when scrolled past threshold AND not near the end
+    const pastTop = scrollTop > THRESHOLD;
+    const beforeEnd = distanceFromBottom > THRESHOLD;
+    const shouldShow = pastTop && beforeEnd;
+    
+    scrollNav.classList.toggle('visible', shouldShow);
+  };
+  
+  articleView.addEventListener('scroll', updateScrollNav);
+  
+  // Also update when article view visibility changes
+  const observer = new MutationObserver(() => {
+    // Reset scroll position when article opens
+    if (!articleView.hidden) {
+      articleView.scrollTop = 0;
+    }
+    updateScrollNav();
+  });
+  observer.observe(articleView, { attributes: true, attributeFilter: ['hidden'] });
+  
+  // Initial state (hidden)
+  updateScrollNav();
+}
+
 function enterBlogArticle(hubId, articleId) {
   console.log(`[Blog Nav] 📄 Entering article: hubId="${hubId}", articleId="${articleId}"`);
   
@@ -1303,6 +1375,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+  
+  // Article Scroll Navigation
+  initArticleScrollNav();
 });
 
 // Mobile sigil menu

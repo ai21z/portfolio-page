@@ -860,8 +860,17 @@
         <button class="blog-nav-link" data-hub="convergence">Convergence</button>
       </nav>
       <button id="btn-map-article" class="blog-map-btn" aria-label="Go back">Back</button>
+      
       <article id="blog-article-content" class="blog-article-content"></article>
     </div>
+    
+    <!-- Article Scroll Navigation (outside article-view to fix position:fixed with backdrop-filter) -->
+    <nav class="article-scroll-nav" aria-label="Article scroll navigation">
+      <button class="scroll-nav-btn" data-action="top" aria-label="Scroll to top">⯭</button>
+      <button class="scroll-nav-btn" data-action="up" aria-label="Scroll up">🠅</button>
+      <button class="scroll-nav-btn" data-action="down" aria-label="Scroll down">🠇</button>
+      <button class="scroll-nav-btn" data-action="bottom" aria-label="Scroll to bottom">⯯</button>
+    </nav>
     
     <!-- Memorandum Hover Interactions -->
     <script type="module">
@@ -1012,9 +1021,7 @@
 
   <!-- SECTION: CONTACT -->
   <section id="contact" class="stage" data-section="contact" aria-label="Contact">
-    <button class="contact-close" data-action="go-intro" aria-label="Close and return to intro">
-      <span class="close-icon">✕</span>
-    </button>
+    <button class="contact-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>

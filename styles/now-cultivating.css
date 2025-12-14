@@ -40,28 +40,30 @@
   top: 24px;
   right: 24px;
   z-index: 100;
-  width: 48px;
-  height: 48px;
-  background: rgba(11, 11, 12, 0.7);
-  border: 1px solid rgba(45, 212, 175, 0.3);
+  width: 44px;
+  height: 44px;
+  background: rgba(15, 16, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
-  color: rgba(45, 212, 175, 0.9);
-  font-size: 28px;
+  display: grid;
+  place-items: center;
+  color: rgba(232, 232, 234, 0.7);
+  font-size: 20px;
   line-height: 1;
   cursor: var(--cursor-spore, pointer);
-  transition: all 180ms ease;
+  transition: all 150ms ease;
   backdrop-filter: blur(8px);
 }
 
 .now-close:hover {
-  background: rgba(11, 11, 12, 0.9);
-  border-color: rgba(45, 212, 175, 0.7);
-  transform: scale(1.08);
-  box-shadow: 0 0 20px rgba(45, 212, 175, 0.4);
+  background: rgba(15, 16, 20, 0.9);
+  border-color: rgba(45, 212, 175, 0.45);
+  color: var(--decay-green);
+  transform: rotate(90deg);
 }
 
 .now-close:focus-visible {
-  outline: 2px dashed rgba(45, 212, 175, 0.8);
+  outline: 2px solid var(--decay-green);
   outline-offset: 4px;
 }
 

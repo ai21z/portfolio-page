@@ -108,6 +108,10 @@ function markdownToHtml(markdown) {
   // Italic (*text*)
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   
+  // Images ![alt](url) - must come before links
+  html = html.replace(/!\[([^\]]*)\]\(\.\/([^)]+)\)/g, '<img src="../../$2" alt="$1" class="article-image">');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="article-image">');
+  
   // Links [text](url)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   

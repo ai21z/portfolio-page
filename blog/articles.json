@@ -1,25 +1,19 @@
 {
-  "craft": [
+  "craft": [],
+  "cosmos": [
     {
-      "id": "lorem-hand",
-      "title": "Hand & Ember",
-      "date": "January 15, 2024",
-      "excerpt": "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+      "id": "first-year-software-engineer",
+      "title": "\"My 1st Year as a Software Engineer: Lessons Learned\"",
+      "date": "March 21, 2023",
+      "excerpt": "\"Reflections on my first year as a software engineer - embracing challenges, asking for help, and the importance of kindness.\""
     }
   ],
-  "cosmos": [],
   "codex": [
     {
       "id": "fail-fast-learn-faster",
       "title": "Fail Fast, Learn Faster - Instinct, on Purpose",
       "date": "October 22, 2025",
       "excerpt": "This guide shows how to run safe-to-fail experiments in life plus at work. Build a personal system where every attempt either moves you forward or pays you back in information."
-    },
-    {
-      "id": "lorem-runes",
-      "title": "Runes in Silence",
-      "date": "February 3, 2024",
-      "excerpt": "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
     }
   ],
   "convergence": []

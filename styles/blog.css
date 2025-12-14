@@ -1220,9 +1220,10 @@
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 @media (max-width: 900px) {
-  /* Hide Petri dish elements on mobile */
+  /* Hide Petri dish elements and breadcrumb nav on mobile */
   #blog-map,
-  .blog-intro-caption {
+  .blog-intro-caption,
+  .blog-nav {
     display: none !important;
   }
 

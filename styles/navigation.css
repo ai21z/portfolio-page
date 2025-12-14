@@ -982,3 +982,79 @@ body.has-paper-open-global #network-nav {
 /* tiny helper for screen readers you already use */
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION NAVIGATION
+   Minimal vertical nav list on right side of sections
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.section-nav {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.section-nav-link {
+  font-family: "Special Elite", monospace;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(230, 227, 216, 0.5);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  text-shadow: 
+    0 0 6px rgba(143, 180, 255, 0.3),
+    0 0 10px rgba(122, 174, 138, 0.2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: var(--cursor-spore), pointer;
+}
+
+.section-nav-link:hover {
+  color: rgba(180, 210, 230, 1);
+  text-shadow: 
+    0 0 10px rgba(143, 180, 255, 0.8),
+    0 0 18px rgba(122, 174, 138, 0.6),
+    0 0 24px rgba(63, 255, 159, 0.4);
+  filter: drop-shadow(0 0 6px rgba(143, 180, 255, 0.5));
+}
+
+.section-nav-link.active {
+  font-size: 14px;
+  color: var(--decay-green, #3fff9f);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  text-shadow: 
+    0 0 8px rgba(63, 255, 159, 0.6),
+    0 0 14px rgba(63, 255, 159, 0.4),
+    0 0 20px rgba(122, 174, 138, 0.3);
+}
+
+/* Hide on mobile - too cramped */
+@media (max-width: 768px) {
+  .section-nav {
+    display: none;
+  }
+}
+
+/* Adjust position for smaller screens */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .section-nav {
+    right: 16px;
+    top: 64px;
+    gap: 20px;
+  }
+  
+  .section-nav-link {
+    font-size: 12px;
+  }
+  
+  .section-nav-link.active {
+    font-size: 13px;
+  }
+}
+

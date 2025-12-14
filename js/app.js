@@ -868,6 +868,17 @@ function initBlogControls() {
 
 // ━━━ Blog: Category/Article navigation ━━━
 
+// Update blog nav active state
+function updateBlogNavActive(hubId) {
+  document.querySelectorAll('.blog-nav-link').forEach(link => {
+    if (link.dataset.hub === hubId) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+}
+
 // Unified hub entry (called by both rim labels and canvas hub clicks)
 function enterHub(hubId) {
   // Ignore source node
@@ -890,6 +901,9 @@ function enterHub(hubId) {
   if (dishLabels) {
     dishLabels.style.display = 'none';
   }
+  
+  // Update nav active state
+  updateBlogNavActive(hubId);
   
   // Show category view
   const categoryView = document.getElementById('blog-category-view');
@@ -923,6 +937,9 @@ function exitToMap() {
     dishLabels.style.display = '';
   }
   
+  // Clear nav active state
+  updateBlogNavActive(null);
+  
   // Hide category and article views
   const categoryView = document.getElementById('blog-category-view');
   const articleView = document.getElementById('blog-article-view');
@@ -944,24 +961,35 @@ function showMapRoot() {
   exitToMap();
 }
 
-function loadCategoryContent(hubId) {
+// Articles registry (loaded from articles.json)
+let ARTICLES_REGISTRY = null;
+
+// Load articles registry from JSON
+async function loadArticlesRegistry() {
+  if (ARTICLES_REGISTRY) return ARTICLES_REGISTRY;
+  
+  try {
+    const res = await fetch('./blog/articles.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    ARTICLES_REGISTRY = await res.json();
+    console.log('[Blog] Articles registry loaded:', ARTICLES_REGISTRY);
+    return ARTICLES_REGISTRY;
+  } catch (err) {
+    console.warn('[Blog] Could not load articles.json, using fallback:', err.message);
+    // Fallback to empty registry
+    ARTICLES_REGISTRY = { craft: [], cosmos: [], codex: [], convergence: [] };
+    return ARTICLES_REGISTRY;
+  }
+}
+
+async function loadCategoryContent(hubId) {
   const content = document.getElementById('blog-category-content');
   const titleEl = document.getElementById('blog-category-title');
   if (!content) return;
   
-  // Hardcoded sample articles for now
-  const ARTICLES = {
-    craft: [
-      { id: 'lorem-hand', title: 'Hand & Ember', date: 'January 15, 2024', excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...' }
-    ],
-    codex: [
-      { id: 'lorem-runes', title: 'Runes in Silence', date: 'February 3, 2024', excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...' }
-    ],
-    cosmos: [],
-    convergence: []
-  };
-  
-  const articles = ARTICLES[hubId] || [];
+  // Load articles from registry
+  const registry = await loadArticlesRegistry();
+  const articles = registry[hubId] || [];
   const hubTitle = hubId.toUpperCase();
   
   // Update header title
@@ -1010,6 +1038,9 @@ function enterBlogArticle(hubId, articleId) {
   } else {
     console.error('[Blog Nav] Category view element not found!');
   }
+  
+  // Update nav active state for article view too
+  updateBlogNavActive(hubId);
   
   // Show article view
   const articleView = document.getElementById('blog-article-view');
@@ -1259,6 +1290,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Blog Map buttons (in category and article views)
   document.getElementById('btn-map-category')?.addEventListener('click', exitToMap);
   document.getElementById('btn-map-article')?.addEventListener('click', exitToMap);
+  
+  // Blog Navigation Bar links
+  document.querySelectorAll('.blog-nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const hubId = link.dataset.hub;
+      if (hubId === 'map') {
+        exitToMap();
+      } else {
+        // Navigate to the hub (will work from both category and article views)
+        enterHub(hubId);
+      }
+    });
+  });
 });
 
 // Mobile sigil menu
@@ -1439,6 +1483,17 @@ document.addEventListener('click', (e) => {
   if (!btn) return;
   e.preventDefault();
   showSectionWithEffects('intro');
+});
+
+// ━━━ Section nav handler (for section-to-section navigation) ━━━
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.section-nav-link');
+  if (!link) return;
+  e.preventDefault();
+  const targetSection = link.dataset.section;
+  if (targetSection) {
+    showSectionWithEffects(targetSection);
+  }
 });
 
 // ━━━ About: Paper focus (desktop only) ━━━

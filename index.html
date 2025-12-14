@@ -477,6 +477,14 @@
   <!-- SECTION: ABOUT -->
   <section id="about" class="stage altar-screen" data-section="about" aria-label="About" tabindex="-1">
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     <div class="altar">
       <!-- LIVING RING -->
       <svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -575,6 +583,14 @@
   <!-- SECTION: SKILLS -->
   <section id="skills" class="stage altar-screen" data-section="skills" aria-label="Skills" tabindex="-1">
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     <div class="altar">
       <!-- LIVING RING -->
       <svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
@@ -680,6 +696,14 @@
   <!-- SECTION: NOW -->
   <section id="now" class="stage now-stage panel-screen" data-section="now" aria-label="Now" tabindex="-1">
     <button class="now-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     
     <!-- Hero Header -->
     <div class="now-header" aria-hidden="true">
@@ -709,11 +733,44 @@
   <!-- SECTION: BLOG (Mycelium Network - Petri Dish) -->
   <section id="blog" class="stage blog-screen blog-stage panel-screen" data-section="blog" data-mode="map" aria-label="Blog" tabindex="-1">
     <button class="blog-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     
     <!-- Intro Caption -->
     <div class="blog-intro-caption" aria-hidden="true">
       <strong>Petri Dish</strong> — A living network. Hover rim labels or hubs to preview, click to enter.
     </div>
+    
+    <!-- Necrographic Memorandum (Desktop - aged notebook paper style) -->
+    <aside class="blog-memorandum" aria-label="Hub descriptions">
+      <div class="blog-memo-header">
+        <span class="blog-memo-title">Field Notes</span>
+      </div>
+      <ul class="blog-memo-list">
+        <li class="blog-memo-item" data-hub="craft">
+          <span class="blog-memo-hub">Craft</span>
+          <span class="blog-memo-desc">Build notes and process. How I made things, what I tried, what worked, what didn't.</span>
+        </li>
+        <li class="blog-memo-item" data-hub="cosmos">
+          <span class="blog-memo-hub">Cosmos</span>
+          <span class="blog-memo-desc">Ideas and big-picture thinking. Mental models, opinions, and reflections about tech, AI, and life.</span>
+        </li>
+        <li class="blog-memo-item" data-hub="codex">
+          <span class="blog-memo-hub">Codex</span>
+          <span class="blog-memo-desc">Reference material. Checklists, guides, patterns, and notes meant to be reused.</span>
+        </li>
+        <li class="blog-memo-item" data-hub="convergence">
+          <span class="blog-memo-hub">Convergence</span>
+          <span class="blog-memo-desc">Synthesis and lessons. Retrospectives and posts that connect multiple topics into one takeaway.</span>
+        </li>
+      </ul>
+    </aside>
     
     <!-- SR-only status for hover announcements -->
     <div id="hub-status" class="sr-only" aria-live="polite"></div>
@@ -769,6 +826,18 @@
     
     <!-- Category View (hidden by default) -->
     <div id="blog-category-view" class="blog-category-view category-panel" hidden>
+      <!-- Top Navigation Bar -->
+      <nav class="blog-nav" aria-label="Blog navigation">
+        <button class="blog-nav-link" data-hub="map">Map</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="craft">Craft</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="cosmos">Cosmos</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="codex">Codex</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="convergence">Convergence</button>
+      </nav>
       <button id="btn-map-category" class="blog-map-btn" aria-label="Go back">Back</button>
       <div class="blog-category-header">
         <h2 id="blog-category-title" class="blog-category-title"></h2>
@@ -778,9 +847,61 @@
     
     <!-- Article View (hidden by default) -->
     <div id="blog-article-view" class="blog-article-view category-panel" hidden>
+      <!-- Top Navigation Bar -->
+      <nav class="blog-nav" aria-label="Blog navigation">
+        <button class="blog-nav-link" data-hub="map">Map</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="craft">Craft</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="cosmos">Cosmos</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="codex">Codex</button>
+        <span class="blog-nav-sep">/</span>
+        <button class="blog-nav-link" data-hub="convergence">Convergence</button>
+      </nav>
       <button id="btn-map-article" class="blog-map-btn" aria-label="Go back">Back</button>
       <article id="blog-article-content" class="blog-article-content"></article>
     </div>
+    
+    <!-- Memorandum Hover Interactions -->
+    <script type="module">
+      // Memorandum items trigger same hover effects as petri dish
+      document.querySelectorAll('.blog-memo-item').forEach(item => {
+        const hubId = item.dataset.hub;
+        
+        item.addEventListener('mouseenter', () => {
+          window.dispatchEvent(new CustomEvent('blog:hover', { 
+            detail: { hubId, source: 'memo' } 
+          }));
+        });
+        
+        item.addEventListener('mouseleave', () => {
+          window.dispatchEvent(new CustomEvent('blog:hover-off', { 
+            detail: { source: 'memo' } 
+          }));
+        });
+        
+        item.addEventListener('click', () => {
+          window.dispatchEvent(new CustomEvent('blog:navigate', { 
+            detail: { hubId } 
+          }));
+        });
+      });
+      
+      // Sync memorandum highlight with petri dish hover
+      window.addEventListener('blog:hover', (e) => {
+        const { hubId } = e.detail;
+        document.querySelectorAll('.blog-memo-item').forEach(item => {
+          item.classList.toggle('highlight', item.dataset.hub === hubId);
+        });
+      });
+      
+      window.addEventListener('blog:hover-off', () => {
+        document.querySelectorAll('.blog-memo-item').forEach(item => {
+          item.classList.remove('highlight');
+        });
+      });
+    </script>
     
     <script type="module" src="./js/blog-network-webgl.js"></script>
   </section>
@@ -838,6 +959,14 @@
   <!-- SECTION: WORK (Mycelial Globe) -->
   <section id="work" class="stage work-globe-screen panel-screen" data-section="work" aria-label="Work Experience" tabindex="-1">
     <button class="work-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     
     <div class="work-globe-container">
       <canvas id="work-globe-canvas"></canvas>
@@ -886,6 +1015,14 @@
     <button class="contact-close" data-action="go-intro" aria-label="Close and return to intro">
       <span class="close-icon">✕</span>
     </button>
+    <nav class="section-nav" aria-label="Section navigation">
+      <a href="#about" class="section-nav-link" data-section="about">About</a>
+      <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
+      <a href="#now" class="section-nav-link" data-section="now">Now</a>
+      <a href="#blog" class="section-nav-link" data-section="blog">Blog</a>
+      <a href="#work" class="section-nav-link" data-section="work">Work</a>
+      <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
+    </nav>
     <div class="notebook-page">
       <!-- Blood-red wax seal at top center -->
       <div class="wax-seal" aria-hidden="true">

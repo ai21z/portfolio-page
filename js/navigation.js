@@ -124,6 +124,25 @@ export function showSection(sectionName, startRitualBackground, stopRitualBackgr
       activeSection.focus({ preventScroll: true });
     }, 100);
   }
+  
+  // Update section nav active state
+  updateSectionNavActive(sectionName);
+}
+
+/**
+ * Updates the section navigation active state.
+ * @param {string} sectionName - The active section name
+ */
+export function updateSectionNavActive(sectionName) {
+  document.querySelectorAll('.section-nav-link').forEach(link => {
+    const isActive = link.dataset.section === sectionName;
+    link.classList.toggle('active', isActive);
+    if (isActive) {
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.removeAttribute('aria-current');
+    }
+  });
 }
 
 /**

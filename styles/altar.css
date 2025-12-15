@@ -567,11 +567,6 @@ button.ghost:hover {
   color: #1A1510;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   OLD PAPER STYLE - DISABLED (using notebook aesthetic in .slab now)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-/* .altar-screen .paper styles moved to .slab with notebook aesthetic */
-
 /* Crisp text rendering for all slabs */
 .slab,
 .slab *{
@@ -632,11 +627,6 @@ button.ghost:hover {
              rotate(var(--rot,0deg)) !important;
   box-shadow: 0 calc(25px * var(--k)) calc(70px * var(--k)) rgba(0, 0, 0, 0.8);
 }
-
-/* [DISABLED] This was causing glitching when hovering over opened cards */
-/* .paper.paper-open.paper-open--settled:hover {
-  transform: translate(-50%, -50%) !important;
-} */
 
 /* Tiny breathing ring around your glowing dot when a paper is hoverable */
 .cursor-ring{

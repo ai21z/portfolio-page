@@ -14,11 +14,6 @@ import { initNow, destroyNow } from './now-cultivating.js';
 import { initWorkGlobe, cleanupWorkGlobe } from './work-globe-webgl.js';
 import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
-// Blog network now uses WebGL version loaded directly in HTML
-// import blogNetwork from './blog-network.js';
-// Resume spirals - DISABLED FOR NOW
-// TODO: Re-enable later by uncommenting: import { initResumeSpirals } from './resume-spirals.js';
-// import { initResumeSpirals } from './resume-spirals.js';
 import {
   RITUAL_RETURN_MS,
   NAV_SPEED_WHEN_ACTIVE,

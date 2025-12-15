@@ -141,7 +141,7 @@ export function updateSectionNavActive(sectionName) {
  * @param {string} id - The node/section ID
  * @returns {HTMLElement} - The label element
  */
-export function createNavLabel(id) {
+function createNavLabel(id) {
   const label = document.createElement('a');
   label.dataset.node = id;
   label.dataset.section = id;
@@ -169,7 +169,7 @@ export function createNavLabel(id) {
  * Creates the sigil node (intro button).
  * @returns {HTMLElement} - The sigil element
  */
-export function createSigilNode() {
+function createSigilNode() {
   const sigil = document.createElement('button');
   sigil.dataset.node = 'intro';
   sigil.dataset.section = 'intro';

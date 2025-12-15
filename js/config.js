@@ -3,8 +3,7 @@
  * All design anchors, speeds, and layout parameters
  */
 
-// ━━━ Ritual Animation ━━━
-export const RITUAL_RETURN_MS = 420;          // duration to glide home
+// ━━━ Navigation Animation ━━━
 export const NAV_SPEED_WHEN_ACTIVE = 48;      // reduced by ~17% for better clickability
 
 // ━━━ Design Anchors (1920×1080 reference) ━━━

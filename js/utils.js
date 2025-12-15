@@ -63,15 +63,6 @@ export function pointAt(pts, cum, s) {
 }
 
 /**
- * Helper for smooth value approach (animation easing)
- */
-export function approach(current, target, ratePerSec, dt){
-  const d = target - current;
-  const step = Math.sign(d) * Math.min(Math.abs(d), ratePerSec * dt);
-  return current + step;
-}
-
-/**
  * Throttle function with requestAnimationFrame fallback
  * @param {Function} fn - Function to throttle
  * @param {number} ms - Minimum time between calls in milliseconds (default: 125)

@@ -8,26 +8,11 @@
  */
 
 // ━━━ Module Imports ━━━
-import { sizeCanvas, cumulativeLengths, pointAt, approach, throttle } from './utils.js';
+import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
-import { initNow, destroyNow } from './now-cultivating.js';
-import { initWorkGlobe, cleanupWorkGlobe } from './work-globe-webgl.js';
 import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
-import {
-  RITUAL_RETURN_MS,
-  NAV_SPEED_WHEN_ACTIVE,
-  NAV_COORDS,
-  NAV_ORDER,
-  LABEL_OFFSET_PX,
-  LABEL_SPEEDS,
-  DEFAULT_SPEED,
-  MAX_SPARKS,
-  MIN_ROUTE_LEN_PX,
-  MAX_ROUTE_LEN_PX,
-  RESAMPLE_STEP_PX,
-  RESAMPLE_MIN_POINTS
-} from './config.js';
+import { NAV_COORDS } from './config.js';
 import {
   prefersReducedMotion,
   hudEnabled,
@@ -48,18 +33,14 @@ import {
   setRitualActive,
   setFollowerSparks,
   LOCKED_ROUTES,
-  setLockedRoutes,
   NODE_IDS,
-  NAV_OFFSETS,
   currentNavHover,
-  setCurrentNavHover,
   sparkCanvas,
   sparkCtx,
   sporeCanvas,
   sporeCtx,
   setSparkCanvas,
   setSparkCtx,
-  setSporeCanvas,
   setSporeCtx,
   ACTIVE_ANIMS,
   cascadeAnims,
@@ -68,29 +49,23 @@ import {
   lastSporeFrame,
   lastSparkTs,
   setActiveAnims,
-  setCascadeAnims,
-  setCascadeActive,
   setSpores,
   setLastSporeFrame,
   setLastSparkTs
 } from './state.js';
 import {
   computeCoverFromImage,
-  coverMap,
   toViewport,
   projectXY
 } from './viewport.js';
 import {
   startSpark,
-  ritualCascade,
   drawSparks,
   startSparkToPoint
 } from './sparks.js';
 import {
   computeNavOffsets,
   showSection,
-  createNavLabel,
-  createSigilNode,
   layoutNavNodes,
   handleNavEnter,
   handleNavLeave,
@@ -787,11 +762,6 @@ function initBlogControls() {
     });
   }
   
-  // Legacy: Listen for Petri Map button click (may not exist anymore)
-  window.addEventListener('blog:map', () => {
-    exitToMap();
-  });
-  
   // Wire up aria-live status for hover announcements
   const hubStatus = document.getElementById('hub-status');
   const HUB_INFO = {
@@ -911,14 +881,8 @@ function exitToMap() {
   history.pushState({ view: 'map' }, '', '#blog');
 }
 
-// Legacy alias for backwards compatibility
 function enterBlogCategory(hubId) { return enterHub(hubId); }
 function exitBlogCategory() { return exitToMap(); }
-
-// Legacy alias for showMapRoot (now just calls exitToMap)
-function showMapRoot() {
-  exitToMap();
-}
 
 // Articles registry (loaded from articles.json)
 let ARTICLES_REGISTRY = null;

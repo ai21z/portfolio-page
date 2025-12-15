@@ -704,6 +704,9 @@ async function initNetworkAndNav() {
 function initBlogControls() {
   console.log('[Blog Nav] Initializing blog controls...');
   
+  // Populate article counts in memorandum and mobile grid
+  populateBlogCounts();
+  
   const hubButtons = document.querySelectorAll('.hub-btn');
   
   // Hub button wiring for navigation
@@ -980,6 +983,27 @@ async function loadArticlesRegistry() {
     ARTICLES_REGISTRY = { craft: [], cosmos: [], codex: [], convergence: [] };
     return ARTICLES_REGISTRY;
   }
+}
+
+// Populate article counts in memorandum and mobile grid
+async function populateBlogCounts() {
+  const registry = await loadArticlesRegistry();
+  const hubs = ['craft', 'cosmos', 'codex', 'convergence'];
+  
+  hubs.forEach(hub => {
+    const count = (registry[hub] || []).length;
+    const countText = count > 0 ? `(${count})` : '';
+    
+    // Update desktop memorandum
+    const memoCount = document.querySelector(`.blog-memo-count[data-hub="${hub}"]`);
+    if (memoCount) memoCount.textContent = countText;
+    
+    // Update mobile specimen grid
+    const specCount = document.querySelector(`.specimen-count[data-hub="${hub}"]`);
+    if (specCount) specCount.textContent = countText;
+  });
+  
+  console.log('[Blog] Article counts populated');
 }
 
 async function loadCategoryContent(hubId) {

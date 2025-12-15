@@ -204,7 +204,6 @@ export function computeLockedRouteFor(id, anchor) {
  */
 export function buildLockedRoutes() {
   LOCKED.clear();
-  console.log('\n=== Building Locked Routes ===');
   
   for (const [id, anchor] of Object.entries(NAV_COORDS)) {
     if (id === 'intro') continue; // sigil stays static
@@ -221,8 +220,6 @@ export function buildLockedRoutes() {
     // Log route quality with clear criteria
     if (route.tooShort || route.len < 140 || pointsCount < 3) {
       console.warn(`⚠️ [LOCKED-ROUTE] ${id}: len=${route.len.toFixed(1)}px, points=${pointsCount} (BELOW TARGET: want 140-240px, ≥3 points)`);
-    } else {
-      console.log(`✅ [LOCKED-ROUTE] ${id}: len=${route.len.toFixed(1)}px, points=${pointsCount}`);
     }
     
     // Find the arc-length position on route closest to the anchor
@@ -244,8 +241,6 @@ export function buildLockedRoutes() {
     route.dir = 1;
     route.speed = LABEL_SPEEDS[id] ?? DEFAULT_SPEED;
     
-    console.log(`  📍 ${id}: sHome=${clampedHome.toFixed(1)} (closest to anchor on route)`);
-    
     LOCKED.set(id, route);
   }
   
@@ -255,8 +250,6 @@ export function buildLockedRoutes() {
     if (route) newLockedRoutes[id] = route;
   }
   setLockedRoutes(newLockedRoutes);
-  
-  console.log(`=== Locked ${Object.keys(LOCKED_ROUTES).length} routes ===\n`);
 }
 
 /**

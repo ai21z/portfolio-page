@@ -126,8 +126,6 @@ const STATUS_LABEL = {
 
 // ━━━ Initialization ━━━
 export function initNowCards() {
-  console.log('[NOW-CARDS] Initializing...');
-  
   // Check reduced motion preference
   prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
@@ -151,14 +149,10 @@ export function initNowCards() {
   
   // Wire global Esc handler
   document.addEventListener('keydown', handleEscKey);
-  
-  console.log('[NOW-CARDS] Ready');
 }
 
 // ━━━ Cleanup ━━━
 export function destroyNowCards() {
-  console.log('[NOW-CARDS] Destroying...');
-  
   // Close any open card
   if (activeCard) {
     closeCard(activeCard, false);
@@ -176,8 +170,6 @@ export function destroyNowCards() {
   // Clear grid
   const grid = document.getElementById('now-card-grid');
   if (grid) grid.innerHTML = '';
-  
-  console.log('[NOW-CARDS] Destroyed');
 }
 
 // ━━━ Render Cards ━━━

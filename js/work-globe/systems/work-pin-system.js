@@ -461,8 +461,6 @@ export class WorkPinSystem {
   
   generateTextTextures() {
     // Pre-generate textures for all work locations
-    console.log(`[WorkPinSystem] Generating text textures for ${Object.keys(this.locations).length} locations`);
-    
     for (const [key, loc] of Object.entries(this.locations)) {
       const entry = loc.entries[0]; // Get first/current job
       const texture = this.textRenderer.createTextTexture(
@@ -477,11 +475,7 @@ export class WorkPinSystem {
         alpha: 0.0,
         targetAlpha: 0.0
       });
-      
-      console.log(`  ✅ Generated texture for ${key}: ${entry.company} - ${entry.position}`);
     }
-    
-    console.log(`[WorkPinSystem] Text textures ready: ${this.textQuads.size} quads`);
   }
   
   renderText(program, projMatrix, viewMatrix) {

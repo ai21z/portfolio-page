@@ -114,7 +114,6 @@ if (yearElement) yearElement.textContent = new Date().getFullYear();
 async function loadMycelium() {
   const response = await fetch('artifacts/network.json');
   setMycMap(await response.json());
-  console.log(`✅ Loaded ${MYC_MAP.paths.length} paths, ${MYC_MAP.junctions.length} junctions`);
 }
 
 /* ━━━ Image-Space Graph + Pathfinding ━━━ */
@@ -292,8 +291,6 @@ function initAfterImageLoad() {
     return;
   }
   
-  console.log(`🖼️ Background image loaded: ${bgImg.naturalWidth}×${bgImg.naturalHeight}px`);
-  
   // Compute cover using naturalWidth/naturalHeight
   if (!computeCoverFromImage()) {
     console.error('❌ Failed to compute cover from image');
@@ -304,8 +301,6 @@ function initAfterImageLoad() {
   
   // First layout now happens AFTER image loads
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
-  
-  console.log(`✅ Initial layout complete — ritual is ${ritualActive ? 'ACTIVE' : 'OFF'}`);
   
   // Now safe to do full resize setup
   sizeCanvas(sparkCanvas);
@@ -320,11 +315,9 @@ function initAfterImageLoad() {
 // GATE all initialization on image load
 if (bgImg) {
   if (!bgImg.complete) {
-    console.log(`⏳ Waiting for background image to load...`);
     bgImg.addEventListener('load', initAfterImageLoad, { once: true });
   } else if (bgImg.naturalWidth > 0) {
     // Already loaded
-    console.log(`✅ Background image already loaded`);
     initAfterImageLoad();
   } else {
     console.warn('⚠️ Background image complete but no naturalWidth, waiting for load event');
@@ -361,12 +354,10 @@ function toggleRitualFromSigil(el){
   if (ritualActive){
     startRitualMotion();
     attachFollowerSparks();
-    console.log(`🔮 Ritual ACTIVATED (ritualActive=${ritualActive}) — ${followerSparks.length} follower sparks attached, rotation=180°`);
   } else {
     stopRitualMotion();
     detachFollowerSparks();
     sendLightningHome(); // one quick, zippy home ping per nav
-    console.log(`🔮 Ritual DEACTIVATED (ritualActive=${ritualActive}) — labels returning to anchors, rotation=0°`);
   }
   
   // Update layout to apply/remove offsets immediately
@@ -376,14 +367,6 @@ function toggleRitualFromSigil(el){
 function wireSigilToggle(){
   const sigil = document.querySelector('.network-sigil-node');
   const sigilImg = sigil ? sigil.querySelector('img#sigil') : null;
-  
-  // Debug check for proper DOM structure
-  console.log('Sigil elements found:', { 
-    sigilWrap: !!sigil, 
-    sigilImg: !!sigilImg,
-    sigilClass: sigil?.className,
-    imgId: sigilImg?.id 
-  });
   
   if (!sigil) {
     console.warn('⚠️ .network-sigil-node not found — toggle will not work');
@@ -400,7 +383,6 @@ function wireSigilToggle(){
       toggleRitualFromSigil(sigil);
     }
   });
-  console.log('✅ Sigil toggle wired — click to activate ritual');
 }
 
 function attachFollowerSparks(){
@@ -446,7 +428,6 @@ function stopRitualMotion(){
     if (!route) continue;
     route.s = route.sHome;
   }
-  console.log('🏠 Routes reset to home positions (anchors)');
 }
 
 // ━━━ Spores Layer (ambient) ━━━
@@ -697,8 +678,6 @@ async function initNetworkAndNav() {
 
 // ━━━ Blog: Hub menu controls ━━━
 function initBlogControls() {
-  console.log('[Blog Nav] Initializing blog controls...');
-  
   // Populate article counts in memorandum and mobile grid
   populateBlogCounts();
   
@@ -733,7 +712,6 @@ function initBlogControls() {
     const activateHub = () => {
       const now = performance.now();
       if (now - lastButtonClickTime < BUTTON_DEBOUNCE) {
-        console.log('[Blog Nav] Button click debounced (too fast)');
         return;
       }
       lastButtonClickTime = now;
@@ -764,7 +742,6 @@ function initBlogControls() {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      console.log('[Blog Nav] Rim label hover:', hubId);
       window.dispatchEvent(new CustomEvent('blog:hover', { 
         detail: { hubId, source: 'rim-label' }
       }));
@@ -786,7 +763,6 @@ function initBlogControls() {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      console.log('[Blog Nav] Rim label clicked:', hubId);
       enterHub(hubId);
     }
   });
@@ -798,7 +774,6 @@ function initBlogControls() {
       if (arcBtn && arcBtn.dataset.hub) {
         e.preventDefault();
         const hubId = arcBtn.dataset.hub;
-        console.log('[Blog Nav] Rim label activated (kbd):', hubId);
         enterHub(hubId);
       }
     }
@@ -808,14 +783,12 @@ function initBlogControls() {
   const btnMap = document.getElementById('btn-map');
   if (btnMap) {
     btnMap.addEventListener('click', () => {
-      console.log('[Blog Nav] Map button clicked');
       exitToMap();
     });
   }
   
   // Legacy: Listen for Petri Map button click (may not exist anymore)
   window.addEventListener('blog:map', () => {
-    console.log('[Blog Nav] Map button clicked (legacy event)');
     exitToMap();
   });
   
@@ -860,8 +833,6 @@ function initBlogControls() {
     // Hide tooltip
     tooltip.classList.remove('visible');
   });
-  
-  console.log('[Blog Nav] Blog controls initialized');
 }
 
 // ━━━ Blog: Category/Article navigation ━━━
@@ -881,11 +852,8 @@ function updateBlogNavActive(hubId) {
 function enterHub(hubId) {
   // Ignore source node
   if (!hubId || hubId === 'source') {
-    console.warn('[Blog Nav] Cannot enter hub:', hubId);
     return;
   }
-  
-  console.log('[Blog Nav] Entering hub:', hubId);
   
   // Set mode to 'category' on blog section
   const blogSection = document.getElementById('blog');
@@ -909,9 +877,6 @@ function enterHub(hubId) {
     categoryView.setAttribute('data-category', hubId);
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
-    console.log('[Blog Nav] Category view opened for:', hubId);
-  } else {
-    console.error('[Blog Nav] Category view element not found!');
   }
   
   // Update URL
@@ -920,8 +885,6 @@ function enterHub(hubId) {
 
 // Exit to map view (reverses enterHub)
 function exitToMap() {
-  console.log('[Blog Nav] Exiting to map');
-  
   // Set mode back to 'map'
   const blogSection = document.getElementById('blog');
   if (blogSection) {
@@ -943,9 +906,7 @@ function exitToMap() {
   const articleView = document.getElementById('blog-article-view');
   if (categoryView) categoryView.setAttribute('hidden', '');
   if (articleView) articleView.setAttribute('hidden', '');
-  
-  console.log('[Blog Nav] Returned to map view');
-  
+
   // Update URL
   history.pushState({ view: 'map' }, '', '#blog');
 }
@@ -970,7 +931,6 @@ async function loadArticlesRegistry() {
     const res = await fetch('./blog/articles.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     ARTICLES_REGISTRY = await res.json();
-    console.log('[Blog] Articles registry loaded:', ARTICLES_REGISTRY);
     return ARTICLES_REGISTRY;
   } catch (err) {
     console.warn('[Blog] Could not load articles.json, using fallback:', err.message);
@@ -997,8 +957,6 @@ async function populateBlogCounts() {
     const specCount = document.querySelector(`.specimen-count[data-hub="${hub}"]`);
     if (specCount) specCount.textContent = countText;
   });
-  
-  console.log('[Blog] Article counts populated');
 }
 
 async function loadCategoryContent(hubId) {
@@ -1030,9 +988,7 @@ async function loadCategoryContent(hubId) {
   // Wire article clicks
   content.querySelectorAll('.blog-article-item').forEach(item => {
     const articleId = item.dataset.article;
-    console.log(`[Blog Nav] Wiring article: hubId="${hubId}", articleId="${articleId}"`);
     const activateArticle = () => {
-      console.log(`[Blog Nav] 🖱️ Article clicked: hubId="${hubId}", articleId="${articleId}"`);
       enterBlogArticle(hubId, articleId);
     };
     
@@ -1119,15 +1075,10 @@ function initArticleScrollNav() {
 }
 
 function enterBlogArticle(hubId, articleId) {
-  console.log(`[Blog Nav] 📄 Entering article: hubId="${hubId}", articleId="${articleId}"`);
-  
   // Hide category view
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     categoryView.setAttribute('hidden', '');
-    console.log('[Blog Nav] Category view hidden');
-  } else {
-    console.error('[Blog Nav] Category view element not found!');
   }
   
   // Update nav active state for article view too
@@ -1137,20 +1088,14 @@ function enterBlogArticle(hubId, articleId) {
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
     articleView.removeAttribute('hidden');
-    console.log('[Blog Nav] Article view shown');
     loadArticleContent(hubId, articleId);
-  } else {
-    console.error('[Blog Nav] Article view element not found!');
   }
   
   // Update URL
   history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
-  console.log(`[Blog Nav] URL updated to: #blog/${hubId}/${articleId}`);
 }
 
 function exitBlogArticle() {
-  console.log('[Blog Nav] Exiting article');
-  
   // Show category view
   document.getElementById('blog-category-view')?.removeAttribute('hidden');
   
@@ -1167,38 +1112,29 @@ function exitBlogArticle() {
 
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
-  if (!content) {
-    console.error('[Blog Nav] blog-article-content element NOT FOUND');
-    return;
-  }
+  if (!content) return;
   
   const path = `./blog/${hubId}/${articleId}.html`;
-  console.log(`[Blog Nav] Loading article: ${path}`);
-  console.log(`[Blog Nav] Article ID: "${articleId}", Hub ID: "${hubId}"`);
   
   // Load from existing HTML files
   fetch(path)
     .then(res => {
-      console.log(`[Blog Nav] Fetch response: ${res.status} ${res.statusText}`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       return res.text();
     })
     .then(html => {
-      console.log(`[Blog Nav] HTML loaded, length: ${html.length}`);
       // Extract body content (simple parser)
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const article = doc.querySelector('.article-container');
       if (article) {
-        console.log('[Blog Nav] Article container found, injecting content');
         content.innerHTML = article.innerHTML;
         
         // Wire up breadcrumb and back button navigation
         setupArticleNavigation(content, hubId);
       } else {
-        console.error('[Blog Nav] No .article-container found in HTML');
         content.innerHTML = '<p>Article not found.</p>';
         if (titleEl) titleEl.textContent = 'Article Not Found';
       }
@@ -1252,7 +1188,6 @@ function setupArticleNavigation(container, hubId) {
 
 // ━━━ Section visibility wrapper (controls blog network and other section-specific features) ━━━
 function showSectionWithEffects(sectionName) {
-  console.log('[App] showSectionWithEffects called:', sectionName);
   showSection(sectionName, startRitualBackground, stopRitualBackground);
   
   // Emit blog:visible event for overlay
@@ -1260,35 +1195,6 @@ function showSectionWithEffects(sectionName) {
   window.dispatchEvent(new CustomEvent('blog:visible', {
     detail: { visible: isBlogVisible }
   }));
-  
-  const blog = document.getElementById('blog');
-  console.log('[App] Section visibility IMMEDIATE:', {
-    blogExists: !!blog,
-    hasActiveSection: blog?.classList.contains('active-section'),
-    allClasses: blog?.className,
-    opacity: getComputedStyle(blog || {}).opacity,
-    display: getComputedStyle(blog || {}).display,
-    pointerEvents: getComputedStyle(blog || {}).pointerEvents,
-    emittedBlogVisible: isBlogVisible
-  });
-  
-  // Check again after CSS transition completes (0.8s)
-  setTimeout(() => {
-    const blogAfter = document.getElementById('blog');
-    console.log('[App] Section visibility AFTER TRANSITION (0.8s):', {
-      opacity: getComputedStyle(blogAfter || {}).opacity,
-      display: getComputedStyle(blogAfter || {}).display,
-      pointerEvents: getComputedStyle(blogAfter || {}).pointerEvents,
-      visible: getComputedStyle(blogAfter || {}).opacity === '1'
-    });
-  }, 900);
-  
-  // Blog network visibility now handled by WebGL version
-  // if (sectionName === 'blog') {
-  //   blogNetwork.show();
-  // } else {
-  //   blogNetwork.hide();
-  // }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -1315,7 +1221,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     const hubId = parts[1];
     const articleId = parts[2];
     
-    console.log(`🎯 Page Load: blog sub-route detected - hubId="${hubId}", articleId="${articleId || 'none'}"`);
     showSectionWithEffects('blog');
     
     // Navigate to category or article after blog section loads
@@ -1327,7 +1232,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
-    console.log(`🎯 Page Load: hash="${hash}", showing section="${initialSection}"`);
     showSectionWithEffects(initialSection);
   }
 
@@ -1750,7 +1654,6 @@ let lastDPR = window.devicePixelRatio || 1;
 setInterval(() => {
   const currentDPR = window.devicePixelRatio || 1;
   if (currentDPR !== lastDPR) {
-    console.log(`[AA-FIX] DPR changed from ${lastDPR} to ${currentDPR}`);
     lastDPR = currentDPR;
     // If a card is open, recompute its position
     const openCard = document.querySelector('.paper-open');
@@ -1907,8 +1810,6 @@ function initPaperFocusForSection(sectionId){
       
       // Force browser to re-evaluate layer promotion
       void el.offsetHeight;
-      
-      console.log('[AA-FIX] Settled:', el.className, 'willChange:', getComputedStyle(el).willChange);
     };
     
     const onEnd = (e) => {

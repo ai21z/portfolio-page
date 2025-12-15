@@ -47,8 +47,6 @@ export class MoonOrbitSystem {
     this.vertexCount = this.geometry.indices.length;
     
     this.setupBuffers();
-    
-    console.log(`[MoonOrbitSystem] Initialized with ${this.moons.length} moon(s)`);
   }
   
   setupBuffers() {

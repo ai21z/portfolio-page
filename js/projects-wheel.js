@@ -105,7 +105,6 @@ export function initProjectsWheel() {
   setupVisibilityObserver(stage);
   
   state.initialized = true;
-  console.log('[Ritual Wheel] Initialized with', projects.length, 'cards');
 }
 
 export function destroyProjectsWheel() {
@@ -145,8 +144,6 @@ export function destroyProjectsWheel() {
     intersectionObserver: null,
     isVisible: false
   };
-  
-  console.log('[Ritual Wheel] Destroyed');
 }
 
 // ━━━ DOM Building ━━━
@@ -561,8 +558,6 @@ function setupVisibilityObserver(stage) {
             }
           }
         });
-        
-        console.log('[Ritual Wheel] Visibility:', isVisible ? 'VISIBLE' : 'HIDDEN');
       });
     },
     { threshold: 0 }

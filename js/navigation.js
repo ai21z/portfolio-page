@@ -67,21 +67,12 @@ export function computeNavOffsets(){
  * @param {Function} stopRitualBackground - Function to stop ritual background
  */
 export function showSection(sectionName, startRitualBackground, stopRitualBackground) {
-  console.log('[Navigation] showSection called:', sectionName);
   // Update active section
   const sections = document.querySelectorAll('.stage');
-  console.log('[Navigation] Found stages:', sections.length, 'looking for:', sectionName);
   sections.forEach(s => {
     const shouldBeActive = s.dataset.section === sectionName;
-    console.log(`[Navigation] Stage ${s.dataset.section}: data-section="${s.dataset.section}", match=${shouldBeActive}`);
     s.classList.toggle('active-section', shouldBeActive);
   });
-  const activeSections = Array.from(sections).filter(s => s.classList.contains('active-section'));
-  console.log('[Navigation] Active sections after toggle:', activeSections.map(s => ({
-    id: s.id,
-    dataSection: s.dataset.section,
-    classes: s.className
-  })));
   
   // Update nav aria-current
   document.querySelectorAll('.network-node-label, .network-sigil-node').forEach(label =>
@@ -209,19 +200,14 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
     return;
   }
 
-  console.log(`✅ layoutNavNodes: Starting layout, children=${nav.children.length}`);
-
   if (nav.children.length === 0) {
-    console.log(`📝 layoutNavNodes: Creating navigation elements...`);
     const frag = document.createDocumentFragment();
     for (const id of NAV_ORDER) {
       if (id === 'intro') {
         const sigil = createSigilNode();
-        console.log(`  ✓ Created sigil node for intro`);
         frag.appendChild(sigil);
       } else {
         const label = createNavLabel(id);
-        console.log(`  ✓ Created label for "${id}"`);
         label.addEventListener('click', (event) => {
           const targetStage = document.querySelector(`.stage[data-section="${id}"]`);
           if (targetStage) {
@@ -234,7 +220,6 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
       }
     }
     nav.appendChild(frag);
-    console.log(`✅ layoutNavNodes: Appended ${frag.childNodes.length} elements to nav`);
     wireSigilToggle(); // Wire up the ritual toggle
   }
 
@@ -266,11 +251,6 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
     const labelText = el.querySelector('.node-label');
     if (labelText) {
       labelText.style.transform = `translateX(-50%) translate(${tx}px, ${ty}px)`;
-    }
-    
-    // Log each label in static mode
-    if (!ritualActive) {
-      console.log(`📍 Static[${id}]: left=${left.toFixed(1)}px, top=${top.toFixed(1)}px, delta=(${tx},${ty})`);
     }
 
     // NO collision nudging in static mode

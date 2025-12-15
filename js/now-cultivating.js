@@ -84,8 +84,6 @@ export function initNow() {
     return;
   }
 
-  console.log('[Now] Initializing...');
-  
   // Setup intersection observer for performance
   setupVisibilityObserver(stage);
   
@@ -99,7 +97,6 @@ export function initNow() {
   initNowCards();
 
   state.initialized = true;
-  console.log('[Now] Ready');
 }
 
 /**
@@ -108,8 +105,6 @@ export function initNow() {
  */
 export function destroyNow() {
   if (!state.initialized) return;
-
-  console.log('[Now] Destroying');
 
   // Destroy cards
   destroyNowCards();
@@ -138,12 +133,6 @@ function setupVisibilityObserver(stage) {
     (entries) => {
       entries.forEach(entry => {
         state.isVisible = entry.isIntersecting;
-        if (!entry.isIntersecting) {
-          // Pause animations when not visible (future card animations)
-          console.log('[Now] Page hidden, pausing animations');
-        } else {
-          console.log('[Now] Page visible, resuming animations');
-        }
       });
     },
     { threshold: 0.1 }
@@ -211,7 +200,6 @@ function buildCards() {
   // TODO: Position in constellation
   // TODO: Wire flip interactions
   // TODO: Add status indicators (🔥⚗️🌱)
-  console.log('[Now] Card building deferred to Step 2');
 }
 
 /**
@@ -220,5 +208,4 @@ function buildCards() {
  */
 function positionCards() {
   // TODO: Layout algorithm (grid? circular? organic?)
-  console.log('[Now] Card positioning deferred to Step 2');
 }

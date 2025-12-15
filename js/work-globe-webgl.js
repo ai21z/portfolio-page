@@ -177,8 +177,6 @@ export function initWorkGlobe() {
   
   if (!textBillboardProgram) {
     console.error('❌ Failed to create text billboard shader program!');
-  } else {
-    console.log('✅ Text billboard shader program created successfully');
   }
 
   // Create sphere geometry
@@ -387,7 +385,6 @@ export function initWorkGlobe() {
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      console.log('[Work Globe] DPR changed to', dpr);
       resizeCanvas();
     }
   }, 500);
@@ -401,8 +398,6 @@ export function initWorkGlobe() {
 
   // Start animation
   animate();
-  
-  console.log('[Work Globe] Initialization complete');
 
 }
 
@@ -996,13 +991,9 @@ function checkClickWithDepth(mouseX, mouseY) {
   // Return the closest object in 3D space
   if (clickableCandidates.length > 0) {
     const winner = clickableCandidates[0];
-    console.log(`[Click] ${winner.type} selected (${clickableCandidates.length} candidates, ${occludedCount} occluded)`);
     return winner;
   }
   
-  if (occludedCount > 0) {
-    console.log(`[Click] No visible targets (${occludedCount} occluded by globe)`);
-  }
   return null;
 }
 
@@ -1056,7 +1047,6 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
   
   // Only show info if explicitly requested (on click)
   if (showInfo && closestPin) {
-    console.log('[Work Globe] Showing info for:', closestPin.key);
     showLocationInfo(closestPin);
   }
 
@@ -1083,11 +1073,8 @@ function projectToScreen(worldPos) {
 }
 
 function showLocationInfo(pin) {
-  console.log('[Work Globe] showLocationInfo called for:', pin.key);
-  
   let infoBubble = document.querySelector('.work-location-info');
   if (!infoBubble) {
-    console.log('[Work Globe] Creating new info bubble element');
     infoBubble = document.createElement('div');
     infoBubble.className = 'work-location-info';
     document.body.appendChild(infoBubble);
@@ -1110,8 +1097,6 @@ function showLocationInfo(pin) {
   // Country flags instead of generic icons
   const countryFlags = { greece: '🇬🇷', spain: '🇪🇸' };
   const icon = countryFlags[pin.key] || '🏛️';
-  
-  console.log('[Work Globe] Building content for:', location.name);
   
   // Build content with close button (unified style)
   let html = '<button class="close-btn" aria-label="Close">✕</button>';
@@ -1165,21 +1150,16 @@ function showLocationInfo(pin) {
     infoBubble.style.bottom = 'auto';
   }
   
-  console.log('[Work Globe] Positioned for', isMobile ? 'mobile' : 'desktop');
-  
   // Show with animation
   requestAnimationFrame(() => {
     infoBubble.classList.add('visible');
-    console.log('[Work Globe] Info bubble visible class added');
   });
 }
 
 function hideLocationInfo() {
-  console.log('[Work Globe] hideLocationInfo called');
   const infoBubble = document.querySelector('.work-location-info');
   if (infoBubble) {
     infoBubble.classList.remove('visible');
-    console.log('[Work Globe] Info bubble hidden');
   }
 }
 
@@ -1195,7 +1175,6 @@ function checkMoonClick(mouseX, mouseY) {
   const clickedMoon = moonOrbitSystem.getMoonAtPosition(ndcX, ndcY, projectionMatrix, viewMatrix, modelMatrix);
   
   if (clickedMoon) {
-    console.log('[Work Globe] Moon clicked:', clickedMoon.project.name);
     moonOrbitSystem.triggerMoonClick(clickedMoon); // Trigger moth wing click animation
     showProjectPanel(clickedMoon);
     return clickedMoon;
@@ -1205,14 +1184,11 @@ function checkMoonClick(mouseX, mouseY) {
 }
 
 function showProjectPanel(moon) {
-  console.log('[Work Globe] showProjectPanel called for:', moon.project.name);
-  
   // Hide any existing work location info
   hideLocationInfo();
   
   let projectPanel = document.querySelector('.project-panel');
   if (!projectPanel) {
-    console.log('[Work Globe] Creating new project panel element');
     projectPanel = document.createElement('div');
     projectPanel.className = 'project-panel necrographic-card';
     document.body.appendChild(projectPanel);
@@ -1287,16 +1263,13 @@ function showProjectPanel(moon) {
   // Show with animation
   requestAnimationFrame(() => {
     projectPanel.classList.add('visible');
-    console.log('[Work Globe] Project panel visible');
   });
 }
 
 function hideProjectPanel() {
-  console.log('[Work Globe] hideProjectPanel called');
   const projectPanel = document.querySelector('.project-panel');
   if (projectPanel) {
     projectPanel.classList.remove('visible');
-    console.log('[Work Globe] Project panel hidden');
     
     // Resume moon orbit
     if (moonOrbitSystem) {
@@ -1386,8 +1359,6 @@ function resizeCanvas() {
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
 
-  console.log(`[Work Globe] Canvas resized: ${width}×${height} (DPR: ${dpr}, buffer: ${canvas.width}×${canvas.height}), mobile: ${isMobile}`);
-
   if (gl) {
     gl.viewport(0, 0, canvas.width, canvas.height);
     projectionMatrix = mat4.perspective(
@@ -1432,22 +1403,16 @@ export function cleanupWorkGlobe() {
   if (infoBubble) {
     infoBubble.remove();
   }
-
-  console.log('[Work Globe] Cleanup complete');
 }
 
 // ━━━ AUTO-INITIALIZATION ━━━
 // Initialize when the Work section becomes active
 function autoInit() {
-  console.log('[Work Globe] autoInit called');
-  
   const workSection = document.getElementById('work');
   if (!workSection) {
     console.warn('[Work Globe] Work section not found, skipping auto-init');
     return;
   }
-
-  console.log('[Work Globe] Work section found:', workSection.id);
 
   // Use MutationObserver to detect when work section gets active-section class
   const observer = new MutationObserver((mutations) => {
@@ -1455,15 +1420,11 @@ function autoInit() {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
         const hasActiveClass = workSection.classList.contains('active-section');
         
-        console.log('[Work Globe] Class mutation detected, hasActiveClass:', hasActiveClass, 'gl:', !!gl);
-        
         if (hasActiveClass && !gl) {
           // Section just became active and globe not initialized
-          console.log('[Work Globe] Auto-initializing on section activation');
           initWorkGlobe();
         } else if (!hasActiveClass && gl) {
           // Section just became inactive and globe is initialized
-          console.log('[Work Globe] Auto-cleanup on section deactivation');
           cleanupWorkGlobe();
         }
       }
@@ -1471,24 +1432,19 @@ function autoInit() {
   });
 
   observer.observe(workSection, { attributes: true });
-  console.log('[Work Globe] MutationObserver set up');
   
   // Check initial state
   const initiallyActive = workSection.classList.contains('active-section');
-  console.log('[Work Globe] Initial state check - active:', initiallyActive);
   
   if (initiallyActive) {
-    console.log('[Work Globe] Section already active, initializing immediately');
     initWorkGlobe();
   }
 }
 
 // Run auto-init when DOM is ready
 if (document.readyState === 'loading') {
-  console.log('[Work Globe] Waiting for DOMContentLoaded');
   document.addEventListener('DOMContentLoaded', autoInit);
 } else {
-  console.log('[Work Globe] DOM already loaded, calling autoInit immediately');
   autoInit();
 }
 

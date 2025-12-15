@@ -29,7 +29,6 @@ export function computeCoverFromImage() {
   COVER.baseH = H;
   COVER.ready = true;
   
-  console.log(`📐 Cover`, { baseW: W, baseH: H, s: s.toFixed(4), dx: COVER.dx.toFixed(2), dy: COVER.dy.toFixed(2), viewport: `${vw}×${vh}` });
   return true;
 }
 

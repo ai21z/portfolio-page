@@ -446,27 +446,14 @@ let animationActive = false;
 async function initBlogNetwork(){
   if (initialized) return; // Only init once
   
-  console.log('[Blog Network WebGL] Script loaded, starting init...');
   const canvas = q('#blog-network-canvas');
-  console.log('[Blog Network WebGL] Canvas element:', canvas);
-  if (!canvas) {
-    console.error('[Blog Network WebGL] Canvas element not found!');
-    return;
-  }
+  if (!canvas) return;
   const gl = canvas.getContext('webgl2', { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
-  console.log('[Blog Network WebGL] WebGL2 context:', gl);
   if(!gl){ console.error('WebGL2 not available'); return; }
 
   // Load network JSON
-  console.log('[Blog Network WebGL] Fetching network data...');
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
-  console.log('[Blog Network WebGL] Fetch response:', res.status, res.ok);
   const data = await res.json();
-  console.log('[Blog Network WebGL] Loaded network:', {
-    paths: data.paths?.length,
-    hubs: data.hubs?.length,
-    firstPath: data.paths?.[0]?.slice(0, 2)
-  });
 
   // Build geometry buffers (segments)
   const segs = [];
@@ -577,12 +564,6 @@ async function initBlogNetwork(){
   });
   const segCount = segs.length/7;
   const nodeCount = nodes.length/4;
-  console.log('[Blog Network WebGL] Built geometry:', {
-    segments: segCount,
-    firstSeg: segs.slice(0, 7),
-    totalFloats: segs.length,
-    nodes: nodeCount
-  });
 
   // infected/cyst nodes (every 12th)
   const cysts = [];
@@ -673,7 +654,6 @@ async function initBlogNetwork(){
   const progSeg   = program(gl, VS_SEG, FS_SEG);
   const progCyst  = program(gl, VS_CYST, FS_CYST);
   const progNode  = program(gl, VS_NODE, FS_NODE);
-  console.log('[Blog Network WebGL] Shaders compiled:', { progPaper, progSeg, progCyst, progNode });
 
   // Create main VAO
   const vaoSeg  = makeVAOforSegments();
@@ -722,13 +702,6 @@ async function initBlogNetwork(){
     
     vaoByHub[hubId] = { vao, count: hubSegCount };
   }
-  
-  console.log('[Blog Network WebGL] VAOs created:', { 
-    vaoSeg, 
-    vaoCyst, 
-    vaoNode,
-    perHubCounts: Object.fromEntries(Object.entries(vaoByHub).map(([k,v]) => [k, v.count]))
-  });
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -853,7 +826,6 @@ async function initBlogNetwork(){
 
     svg.append(shadow, agar, meniscus, rimInner, rimOuter, spec1, spec2);
     
-    console.log('[Blog WebGL] Built realistic Petri dish:', {cx, cy, r});
     return {cx, cy, r};
   }
 
@@ -877,8 +849,6 @@ async function initBlogNetwork(){
       gl.uniform1f(gl.getUniformLocation(prog,'uDpr'), dpr);
     }
     gl.useProgram(null);
-    
-    console.log('[Blog WebGL] Dish uniforms (CSS px):', {cxCss, cyCss, rCss, dpr});
   }
 
   // Build curved labels OUTSIDE dish rim
@@ -985,8 +955,6 @@ async function initBlogNetwork(){
     
     zoomText.appendChild(zoomTextPath);
     svg.appendChild(zoomText);
-    
-    console.log('[Blog WebGL] Built curved labels outside rim:', cfg.map(c => c.id));
   }
 
   // ━━━ AUTO-CENTERING ━━━
@@ -995,18 +963,7 @@ async function initBlogNetwork(){
   const shift = AUTO_CENTER 
     ? [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy]
     : FIXED_SHIFT;
-  
-  console.log('[Blog WebGL] Auto-centering:', {
-    enabled: AUTO_CENTER,
-    networkCentroid: [netCx, netCy],
-    shift,
-    targetCenter: [VIEW.W * 0.5, VIEW.H * 0.5],
-    offsetPercent: [
-      Math.abs(shift[0]) / VIEW.W * 100,
-      Math.abs(shift[1]) / VIEW.H * 100
-    ].map(v => v.toFixed(2) + '%')
-  });
-  
+
   let resizeTimeout = null;
   let currentDish = null;
   
@@ -1027,11 +984,6 @@ async function initBlogNetwork(){
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      console.log('[Blog Network WebGL] Canvas resized:', {
-        cssSize: `${cssW}x${cssH}`,
-        bufferSize: `${w}x${h}`,
-        dpr: dpr
-      });
     }
     
     // scale & offset to fit 1920x1080
@@ -1045,7 +997,6 @@ async function initBlogNetwork(){
     buildLabels(currentDish);
     
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
-    console.log('[Blog WebGL] Emitting transform:', { scale, offsetX: offX, offsetY: offY, cssW, cssH });
     window.dispatchEvent(new CustomEvent('blog:transform', {
       detail: {
         scale,
@@ -1067,10 +1018,6 @@ async function initBlogNetwork(){
     if (resizeTimeout) clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       fit = resize();
-      console.log('[Blog Network WebGL] Resize stabilized:', {
-        scale: fit.scale.toFixed(4),
-        size: `${fit.cssW}x${fit.cssH}`
-      });
     }, 100); // Wait 100ms after last resize event
   });
   
@@ -1080,17 +1027,9 @@ async function initBlogNetwork(){
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      console.log('[Blog Network WebGL] DPR changed to', dpr);
       fit = resize();
     }
   }, 500);
-  console.log('[Blog Network WebGL] Canvas setup:', {
-    canvasSize: `${canvas.width}x${canvas.height}`,
-    cssSize: `${fit.cssW}x${fit.cssH}`,
-    scale: fit.scale,
-    offset: [fit.offX, fit.offY],
-    shift
-  });
 
   let hoveredHubId = null;
   let activeHub = null;
@@ -1131,12 +1070,10 @@ async function initBlogNetwork(){
     // Emit hover events when hub changes
     if (hoveredHubId !== prevHovered) {
       if (hoveredHubId) {
-        console.log('[Blog WebGL] Hover:', hoveredHubId);
         window.dispatchEvent(new CustomEvent('blog:hover', { 
           detail: { hubId: hoveredHubId } 
         }));
       } else {
-        console.log('[Blog WebGL] Hover off');
         window.dispatchEvent(new CustomEvent('blog:hover-off', { 
           detail: {} 
         }));
@@ -1153,12 +1090,9 @@ async function initBlogNetwork(){
     
     const now = performance.now();
     if (now - lastClickTime < CLICK_DEBOUNCE) {
-      console.log('[Blog WebGL] Click debounced (too fast)');
       return;
     }
     lastClickTime = now;
-    
-    console.log('[Blog WebGL] Click: navigating to', hoveredHubId);
     
     // Brief spotlight effect (150ms) - non-blocking
     activeHub = hoveredHubId;
@@ -1185,7 +1119,6 @@ async function initBlogNetwork(){
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
     if (source === 'rim-label' && hubId && hubId !== 'source') {
-      console.log('[Blog WebGL] External hover from rim label:', hubId);
       hoveredHubId = hubId;
       canvas.style.cursor = 'pointer';
     }
@@ -1195,7 +1128,6 @@ async function initBlogNetwork(){
     const { hubId } = e.detail;
     // Only clear if we're currently hovering this hub
     if (hoveredHubId === hubId) {
-      console.log('[Blog WebGL] External hover-off:', hubId);
       hoveredHubId = null;
       canvas.style.cursor = 'default';
     }
@@ -1258,22 +1190,9 @@ async function initBlogNetwork(){
   // animate
   let last = performance.now();
   let frameCount = 0;
-  console.log('[Blog Network WebGL] Starting animation loop...');
   function loop(now){
     const dt = now-last; if(dt<1000/30){ requestAnimationFrame(loop); return; } // 30 FPS cap
     last = now;
-    
-    // Debug: Log first 3 frames to verify rendering
-    if (frameCount < 3) {
-      console.log(`[Blog Network WebGL] Frame ${frameCount}: rendering`, {
-        canvasSize: `${canvas.width}x${canvas.height}`,
-        viewport: `${fit.cssW}x${fit.cssH}`,
-        scale: fit.scale,
-        segmentCount: vaoSeg.count,
-        nodeCount: vaoNode.count,
-        cystCount: vaoCyst.count
-      });
-    }
     frameCount++;
 
     // PAPER (renders background)
@@ -1308,17 +1227,7 @@ async function initBlogNetwork(){
     set3(progSeg,'uEmber3', PAL.EMBER3);
     gl.uniform1f(gl.getUniformLocation(progSeg,'uEmberR'), 86.0);
     setHubs(progSeg);
-    
-    // DEBUG: Log segment draw call on first frame
-    if (frameCount === 1) {
-      console.log('[Blog Network WebGL] Drawing segments:', {
-        instanceCount: vaoSeg.count,
-        scale: fit.scale,
-        offset: [fit.offX, fit.offY],
-        shift: shift
-      });
-    }
-    
+
     if (!activeHub) {
       // OVERVIEW MODE: Draw all segments with optional hover highlight
       gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 1.0);
@@ -1429,7 +1338,6 @@ async function initBlogNetwork(){
   }
   
   initialized = true;
-  console.log('[Blog Network WebGL] Initialization complete!');
   
   // Pause/resume when blog section visibility changes
   let running = false;
@@ -1461,24 +1369,18 @@ async function initBlogNetwork(){
 // Wait for DOM to be ready, then init when blog section becomes visible
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Blog Network WebGL] DOM loaded, waiting for blog section...');
     watchForBlogSection();
   });
 } else {
-  console.log('[Blog Network WebGL] DOM already loaded, watching for blog section...');
   watchForBlogSection();
 }
 
 function watchForBlogSection() {
   const blogSection = document.getElementById('blog');
-  if (!blogSection) {
-    console.error('[Blog Network WebGL] Blog section not found!');
-    return;
-  }
+  if (!blogSection) return;
   
   // Check if already visible
   if (blogSection.classList.contains('active-section')) {
-    console.log('[Blog Network WebGL] Blog section already visible, initializing...');
     initBlogNetwork();
     return;
   }
@@ -1488,7 +1390,6 @@ function watchForBlogSection() {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
         if (blogSection.classList.contains('active-section')) {
-          console.log('[Blog Network WebGL] Blog section became visible, initializing...');
           initBlogNetwork();
           observer.disconnect(); // Stop watching after init
         }
@@ -1500,6 +1401,4 @@ function watchForBlogSection() {
     attributes: true,
     attributeFilter: ['class']
   });
-  
-  console.log('[Blog Network WebGL] Watching for blog section to become visible...');
 }

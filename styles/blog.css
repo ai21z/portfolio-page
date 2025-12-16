@@ -51,71 +51,6 @@
   z-index: 1;
 }
 
-/* Petri Dish Overlay (navigation layer) */
-.petri-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 3;
-}
-
-#petriCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/* SVG Labels Container */
-.petri-labels {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/* Curved Text Labels */
-.petri-label {
-  fill: rgba(232, 232, 234, 0.75);
-  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
-  font-size: 3.5px; /* SVG units - relative to viewBox */
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  cursor: pointer;
-  pointer-events: auto; /* Enable clicks on text */
-  transition: all 180ms ease;
-  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
-}
-
-.petri-label:hover,
-.petri-label:focus-visible,
-.petri-label[aria-current="true"] {
-  fill: #ffcc80;
-  filter: drop-shadow(0 0 4px rgba(255, 143, 77, 0.6));
-}
-
-.petri-label:focus-visible {
-  outline: 2px solid #ff8f4d;
-  outline-offset: 2px;
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .petri-label {
-    transition: none;
-  }
-}
-
 /* Intro Caption */
 .blog-intro-caption {
   position: absolute;
@@ -1596,17 +1531,6 @@
   line-height: 1.6;
   color: var(--bone);
   opacity: 0.85;
-}
-
-/* Article View (full article content) */
-.blog-article-view {
-  position: absolute;
-  inset: 0;
-  background: rgba(11, 12, 13, 0.98);
-  backdrop-filter: blur(8px);
-  z-index: 50;
-  overflow-y: auto;
-  padding: 120px 24px 40px;
 }
 
 .blog-article-view[hidden] {

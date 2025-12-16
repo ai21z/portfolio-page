@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-/**
- * Icon Generator for Necrography
- * Generates all required icon sizes from the sigil source image
- * Uses artifacts/sigil/AZ-VZ-01.png as source
- */
+// Icon generator: creates all sizes from sigil source
 
 import sharp from 'sharp';
 import { mkdir, writeFile } from 'fs/promises';
@@ -12,7 +8,6 @@ import { join } from 'path';
 const SOURCE = './artifacts/sigil/AZ-VZ-01.png';
 const OUTPUT_DIR = './icons';
 
-// Icon specifications
 const ICONS = [
   { name: 'favicon-16.png', size: 16 },
   { name: 'favicon-32.png', size: 32 },
@@ -23,22 +18,19 @@ const ICONS = [
   { name: 'maskable-512.png', size: 512, maskable: true }
 ];
 
-// Create icons directory
 await mkdir(OUTPUT_DIR, { recursive: true });
 
 console.log('🎨 Generating icons from sigil...\n');
 
-// Generate each icon size
 for (const icon of ICONS) {
   try {
     let pipeline = sharp(SOURCE).resize(icon.size, icon.size, {
       fit: 'contain',
-      background: { r: 11, g: 11, b: 12, alpha: 0 } // --abyss with transparency
+      background: { r: 11, g: 11, b: 12, alpha: 0 }
     });
 
-    // For maskable icons, add safe zone padding (80% inner circle)
     if (icon.maskable) {
-      const padding = Math.floor(icon.size * 0.1); // 10% padding on each side = 80% safe zone
+      const padding = Math.floor(icon.size * 0.1);
       pipeline = sharp(SOURCE)
         .resize(icon.size - padding * 2, icon.size - padding * 2, {
           fit: 'contain',
@@ -60,11 +52,8 @@ for (const icon of ICONS) {
   }
 }
 
-// Generate pinned-tab.svg (monochrome SVG for Safari)
 console.log('\n🎨 Generating pinned-tab.svg...');
 try {
-  // For Safari pinned tabs, we need a simple monochrome SVG
-  // We'll create a basic outline version
   const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
   <rect width="16" height="16" fill="#000"/>

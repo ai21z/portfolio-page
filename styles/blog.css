@@ -31,15 +31,6 @@
   transition: none !important;
 }
 
-/* Blog container - Fully responsive to screen size */
-.blog-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
 /* Blog network canvas (WebGL base layer) */
 .blog-network-canvas {
   position: absolute;
@@ -387,100 +378,6 @@
   transition: fill 200ms ease;
 }
 
-/* Unified HUD cluster (Motion + Map buttons) - z:50 */
-.cluster-tl {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  z-index: 50;
-  align-items: center;
-}
-
-/* HUD Buttons (Motion, Map) */
-#btn-motion,
-#btn-map,
-.hud-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 14px;
-  min-width: 44px;
-  min-height: 44px; /* WCAG AA minimum touch target */
-  background: rgba(15, 16, 20, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 22px;
-  color: rgba(232, 232, 234, 0.8);
-  font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: all 150ms ease;
-  white-space: nowrap;
-}
-
-/* Zoom Indicator (read-only display) */
-.zoom-indicator {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  min-height: 36px;
-  background: rgba(15, 16, 20, 0.75);
-  border: 1px solid rgba(228, 189, 140, 0.2);
-  border-radius: 18px;
-  color: rgba(228, 189, 140, 0.85);
-  font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.05em;
-  pointer-events: none;
-  user-select: none;
-  transition: opacity 200ms ease;
-  backdrop-filter: blur(8px);
-}
-
-#zoom-percent {
-  font-weight: 600;
-  color: rgba(255, 200, 120, 0.95);
-  margin: 0 2px;
-}
-
-#btn-motion:hover,
-#btn-map:hover,
-.hud-btn:hover {
-  background: rgba(25, 26, 30, 0.95);
-  border-color: #ff8f4d;
-  color: #ff8f4d;
-}
-
-#btn-motion:focus-visible,
-#btn-map:focus-visible,
-.hud-btn:focus-visible {
-  outline: 3px solid #ff8f4d; /* 3px for better visibility */
-  outline-offset: 2px;
-}
-
-#btn-motion[aria-pressed="false"],
-.hud-btn[aria-pressed="false"] {
-  opacity: 0.6;
-}
-
-.blog-hud {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-  display: flex;
-  gap: 8px;
-  z-index: 100;
-  align-items: center;
-}
-
 /* Info Card (A11y card for hover info) - Use ID selector to match HTML */
 #hub-infocard,
 .hub-infocard {
@@ -644,28 +541,6 @@
   line-height: 1.6;
 }
 
-/* Helper text (matches work-helper-text pattern) */
-.blog-helper-text {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(232, 232, 234, 0.5);
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  text-align: center;
-  pointer-events: none;
-  z-index: 50;
-  opacity: 0;
-  animation: fade-in-helper 1s ease 0.5s forwards;
-}
-
-@keyframes fade-in-helper {
-  to {
-    opacity: 1;
-  }
-}
-
 /* Suppress nav and background when blog is active */
 .blog-screen.active-section ~ #network-nav,
 .blog-screen.active-section ~ #bg,
@@ -683,11 +558,6 @@
     right: 16px;
     width: 40px;
     height: 40px;
-  }
-  
-  .blog-helper-text {
-    bottom: 24px;
-    font-size: 12px;
   }
   
   .blog-category-header,
@@ -721,49 +591,16 @@
     font-size: 12px;
   }
   
-  .blog-motion-toggle {
-    top: 16px;
-    left: 16px;
-  }
-  
   #hub-infocard,
   .hub-infocard {
     right: 16px;
     top: 60px;
     max-width: calc(100vw - 32px);
   }
-  
-  .blog-hub-legend {
-    right: 16px;
-    bottom: 60px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  .hub-button {
-    min-width: unset;
-    flex: 1;
-    min-width: 100px;
-  }
-  
-  .blog-helper-text {
-    bottom: 16px;
-    font-size: 11px;
-  }
 }
 
 /* Accessibility: Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .blog-motion-toggle {
-    display: none; /* Toggle not needed if OS pref is set */
-  }
-  
-  .blog-helper-text {
-    animation: none;
-    opacity: 1;
-  }
-  
   #hub-infocard,
   .hub-infocard {
     transition: opacity 100ms ease;
@@ -800,8 +637,7 @@
   transition: opacity 200ms ease;
 }
 
-.blog-screen.in-category .blog-intro-caption,
-.blog-screen.in-category .blog-helper-text {
+.blog-screen.in-category .blog-intro-caption {
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease;

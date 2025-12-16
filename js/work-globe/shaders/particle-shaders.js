@@ -1,7 +1,3 @@
-/**
- * Particle system shaders (spores and orbital particles)
- */
-
 export const PARTICLE_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

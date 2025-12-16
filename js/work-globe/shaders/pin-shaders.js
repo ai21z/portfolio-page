@@ -1,7 +1,3 @@
-/**
- * Work pin shaders (location markers on globe)
- */
-
 export const PIN_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

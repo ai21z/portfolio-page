@@ -1,7 +1,3 @@
-/**
- * WebGL utilities for shader and texture management
- */
-
 export function createShader(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -62,12 +58,11 @@ export function loadTexture(gl, url, options = {}) {
     
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     
-    // Set filters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
       options.mipmap !== false ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     
-    // Set wrapping - REPEAT for longitude (S), CLAMP for latitude (T) to avoid pole artifacts
+    // S repeats, T clamps to avoid pole artifacts
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     

@@ -1,14 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RITUAL-BIOGRAPH ALTAR SYSTEM
-   Full-screen circular altar for About/Projects/Blog ritual mode
-   - Altar screen & ring
-   - Core sigil
-   - Necro-slabs (paper cards)
-   - Paper focus mode
-   - Navigation suppression in panel mode
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Full-screen altar canvas (no scroll) */
+/* Full-screen altar canvas */
 .altar-screen {
   position: fixed;
   inset: 0;
@@ -30,12 +20,10 @@
   aspect-ratio: 1/1;
 }
 
-/* Rotating scan-sweep - DISABLED for performance */
 .altar::after {
   display: none;
 }
 
-/* Ring SVG */
 .ring {
   position: absolute;
   inset: 0;
@@ -78,7 +66,6 @@
   filter: drop-shadow(0 0 2px rgba(255,122,51,0.9));
 }
 
-/* Core sigil (no portrait - pure geometric) */
 .core {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -103,7 +90,6 @@
   overflow: hidden;
 }
 
-/* Hide portrait images */
 .core-plate img {
   display: none;
 }
@@ -119,7 +105,7 @@
   filter: blur(0.6px) contrast(120%);
 }
 
-/* Necro-slabs (aged notebook paper style) */
+/* Aged notebook paper cards */
 .slab {
   position: absolute;
   width: 36%;
@@ -261,7 +247,6 @@
   will-change: transform;
 }
 
-/* Spiral notebook holes on the left edge */
 .slab::before {
   content: '';
   position: absolute;
@@ -280,7 +265,6 @@
   z-index: 3;
 }
 
-/* Coffee stains overlay for each slab */
 .slab::after {
   content: '';
   position: absolute;
@@ -328,7 +312,6 @@
   );
 }
 
-/* Disable hover effects on non-open papers when one is magnified */
 .slab:hover:not(.paper-open) {
   transform: var(--base-transform) scale(1.02);
   box-shadow: 
@@ -337,7 +320,6 @@
     inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.25);
 }
 
-/* Completely disable hover effects on background papers when any paper is open */
 .has-paper-open-global .slab:hover:not(.paper-open) {
   transform: var(--base-transform);
   box-shadow: 
@@ -409,7 +391,6 @@
   border-bottom-color: #654321;
 }
 
-/* Place the slabs around the ring */
 .slab-about {
   left: 2%;
   top: 8%;
@@ -422,21 +403,18 @@
   --rot: 3deg;
 }
 
-/* Bottom paper: same width/shape as others, but centered; set base translate via CSS var */
 .slab-vitals {
   left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
-/* Art's paramour - positioned on the right side */
 .slab-paramour {
   right: 2%;
   bottom: 8%;
   --rot: 2deg;
 }
 
-/* Skills section slab positioning */
 .slab-systems {
   left: 2%;
   top: 8%;
@@ -455,14 +433,12 @@
   --rot: 3deg;
 }
 
-/* The rest of my life - positioned on the left side */
 .slab-restoflife {
   left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
-/* Tech stack list styling - notebook aesthetic */
 .tech-stack {
   list-style: none;
   padding: 0;
@@ -478,7 +454,7 @@
   z-index: 1;
 }
 
-/* ━━━ Hand-drawn Tech Tags (pencil sketch style) ━━━ */
+/* Pencil sketch style tags */
 .tech-stack li {
   position: relative;
   display: inline-block;
@@ -503,7 +479,6 @@
   transition: transform 100ms ease, border-color 100ms ease;
 }
 
-/* 2nd sketch line, a bit offset & skewed */
 .tech-stack li::before {
   content: '';
   position: absolute;
@@ -515,7 +490,6 @@
   transform: translate(1.2px, 0.8px) rotate(0.9deg) skewX(-0.6deg);
 }
 
-/* Faint dashed inner line – paper pressure / graphite ghost */
 .tech-stack li::after {
   content: '';
   position: absolute;
@@ -530,7 +504,6 @@
   transform: translateY(-1px) rotate(0deg) skewX(0deg);
 }
 
-/* Pencil wobble animation on hover */
 .tech-stack li:hover::before {
   animation: pencil-wobble-altar 260ms ease-in-out infinite alternate;
 }
@@ -567,7 +540,6 @@ button.ghost:hover {
   color: #1A1510;
 }
 
-/* Crisp text rendering for all slabs */
 .slab,
 .slab *{
   -webkit-font-smoothing: antialiased;
@@ -576,12 +548,7 @@ button.ghost:hover {
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PAPER INTERACTION SYSTEM (kept for click/hover behavior)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ── Focused reading mode (zoom paper to center + dim rest) ── */
-/* Global backdrop (full viewport, unaffected by transformed ancestors) */
+/* Focused reading mode */
 .paper-backdrop{
   position: fixed; inset: 0; z-index: 8;
   background: rgba(6,8,10,0.88);
@@ -591,8 +558,7 @@ button.ghost:hover {
   opacity: 1; pointer-events: auto;
 }
 
-/* Open state: we freeze the element's pixel box and use transform only.
-   This keeps text/layout 1:1 and centers perfectly. */
+/* Paper open state - JS injects positioning */
 .paper.paper-open{
   position: fixed; z-index: 50;
   /* left/top/width/height are injected by JS to match on-wall pixels */
@@ -609,18 +575,13 @@ button.ghost:hover {
   backface-visibility: hidden;
 }
 
-/*
- * [AA-FIX] After animation settles: Keep scale() BUT remove compositor hints
- * This keeps the visual shape perfect while allowing text to re-raster with better AA.
- * The key is removing will-change and backface-visibility after settle.
- */
+/* Settled state - remove compositor hints for better AA */
 .paper.paper-open.paper-open--settled {
   /* Keep the transform exactly as-is (includes scale) */
   will-change: auto !important;
   backface-visibility: visible !important;
 }
 
-/* Prevent hover from nudging the enlarged paper */
 .paper.paper-open:hover{
   transform: translate(var(--open-tx,0), var(--open-ty,0))
              scale(var(--open-scale,1))
@@ -628,7 +589,6 @@ button.ghost:hover {
   box-shadow: 0 calc(25px * var(--k)) calc(70px * var(--k)) rgba(0, 0, 0, 0.8);
 }
 
-/* Tiny breathing ring around your glowing dot when a paper is hoverable */
 .cursor-ring{
   position: fixed;
   width: 20px;
@@ -648,7 +608,7 @@ button.ghost:hover {
   /* Removed breathing animation for performance */
 }
 
-/* While a paper is open, subtly mute the altar visuals behind - USE OPACITY INSTEAD OF FILTER */
+/* Dim background visuals when paper is open */
 .altar-screen.has-paper-open .ring,
 .altar-screen.has-paper-open .core,
 .altar-screen.has-paper-open .slab:not(.paper-open){
@@ -659,35 +619,29 @@ button.ghost:hover {
   will-change: opacity;
 }
 
-/* Keyboard focus ring on papers */
 .altar-screen .paper:focus-visible{
   outline: 2px dashed rgba(57,39,20,.8); outline-offset: 2px;
 }
 
-/* ───────────────── PANEL MODE: suppress background nav ───────────────── */
-/* When any nav page is open, add .nav-suppressed on <body> (see JS below) */
-/* Hide nav labels but keep mycelium background visible */
+/* Suppress background nav when sections open */
 .nav-suppressed .network-node-label,
 .nav-suppressed [data-nav] {
   display: none !important;
 }
-/* Kill clicks into the background network completely */
 .nav-suppressed #network-nav {
   pointer-events: none !important;
 }
 
-/* Keep background image visible in panel mode */
 .nav-suppressed #bg-front-img {
   opacity: 0.35 !important; /* Slightly dimmed but visible */
   filter: contrast(1.15) brightness(0.7);
 }
 
-/* Signals overlay sits above the network, below panels */
+/* Disabled radial rays effect */
 .signals-canvas{
   display: none !important; /* DISABLED - No radial rays effect */
 }
 
-/* Close/Back button (top-right corner) */
 .altar-close {
   position: absolute;
   top: 24px;
@@ -719,18 +673,14 @@ button.ghost:hover {
   outline-offset: 4px;
 }
 
-/* Removed slow entrance animations for instant display */
-
-/* Tablet & below: flow layout (≤900px) */
+/* Mobile: flow layout (≤900px) */
 @media (max-width: 900px) {
 
-  /* kill altar visuals */
   #about .ring,
   #about .core {
     display: none !important;
   }
 
-  /* container padding as a variable so we can subtract it from width */
   #about .altar {
     --gutter: min(0, 16px);
     padding-inline: var(--gutter);
@@ -740,7 +690,6 @@ button.ghost:hover {
     display: block !important;
   }
 
-  /* each post-it: auto height, centered, tiny tilt, no overlap */
   #about .slab.paper {
     position: static !important;
     inset: auto !important;
@@ -768,7 +717,6 @@ button.ghost:hover {
     margin-bottom: max(40px, 10vh) !important;
   }
 
-  /* Make the About section itself scrollable with momentum scrolling */
   #about.stage {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
@@ -777,7 +725,6 @@ button.ghost:hover {
     /* don’t hijack vertical scroll */
   }
 
-  /* Tickets are still styled the same, but no "clickable" affordance */
   #about .slab.paper {
     cursor: default !important;
     /* Layering: default to z-index 1, smooth filter transitions */
@@ -791,27 +738,21 @@ button.ghost:hover {
     outline: none !important;
   }
 
-  /* one is front → blur the rest */
   #about .altar.has-front .slab.paper:not(.is-front) {
     filter: blur(2.2px) brightness(.95) !important;
   }
 
-  /* the front one stays crisp and on top */
   #about .slab.paper.is-front {
     filter: none !important;
     z-index: 10 !important;
     transform: rotate(var(--rot, -1.5deg)) translateZ(0) scale(1.02) !important;
   }
 
-  /* ========== SKILLS SECTION - SAME MOBILE TREATMENT ========== */
-
-  /* kill altar visuals */
   #skills .ring,
   #skills .core {
     display: none !important;
   }
 
-  /* container padding as a variable so we can subtract it from width */
   #skills .altar {
     --gutter: min(0, 16px);
     padding-inline: var(--gutter);
@@ -821,7 +762,6 @@ button.ghost:hover {
     display: block !important;
   }
 
-  /* each post-it: auto height, centered, tiny tilt, no overlap */
   #skills .slab.paper {
     position: static !important;
     inset: auto !important;
@@ -849,7 +789,6 @@ button.ghost:hover {
     margin-bottom: max(40px, 10vh) !important;
   }
 
-  /* Make the Skills section itself scrollable with momentum scrolling */
   #skills.stage {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
@@ -858,7 +797,6 @@ button.ghost:hover {
     /* don't hijack vertical scroll */
   }
 
-  /* Tickets are still styled the same, but no "clickable" affordance */
   #skills .slab.paper {
     cursor: default !important;
     /* Layering: default to z-index 1, smooth filter transitions */
@@ -872,12 +810,10 @@ button.ghost:hover {
     outline: none !important;
   }
 
-  /* one is front → blur the rest */
   #skills .altar.has-front .slab.paper:not(.is-front) {
     filter: blur(2.2px) brightness(.95) !important;
   }
 
-  /* the front one stays crisp and on top */
   #skills .slab.paper.is-front {
     filter: none !important;
     z-index: 10 !important;
@@ -885,9 +821,6 @@ button.ghost:hover {
   }
 }
 
-/* Below 900px, the flow layout from above takes over - no scaling needed */
-
-/* Prefers reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .altar-screen {
     animation: none;

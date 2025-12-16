@@ -1,35 +1,13 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MAIN STYLESHEET ORCHESTRATOR
-   Imports all modular stylesheets in correct cascade order
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Main stylesheet imports */
 
-/* 1. Base: Variables, typography, reset */
 @import 'base.css';
-
-/* 2. Canvas & Visual Effects */
 @import 'canvas.css';
-
-/* 3. Navigation System */
 @import 'navigation.css';
-
-/* 4. Layout & Grid Systems */
 @import 'layout.css';
-
-/* 5. Reusable Components */
 @import 'components.css';
-
-/* 6. Contact Form */
 @import 'contact.css';
-
-/* 8. Ritual Altar System */
 @import 'altar.css';
-
-/* 9. Now - Cultivating */
 @import 'now-cultivating.css';
 @import 'now-cards.css';
-
-/* 10. Mycelial Globe Work Section */
 @import 'work.css';
-
-/* 11. Blog Network Visualization */
 @import 'blog.css';

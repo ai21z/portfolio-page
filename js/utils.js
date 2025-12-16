@@ -1,11 +1,5 @@
-/**
- * Pure utility functions for geometry, canvas, and animation helpers
- * Extracted from script.js with ZERO changes to signatures or behavior
- */
+// Utility functions
 
-/**
- * Size a canvas to match viewport with device pixel ratio
- */
 export function sizeCanvas(canvas) {
   if (!canvas) return;
   const dpr = window.devicePixelRatio || 1;
@@ -17,11 +11,7 @@ export function sizeCanvas(canvas) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-/**
- * Compute cumulative arc lengths along a polyline
- * @param {Array} pts - Array of [x, y] points
- * @returns {Array} Cumulative lengths
- */
+// Cumulative arc lengths along polyline
 export function cumulativeLengths(pts) {
   const cum = [0];
   for (let i = 1; i < pts.length; i++) {
@@ -32,13 +22,7 @@ export function cumulativeLengths(pts) {
   return cum;
 }
 
-/**
- * Get point at arc-length position along a polyline
- * @param {Array} pts - Array of [x, y] points
- * @param {Array} cum - Cumulative lengths
- * @param {number} s - Arc-length position
- * @returns {Array} [x, y] point
- */
+// Point at arc length position along polyline
 export function pointAt(pts, cum, s) {
   const total = cum[cum.length - 1];
   if (s <= 0) return pts[0];
@@ -62,12 +46,6 @@ export function pointAt(pts, cum, s) {
   return [ax + (bx - ax) * t, ay + (by - ay) * t];
 }
 
-/**
- * Throttle function with requestAnimationFrame fallback
- * @param {Function} fn - Function to throttle
- * @param {number} ms - Minimum time between calls in milliseconds (default: 125)
- * @returns {Function} Throttled function
- */
 export const throttle = (fn, ms = 125) => {
   let t = 0, raf = 0;
   return (...args) => {
@@ -85,11 +63,6 @@ export const throttle = (fn, ms = 125) => {
   };
 };
 
-/**
- * Get viewport size using visualViewport API when available
- * Provides more accurate viewport dimensions on mobile devices
- * @returns {{w: number, h: number}} Viewport width and height
- */
 export const viewportSize = () => {
   const vv = window.visualViewport;
   return {

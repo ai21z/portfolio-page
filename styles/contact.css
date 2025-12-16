@@ -1,9 +1,3 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CONTACT FORM — NECROGRAPHIC NOTEBOOK AESTHETIC
-   Aged notebook page with living mycelium network and spiral binding
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ━━━ Contact Section Container ━━━ */
 #contact {
   min-height: 100dvh;
   display: flex;
@@ -15,19 +9,16 @@
   z-index: 9; /* Same as altar-screen to allow base background through */
 }
 
-/* Suppress network nav labels when contact is active (but keep sigil visible) */
 body:has(#contact.stage.active-section) .network-node-label {
   pointer-events: none;
   opacity: 0;
   transition: opacity 400ms ease;
 }
 
-/* Hide debug HUD overlay when contact is active */
 body:has(#contact.stage.active-section) #hud-canvas {
   display: none;
 }
 
-/* Hide blog network UI elements when contact is active */
 body:has(#contact.stage.active-section) .dish-labels,
 body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0;
@@ -35,7 +26,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   transition: opacity 400ms ease;
 }
 
-/* ━━━ Close Button (matching altar pages) ━━━ */
 .contact-close {
   position: fixed;
   top: 24px;
@@ -73,7 +63,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   outline-offset: 4px;
 }
 
-/* ━━━ Wax Seal (just the sigil image) ━━━ */
 .wax-seal {
   position: absolute;
   top: clamp(8px, 2vw, 16px);
@@ -96,7 +85,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   z-index: 1;
 }
 
-/* ━━━ Notebook Page ━━━ */
 .notebook-page {
   position: relative;
   max-width: 720px;
@@ -170,7 +158,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     );
 }
 
-/* Spiral notebook holes on the left edge */
 .notebook-page::before {
   content: '';
   position: absolute;
@@ -189,7 +176,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   z-index: 3;
 }
 
-/* Additional aging stains and spots */
 .notebook-page::after {
   content: '';
   position: absolute;
@@ -255,7 +241,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   );
 }
 
-/* ━━━ Canvas Overlay (Mycelium Network) ━━━ */
 .notebook-mycelium {
   display: none; /* Disabled - using static CSS coffee stains only */
   position: absolute;
@@ -267,7 +252,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   z-index: 1;
 }
 
-/* ━━━ Form Container ━━━ */
 .notebook-form {
   position: relative;
   z-index: 2;
@@ -318,7 +302,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   overflow: hidden;
 }
 
-/* ━━━ Header ━━━ */
 .notebook-header {
   font-family: 'Special Elite', monospace;
   font-size: 1.8rem;
@@ -340,7 +323,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   line-height: 32px; /* Align with notebook lines */
 }
 
-/* ━━━ Notebook Lines (Decorative Text) ━━━ */
 .notebook-lines {
   font-family: 'Special Elite', monospace;
   font-size: 1rem;
@@ -349,7 +331,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   margin: 0;
 }
 
-/* ━━━ Form Fields ━━━ */
 .notebook-field {
   margin-bottom: 1.2rem;
   position: relative;
@@ -401,7 +382,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   padding-top: 0;
 }
 
-/* ━━━ Character Counter ━━━ */
 .char-counter {
   text-align: right;
   margin-top: 0.25rem;
@@ -413,7 +393,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   color: #8B7D6B;
 }
 
-/* ━━━ Validation Messages ━━━ */
 .validation-msg {
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
@@ -431,7 +410,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   animation: fadeInShake 0.4s ease;
 }
 
-/* ━━━ Submit Button ━━━ */
 .notebook-submit {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
@@ -452,7 +430,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   justify-content: center;
 }
 
-/* Rough rectangle border - like the wrinkled paper edges */
 .notebook-submit::before {
   content: '';
   position: absolute;
@@ -501,7 +478,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0.75;
 }
 
-/* Second layer for depth and roughness */
 .notebook-submit::after {
   content: '';
   position: absolute;
@@ -543,7 +519,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   animation: submit-wobble-outer 320ms ease-in-out infinite alternate-reverse;
 }
 
-/* ━━━ Pencil wobble animations for hand-drawn effect ━━━ */
 @keyframes submit-wobble-inner {
   0%   { 
     transform: translate(0px, 0px); 
@@ -615,7 +590,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0.6;
 }
 
-/* ━━━ Success Message ━━━ */
 .notebook-success {
   text-align: center;
   padding: 2rem 0;
@@ -627,7 +601,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   color: #2A251F;
 }
 
-/* ━━━ Animations ━━━ */
 @keyframes notebookReveal {
   from {
     opacity: 0;
@@ -668,7 +641,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   }
 }
 
-/* ━━━ Responsive Design ━━━ */
 @media (max-width: 900px) {
   #contact {
     padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
@@ -741,7 +713,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     padding: 0.5rem 0;
   }
 
-  /* Improve placeholder contrast for outdoor visibility */
   .notebook-input::placeholder,
   .notebook-textarea::placeholder {
     color: rgba(58, 53, 48, 0.85);
@@ -816,7 +787,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     min-height: 1rem;
   }
 
-  /* Short screens (landscape mobile): Move seal to corner to save vertical space */
   @media (max-height: 600px) {
     .wax-seal {
       left: auto;

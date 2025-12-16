@@ -1,20 +1,17 @@
-// ━━━ MODULAR IMPORTS ━━━
-// Core utilities
+// WebGL globe visualization
+
 import { mat4 } from './work-globe/core/math-utils.js';
 import { createShader, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 
-// Data
 import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';
 import { PROJECTS } from './work-globe/data/projects.js';
 
-// Systems
 import { SporeSystem } from './work-globe/systems/spore-system.js';
 import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
 import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 
-// Shaders
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
 import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER } from './work-globe/shaders/atmosphere-fog-shaders.js';
 import { LIGHTNING_VERTEX_SHADER, LIGHTNING_FRAGMENT_SHADER } from './work-globe/shaders/lightning-shaders.js';
@@ -24,14 +21,6 @@ import { PIN_VERTEX_SHADER, PIN_FRAGMENT_SHADER } from './work-globe/shaders/pin
 import { DATA_STREAM_VERTEX_SHADER, DATA_STREAM_FRAGMENT_SHADER, TEXT_BILLBOARD_VERTEX_SHADER, TEXT_BILLBOARD_FRAGMENT_SHADER } from './work-globe/shaders/misc-shaders.js';
 import { MOON_VERTEX_SHADER, MOON_FRAGMENT_SHADER } from './work-globe/shaders/moon-shaders.js';
 
-/**
- * Mycelial globe visualization with WebGL2.
- * Pure implementation without external libraries.
- */
-
-// Matrix utilities (now imported above)
-
-// ━━━ GLOBE STATE ━━━
 let gl, canvas;
 let globeProgram, atmosphereProgram, fogProgram, lightningProgram, myceliumProgram, myceliumCoreProgram, sporeProgram, pinProgram, dataStreamProgram, textBillboardProgram, moonProgram;
 let globeVAO, sphereVertexCount;
@@ -50,9 +39,8 @@ let clickStartTime = 0;
 let animationFrameId = null;
 let autoRotate = true;
 let time = 0;
-let lastFrameTime = 0; // Track time for delta calculation
+let lastFrameTime = 0;
 
-// Mobile detection
 let isMobile = false;
 
 function updateMobileState() {
@@ -60,21 +48,10 @@ function updateMobileState() {
   return isMobile;
 }
 
-// Textures
 let earthTexture = null;
 let fogTexture = null;
 let lightningTexture = null;
 let texturesReady = false;
-
-// ━━━ SHADER SOURCES (now imported above) ━━━
-
-// ━━━ GEOMETRY GENERATION (now imported above) ━━━
-
-// ━━━ DATA STREAM SYSTEM (now imported above) ━━━
-
-// ━━━ SHADER UTILITIES (now imported from core/gl-utils.js) ━━━
-
-// ━━━ TEXTURE UTILITIES (now imported from core/gl-utils.js) ━━━
 
 function checkAllTexturesLoaded() {
   if (earthTexture && fogTexture && lightningTexture) {
@@ -82,7 +59,6 @@ function checkAllTexturesLoaded() {
   }
 }
 
-// Initialization
 function initWorkGlobe() {
   canvas = document.getElementById('work-globe-canvas');
   if (!canvas) {
@@ -101,12 +77,10 @@ function initWorkGlobe() {
     return;
   }
 
-  // Initialize mobile state
   updateMobileState();
 
   resizeCanvas();
 
-  // Create shader programs with bound attributes (using imported shaders)
   globeProgram = createProgram(gl, GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER, {
     position: 0,
     normal: 1,
@@ -179,12 +153,9 @@ function initWorkGlobe() {
     console.error('❌ Failed to create text billboard shader program!');
   }
 
-  // Create sphere geometry
   const sphere = createSphereGeometry(1.0, 40, 40);
   sphereVertexCount = sphere.indices.length;
   
-  // Create mycelium hyphae network
-  // Use image coordinates directly for accurate positioning
   const imageToSpherical = (x, y) => {
     const u = 1.0 - (x / 1536.0); // Flip U to match sphere UV
     const v = y / 1024.0;
@@ -220,71 +191,60 @@ function initWorkGlobe() {
   
   myceliumVertexCount = mycelium.indices.length;
 
-  // Create VAO for globe
   globeVAO = gl.createVertexArray();
   gl.bindVertexArray(globeVAO);
 
-  // Position buffer
   const positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, sphere.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-  // Normal buffer
   const normalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, sphere.normals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(1);
   gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
 
-  // UV buffer
   const uvBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, sphere.uvs, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(2);
   gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
 
-  // Index buffer
   const indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, sphere.indices, gl.STATIC_DRAW);
 
   gl.bindVertexArray(null);
   
-  // Create VAO for mycelium
   myceliumVAO = gl.createVertexArray();
   gl.bindVertexArray(myceliumVAO);
   
-  // Position buffer
   const myceliumPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumPositionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
   
-  // Normal buffer
   const myceliumNormalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumNormalBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.normals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(1);
   gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
   
-  // UV buffer
   const myceliumUvBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumUvBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.uvs, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(2);
   gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
   
-  // Age buffer (for growth animation)
   const myceliumAgeBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumAgeBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.ages, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(3);
   gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 0, 0);
   
-  // Index buffer
   const myceliumIndexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, myceliumIndexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mycelium.indices, gl.STATIC_DRAW);
@@ -300,7 +260,6 @@ function initWorkGlobe() {
   
   moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS);
 
-  // Adjust camera distance based on viewport - mobile needs more distance for full view
   const cameraDistance = isMobile ? 6 : 3.5;
   
   projectionMatrix = mat4.perspective(
@@ -340,13 +299,11 @@ function initWorkGlobe() {
     onLoad: onTextureLoad
   });
 
-  // Event listeners
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerUp);
   
-  // Touch-specific handling for tap-to-show info on mobile
   let touchStartTime = 0;
   let touchStartPos = { x: 0, y: 0 };
   
@@ -379,7 +336,6 @@ function initWorkGlobe() {
     resizeCanvas();
   });
   
-  // Poll for DPR changes (e.g., moving window between displays with different zoom)
   let lastDPR = currentDPR();
   setInterval(() => {
     const dpr = currentDPR();
@@ -389,14 +345,12 @@ function initWorkGlobe() {
     }
   }, 500);
 
-  // Initialize HUD animations
   try {
     initAutoWriter();
   } catch (e) {
     console.warn('[Work Globe] Auto-writer init failed:', e);
   }
 
-  // Start animation
   animate();
 
 }
@@ -409,7 +363,6 @@ function render(deltaTime) {
     deltaTime = 0.016; // Default to 60fps
   }
 
-  // Update time (scale to match original speed: 0.01 per frame at 60fps = 0.6/sec)
   time += deltaTime * 0.6;
   
   // Additional safeguard - if time becomes NaN, reset it
@@ -418,30 +371,24 @@ function render(deltaTime) {
     time = 0;
   }
 
-  // Update rotation with velocity (inertia)
   if (!isDragging) {
     rotation.y += rotationVelocity.x;
     rotation.x += rotationVelocity.y;
 
-    // Apply damping
     rotationVelocity.x *= 0.95;
     rotationVelocity.y *= 0.95;
 
-    // Auto-rotate
     if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
       rotation.y += 0.002;
     }
   }
 
-  // Clamp X rotation (don't flip upside down)
   rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotation.x));
 
-  // Update model matrix
   const rotX = mat4.rotateX(rotation.x);
   const rotY = mat4.rotateY(rotation.y);
   modelMatrix = mat4.multiply(rotY, rotX);
 
-  // ━━━ Draw Globe ━━━
   gl.depthMask(true);
   gl.disable(gl.BLEND);
   
@@ -482,7 +429,7 @@ function render(deltaTime) {
   gl.depthMask(false); // Don't write depth for atmosphere glow
   
   gl.useProgram(atmosphereProgram);
-  gl.cullFace(gl.FRONT); // Render back faces
+  gl.cullFace(gl.FRONT);
   gl.enable(gl.CULL_FACE);
 
   const uProjectionAtm = gl.getUniformLocation(atmosphereProgram, 'uProjection');
@@ -655,23 +602,19 @@ function render(deltaTime) {
     gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
   }
   
-  // Update Spore Particles
   if (sporeSystem) {
-    // Calculate lightning intensity from current flicker state (matches lightning shader logic)
     const lightningTime = time;
     const slowPulse = Math.sin(lightningTime * 0.5 * 2.0 * Math.PI) * 0.5 + 0.5; // 0.5Hz
     const strobePhase = (lightningTime * 2.0) % 1.0;
     const strobe = strobePhase < 0.04 ? 1.0 : 0.0; // 4% duty cycle
     const lightningIntensity = slowPulse * (0.3 + strobe * 0.7);
     
-    sporeSystem.update(deltaTime, lightningIntensity); // Use actual delta time
+    sporeSystem.update(deltaTime, lightningIntensity);
   }
   
-  // Update Work Pin System and inject orbital particles BEFORE rendering
   if (workPinSystem) {
-    workPinSystem.update(deltaTime, time); // Use actual delta time
+    workPinSystem.update(deltaTime, time);
     
-    // Get orbital particles and inject into spore system
     if (sporeSystem) {
       const orbitals = workPinSystem.getOrbitalParticles(time);
       if (orbitals.length > 0) {
@@ -680,12 +623,10 @@ function render(deltaTime) {
     }
   }
   
-  // Update Moon Orbit System
   if (moonOrbitSystem) {
-    moonOrbitSystem.update(deltaTime); // Use actual delta time
+    moonOrbitSystem.update(deltaTime);
   }
   
-  // ━━━ Draw Spore Particles (additive blend) ━━━
   if (sporeProgram && sporeSystem && sporeSystem.activeParticles > 0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive for glow
@@ -693,20 +634,17 @@ function render(deltaTime) {
     
     gl.useProgram(sporeProgram);
     
-    // Set uniforms
     gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uProjection'), false, projectionMatrix);
     gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uView'), false, viewMatrix);
     gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uModel'), false, modelMatrix);
     gl.uniform1f(gl.getUniformLocation(sporeProgram, 'uTime'), time);
     
-    // Use intro page color palette
-    gl.uniform3f(gl.getUniformLocation(sporeProgram, 'uSporeColor'), 0.247, 1.0, 0.624); // Decay-green #3FFF9F
+    gl.uniform3f(gl.getUniformLocation(sporeProgram, 'uSporeColor'), 0.247, 1.0, 0.624);
     gl.uniform3f(gl.getUniformLocation(sporeProgram, 'uEmberColor'), 0.784, 1.0, 0.863); // Ember color #C8FFDC
     
     sporeSystem.render(sporeProgram);
   }
   
-  // ━━━ Draw Work Location Pins (alpha-blended crystals) ━━━
   if (pinProgram && workPinSystem) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -718,11 +656,9 @@ function render(deltaTime) {
     const cameraPos = [0, 0, 3.5];
     workPinSystem.render(pinProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
     
-    // Render text billboards on top of pins
     workPinSystem.renderText(textBillboardProgram, projectionMatrix, viewMatrix);
   }
   
-  // ━━━ Draw Orbital Moons (solid rocky moon) ━━━
   if (moonProgram && moonOrbitSystem) {
     gl.disable(gl.BLEND); // Solid object, no blending needed
     gl.enable(gl.DEPTH_TEST);
@@ -732,7 +668,6 @@ function render(deltaTime) {
     moonOrbitSystem.render(moonProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
   }
   
-  // Update Data Stream System
   if (dataStreamSystem) {
     dataStreamSystem.update(deltaTime); // Use actual delta time
     
@@ -752,7 +687,6 @@ function render(deltaTime) {
     }
   }
   
-  // ━━━ Draw Data Streams (additive particles) ━━━
   if (dataStreamProgram && dataStreamSystem && dataStreamSystem.activeParticles > 0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
@@ -770,7 +704,6 @@ function render(deltaTime) {
 function animate(timestamp) {
   animationFrameId = requestAnimationFrame(animate);
   
-  // Calculate delta time in seconds
   if (lastFrameTime === 0) {
     lastFrameTime = timestamp;
     render(0.016); // First frame uses assumed 60fps
@@ -782,14 +715,12 @@ function animate(timestamp) {
   render(deltaTime);
 }
 
-// Input handling
 function onPointerDown(e) {
   isDragging = true;
   autoRotate = false;
   lastPointerPos = { x: e.clientX, y: e.clientY };
   canvas.style.cursor = 'grabbing';
   
-  // Store click position to detect if it's a click vs drag
   clickStartPos = { x: e.clientX, y: e.clientY };
   clickStartTime = Date.now();
 }
@@ -844,7 +775,6 @@ function onPointerMove(e) {
   lastPointerPos = { x: e.clientX, y: e.clientY };
 }
 
-// ━━━ GLOBE OCCLUSION TESTING ━━━
 function isOccludedByGlobe(worldPos, viewMatrix) {
   // Transform world position to view space
   const viewPos = mat4.transformPoint(viewMatrix, worldPos);
@@ -895,7 +825,6 @@ function isOccludedByGlobe(worldPos, viewMatrix) {
   return nearest < (rayLength - EPSILON);
 }
 
-// ━━━ CLICK DETECTION WITH PROPER DEPTH ORDERING ━━━
 function checkClickWithDepth(mouseX, mouseY) {
   if (!projectionMatrix || !viewMatrix || !modelMatrix) return null;
   
@@ -1029,7 +958,6 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
     // Check if behind camera
     if (clipPos[3] < 0) return;
     
-    // Distance to mouse
     const dist = Math.sqrt((ndcX - x) ** 2 + (ndcY - y) ** 2);
     
     if (dist < closestDist) {
@@ -1038,14 +966,12 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
     }
   });
   
-  // Update hover state
   workPinSystem.pins.forEach(pin => {
     pin.hovered = (pin === closestPin);
   });
   
   workPinSystem.hoveredPin = closestPin ? closestPin.key : null;
   
-  // Only show info if explicitly requested (on click)
   if (showInfo && closestPin) {
     showLocationInfo(closestPin);
   }
@@ -1053,9 +979,7 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
   return closestPin;
 }
 
-// ━━━ INFO BUBBLE MANAGEMENT ━━━
 function projectToScreen(worldPos) {
-  // Transform world position through matrices
   const modelPos = mat4.transformPoint(modelMatrix, worldPos);
   const viewPos = mat4.transformPoint(viewMatrix, modelPos);
   const clipPos = mat4.transformPoint(projectionMatrix, viewPos);
@@ -1370,7 +1294,6 @@ function resizeCanvas() {
   }
 }
 
-// ━━━ CLEANUP ━━━
 function cleanupWorkGlobe() {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
@@ -1378,14 +1301,12 @@ function cleanupWorkGlobe() {
   }
 
   if (gl) {
-    // Clean up GL resources
     gl.deleteProgram(globeProgram);
     gl.deleteProgram(atmosphereProgram);
     gl.deleteProgram(fogProgram);
     gl.deleteProgram(lightningProgram);
     gl.deleteVertexArray(globeVAO);
     
-    // Delete textures
     if (earthTexture) gl.deleteTexture(earthTexture);
     if (fogTexture) gl.deleteTexture(fogTexture);
     if (lightningTexture) gl.deleteTexture(lightningTexture);
@@ -1397,7 +1318,6 @@ function cleanupWorkGlobe() {
   canvas.removeEventListener('pointerleave', onPointerUp);
   window.removeEventListener('resize', resizeCanvas);
   
-  // Hide and remove info bubble
   hideLocationInfo();
   const infoBubble = document.querySelector('.work-location-info');
   if (infoBubble) {
@@ -1405,8 +1325,6 @@ function cleanupWorkGlobe() {
   }
 }
 
-// ━━━ AUTO-INITIALIZATION ━━━
-// Initialize when the Work section becomes active
 function autoInit() {
   const workSection = document.getElementById('work');
   if (!workSection) {
@@ -1414,7 +1332,6 @@ function autoInit() {
     return;
   }
 
-  // Use MutationObserver to detect when work section gets active-section class
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -1433,7 +1350,6 @@ function autoInit() {
 
   observer.observe(workSection, { attributes: true });
   
-  // Check initial state
   const initiallyActive = workSection.classList.contains('active-section');
   
   if (initiallyActive) {
@@ -1441,7 +1357,6 @@ function autoInit() {
   }
 }
 
-// Run auto-init when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', autoInit);
 } else {
@@ -1480,7 +1395,6 @@ function initAutoWriter() {
   function type() {
     const currentMsg = messages[msgIndex];
     
-    // Update icon
     if (iconZone) {
       iconZone.innerHTML = currentMsg.icon ? `<div class="${currentMsg.icon}"></div>` : '';
     }

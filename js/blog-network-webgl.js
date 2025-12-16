@@ -4,26 +4,21 @@ if (!window.__BLOG_NETWORK_VERSION) {
   window.__BLOG_NETWORK_VERSION = BLOG_NETWORK_VERSION;
 }
 
-// ━━━ CONFIG ━━━
-const PETRI_K = 0.42;  // Petri dish radius = PETRI_K * min(cssW, cssH)
-const AUTO_CENTER = true;  // Auto-compute shift from data bounds (set false to use FIXED_SHIFT)
-const FIXED_SHIFT = [0, 0];  // Debugging override when AUTO_CENTER=false
+const PETRI_K = 0.42;
+const AUTO_CENTER = true;
+const FIXED_SHIFT = [0, 0];
 
 const PAL = {
   ABYSS: [0.05, 0.06, 0.07],        // soft charcoal background
-  // Branch color variations (more diverse palette)
   BRANCH1: [0.25, 0.35, 0.28],      // mossy green
   BRANCH2: [0.30, 0.40, 0.45],      // blue-teal
   BRANCH3: [0.35, 0.30, 0.25],      // earthy brown
   BRANCH4: [0.28, 0.32, 0.38],      // slate gray-blue
-  // Fusion colors
   FUSION1: [0.40, 0.50, 0.35],      // bright moss
   FUSION2: [0.35, 0.45, 0.50],      // aqua
-  // Hub accent colors
   EMBER1: [0.70, 0.45, 0.25],       // warm orange
   EMBER2: [0.65, 0.35, 0.40],       // rose
   EMBER3: [0.55, 0.50, 0.30],       // olive gold
-  // Cyst glows
   GLOW1:  [0.50, 0.60, 0.45],       // soft green
   GLOW2:  [0.45, 0.55, 0.60],       // cyan
   GLOW3:  [0.60, 0.50, 0.40],       // amber
@@ -33,14 +28,12 @@ const PAL = {
   BONE:   [0.788, 0.761, 0.702],    // #C9C2B3
 };
 
-// Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
   return Math.min(Math.max(1, window.devicePixelRatio || 1), 2); // cap at 2x for performance
 }
 
 const VIEW = { W: 1920, H: 1080 };
 
-// ━━━ CENTERING HELPER ━━━
 function computeNetworkCentroid(paths) {
   const B = {minX: +Infinity, minY: +Infinity, maxX: -Infinity, maxY: -Infinity};
   for (const path of (paths || [])) {
@@ -51,13 +44,12 @@ function computeNetworkCentroid(paths) {
       if (y > B.maxY) B.maxY = y;
     }
   }
-  if (!isFinite(B.minX)) return [VIEW.W * 0.5, VIEW.H * 0.5]; // fallback if no paths
+  if (!isFinite(B.minX)) return [VIEW.W * 0.5, VIEW.H * 0.5];
   const netCx = (B.minX + B.maxX) * 0.5;
   const netCy = (B.minY + B.maxY) * 0.5;
   return [netCx, netCy];
 }
 
-// ---------- GLSL (WebGL2) ----------
 const VS_FSQ = `#version 300 es
 precision highp float;
 const vec2 P[3]=vec2[3](vec2(-1.,-1.),vec2(3.,-1.),vec2(-1.,3.));
@@ -423,7 +415,6 @@ void main(){
   o = vec4(clamp(col, 0.0, 1.0), alpha * 0.92);
 }`;
 
-// ---------- utils ----------
 const q = (sel)=>document.querySelector(sel);
 function compile(gl, type, src){
   const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
@@ -439,12 +430,11 @@ function program(gl, vs, fs){
   return p;
 }
 
-// ---------- main ----------
 let initialized = false;
 let animationActive = false;
 
 async function initBlogNetwork(){
-  if (initialized) return; // Only init once
+  if (initialized) return;
   
   const canvas = q('#blog-network-canvas');
   if (!canvas) return;
@@ -957,8 +947,6 @@ async function initBlogNetwork(){
     svg.appendChild(zoomText);
   }
 
-  // ━━━ AUTO-CENTERING ━━━
-  // Compute network centroid from data and center in design space
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
   const shift = AUTO_CENTER 
     ? [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy]

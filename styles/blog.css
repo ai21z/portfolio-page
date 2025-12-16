@@ -1,14 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BLOG NETWORK VISUALIZATION
-   Radial mycelium network with SOURCE→hub trunks and center fusion
-   - Full-screen panel mode (like work-globe-screen)
-   - 2D canvas visualization of space-colonization network
-   - Four hubs: craft, cosmos, codex, convergence
-   - Animated energy particles flowing through network
-   - Nav suppression + background dimming
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Full-screen blog panel - ONLY the network, no gradients */
+/* Full-screen blog panel */
 .blog-screen {
   position: fixed;
   top: 0;
@@ -23,7 +13,6 @@
   display: none;
 }
 
-/* Ensure blog screen is visible when active - INSTANT visibility, no transition delay */
 .blog-screen.active-section {
   display: block !important;
   opacity: 1 !important;
@@ -31,7 +20,6 @@
   transition: none !important;
 }
 
-/* Blog network canvas (WebGL base layer) */
 .blog-network-canvas {
   position: absolute;
   top: 0;
@@ -42,7 +30,6 @@
   z-index: 1;
 }
 
-/* Intro Caption */
 .blog-intro-caption {
   position: absolute;
   top: 80px;
@@ -61,9 +48,6 @@
   letter-spacing: 0.05em;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BLOG MEMORANDUM (Transparent with Colored Orbs)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .blog-memorandum {
   position: absolute;
   top: 100px;
@@ -87,7 +71,6 @@
   }
 }
 
-/* Header */
 .blog-memo-header {
   margin-bottom: 14px;
 }
@@ -101,7 +84,6 @@
   color: rgba(201, 194, 179, 0.5);
 }
 
-/* List */
 .blog-memo-list {
   list-style: none;
   margin: 0;
@@ -137,7 +119,6 @@
     0 0 14px var(--memo-orb-glow);
 }
 
-/* Highlight state (synced with petri dish hover) */
 .blog-memo-item.highlight {
   border: 1px dotted rgba(201, 194, 179, 0.5);
   background: rgba(201, 194, 179, 0.06);
@@ -150,7 +131,6 @@
     0 0 14px var(--memo-orb-glow);
 }
 
-/* Artistic Orbs (mini versions of mobile specimen orbs) */
 .blog-memo-item::before {
   content: '';
   flex-shrink: 0;
@@ -193,7 +173,6 @@
   }
 }
 
-/* Category-specific orb colors */
 .blog-memo-item[data-hub="craft"]::before {
   --memo-orb-core: #3da88a;
   --memo-orb-glow: rgba(61, 168, 138, 0.4);
@@ -218,7 +197,6 @@
   --memo-pulse-delay: 3s;
 }
 
-/* Text container */
 .blog-memo-text {
   display: flex;
   flex-direction: column;
@@ -234,7 +212,6 @@
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
 }
 
-/* Article count badge */
 .blog-memo-count {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 9px;
@@ -255,20 +232,17 @@
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
-/* Hide memorandum when in category/article view */
 .blog-screen.in-category .blog-memorandum,
 .blog-screen.in-article .blog-memorandum {
   display: none;
 }
 
-/* Mobile: hide memorandum (use specimen grid instead) */
 @media (max-width: 900px) {
   .blog-memorandum {
     display: none;
   }
 }
 
-/* Screen reader only (accessibility) */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -281,11 +255,7 @@
   border-width: 0;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PETRI DISH LAYOUT (dish-first architecture)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Blog map container (holds all layers) */
+/* Blog map container */
 .blog-map {
   position: absolute;
   top: 0;
@@ -295,7 +265,7 @@
   display: block;
 }
 
-/* Canvas layer (WebGL mycelium) - z:20 */
+/* z:20 */
 #blog-network-canvas {
   position: absolute;
   top: 0;
@@ -306,7 +276,7 @@
   z-index: 20;
 }
 
-/* Dish SVG (rim, meniscus, specular) - z:30 */
+/* z:30 */
 .dish {
   position: absolute;
   top: 0;
@@ -317,7 +287,7 @@
   z-index: 30;
 }
 
-/* Dish labels container (curved arcs) - z:40 */
+/* z:40 */
 .dish-labels {
   position: absolute;
   top: 0;
@@ -328,7 +298,6 @@
   z-index: 40;
 }
 
-/* Curved arc button (clickable label group) */
 .arc-btn {
   cursor: pointer;
   pointer-events: auto;
@@ -345,7 +314,6 @@
   outline-offset: 4px;
 }
 
-/* Arc label text - positioned outside rim */
 .arc-label {
   fill: rgba(228, 189, 140, 0.75); /* Warm brass - slightly brighter base */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
@@ -356,7 +324,6 @@
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
 }
 
-/* Hover effect - bright glow like hub nodes */
 .arc-btn:hover .arc-label,
 .arc-btn:focus-visible .arc-label {
   fill: rgba(255, 230, 170, 1); /* Brighter, more saturated */
@@ -366,7 +333,6 @@
   text-shadow: 0 0 12px rgba(255, 200, 120, 0.8);
 }
 
-/* Zoom arc label - smaller, dimmer, non-interactive */
 .zoom-arc-label {
   fill: rgba(180, 160, 130, 0.5); /* Dimmer than hub labels */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
@@ -378,7 +344,7 @@
   transition: fill 200ms ease;
 }
 
-/* Info Card (A11y card for hover info) - Use ID selector to match HTML */
+/* z:5 - Above overlay, below menu */
 #hub-infocard,
 .hub-infocard {
   position: absolute;
@@ -420,7 +386,7 @@
   opacity: 0.85;
 }
 
-/* Hub Menu (bottom-right, interactive buttons) */
+/* z:6 */
 .blog-hub-menu {
   position: absolute;
   right: 24px;
@@ -465,7 +431,6 @@
   letter-spacing: 0.08em;
 }
 
-/* Close button (matches work-close pattern) */
 .blog-close {
   position: absolute;
   top: 24px;
@@ -493,12 +458,10 @@
   transform: rotate(90deg);
 }
 
-/* Hide close button when in category or article view */
 .blog-screen.in-category .blog-close {
   display: none;
 }
 
-/* Hub explanation tooltip - appears on hover */
 .blog-hub-tooltip {
   position: fixed;
   top: 80px; /* Below the close button */
@@ -541,7 +504,6 @@
   line-height: 1.6;
 }
 
-/* Suppress nav and background when blog is active */
 .blog-screen.active-section ~ #network-nav,
 .blog-screen.active-section ~ #bg,
 .blog-screen.active-section ~ #spore-canvas,
@@ -551,7 +513,6 @@
   transition: opacity 400ms ease;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .blog-close {
     top: 16px;
@@ -599,7 +560,6 @@
   }
 }
 
-/* Accessibility: Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   #hub-infocard,
   .hub-infocard {
@@ -607,7 +567,6 @@
   }
 }
 
-/* Forced colors / high contrast mode */
 @media (forced-colors: active) {
   .blog-intro-caption {
     forced-color-adjust: none;
@@ -624,7 +583,6 @@
   }
 }
 
-/* Category View State - Dim map when reading */
 .blog-screen.in-category .blog-network-canvas {
   opacity: 0.15;
   filter: blur(1px);
@@ -643,7 +601,6 @@
   transition: opacity 200ms ease;
 }
 
-/* Category View (article list for a hub) */
 .blog-category-view {
   position: absolute;
   inset: 0;
@@ -663,7 +620,6 @@
   display: none;
 }
 
-/* Article View (same styling as category) */
 .blog-article-view {
   position: absolute;
   inset: 0;
@@ -681,7 +637,6 @@
   display: none;
 }
 
-/* Article Content */
 .blog-article-content {
   max-width: 800px;
   margin: 0 auto;
@@ -689,7 +644,6 @@
   line-height: 1.7;
 }
 
-/* Article images and videos (in-app view) */
 .blog-article-content img,
 .blog-article-content video {
   display: block;
@@ -701,7 +655,6 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* ━━━ Article Scroll Navigation ━━━ */
 .article-scroll-nav {
   position: fixed;
   left: calc(50% - 480px);
@@ -716,7 +669,6 @@
   transition: opacity 0.3s ease;
 }
 
-/* Show only when scrolled and not near edges */
 .article-scroll-nav.visible {
   opacity: 1;
   pointer-events: auto;
@@ -751,14 +703,12 @@
   outline-offset: 2px;
 }
 
-/* Hide on smaller screens where it would overlap content */
 @media (max-width: 1200px) {
   .article-scroll-nav {
     display: none;
   }
 }
 
-/* Category Header with Map button */
 .blog-category-header {
   position: fixed;
   top: 24px;
@@ -784,7 +734,6 @@
   letter-spacing: 0.05em;
 }
 
-/* Category-specific title colors matching orbs */
 .blog-category-view[data-category="craft"] .blog-category-title {
   color: #3da88a;
 }
@@ -833,7 +782,6 @@
   outline-offset: 2px;
 }
 
-/* Blog Navigation Bar (top-left) */
 .blog-nav {
   position: fixed;
   top: 24px;
@@ -872,13 +820,11 @@
   outline-offset: 2px;
 }
 
-/* Active hub highlighting */
 .blog-nav-link.active {
   color: var(--bone);
   font-weight: 600;
 }
 
-/* Hub-specific active colors */
 .blog-nav-link.active[data-hub="craft"] { color: #3da88a; }
 .blog-nav-link.active[data-hub="cosmos"] { color: #9a7ee6; }
 .blog-nav-link.active[data-hub="codex"] { color: #e6b03a; }
@@ -952,7 +898,6 @@
   color: rgba(122, 174, 138, 0.95); /* Default fallback */
 }
 
-/* Category-specific article title colors matching orbs */
 .blog-category-view[data-category="craft"] .blog-article-item h3 {
   color: #3da88a;
 }
@@ -975,10 +920,6 @@
   margin-bottom: 12px;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MOBILE SPECIMEN CARDS (≤900px) — Laboratory Slide Aesthetic
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
 @media (max-width: 900px) {
   /* Hide Petri dish elements and breadcrumb nav on mobile */
   #blog-map,
@@ -987,7 +928,6 @@
     display: none !important;
   }
 
-  /* Mobile container with scrolling */
   .blog-mobile {
     position: absolute;
     top: 0;
@@ -1004,7 +944,6 @@
     z-index: 25;
   }
 
-  /* Grid of specimen slides */
   .blog-specimen-grid {
     display: grid;
     gap: 20px;
@@ -1014,7 +953,6 @@
     contain-intrinsic-size: 320px 180px;
   }
 
-  /* Specimen card - laboratory slide aesthetic */
   .specimen-slide {
     --edge-corrosion: #4a5a4a;
     --glass-tint: rgba(11, 12, 13, 0.88);
@@ -1080,7 +1018,6 @@
     transition: transform 150ms ease, box-shadow 200ms ease;
   }
 
-  /* Specimen ID label (top-right corner) */
   .specimen-slide::before {
     content: attr(data-specimen);
     position: absolute;
@@ -1092,7 +1029,6 @@
     text-transform: uppercase;
   }
 
-  /* Petri colony (living orb with ominous mycelium infection) */
   .specimen-orb {
     flex-shrink: 0;
     width: 64px;
@@ -1156,7 +1092,6 @@
     animation: colony-pulse var(--pulse-speed, 6s) ease-in-out infinite;
   }
 
-  /* Dark mycelium tendrils spreading from infected colony */
   .specimen-orb::after {
     content: '';
     position: absolute;
@@ -1184,7 +1119,6 @@
     animation: vein-spread 9s ease-in-out infinite;
   }
 
-  /* Text content wrapper */
   .specimen-text {
     flex: 1;
     display: flex;
@@ -1193,7 +1127,6 @@
     min-width: 0;
   }
 
-  /* Text content */
   .specimen-title {
     font: 700 clamp(17px, 5vw, 20px) "Special Elite", monospace;
     letter-spacing: 0.04em;
@@ -1201,7 +1134,6 @@
     margin: 0;
   }
 
-  /* Article count badge (mobile) */
   .specimen-count {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
@@ -1221,7 +1153,6 @@
     margin: 0;
   }
 
-  /* Category-specific theming (darker ominous palette) */
   .slide-craft {
     --orb-core: #3da88a;
     --orb-glow: rgba(61, 168, 138, 0.35);
@@ -1262,7 +1193,6 @@
     --pulse-speed: 5.8s;
   }
 
-  /* Hover/tap feedback */
   .specimen-slide:active {
     transform: scale(0.98);
   }
@@ -1281,7 +1211,6 @@
     }
   }
 
-  /* Animations */
   @keyframes colony-pulse {
     0%, 100% { 
       transform: scale(1); 
@@ -1304,7 +1233,6 @@
     }
   }
 
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .specimen-orb,
     .specimen-orb::after {
@@ -1316,14 +1244,12 @@
     }
   }
 
-  /* Close button positioning adjustment for mobile */
   .blog-close {
     top: 12px;
     right: 12px;
   }
 }
 
-/* Very small screens - tighter spacing */
 @media (max-width: 480px) {
   .blog-mobile {
     padding: 56px 12px 20px;
@@ -1372,10 +1298,6 @@
 .blog-article-view[hidden] {
   display: none;
 }
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ARTICLE CONTAINER STYLES (used by generated articles)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 .article-container {
   max-width: 720px;
@@ -1507,7 +1429,6 @@
   font-style: italic;
 }
 
-/* Article images */
 .article-container .article-content img,
 .article-container .article-content .article-image {
   display: block;
@@ -1519,7 +1440,6 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Article videos */
 .article-container .article-content video {
   display: block;
   width: 100%;
@@ -1599,10 +1519,6 @@
   color: var(--ember);
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   INJECTED ARTICLE CONTENT (in-app view)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
 .blog-article-content {
   max-width: 720px;
   margin: 0 auto;
@@ -1645,7 +1561,6 @@
   margin-bottom: 24px;
 }
 
-/* Article footer in-app view */
 .blog-article-content .article-footer {
   display: flex;
   justify-content: space-between;

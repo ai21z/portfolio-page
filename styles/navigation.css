@@ -1,12 +1,6 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NAVIGATION SYSTEM
-   - Mycelial network navigation (#network-nav)
-   - Network node labels
-   - Sigil node (intro button)
-   - Suppressed states
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Navigation system */
 
-/* ━━━ Network Navigation System ━━━ */
+/* Network navigation system */
 #network-nav{
   position:fixed;
   inset:0;
@@ -23,7 +17,7 @@
 /* Hide OS cursor over canvases to let glow cursor dominate */
 #spore-canvas, #reveal-canvas { cursor: none; }
 
-/* ━━━ Nav Labels (pinned to mycelium junctions) ━━━ */
+/* Nav labels */
 .network-node-label{
   position: absolute;
   transform: translate(-50%, -50%);
@@ -143,7 +137,7 @@
   animation-play-state: paused;
 }
 
-/* ━━━ Color variants for different sections ━━━ */
+/* Color variants for different sections */
 
 /* Blog & Contact - Ember Orange glow (#B87242) */
 .network-node-label[data-node="blog"]::after,
@@ -225,7 +219,7 @@
     0 0 40px 9px rgba(120, 90, 150, 0.4);
 }
 
-/* ━━━ Sigil Node (intro replacement) ━━━ */
+/* Sigil node */
 .network-sigil-node {
   position: absolute;
   background: none;
@@ -265,7 +259,7 @@
   transform-origin: 50% 50%;
 }
 
-/* ━━━ Suppressed State (when sections are open) ━━━ */
+/* Suppressed state */
 .nav-suppressed .network-node-label,
 .nav-suppressed [data-nav] {
   display: none !important;
@@ -282,7 +276,7 @@ body.has-paper-open-global #network-nav {
   transition: opacity 300ms ease;
 }
 
-/* ━━━ Responsive ━━━ */
+/* Responsive */
 @media (max-width: 900px){
   .network-node-label{
     font-size: 11px;
@@ -770,7 +764,7 @@ body.has-paper-open-global #network-nav {
     }
   }
 
-  /* ━━━ Hub-to-Icons Spore System ━━━ */
+  /* Hub-to-icons spore system */
   .hub-spore {
     position: fixed;
     width: 2px;
@@ -982,10 +976,7 @@ body.has-paper-open-global #network-nav {
 /* tiny helper for screen readers you already use */
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SECTION NAVIGATION
-   Minimal vertical nav list on right side of sections
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Section navigation */
 
 .section-nav {
   position: fixed;

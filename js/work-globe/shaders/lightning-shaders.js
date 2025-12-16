@@ -1,7 +1,3 @@
-/**
- * Lightning effect shaders
- */
-
 export const LIGHTNING_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

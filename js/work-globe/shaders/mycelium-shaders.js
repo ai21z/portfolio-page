@@ -1,7 +1,3 @@
-/**
- * Mycelium network shaders (body and core rendering)
- */
-
 export const MYCELIUM_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

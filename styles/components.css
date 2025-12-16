@@ -1,12 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  COMPONENT STYLES
-  - Name, Portrait, Text column
-  - Tape line, Sigil, Social links
-  - Footer
-  - Reduced motion preferences
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ━━━ Name (Swiss: Precise, Left-Aligned) ━━━ */
+/* Name */
 .name{
   grid-column: 1 / -1;
   grid-row: 2;
@@ -20,7 +12,6 @@
   white-space: nowrap; /* Desktop: single line */
   overflow: hidden;
   text-overflow: ellipsis; /* Fallback if override fails */
-  /* Character: Subtle gradient for depth */
   background: linear-gradient(115deg, 
     var(--bone) 0%, 
     rgba(230,227,216,0.9) 100%);
@@ -29,7 +20,6 @@
   background-clip: text;
 }
 
-/* ━━━ Portrait (Left-aligned, vertically centered group) ━━━ */
 .portrait-wrap {
   grid-column: 1 / 7;
   grid-row: 3;
@@ -71,7 +61,6 @@
   transform: scale(1.02);
 }
 
-/* ━━━ Text Column (Below portrait, Row 4) ━━━ */
 .text-column{
   grid-column: 1 / 8;
   grid-row: 4;
@@ -84,7 +73,6 @@
   margin: 0;
 }
 
-/* Character: Vertical accent rule (Swiss precision) */
 .text-column::before {
   content: '';
   position: absolute;
@@ -104,7 +92,6 @@
   to{ opacity: 0.45; }
 }
 
-/* ━━━ Tape Line (GPU-animated reveal) ━━━ */
 .tape{
   display:inline-block;
   transform-origin:left center;
@@ -117,7 +104,6 @@
   opacity:.95;
 }
 
-/* ━━━ Footer (Grid Row 6 - Bottom of page) ━━━ */
 .foot{ 
   grid-column: 1 / -1;
   grid-row: 6;
@@ -158,7 +144,6 @@
   display: block; /* Make it block level for easier centering */
 }
 
-/* ━━━ Prefers Reduced Motion (PRM) ━━━ */
 @media (prefers-reduced-motion: reduce){
   /* Kill all animations; show final states */
   .tape, .text-column::before{ 
@@ -168,7 +153,6 @@
   }
 }
 
-/* ━━━ Tablet Refinements (between desktop + mobile) ━━━ */
 @media (max-width: 1200px) {
   .portrait {
     width: clamp(320px, 30vw, 360px);
@@ -185,7 +169,6 @@
     width: clamp(300px, 34vw, 340px);
   }
 
-  /* Hide living sigils on narrow desktops where they'd be off-screen */
   .living-sigils {
     display: none;
   }
@@ -197,14 +180,6 @@
     top: 18%;
   }
 }
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   LIVING SIGILS - Vertical Vial Icon Column
-   - Glass vials with swirling dark matter
-   - Green lightning crackling on hover
-   - Dripping decay effect
-   - Connected by organic vine
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 .living-sigils {
   position: absolute;
@@ -218,7 +193,6 @@
   pointer-events: all;
 }
 
-/* Connecting Vine (Organic Thread) */
 .sigil-vine {
   position: absolute;
   left: 50%;
@@ -236,7 +210,6 @@
   opacity: 0.6;
 }
 
-/* Individual Vial Link */
 .sigil-vial {
   position: relative;
   display: block;
@@ -252,14 +225,13 @@
   filter: brightness(1.1);
 }
 
-/* Vial Container */
 .vial-container {
   position: relative;
   width: 100%;
   height: 100%;
 }
 
-/* Glass Sphere Body - 3D Bubble with directional lighting from sigil */
+/* 3D glass bubble with directional lighting */
 .vial-glass {
   position: absolute;
   top: 50%;
@@ -328,7 +300,6 @@
     0 6px 24px rgba(0, 0, 0, 0.6);
 }
 
-/* Swirling Dark Matter (Animated Background) - Subtle teal core */
 .vial-matter {
   position: absolute;
   inset: 0;
@@ -358,7 +329,6 @@
   opacity: 1;
 }
 
-/* Lightning - Teal inside, light blue glow */
 .vial-lightning {
   position: absolute;
   inset: 0;
@@ -391,7 +361,6 @@
   opacity: 0;
 }
 
-/* Icon Glyph (Center of vial) - Teal glow */
 .vial-icon {
   position: absolute;
   top: 50%;
@@ -414,12 +383,6 @@
     drop-shadow(0 0 6px rgba(122, 174, 138, 0.5));
   transform: translate(-50%, -50%) scale(1.1);
 }
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SPLIT BUBBLE EFFECT - Resume Download (PDF/DOCX)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-
 
 .sigil-vial-split {
   position: relative;
@@ -444,7 +407,6 @@
   pointer-events: none;
 }
 
-/* Split bubbles start stacked and are repositioned when container has .is-split */
 .vial-split-bubble {
   position: absolute;
   top: 0;
@@ -472,7 +434,6 @@
   transform: translateX(calc(-50% + 92px)) scale(0.92);
 }
 
-/* Format labels (PDF/DOC) */
 .vial-label {
   position: absolute;
   bottom: -18px;
@@ -493,7 +454,6 @@
   opacity: 1;
 }
 
-/* Enhanced hover states for individual bubbles */
 .sigil-vial-split.is-split .vial-split-bubble:hover {
   filter: brightness(1.2);
 }
@@ -512,7 +472,6 @@
   }
 }
 
-/* Responsive: Simple icon row for mobile - no effects, no animations */
 @media (max-width: 900px) {
   .living-sigils {
     position: relative;              /* Use relative to work with grid layout */
@@ -536,7 +495,6 @@
     display: none;
   }
 
-  /* Remove all bubble effects - show only icons */
   .sigil-vial,
   .sigil-vial-split,
   .vial-split-bubble {
@@ -554,7 +512,6 @@
     margin: 0 !important;
   }
 
-  /* Swap split bubbles for a clean single icon on mobile */
   .sigil-vial-split {
     display: none !important;
   }
@@ -563,7 +520,6 @@
     display: flex !important;
   }
 
-  /* Show container but remove bubble styling */
   .vial-container {
     display: flex !important;
     align-items: center !important;
@@ -573,7 +529,6 @@
     position: relative !important;
   }
 
-  /* Hide the glass bubble layers */
   .vial-glass {
     display: flex !important;
     align-items: center !important;
@@ -595,7 +550,6 @@
     display: none !important;
   }
 
-  /* Extract and show the icon directly from ALL vials (including PDF) */
   .sigil-vial .vial-icon,
   .vial-split-bubble .vial-icon {
     position: relative !important;
@@ -617,7 +571,6 @@
     margin: 0 !important;
   }
 
-  /* No hover effects on mobile */
   .sigil-vial:hover,
   .sigil-vial-split:hover,
   .vial-split-bubble:hover {
@@ -638,22 +591,19 @@
     animation: none !important;
   }
 
-  /* Show split bubble as single PDF icon */
   .sigil-vial-split {
     overflow: visible !important;
   }
 
-  /* Show only PDF bubble on mobile, hide DOCX */
+  /* Show only PDF bubble on mobile */
   .vial-bubble-docx {
     display: none !important;
   }
 
-  /* PDF bubble - no special treatment needed, uses rules above */
   .vial-bubble-pdf {
     position: relative !important;
   }
 
-  /* Hide split-related pseudo elements */
   .sigil-vial-split::before,
   .sigil-vial-split::after {
     display: none !important;
@@ -663,13 +613,11 @@
     display: none !important;
   }
 
-  /* add breathing room between bubbles and the name */
   .name { 
     margin: 0 auto 0 auto !important; /* Top spacing + horizontal centering */
   }
 }
 
-/* Very small phones - additional constraints */
 @media (max-width: 480px) {
   .living-sigils {
     gap: clamp(12px, 3vw, 18px);

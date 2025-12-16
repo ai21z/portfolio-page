@@ -1,7 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Secure Contact Flow Controller
-   Handles validation, Turnstile gating, UX messaging, submission
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+// Contact form controller
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUBJECT_LIMIT = { min: 5, max: 60 };
@@ -164,11 +161,9 @@ class NotebookContact {
       return;
     }
 
-    // For execute mode, widget auto-executes but we need to wait for token
     if (this.turnstileRequired && !this.turnstileToken) {
       if (window.turnstile && this.turnstileWidgetId) {
         this.showStatus('Verifying you are human…', 'info');
-        // Wait up to 5 seconds for Turnstile to complete
         const maxWait = 5000;
         const startTime = Date.now();
         while (!this.turnstileToken && (Date.now() - startTime) < maxWait) {

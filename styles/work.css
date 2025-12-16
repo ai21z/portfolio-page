@@ -1,14 +1,5 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MYCELIAL GLOBE - WORK EXPERIENCE VISUALIZATION
-   Interactive 3D Earth globe showing work locations and experience
-   - Full-screen panel mode (like altar-screen)
-   - Three.js 3D globe with organic styling
-   - Location pins (spore nodes) for Greece & Spain
-   - Parchment info bubbles on hover
-   - Nav suppression + background dimming
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Work globe visualization */
 
-/* Full-screen work panel (matches altar-screen pattern) */
 .work-globe-screen {
   position: fixed;
   inset: 0;
@@ -62,7 +53,7 @@
   50% { opacity: 1; transform: scale(1.02); }
 }
 
-/* ━━━ Necrographic Work Info Card (Aged Notebook Paper) ━━━ */
+/* Work info card */
 .work-location-info {
   position: fixed;
   max-width: 500px;
@@ -217,7 +208,7 @@
   pointer-events: auto; /* Enable clicks when visible */
 }
 
-/* ━━━ Work Location Card Typography (smaller text) ━━━ */
+/* Work location card typography */
 .work-location-header {
   display: flex;
   align-items: center;
@@ -299,7 +290,7 @@
   transform: translate(-50%, 0) scale(1);
 }
 
-/* ━━━ Mobile Bottom Sheet Adaptation ━━━ */
+/* Mobile bottom sheet adaptation */
 /* REVERTED: User preferred the original paper aesthetic */
 /* @media (max-width: 900px) { ... } */
 
@@ -336,11 +327,9 @@
   outline-offset: 4px;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HUD ELEMENTS (Manifest & Signal Log)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* HUD elements */
 
-/* Desktop Memorandum (Top-Left) */
+/* Desktop memorandum */
 .work-memorandum {
   position: absolute;
   top: 100px;
@@ -564,7 +553,7 @@
 /* REVERTED: User preferred the original paper aesthetic */
 /* @media (max-width: 900px) { ... } */
 
-/* ━━━ PROJECT PANEL (Orbital Moon Details) ━━━ */
+/* Project panel */
 .project-panel {
   position: fixed;
   max-width: 520px;
@@ -765,7 +754,7 @@
   z-index: 1;
 }
 
-/* ━━━ Hand-drawn Tech Tags with wobble ━━━ */
+/* Tech tags */
 .tech-badges {
   display: flex;
   flex-wrap: wrap;
@@ -818,7 +807,7 @@
   pointer-events: none;
 }
 
-/* ━━━ Hand-drawn "View on GitHub" ━━━ */
+/* GitHub link */
 .github-link {
   position: relative;
   display: inline-flex;
@@ -934,7 +923,7 @@
   animation: github-wobble-outer 320ms ease-in-out infinite alternate-reverse;
 }
 
-/* ━━━ Pencil wobble animations for hand-drawn effect ━━━ */
+/* Pencil wobble animations */
 @keyframes github-wobble-inner {
   0%   { 
     transform: translate(0px, 0px); 

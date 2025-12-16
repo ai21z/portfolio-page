@@ -1,5 +1,4 @@
-// ━━━ Spark Animation System ━━━
-// Handles animated sparks traveling along mycelium paths
+// Spark animation system
 
 import { cumulativeLengths, pointAt } from './utils.js';
 import { aStarPath } from './graph.js';
@@ -24,12 +23,6 @@ import { projectXY } from './viewport.js';
 
 const loggedPathFailures = new Set();
 
-/**
- * Starts a spark animation from one node to another.
- * @param {string} fromKey - Source node key
- * @param {string} toKey - Destination node key
- * @param {number} speedPxPerSec - Speed in pixels per second (default: 650)
- */
 export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   if (prefersReducedMotion || !GRAPH) return;
   if (ACTIVE_ANIMS.length >= MAX_SPARKS) ACTIVE_ANIMS.shift();
@@ -41,7 +34,6 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   let idA = NODE_IDS[fromKey];
   let idB = NODE_IDS[toKey];
   
-  // Recompute NODE_IDS if invalid
   if (idA == null || idB == null || idA < 0 || idB < 0) {
     for (const [id, pt] of Object.entries(NAV_COORDS)) {
       NODE_IDS[id] = GRAPH.nearestId(pt.x, pt.y, 80, 24);
@@ -88,11 +80,6 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   });
 }
 
-/**
- * Draws all active spark animations.
- * @param {number} dt - Delta time in seconds
- * @param {Function} pointAtRoute - Function to get position on a locked route
- */
 export function drawSparks(dt, pointAtRoute) {
   if (!sparkCtx || !sparkCanvas) return;
   const cssW = window.innerWidth;
@@ -152,18 +139,15 @@ export function drawSparks(dt, pointAtRoute) {
 
   setActiveAnims(survivors);
 
-  // Follower light dots: glowing dots that move with each label (no trails)
   if (ritualActive && followerSparks.length && !prefersReducedMotion){
     for (const f of followerSparks){
       const route = LOCKED_ROUTES[f.id];
       if (!route || !route.projPts || route.projPts.length < 2) continue;
       
-      // Get current position (head only, no tail) - requires pointAtRoute from routes module
       const head = pointAtRoute(route, route.s);
 
       sparkCtx.save();
 
-      // Outer glow
       sparkCtx.fillStyle = `rgba(143,180,255,${0.25 * f.alpha})`;
       sparkCtx.shadowBlur = 20;
       sparkCtx.shadowColor = `rgba(143,180,255,${0.4 * f.alpha})`;
@@ -171,7 +155,6 @@ export function drawSparks(dt, pointAtRoute) {
       sparkCtx.arc(head[0], head[1], 8, 0, Math.PI * 2);
       sparkCtx.fill();
 
-      // Mid glow
       sparkCtx.fillStyle = `rgba(122,174,138,${0.6 * f.alpha})`;
       sparkCtx.shadowBlur = 12;
       sparkCtx.shadowColor = `rgba(122,174,138,${0.7 * f.alpha})`;
@@ -179,7 +162,6 @@ export function drawSparks(dt, pointAtRoute) {
       sparkCtx.arc(head[0], head[1], 4, 0, Math.PI * 2);
       sparkCtx.fill();
 
-      // Bright core
       sparkCtx.fillStyle = `rgba(200,255,220,${0.9 * f.alpha})`;
       sparkCtx.shadowBlur = 8;
       sparkCtx.shadowColor = 'rgba(200,255,220,0.8)';
@@ -192,20 +174,12 @@ export function drawSparks(dt, pointAtRoute) {
   }
 }
 
-/**
- * Starts a spark animation to a specific point in image space.
- * @param {string} fromKey - Source node key
- * @param {number} imgX - Target x coordinate in image space
- * @param {number} imgY - Target y coordinate in image space
- * @param {number} speed - Speed in pixels per second (default: 750)
- */
 export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
   if (prefersReducedMotion || !GRAPH) return;
   
   const fromId = NODE_IDS[fromKey];
   if (fromId == null || fromId < 0) return;
   
-  // Find nearest graph node to target point
   const toId = GRAPH.nearestId(imgX, imgY, 96, 24);
   if (toId == null || toId < 0) {
     console.warn(`[LOCKED-ROUTE] No graph node near (${imgX.toFixed(0)}, ${imgY.toFixed(0)}) for spark`);

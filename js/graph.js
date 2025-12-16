@@ -1,13 +1,5 @@
-/**
- * Graph construction and A* pathfinding
- * Extracted from script.js with ZERO changes to behavior
- */
+// Graph construction and pathfinding
 
-/**
- * Build a graph from mycelium paths for pathfinding
- * @param {Array} paths - Array of polylines [[x,y], ...]
- * @returns {Object} Graph with nodes, neighbors(), and nearestId()
- */
 export function buildGraphFromPaths(paths) {
   const QUANT = 3;
   const key = (x, y) => `${Math.round(x / QUANT)},${Math.round(y / QUANT)}`;
@@ -80,14 +72,6 @@ export function buildGraphFromPaths(paths) {
   return { nodes, neighbors, nearestId };
 }
 
-/**
- * A* pathfinding between two node IDs
- * @param {number} idA - Start node ID
- * @param {number} idB - End node ID
- * @param {Object} graph - Graph object with nodes and neighbors()
- * @param {Map} pathCache - Cache for computed paths
- * @returns {Array|null} Array of {x, y} nodes or null if no path
- */
 export function aStarPath(idA, idB, graph, pathCache) {
   if (!graph || idA < 0 || idB < 0) return null;
   const cacheKey = `${idA}->${idB}`;

@@ -6,8 +6,7 @@
  * Step 2: Flippable cards (deferred)
  */
 
-/* ━━━ Stage Container ━━━ */
-
+/* Stage container */
 .now-stage {
   position: fixed;
   inset: 0;
@@ -33,8 +32,7 @@
   pointer-events: auto;
 }
 
-/* ━━━ Close Button ━━━ */
-
+/* Close button */
 .now-close {
   position: fixed;
   top: 24px;
@@ -67,8 +65,7 @@
   outline-offset: 4px;
 }
 
-/* ━━━ Hero Header ━━━ */
-
+/* Hero header */
 .now-header {
   text-align: center;
   margin-bottom: 20px;
@@ -119,8 +116,7 @@
   }
 }
 
-/* ━━━ Atmospheric Fog (reuse from projects-wheel) ━━━ */
-
+/* Atmospheric fog */
 .now-fog-layers {
   position: absolute;
   inset: 0;
@@ -155,8 +151,7 @@
   50% { transform: translateX(2%) translateY(-3%); }
 }
 
-/* ━━━ Reduced Motion ━━━ */
-
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .now-header {
     animation: none;
@@ -172,8 +167,7 @@
   }
 }
 
-/* ━━━ Responsive ━━━ */
-
+/* Responsive */
 @media (max-width: 900px) {
   .now-stage {
     padding-top: clamp(70px, 15vw, 90px);

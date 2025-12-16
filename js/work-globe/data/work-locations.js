@@ -1,13 +1,8 @@
-/**
- * Work experience location data
- * Contains geographical positions and career history
- */
-
 export const WORK_LOCATIONS = {
   greece: {
     name: 'Greece',
-    imageCoords: { x: 777, y: 330 }, // keep your existing pin position
-    color: [0.48, 0.68, 0.54], // decay-green RGB
+    imageCoords: { x: 777, y: 330 },
+    color: [0.48, 0.68, 0.54],
     entries: [
       {
         company: 'Environmental Engineering & Lab Work',
@@ -35,8 +30,8 @@ export const WORK_LOCATIONS = {
 
   spain: {
     name: 'Spain',
-    imageCoords: { x: 689, y: 310 }, // keep your existing pin position
-    color: [1.0, 0.48, 0.2], // orange RGB
+    imageCoords: { x: 689, y: 310 },
+    color: [1.0, 0.48, 0.2],
     entries: [
       {
         company: 'ADP (Lyric HCM)',

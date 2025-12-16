@@ -1,8 +1,3 @@
-/**
- * DataStreamSystem - Particle stream effects from hovered pins
- * Manages upward-flowing data stream particles emitted from work locations
- */
-
 export class DataStreamSystem {
   constructor(gl, maxParticles = 500) {
     this.gl = gl;
@@ -13,7 +8,6 @@ export class DataStreamSystem {
     this.emissionPoint = [0, 0, 0];
     this.emissionColor = [0.247, 1.0, 0.624];
     
-    // Initialize particle pool
     for (let i = 0; i < maxParticles; i++) {
       this.particles.push({
         position: [0, 0, 0],
@@ -24,7 +18,6 @@ export class DataStreamSystem {
       });
     }
     
-    // Create buffers
     this.positionBuffer = gl.createBuffer();
     this.lifeBuffer = gl.createBuffer();
     this.phaseBuffer = gl.createBuffer();
@@ -33,7 +26,6 @@ export class DataStreamSystem {
     this.lifeData = new Float32Array(maxParticles);
     this.phaseData = new Float32Array(maxParticles);
     
-    // Setup VAO
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     
@@ -66,7 +58,6 @@ export class DataStreamSystem {
   }
   
   update(dt) {
-    // Emit new particles if active
     if (this.emitting && Math.random() < 0.5) {
       const particle = this.particles.find(p => !p.active);
       if (particle) {
@@ -77,7 +68,6 @@ export class DataStreamSystem {
           this.emissionPoint[2] + (Math.random() - 0.5) * spread
         ];
         
-        // Flow upward from pin (inverted gravity)
         const upDir = [
           this.emissionPoint[0] * 0.8,
           this.emissionPoint[1] * 0.8 + 0.5,
@@ -94,19 +84,17 @@ export class DataStreamSystem {
       }
     }
     
-    // Update active particles
     this.activeParticles = 0;
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       if (!p.active) continue;
       
-      p.life -= dt * 0.8; // 1.25 second lifetime
+      p.life -= dt * 0.8;
       if (p.life <= 0) {
         p.active = false;
         continue;
       }
       
-      // Upward flow with slight drag
       p.velocity[0] *= 0.99;
       p.velocity[1] *= 0.99;
       p.velocity[2] *= 0.99;
@@ -115,7 +103,6 @@ export class DataStreamSystem {
       p.position[1] += p.velocity[1] * dt;
       p.position[2] += p.velocity[2] * dt;
       
-      // Copy to buffers
       const idx = this.activeParticles * 3;
       this.positionData[idx] = p.position[0];
       this.positionData[idx + 1] = p.position[1];
@@ -126,7 +113,6 @@ export class DataStreamSystem {
       this.activeParticles++;
     }
     
-    // Update GPU
     if (this.activeParticles > 0) {
       const gl = this.gl;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);

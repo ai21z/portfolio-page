@@ -1,9 +1,3 @@
-/**
- * Moon shaders - Dark Rocky Moon with Mycelium Connection
- * Features: rough stone texture, craters, glowing mycelium veins
- * Aesthetic: Ancient dark rock orbiting, connected by organic fungal threads
- */
-
 export const MOON_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

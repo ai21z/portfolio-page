@@ -31,6 +31,9 @@ yarn-error.log*
 # Private documentation (contains sensitive setup info)
 docs/local/
 
+# Cleanup tracking (temporary)
+CLEANUP-PENDING.md
+
 # Export scripts and generated packages (local use only)
 export-responsive-package.ps1
 responsive-refactor-package-*.zip

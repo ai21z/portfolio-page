@@ -1,19 +1,16 @@
 /**
+ * ⚠️ POTENTIALLY DEAD CODE - Commented out 2025-12-15
+ * See CLEANUP-PENDING.md in project root for details.
+ * 
+ * Exports initProjectsWheel() and destroyProjectsWheel() but neither is imported anywhere.
+ * No script tag loads this file. May be legacy or planned future feature.
+ * 
+ * Original header:
  * Ritual Wheel - Projects Section (MTG-STYLE CARDS)
- * 
  * Project cards arranged in a mystical wheel with portal-to-body magnification.
- * FOLLOWS THE EXACT PAPER PATTERN FROM app.js + MTG-inspired card design
- * 
- * Architecture:
- * - MTG-style cards: header → art (ring+jar) → textbox → tech badges
- * - Portal pattern: card → placeholder → body → animate (same as papers)
- * - Existing backdrop system (#paper-backdrop + .has-paper-open-global)
- * - Standard z-index hierarchy
- * 
- * Performance: Transform/opacity only, 60fps
- * Accessibility: Roving tabindex, keyboard navigation, ARIA
  */
 
+/*
 // ━━━ Project Data ━━━
 
 const projects = [
@@ -565,3 +562,4 @@ function setupVisibilityObserver(stage) {
   
   state.intersectionObserver.observe(stage);
 }
+*/

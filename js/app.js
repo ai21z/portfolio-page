@@ -43,8 +43,6 @@ import {
   setSparkCtx,
   setSporeCtx,
   ACTIVE_ANIMS,
-  cascadeAnims,
-  cascadeActive,
   spores,
   lastSporeFrame,
   lastSparkTs,

@@ -83,7 +83,7 @@ function checkAllTexturesLoaded() {
 }
 
 // Initialization
-export function initWorkGlobe() {
+function initWorkGlobe() {
   canvas = document.getElementById('work-globe-canvas');
   if (!canvas) {
     console.error('[Work Globe] Canvas not found');
@@ -1371,7 +1371,7 @@ function resizeCanvas() {
 }
 
 // ━━━ CLEANUP ━━━
-export function cleanupWorkGlobe() {
+function cleanupWorkGlobe() {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;

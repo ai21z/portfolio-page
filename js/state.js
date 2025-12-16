@@ -59,15 +59,11 @@ export function setSporeCtx(ctx) { sporeCtx = ctx; }
 
 // ━━━ Animation State ━━━
 export let ACTIVE_ANIMS = [];
-export let cascadeAnims = [];
-export let cascadeActive = false;
 export let spores = [];
 export let lastSporeFrame = 0;
 export let lastSparkTs = performance.now();
 
 export function setActiveAnims(anims) { ACTIVE_ANIMS = anims; }
-export function setCascadeAnims(anims) { cascadeAnims = anims; }
-export function setCascadeActive(value) { cascadeActive = value; }
 export function setSpores(value) { spores = value; }
 export function setLastSporeFrame(value) { lastSporeFrame = value; }
 export function setLastSparkTs(value) { lastSparkTs = value; }

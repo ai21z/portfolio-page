@@ -11,10 +11,6 @@ import {
   NODE_IDS,
   ACTIVE_ANIMS,
   setActiveAnims,
-  cascadeActive,
-  cascadeAnims,
-  setCascadeActive,
-  setCascadeAnims,
   sparkCtx,
   sparkCanvas,
   MYC_MAP,
@@ -93,117 +89,6 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
 }
 
 /**
- * Triggers a cascade effect across all graph nodes (ritual mode).
- */
-export function ritualCascade() {
-  if (prefersReducedMotion) {
-    document.querySelectorAll('.network-node-label, .network-sigil-node').forEach(n => {
-      n.classList.add('motion-highlight');
-      setTimeout(() => n.classList.remove('motion-highlight'), 200);
-    });
-    return;
-  }
-  if (cascadeActive) return;
-  setCascadeActive(true);
-  setCascadeAnims([]);
-
-  if (!GRAPH || !MYC_MAP) {
-    setCascadeActive(false);
-    return;
-  }
-
-  const visited = new Set();
-  const queue = [];
-  for (const id of GRAPH.nodes.keys()) {
-    queue.push({ id, depth: 0 });
-  }
-
-  const edges = [];
-  visited.clear();
-  for (let i = 0; i < queue.length; i++) {
-    const { id, depth } = queue[i];
-    if (visited.has(id)) continue;
-    visited.add(id);
-
-    for (const nb of GRAPH.neighbors(id)) {
-      if (!visited.has(nb)) {
-        edges.push({ from: id, to: nb, depth });
-      }
-    }
-  }
-
-  edges.forEach((edge, idx) => {
-    const delay = (edge.depth * 30) + (idx % 5) * 15;
-    setTimeout(() => {
-      const fromPt = GRAPH.nodes[edge.from];
-      const toPt = GRAPH.nodes[edge.to];
-      if (!fromPt || !toPt) return;
-
-      const pathImg = [fromPt, toPt];
-      const proj = projectXY(pathImg);
-      const cum = cumulativeLengths(proj);
-      const len = cum[cum.length - 1];
-      if (!len) return;
-
-      cascadeAnims.push({
-        projPts: proj,
-        cum,
-        len,
-        s: 0,
-        v: 800,
-        alpha: 0.15 + Math.random() * 0.1
-      });
-    }, delay);
-  });
-
-  setTimeout(() => {
-    setCascadeActive(false);
-    setCascadeAnims([]);
-  }, 1800);
-}
-
-/**
- * Draws the cascade animations (ritual mode).
- * @param {number} dt - Delta time in seconds
- */
-export function drawCascade(dt) {
-  if (!cascadeActive || cascadeAnims.length === 0) return;
-
-  const survivors = [];
-  for (const anim of cascadeAnims) {
-    anim.s += anim.v * dt;
-    if (anim.s > anim.len) continue;
-
-    const head = pointAt(anim.projPts, anim.cum, anim.s);
-    const tail = pointAt(anim.projPts, anim.cum, Math.max(0, anim.s - 40));
-
-    sparkCtx.save();
-    sparkCtx.lineCap = 'round';
-
-    sparkCtx.strokeStyle = `rgba(143,180,255,${anim.alpha * 0.5})`;
-    sparkCtx.lineWidth = 12;
-    sparkCtx.shadowBlur = 24;
-    sparkCtx.shadowColor = `rgba(143,180,255,${anim.alpha * 0.3})`;
-    sparkCtx.beginPath();
-    sparkCtx.moveTo(tail[0], tail[1]);
-    sparkCtx.lineTo(head[0], head[1]);
-    sparkCtx.stroke();
-
-    sparkCtx.strokeStyle = `rgba(194,74,46,${anim.alpha * 0.3})`;
-    sparkCtx.lineWidth = 6;
-    sparkCtx.shadowBlur = 16;
-    sparkCtx.beginPath();
-    sparkCtx.moveTo(tail[0], tail[1]);
-    sparkCtx.lineTo(head[0], head[1]);
-    sparkCtx.stroke();
-
-    sparkCtx.restore();
-    survivors.push(anim);
-  }
-  setCascadeAnims(survivors);
-}
-
-/**
  * Draws all active spark animations.
  * @param {number} dt - Delta time in seconds
  * @param {Function} pointAtRoute - Function to get position on a locked route
@@ -213,8 +98,6 @@ export function drawSparks(dt, pointAtRoute) {
   const cssW = window.innerWidth;
   const cssH = window.innerHeight;
   sparkCtx.clearRect(0, 0, cssW, cssH);
-
-  drawCascade(dt);
 
   const trailLen = 60;
   const survivors = [];
@@ -342,18 +225,4 @@ export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
     imgPts, projPts, cum, len,
     s: 0, v: speed
   });
-}
-
-/**
- * Main spark animation loop.
- * @param {number} ts - Timestamp from requestAnimationFrame
- * @param {Function} updateMovingLabels - Function to update moving label positions
- * @param {Function} pointAtRoute - Function to get position on a locked route
- */
-export function sparkLoop(ts, updateMovingLabels, pointAtRoute) {
-  const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
-  setLastSparkTs(ts);
-  updateMovingLabels(dt); // Move labels along their branch tails
-  drawSparks(dt, pointAtRoute);
-  requestAnimationFrame((newTs) => sparkLoop(newTs, updateMovingLabels, pointAtRoute));
 }

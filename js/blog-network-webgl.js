@@ -5,9 +5,9 @@ if (!window.__BLOG_NETWORK_VERSION) {
 }
 
 // ━━━ CONFIG ━━━
-export const PETRI_K = 0.42;  // Petri dish radius = PETRI_K * min(cssW, cssH)
-export const AUTO_CENTER = true;  // Auto-compute shift from data bounds (set false to use FIXED_SHIFT)
-export const FIXED_SHIFT = [0, 0];  // Debugging override when AUTO_CENTER=false
+const PETRI_K = 0.42;  // Petri dish radius = PETRI_K * min(cssW, cssH)
+const AUTO_CENTER = true;  // Auto-compute shift from data bounds (set false to use FIXED_SHIFT)
+const FIXED_SHIFT = [0, 0];  // Debugging override when AUTO_CENTER=false
 
 const PAL = {
   ABYSS: [0.05, 0.06, 0.07],        // soft charcoal background
@@ -41,7 +41,7 @@ function currentDPR() {
 const VIEW = { W: 1920, H: 1080 };
 
 // ━━━ CENTERING HELPER ━━━
-export function computeNetworkCentroid(paths) {
+function computeNetworkCentroid(paths) {
   const B = {minX: +Infinity, minY: +Infinity, maxX: -Infinity, maxY: -Infinity};
   for (const path of (paths || [])) {
     for (const [x, y] of path) {

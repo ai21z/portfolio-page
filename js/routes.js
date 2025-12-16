@@ -71,7 +71,7 @@ function farthestLeafFrom(src, forbidFirstHop = -1) {
 /**
  * Rebuild path from parent map (A* result).
  */
-export function rebuildPath(parent, end) {
+function rebuildPath(parent, end) {
   const out = [];
   for (let v = end; v != null; v = parent.get(v)) out.push(GRAPH.nodes[v]);
   return out.reverse();
@@ -80,7 +80,7 @@ export function rebuildPath(parent, end) {
 /**
  * Slice a polyline to a centered window (by arc-length) around the anchor.
  */
-export function trimAroundAnchor(imgPts, maxLenPx, anchor) {
+function trimAroundAnchor(imgPts, maxLenPx, anchor) {
   const proj = imgPts.map(p => [p.x, p.y]);
   const cum  = cumulativeLengths(proj);
   const total = cum[cum.length - 1];
@@ -145,7 +145,7 @@ function findClosestSOnRoute(route, vpX, vpY) {
 /**
  * Compute a locked route for a navigation label.
  */
-export function computeLockedRouteFor(id, anchor) {
+function computeLockedRouteFor(id, anchor) {
   // Wider radius + finer step, with retry on failure
   let start = GRAPH.nearestId(anchor.x, anchor.y, /*radius*/ 160, /*step*/ 12);
   

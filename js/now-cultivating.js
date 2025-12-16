@@ -1,19 +1,18 @@
 /**
- * Now — Cultivating
+ * ⚠️ POTENTIALLY DEAD CODE - Commented out 2025-12-15
+ * See CLEANUP-PENDING.md in project root for details.
  * 
+ * Exports initNow() and destroyNow() but neither is imported anywhere.
+ * now-cards.js is loaded directly via script tag in index.html.
+ * This file may be legacy or an unfinished refactor.
+ * 
+ * Original header:
+ * Now — Cultivating
  * Living "Now" page showing current life streams and active work.
  * Features flippable cards with status indicators (🔥⚗️🌱).
- * 
- * Architecture:
- * - Shares global background system (spore-canvas, reveal-canvas)
- * - No custom background needed - uses same as About/Skills
- * - Card system in separate module (now-cards.js)
- * 
- * Lifecycle:
- * - initNow(): Initialize page and cards
- * - destroyNow(): Cleanup
  */
 
+/*
 import { initNowCards, destroyNowCards } from './now-cards.js';
 
 // ━━━ Life Stream Data (for future card implementation) ━━━
@@ -69,9 +68,7 @@ let state = {
 
 // ━━━ Public API ━━━
 
-/**
- * Initialize the Now page and cards.
- */
+// Initialize the Now page and cards.
 export function initNow() {
   if (state.initialized) {
     console.warn('[Now] Already initialized');
@@ -84,6 +81,8 @@ export function initNow() {
     return;
   }
 
+  console.log('[Now] Initializing...');
+  
   // Setup intersection observer for performance
   setupVisibilityObserver(stage);
   
@@ -97,14 +96,15 @@ export function initNow() {
   initNowCards();
 
   state.initialized = true;
+  console.log('[Now] Ready');
 }
 
-/**
- * Cleanup the Now page.
- * Idempotent - safe to call multiple times.
- */
+// Cleanup the Now page.
+// Idempotent - safe to call multiple times.
 export function destroyNow() {
   if (!state.initialized) return;
+
+  console.log('[Now] Destroying');
 
   // Destroy cards
   destroyNowCards();
@@ -123,9 +123,7 @@ export function destroyNow() {
 
 // ━━━ Internal Helpers ━━━
 
-/**
- * Setup visibility observer to pause/resume animations when off-screen.
- */
+// Setup visibility observer to pause/resume animations when off-screen.
 function setupVisibilityObserver(stage) {
   if (typeof IntersectionObserver === 'undefined') return;
 
@@ -133,6 +131,12 @@ function setupVisibilityObserver(stage) {
     (entries) => {
       entries.forEach(entry => {
         state.isVisible = entry.isIntersecting;
+        if (!entry.isIntersecting) {
+          // Pause animations when not visible (future card animations)
+          console.log('[Now] Page hidden, pausing animations');
+        } else {
+          console.log('[Now] Page visible, resuming animations');
+        }
       });
     },
     { threshold: 0.1 }
@@ -141,10 +145,8 @@ function setupVisibilityObserver(stage) {
   state.intersectionObserver.observe(stage);
 }
 
-/**
- * Handle close button click.
- * Close without triggering intro animations/ritual.
- */
+// Handle close button click.
+// Close without triggering intro animations/ritual.
 function handleClose() {
   // Get the Now stage
   const stage = document.querySelector('.now-stage');
@@ -181,31 +183,28 @@ function handleClose() {
 
 // ━━━ Reduced Motion Support ━━━
 
-/**
- * Check user's motion preference.
- * @returns {boolean} True if user prefers reduced motion
- */
+// Check user's motion preference.
+// Returns true if user prefers reduced motion
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
 // ━━━ Future: Card Implementation (Step 2) ━━━
 
-/**
- * Build flippable cards from lifeStreams data.
- * To be implemented in Step 2.
- */
+// Build flippable cards from lifeStreams data.
+// To be implemented in Step 2.
 function buildCards() {
   // TODO: Create flippable card elements
   // TODO: Position in constellation
   // TODO: Wire flip interactions
   // TODO: Add status indicators (🔥⚗️🌱)
+  console.log('[Now] Card building deferred to Step 2');
 }
 
-/**
- * Position cards in the chamber.
- * To be implemented in Step 2.
- */
+// Position cards in the chamber.
+// To be implemented in Step 2.
 function positionCards() {
   // TODO: Layout algorithm (grid? circular? organic?)
+  console.log('[Now] Card positioning deferred to Step 2');
 }
+*/

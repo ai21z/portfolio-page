@@ -1,15 +1,15 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RITUAL WHEEL - Projects Section (MTG-STYLE CARDS)
-   Project specimen cards arranged in mystical wheel formation
-   
-   Design: Magic: The Gathering inspired cards with necrography aesthetic
-   Structure: Header → Art (ring+jar) → Textbox → Tech Badges
-   Interaction: Portal-to-body magnification pattern (reuses paper system)
-   Performance: Transform/opacity only, 60fps target
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/*
+ * ⚠️ DEAD CSS - Commented out 2025-12-16
+ * See CLEANUP-PENDING.md in project root for details.
+ * 
+ * This file is NEVER imported in main.css.
+ * All .rw-* classes only referenced in commented-out projects-wheel.js
+ * Safe to delete after testing.
+ *
+ * Original: Ritual Wheel - Projects Section (MTG-STYLE CARDS)
+ */
 
-/* ━━━ Stage & Container ━━━ */
-
+/*
 .rw-projects-stage {
   position: fixed;
   inset: 0;
@@ -564,3 +564,4 @@ body.has-paper-open-global #paper-backdrop {
   opacity: 1;
   pointer-events: auto;
 }
+*/

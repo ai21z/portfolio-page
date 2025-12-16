@@ -76,10 +76,6 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 
-// ━━━ A11y: Insert current year in footer ━━━
-const yearElement = document.getElementById('yr');
-if (yearElement) yearElement.textContent = new Date().getFullYear();
-
 // ━━━ Mycelium Geometry System (Exported from Python) ━━━
 /**
  * Load exported geometry JSON and preload background image.

@@ -178,15 +178,3 @@ body.has-paper-open-global .signals-canvas {
   80%{ clip:rect(23px, 9999px, 37px, 0); }
   100%{ clip:rect(49px, 9999px, 79px, 0); }
 }
-
-/* ━━━ Ambient Photographic Fungus (base layer) ━━━ */
-.fungi-ambient {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 120% 100% at 5% 30%, rgba(45,212,175,0.03), transparent 50%),
-    radial-gradient(ellipse 100% 120% at 95% 70%, rgba(255,122,51,0.025), transparent 50%);
-  opacity: 0.5;
-  pointer-events: none;
-}

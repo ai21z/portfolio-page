@@ -18,10 +18,7 @@
 /* 5. Reusable Components */
 @import 'components.css';
 
-/* 6. Content Sections */
-@import 'sections.css';
-
-/* 7. Contact Form */
+/* 6. Contact Form */
 @import 'contact.css';
 
 /* 8. Ritual Altar System */

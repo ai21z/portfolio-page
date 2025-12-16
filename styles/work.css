@@ -62,38 +62,6 @@
   50% { opacity: 1; transform: scale(1.02); }
 }
 
-/* Floating mycelium particles around globe */
-.work-globe-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.work-particle {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: rgba(45,212,175,0.7);
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(45,212,175,0.9);
-  animation: particle-orbit 20s linear infinite;
-  opacity: 0;
-}
-
-@keyframes particle-orbit {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) scale(0.5);
-  }
-  10% { opacity: 0.8; }
-  90% { opacity: 0.8; }
-  100% {
-    opacity: 0;
-    transform: translate(var(--orbit-x, 50px), var(--orbit-y, 50px)) scale(1.2);
-  }
-}
-
 /* ━━━ Necrographic Work Info Card (Aged Notebook Paper) ━━━ */
 .work-location-info {
   position: fixed;
@@ -366,47 +334,6 @@
 .work-close:focus-visible {
   outline: 2px solid var(--decay-green);
   outline-offset: 4px;
-}
-
-/* Loading state */
-.work-globe-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 400 14px/1 'Special Elite', monospace;
-  color: rgba(122,174,138,0.7);
-  letter-spacing: 0.05em;
-}
-
-.work-globe-loading::after {
-  content: '...';
-  animation: loading-dots 1.5s infinite;
-}
-
-@keyframes loading-dots {
-  0%, 20% { content: '.'; }
-  40% { content: '..'; }
-  60%, 100% { content: '...'; }
-}
-
-/* Helper text (optional - can be hidden after first interaction) */
-.work-helper-text {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font: 400 11px/1.4 'Special Elite', monospace;
-  color: rgba(230,227,216,0.5);
-  text-align: center;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.5s ease;
-}
-
-.work-helper-text.hidden {
-  opacity: 0;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

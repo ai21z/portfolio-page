@@ -72,7 +72,7 @@ body{
   background-attachment:fixed;
 }
 
-a, button, .sigil-wrap, .ico {
+a, button {
   cursor: var(--cursor-spore), pointer;
 }
 
@@ -130,7 +130,6 @@ a, button, .sigil-wrap, .ico {
 /* Touch targets - ensure minimum 44px tap area on touch devices */
 @media (hover: none) {
   .btn,
-  .sigil-wrap a,
   .sigil-vial,
   .nav a,
   .network-node-label,

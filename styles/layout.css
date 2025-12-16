@@ -149,17 +149,6 @@
     hyphens: auto;
   }
   
-  .social::before {
-    font-size: 9px;
-    margin-right: var(--unit);
-  }
-  
-  .social{
-    justify-content: center;
-    flex-wrap: wrap;
-    row-gap: var(--unit);
-  }
-  
   .foot{
     grid-row: 6; /* Shift footer to row 6 */
     flex-direction: column;

@@ -117,117 +117,6 @@
   opacity:.95;
 }
 
-/* ━━━ Sigil (In footer between TM and coords - 2 euro coin size) ━━━ */
-.sigil-wrap{
-  width: 85px;
-  height: 85px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  outline: none;
-  position: relative;
-  padding: calc(var(--unit) * 2);
-  border-radius: 2px;
-  background: radial-gradient(ellipse at 55% 45%, 
-    rgba(143, 180, 255, 0.03) 0%, 
-    transparent 65%);
-  transition: all .35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sigil-wrap:focus-visible{ 
-  outline: 1px solid var(--spectral);
-  outline-offset: var(--unit);
-}
-
-.sigil-wrap:hover{
-  transform: translateY(-4px);
-  background: radial-gradient(ellipse at 55% 45%, 
-    rgba(143, 180, 255, 0.05) 0%, 
-    transparent 65%);
-}
-
-.sigil-wrap img{
-  display: block;
-  width: 100%;
-  height: auto;
-  transition: all .5s cubic-bezier(0.16, 1, 0.3, 1);
-  filter: contrast(1.06) brightness(1.02) drop-shadow(0 0 0 transparent);
-  mix-blend-mode: screen;
-  opacity: 0.96;
-}
-
-/* Character: Rotation + Spore glow on hover */
-.sigil-wrap:hover img{
-  transform: rotate(8deg) scale(1.02);
-  filter: contrast(1.1) brightness(1.05) drop-shadow(0 8px 16px rgba(63, 255, 159, 0.2));
-}
-
-/* ━━━ Social Links (Honest, Unobtrusive) ━━━ */
-.social{
-  display: flex;
-  gap: calc(var(--unit) * 3);
-  opacity: 0;
-  animation: fadeIn 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards;
-  align-items: center;
-}
-
-/* Character: Index label (01—04) */
-.social::before {
-  content: '01—04';
-  font-size: var(--text-caption);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--bone);
-  opacity: 0.2;
-  margin-right: calc(var(--unit) * 2);
-  font-feature-settings: 'tnum' 1;
-}
-
-.ico{ 
-  color: var(--bone);
-  opacity: 0.65;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  filter:brightness(1);
-}
-
-.ico:hover{ 
-  opacity: 1;
-  transform: translateY(-3px);
-  filter:brightness(1.2) drop-shadow(0 4px 8px rgba(63, 255, 159, 0.3));
-}
-
-.ico:focus-visible{
-  outline: 2px solid var(--decay-green);
-  outline-offset: calc(var(--unit) * 1);
-}
-
-/* Character: Individual hover labels (01, 02, 03, 04) */
-.ico:nth-child(2)::after { content: '01'; }
-.ico:nth-child(3)::after { content: '02'; }
-.ico:nth-child(4)::after { content: '03'; }
-.ico:nth-child(5)::after { content: '04'; }
-
-.ico::after {
-  position: absolute;
-  top: -16px;
-  font-size: var(--text-caption);
-  opacity: 0;
-  color: var(--spectral);
-  letter-spacing: 0.06em;
-  transition: opacity .2s ease;
-  pointer-events: none;
-  font-feature-settings: 'tnum' 1;
-}
-
-.ico:hover::after {
-  opacity: 0.55;
-}
-
 /* ━━━ Footer (Grid Row 6 - Bottom of page) ━━━ */
 .foot{ 
   grid-column: 1 / -1;
@@ -272,16 +161,10 @@
 /* ━━━ Prefers Reduced Motion (PRM) ━━━ */
 @media (prefers-reduced-motion: reduce){
   /* Kill all animations; show final states */
-  .tape, .social, .text-column::before{ 
+  .tape, .text-column::before{ 
     animation: none; 
     max-width: var(--tape-w);
     opacity: 0.95;
-  }
-  .sigil-wrap img, .sigil-wrap, .ico{ 
-    transition: none;
-  }
-  .sigil-wrap:hover, .sigil-wrap:hover img, .ico:hover{
-    transform: none;
   }
 }
 

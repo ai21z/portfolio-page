@@ -41,7 +41,6 @@ export let sporeCtx = null;
 
 export function setSparkCanvas(canvas) { sparkCanvas = canvas; }
 export function setSparkCtx(ctx) { sparkCtx = ctx; }
-export function setSporeCanvas(canvas) { sporeCanvas = canvas; }
 export function setSporeCtx(ctx) { sporeCtx = ctx; }
 
 export let ACTIVE_ANIMS = [];

@@ -95,19 +95,6 @@ export function initNowCards() {
   document.addEventListener('keydown', handleEscKey);
 }
 
-export function destroyNowCards() {
-  if (activeCard) {
-    closeCard(activeCard, false);
-  }
-  document.removeEventListener('keydown', handleEscKey);
-  cards = [];
-  filterChips = [];
-  activeCard = null;
-  focusBeforeOpen = null;
-  const grid = document.getElementById('now-card-grid');
-  if (grid) grid.innerHTML = '';
-}
-
 function renderCards() {
   const grid = document.getElementById('now-card-grid');
   if (!grid) return;

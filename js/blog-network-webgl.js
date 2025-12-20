@@ -873,27 +873,39 @@ async function initBlogNetwork(){
       const span = 70 * Math.PI/180;  // Wider arc for bigger text
       const a0 = (c.midDeg*Math.PI/180) - span/2;
       const a1 = (c.midDeg*Math.PI/180) + span/2;
+      
+      // Hit zone centered between rim and label for full coverage
+      const hitR = dish.r + 30; // Midpoint between rim (~r+14) and label (~r+48)
+      const hx0 = cx + hitR*Math.cos(a0), hy0 = cy + hitR*Math.sin(a0);
+      const hx1 = cx + hitR*Math.cos(a1), hy1 = cy + hitR*Math.sin(a1);
+      
+      // Label text path at outer radius
       const x0 = cx + outerR*Math.cos(a0), y0 = cy + outerR*Math.sin(a0);
       const x1 = cx + outerR*Math.cos(a1), y1 = cy + outerR*Math.sin(a1);
 
-      // Hit zone path (thick stroke for easy clicking)
-      const path = document.createElementNS(svg.namespaceURI,'path');
-      path.setAttribute('id', arcId);
-      path.setAttribute('d', `M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1}`);
-      path.setAttribute('fill','none');
-      path.setAttribute('stroke','transparent');
-      path.setAttribute('stroke-width','48'); // Larger hit zone
-      path.style.pointerEvents='stroke';
-      svg.appendChild(path);
-
-      // Clickable group with text
+      // Clickable group with hit zone and text
       const grp = document.createElementNS(svg.namespaceURI,'g');
       grp.classList.add('arc-btn');
       grp.dataset.hub = c.id;
       grp.setAttribute('tabindex','0');
       grp.setAttribute('role','button');
       grp.setAttribute('aria-label', `${c.text} — open category`);
-      grp.style.pointerEvents='auto';
+
+      // Hit zone path - covers rim through label area
+      const hitPath = document.createElementNS(svg.namespaceURI,'path');
+      hitPath.setAttribute('d', `M ${hx0} ${hy0} A ${hitR} ${hitR} 0 0 1 ${hx1} ${hy1}`);
+      hitPath.setAttribute('fill','none');
+      hitPath.setAttribute('stroke','transparent');
+      hitPath.setAttribute('stroke-width','72'); // Covers rim (r+14) to beyond label (r+48)
+      grp.appendChild(hitPath);
+
+      // Text path for label positioning
+      const textArc = document.createElementNS(svg.namespaceURI,'path');
+      textArc.setAttribute('id', arcId);
+      textArc.setAttribute('d', `M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1}`);
+      textArc.setAttribute('fill','none');
+      textArc.setAttribute('stroke','none');
+      grp.appendChild(textArc);
 
       const text = document.createElementNS(svg.namespaceURI,'text');
       text.setAttribute('class','arc-label');
@@ -1059,11 +1071,11 @@ async function initBlogNetwork(){
     if (hoveredHubId !== prevHovered) {
       if (hoveredHubId) {
         window.dispatchEvent(new CustomEvent('blog:hover', { 
-          detail: { hubId: hoveredHubId } 
+          detail: { hubId: hoveredHubId, source: 'hub-point' } 
         }));
       } else {
         window.dispatchEvent(new CustomEvent('blog:hover-off', { 
-          detail: {} 
+          detail: { hubId: prevHovered, source: 'hub-point' } 
         }));
       }
     }
@@ -1103,19 +1115,19 @@ async function initBlogNetwork(){
     }
   });
   
-  // Listen for external hover events (from rim labels)
+  // Listen for external hover events (from rim labels and memo)
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
-    if (source === 'rim-label' && hubId && hubId !== 'source') {
+    if ((source === 'rim-label' || source === 'memo') && hubId && hubId !== 'source') {
       hoveredHubId = hubId;
       canvas.style.cursor = 'pointer';
     }
   });
   
   window.addEventListener('blog:hover-off', (e) => {
-    const { hubId } = e.detail;
-    // Only clear if we're currently hovering this hub
-    if (hoveredHubId === hubId) {
+    const { hubId, source } = e.detail;
+    // Clear if from memo (no hubId check) or if matching hub
+    if (source === 'memo' || hoveredHubId === hubId) {
       hoveredHubId = null;
       canvas.style.cursor = 'default';
     }
@@ -1134,7 +1146,10 @@ async function initBlogNetwork(){
   
   // Wheel zoom (clamp to 0.75x - 1.0x base scale)
   const baseScale = fit.scale;
-  let userZoom = 1.0;
+  let userZoom = 0.81;
+  fit.scale = baseScale * userZoom;
+  fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;
+  fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
   
   function updateZoomIndicator() {
     const zoomTextContent = document.getElementById('zoom-text-content');
@@ -1143,6 +1158,7 @@ async function initBlogNetwork(){
       zoomTextContent.textContent = `• ZOOM ${zoomPercent}% •`;
     }
   }
+  updateZoomIndicator(); // Set initial indicator to match default zoom
   
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -1291,7 +1307,37 @@ async function initBlogNetwork(){
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoCyst.count);
     gl.bindVertexArray(null);
 
-    // Hover halo (breathing ember) — simple overdraw using cyst shader idea
+    // Hub point pulsing glow (subtle, ominous breathing)
+    for (let i = 0; i < hubPos.length; i++) {
+      const hub = data.hubs[i];
+      if (!hub) continue;
+      // Gentle pulse: each hub has offset phase for organic feel
+      const phase = now * 0.0008 + i * 1.57; // ~0.8 sec period, π/2 offset between hubs
+      const pulse = 0.4 + 0.15 * Math.sin(phase); // subtle 0.25-0.55 range
+      const size = 8 + 3 * Math.sin(phase * 0.7); // gentle size breathing
+      
+      gl.useProgram(progCyst);
+      set2(progCyst,'uScale', fit.scale, fit.scale);
+      set2(progCyst,'uOffset', fit.offX, fit.offY);
+      set2(progCyst,'uShift', shift[0], shift[1]);
+      set2(progCyst,'uRes', fit.cssW, fit.cssH);
+      gl.uniform1f(gl.getUniformLocation(progCyst,'uTime'), now*0.001);
+      gl.uniform1f(gl.getUniformLocation(progCyst,'uDpr'), currentDPR());
+      // Dim ember colors for subtle glow
+      set3(progCyst,'uGlow1', [PAL.EMBER1[0]*pulse, PAL.EMBER1[1]*pulse, PAL.EMBER1[2]*pulse]);
+      set3(progCyst,'uGlow2', [PAL.EMBER2[0]*pulse, PAL.EMBER2[1]*pulse, PAL.EMBER2[2]*pulse]);
+      set3(progCyst,'uGlow3', [PAL.EMBER3[0]*pulse, PAL.EMBER3[1]*pulse, PAL.EMBER3[2]*pulse]);
+      set3(progCyst,'uBranch1', PAL.BRANCH1);
+      
+      vaoCyst.data.set([hub.x, hub.y, size, i * 0.5], 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, vaoCyst.data.subarray(0,4));
+      gl.bindVertexArray(vaoCyst.vao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, 1);
+      gl.bindVertexArray(null);
+    }
+
+    // Hover halo (breathing ember) — brighter overdraw when hovered
     if(hoveredHubId){
       const hub = data.hubs.find(h=>h.id===hoveredHubId);
       if(hub){

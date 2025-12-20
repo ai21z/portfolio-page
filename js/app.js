@@ -687,6 +687,23 @@ function initBlogControls() {
     }
   });
   
+  // Sync arc-btn highlight when hub points are hovered (bidirectional)
+  window.addEventListener('blog:hover', (e) => {
+    const { hubId, source } = e.detail;
+    if (source === 'hub-point' && hubId) {
+      const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
+      if (arcBtn) arcBtn.classList.add('hovered');
+    }
+  });
+  
+  window.addEventListener('blog:hover-off', (e) => {
+    const { hubId, source } = e.detail;
+    if (source === 'hub-point' && hubId) {
+      const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
+      if (arcBtn) arcBtn.classList.remove('hovered');
+    }
+  });
+  
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {

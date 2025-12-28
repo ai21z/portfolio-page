@@ -957,6 +957,92 @@ async function initBlogNetwork(){
     
     zoomText.appendChild(zoomTextPath);
     svg.appendChild(zoomText);
+    
+    // Clock dots - orbiting between rim and labels
+    const clockR = dish.r + 30; // Same track as hit zones, between rim and labels
+    
+    // Hour dot (largest, brass/dish color)
+    const hourDot = document.createElementNS(svg.namespaceURI,'circle');
+    hourDot.setAttribute('id','clock-hour');
+    hourDot.setAttribute('r','7');
+    hourDot.setAttribute('fill','rgba(180, 150, 110, 0.8)');
+    hourDot.style.pointerEvents='none';
+    svg.appendChild(hourDot);
+    
+    // Minute dot (medium, ominous green like craft)
+    const minDot = document.createElementNS(svg.namespaceURI,'circle');
+    minDot.setAttribute('id','clock-minute');
+    minDot.setAttribute('r','4.5');
+    minDot.setAttribute('fill','rgba(45, 140, 90, 0.75)');
+    minDot.style.pointerEvents='none';
+    svg.appendChild(minDot);
+    
+    // Second dot (smallest, ominous purple like convergence)
+    const secDot = document.createElementNS(svg.namespaceURI,'circle');
+    secDot.setAttribute('id','clock-second');
+    secDot.setAttribute('r','2.5');
+    secDot.setAttribute('fill','rgba(130, 85, 145, 0.7)');
+    secDot.style.pointerEvents='none';
+    svg.appendChild(secDot);
+    
+    // Get user timezone, fallback to Barcelona
+    let userTimezone;
+    try {
+      userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid';
+    } catch {
+      userTimezone = 'Europe/Madrid';
+    }
+    
+    let lastMinute = -1;
+    
+    // Get time components in target timezone
+    function getTimeInZone() {
+      const now = new Date();
+      const h = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, hour: 'numeric', hour12: false }));
+      const m = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, minute: 'numeric' }));
+      const s = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, second: 'numeric' }));
+      const ms = now.getMilliseconds();
+      return { h, m, s, ms };
+    }
+    
+    // Smooth clock animation using requestAnimationFrame
+    function animateClock() {
+      const { h, m, s, ms } = getTimeInZone();
+      
+      // Smooth fractional values for continuous motion
+      const secSmooth = s + ms / 1000;
+      const minSmooth = m + secSmooth / 60;
+      const hrSmooth = (h % 12) + minSmooth / 60;
+      
+      // Convert to angles (12 o'clock = -90° in SVG, clockwise)
+      const hourAngle = (hrSmooth * 30 - 90) * Math.PI / 180;
+      const minAngle = (minSmooth * 6 - 90) * Math.PI / 180;
+      const secAngle = (secSmooth * 6 - 90) * Math.PI / 180;
+      
+      // Position dots
+      hourDot.setAttribute('cx', cx + clockR * Math.cos(hourAngle));
+      hourDot.setAttribute('cy', cy + clockR * Math.sin(hourAngle));
+      minDot.setAttribute('cx', cx + clockR * Math.cos(minAngle));
+      minDot.setAttribute('cy', cy + clockR * Math.sin(minAngle));
+      secDot.setAttribute('cx', cx + clockR * Math.cos(secAngle));
+      secDot.setAttribute('cy', cy + clockR * Math.sin(secAngle));
+      
+      // Update sr-only time for accessibility (only on minute change)
+      if (m !== lastMinute) {
+        lastMinute = m;
+        const hubStatus = document.getElementById('hub-status');
+        if (hubStatus) {
+          const h12 = (h % 12) || 12;
+          const ampm = h < 12 ? 'AM' : 'PM';
+          hubStatus.textContent = `Current time: ${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+        }
+      }
+      
+      requestAnimationFrame(animateClock);
+    }
+    
+    // Start smooth animation
+    animateClock();
   }
 
   const [netCx, netCy] = computeNetworkCentroid(data.paths);

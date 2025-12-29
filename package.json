@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build-blog": "node scripts/build-blog.js",
     "generate-icons": "node generate-icons.js",
     "generate-og": "node generate-og.js",
     "preview": "http-server . -p 4173 -a 127.0.0.1",

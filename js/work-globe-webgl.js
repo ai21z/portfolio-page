@@ -1,7 +1,7 @@
 // WebGL globe visualization
 
 import { mat4 } from './work-globe/core/math-utils.js';
-import { createShader, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
+import { createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 
 import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';

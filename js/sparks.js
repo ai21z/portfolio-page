@@ -12,12 +12,9 @@ import {
   setActiveAnims,
   sparkCtx,
   sparkCanvas,
-  MYC_MAP,
   ritualActive,
   followerSparks,
   LOCKED_ROUTES,
-  lastSparkTs,
-  setLastSparkTs
 } from './state.js';
 import { projectXY } from './viewport.js';
 

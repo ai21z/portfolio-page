@@ -2,7 +2,6 @@
 
 import { 
   NAV_COORDS, 
-  NAV_ORDER,
   LABEL_SPEEDS, 
   DEFAULT_SPEED,
   MIN_ROUTE_LEN_PX,

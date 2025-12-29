@@ -10,7 +10,6 @@ import {
   setCurrentNavHover,
   ritualActive,
   LOCKED_ROUTES,
-  ACTIVE_ANIMS,
   setActiveAnims,
   hudEnabled
 } from './state.js';

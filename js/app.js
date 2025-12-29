@@ -2,7 +2,7 @@
  * Navigation system with mycelium background and spark animations
  */
 
-// Imports
+
 import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
 import socialIconsAnimation from './social-icons-animation.js';
@@ -24,14 +24,11 @@ import {
   PATH_CACHE,
   setGraph,
   ritualActive,
-  followerSparks,
   setRitualActive,
   setFollowerSparks,
   LOCKED_ROUTES,
   NODE_IDS,
-  currentNavHover,
   sparkCanvas,
-  sparkCtx,
   sporeCanvas,
   sporeCtx,
   setSparkCanvas,

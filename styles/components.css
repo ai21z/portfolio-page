@@ -55,17 +55,15 @@
   opacity: 0.95;
 }
 
-/* When particle canvas is active, fade image to guide layer */
+/* When particle canvas is active, JS controls opacity dynamically */
 .portrait-wrap:has(.portrait-particles-canvas) .portrait {
-  opacity: 0.2;
   filter: grayscale(0.35) contrast(0.95);
-  transition: opacity 0.6s ease, filter 0.6s ease;
+  /* opacity is set by JS - starts at 0 during interaction, fades to 0.2 during recovery */
 }
 
 /* Disable hover effects when particles are active */
 .portrait-wrap:has(.portrait-particles-canvas) .portrait:hover {
   filter: grayscale(0.35) contrast(0.95);
-  opacity: 0.2;
   transform: none;
 }
 

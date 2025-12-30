@@ -146,6 +146,7 @@ class PortraitParticles {
     this.activationLevel = 0;
     this.targetActivation = 0;
     this.cursorDistToWrapper = 9999;
+    this.cursorInsideWrapper = false;  // true when cursor is inside the wrapper rect
 
     // Pre-built bins for rendering (avoids per-frame allocation)
     this.bins = [];
@@ -422,6 +423,9 @@ class PortraitParticles {
     if (e.clientX >= rect.left && e.clientX <= rect.right &&
         e.clientY >= rect.top && e.clientY <= rect.bottom) {
       this.cursorDistToWrapper = 0;
+      this.cursorInsideWrapper = true;
+    } else {
+      this.cursorInsideWrapper = false;
     }
 
     // Set target activation based on distance
@@ -543,16 +547,29 @@ class PortraitParticles {
     // Precompute constants
     const outerRadiusSq = CONFIG.OUTER_RADIUS * CONFIG.OUTER_RADIUS;
     const maxSpeedSq = CONFIG.MAX_SPEED * CONFIG.MAX_SPEED;
+    
+    // Colored particles (bins 0,1,4,5) scatter like sand when cursor inside
+    // Green particles (bins 2,3) behave normally with spring
+    const cursorInside = this.cursorInsideWrapper;
 
     // Update particles
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
+      
+      // Determine if this is a "colored" particle (sand behavior) or green (normal)
+      const isColoredParticle = p.binIndex <= 1 || p.binIndex >= 4;
 
       // 
       // A) HOME GRAVITY (simple linear spring)
+      // For colored particles: no spring while cursor is inside (scatter like sand)
       // 
       const homeDistX = p.homeX - p.x;
       const homeDistY = p.homeY - p.y;
+      
+      let particleSpring = springK;
+      if (isColoredParticle && cursorInside) {
+        particleSpring = 0;  // no home gravity - scatter freely like sand
+      }
 
       // 
       // B) CURSOR FORCES: radial push + tangent swirl + velocity drag
@@ -582,6 +599,11 @@ class PortraitParticles {
             // Outer zone: fade from 40% to 0
             strength = (1 - (dist - CONFIG.INNER_RADIUS) / (CONFIG.OUTER_RADIUS - CONFIG.INNER_RADIUS)) * 0.4;
           }
+          
+          // Colored particles get pushed harder (sand scatter effect)
+          if (isColoredParticle) {
+            strength *= 1.8;
+          }
 
           // Radial push (outward from cursor)
           forceX += nx * CONFIG.RADIAL_PUSH * strength;
@@ -599,15 +621,20 @@ class PortraitParticles {
 
       // 
       // C) IDLE DRIFT (hashNoise for organic feel)
+      // Colored particles get extra drift when cursor inside (sand floating)
       // 
-      const driftX = hashNoise(p.seed, now) * CONFIG.DRIFT_AMPLITUDE * driftScale;
-      const driftY = hashNoise(p.seed + 1000, now + 500) * CONFIG.DRIFT_AMPLITUDE * driftScale;
+      let particleDriftScale = driftScale;
+      if (isColoredParticle && cursorInside) {
+        particleDriftScale = driftScale * 2.5;  // more floaty drift
+      }
+      const driftX = hashNoise(p.seed, now) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
+      const driftY = hashNoise(p.seed + 1000, now + 500) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
 
       // 
       // APPLY FORCES (dt-scaled)
       // 
-      p.vx += (forceX + driftX + homeDistX * springK) * dt;
-      p.vy += (forceY + driftY + homeDistY * springK) * dt;
+      p.vx += (forceX + driftX + homeDistX * particleSpring) * dt;
+      p.vy += (forceY + driftY + homeDistY * particleSpring) * dt;
 
       // Damping
       p.vx *= CONFIG.DAMPING;

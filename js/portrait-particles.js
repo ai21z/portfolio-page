@@ -51,44 +51,31 @@ const CONFIG = {
   PARTICLE_SIZE_MAX: 1.1,       // maximum dot radius
   BRIGHTNESS_THRESHOLD: 8,      // skip pixels darker than this
   ALPHA_THRESHOLD: 180,         // skip transparent pixels
-  DARK_SKIP_PROBABILITY: 0.2,   // probability to skip dark pixels (bins 0-1) - reduced for more detail
+  DARK_SKIP_PROBABILITY: 0.2,   // probability to skip dark pixels (bins 0-1)
 
-  // HOME GRAVITY (dominant attractor)
-  SPRING_BASE: 0.008,           // base spring strength (floaty near home)
-  SPRING_EXTRA: 0.06,           // additional spring at max displacement
-  HOME_RANGE: 50,               // distance (px) at which SPRING_EXTRA is fully engaged
-  HOME_MAX_DISPLACEMENT: 80,    // hard cap: particles cannot stray further than this
-  SPRING_RECOVERY: 0.08,        // spring strength boost during recovery phase
+  // Cursor interaction radii (in CSS pixels)
+  INNER_RADIUS: 70,             // strong force zone
+  OUTER_RADIUS: 140,            // weak force zone
+  PROXIMITY_MARGIN: 80,         // extra margin outside wrapper for "near" detection
 
-  // CURSOR GRAVITY (weak repulsion, steep falloff)
-  CURSOR_MASS: 800,             // "mass" for inverse-square repulsion (lower = weaker)
-  EPS: 25,                      // softening radius (prevents singularity, sets "core size")
-  CURSOR_ACCEL_MAX: 0.5,        // clamp cursor acceleration to prevent spikes
-
-  // WAKE & SWIRL (Gaussian falloff)
-  SIGMA: 45,                    // Gaussian width (px) - controls corridor width
-  WAKE_STRENGTH: 0.15,          // drag along mouse velocity
-  SWIRL_STRENGTH: 0.04,         // tangential flow (subtle)
-
-  // Phase 2: Cursor culling - skip expensive math beyond this radius
-  // cutoff = max(3*SIGMA, HOME_MAX_DISPLACEMENT + EPS) = max(135, 105) = 135
-  CURSOR_CUTOFF_SQ: 135 * 135,  // squared for fast comparison (18225)
-
-  // General motion
-  MAX_SPEED: 6,                 // clamp particle speed
-  DAMPING: 0.92,                // velocity decay per frame
+  // Force magnitudes
+  RADIAL_PUSH: 0.15,            // outward push strength
+  TANGENT_SWIRL: 0.12,          // perpendicular swirl strength
+  VELOCITY_DRAG: 0.25,          // cursor velocity influence
+  MAX_SPEED: 8,                 // clamp particle speed
 
   // Drift (idle animation)
-  DRIFT_AMPLITUDE: 0.25,        // sine noise amplitude
+  DRIFT_AMPLITUDE: 0.3,         // sine noise amplitude
   DRIFT_FREQUENCY: 0.0008,      // noise frequency (lower = slower)
 
-  // Timing
-  IDLE_THRESHOLD_MS: 750,       // ms before recovery mode kicks in
-  RECOVERY_DURATION_MS: 1000,   // ms for full recovery ramp
+  // Spring / damping
+  DAMPING: 0.94,                // velocity decay per frame
+  SPRING_NORMAL: 0.012,         // gravity to home during interaction
+  SPRING_RECOVERY: 0.045,       // gravity to home during recovery
 
-  // Velocity smoothing
-  VELOCITY_SMOOTHING: 0.25,     // low-pass filter factor (0-1, lower = smoother)
-  INTERACTION_SPEED_THRESHOLD: 0.5, // min mouse speed to count as "interacting"
+  // Timing
+  IDLE_THRESHOLD_MS: 1500,      // ms before recovery mode kicks in
+  RECOVERY_DURATION_MS: 2000,   // ms for full recovery ramp
 
   // Debug
   DEBUG_PERF: false,            // Enable performance logging (toggle for profiling)
@@ -96,6 +83,14 @@ const CONFIG = {
   // Rendering
   RENDER_MODE: 'imagedata',     // 'imagedata' (Phase 1) or 'fillrect' (legacy)
 };
+
+// 
+// Simple hash for deterministic per-particle noise
+// 
+function hashNoise(seed, t) {
+  const x = Math.sin(seed * 12.9898 + t * CONFIG.DRIFT_FREQUENCY) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1; // range -1..1
+}
 
 // 
 // CLASS: PortraitParticles
@@ -116,14 +111,11 @@ class PortraitParticles {
     this.mouseY = -9999;
     this.prevMouseX = -9999;
     this.prevMouseY = -9999;
-    this.rawVelX = 0;           // raw velocity (for smoothing)
-    this.rawVelY = 0;
-    this.mouseVelX = 0;         // smoothed velocity (low-pass filtered)
+    this.mouseVelX = 0;
     this.mouseVelY = 0;
-    this.lastPointerTime = 0;   // for time-based velocity
     this.isNearWrapper = false;
     this.lastInteractionTime = 0;
-    this.isActivelyInteracting = false;  // tracks if we're in an active interaction session
+    this.lastPointerTime = 0;
 
     // Pre-built bins for rendering (avoids per-frame allocation)
     this.bins = [];
@@ -309,9 +301,7 @@ class PortraitParticles {
           vy: 0,
           binIndex,
           size: CONFIG.PARTICLE_SIZE_MIN + Math.random() * (CONFIG.PARTICLE_SIZE_MAX - CONFIG.PARTICLE_SIZE_MIN),
-          // Precompute phase offsets for continuous sine drift (no micro-jumps)
-          phaseX: Math.random() * Math.PI * 2,
-          phaseY: Math.random() * Math.PI * 2,
+          seed: Math.random() * 10000,  // for hashNoise drift
         };
 
         this.particles.push(particle);
@@ -377,72 +367,36 @@ class PortraitParticles {
   }
 
   handlePointerMove(e) {
-    const now = performance.now();
+    // Get wrapper rect with margin for "near" detection
+    const rect = this.wrapper.getBoundingClientRect();
+    const margin = CONFIG.PROXIMITY_MARGIN;
 
-    // Get image rect for direct hit detection
-    const imgRect = this.img.getBoundingClientRect();
+    // Check if cursor is near the wrapper
+    this.isNearWrapper =
+      e.clientX >= rect.left - margin &&
+      e.clientX <= rect.right + margin &&
+      e.clientY >= rect.top - margin &&
+      e.clientY <= rect.bottom + margin;
 
-    // Check if cursor is directly over the portrait
-    const isDirectlyOver = e.clientX >= imgRect.left && e.clientX <= imgRect.right &&
-                           e.clientY >= imgRect.top && e.clientY <= imgRect.bottom;
+    // Convert to wrapper-local coords
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
 
-    // Dynamic margin: 0 initially, HOME_MAX_DISPLACEMENT when actively interacting
-    // This lets you "chase" displaced particles but requires touching the portrait to start
-    const margin = this.isActivelyInteracting ? CONFIG.HOME_MAX_DISPLACEMENT : 0;
-
-    // Expanded rect for "near" detection (only meaningful during interaction)
-    const nearLeft = imgRect.left - margin;
-    const nearRight = imgRect.right + margin;
-    const nearTop = imgRect.top - margin;
-    const nearBottom = imgRect.bottom + margin;
-
-    // Check if cursor is within expanded bounds
-    const inExpandedBounds = e.clientX >= nearLeft && e.clientX <= nearRight &&
-                             e.clientY >= nearTop && e.clientY <= nearBottom;
-
-    // Convert to wrapper-local coords (relative to image position)
-    const localX = e.clientX - imgRect.left;
-    const localY = e.clientY - imgRect.top;
-
-    // Time-based velocity calculation
-    if (this.mouseX > -1000 && this.lastPointerTime > 0) {
-      const dtMs = now - this.lastPointerTime;
-      if (dtMs > 0) {
-        // Raw velocity (px per 16.67ms frame)
-        const scale = 16.667 / dtMs;
-        this.rawVelX = (localX - this.mouseX) * scale;
-        this.rawVelY = (localY - this.mouseY) * scale;
-
-        // Low-pass filter for smooth velocity
-        const alpha = CONFIG.VELOCITY_SMOOTHING;
-        this.mouseVelX += (this.rawVelX - this.mouseVelX) * alpha;
-        this.mouseVelY += (this.rawVelY - this.mouseVelY) * alpha;
-      }
-    }
+    // Calculate velocity
+    this.mouseVelX = localX - this.mouseX;
+    this.mouseVelY = localY - this.mouseY;
 
     this.prevMouseX = this.mouseX;
     this.prevMouseY = this.mouseY;
     this.mouseX = localX;
     this.mouseY = localY;
-    this.lastPointerTime = now;
-    this.isNearWrapper = inExpandedBounds;
 
-    // Only update lastInteractionTime if actually interacting (moving fast enough)
-    if (inExpandedBounds) {
-      const speed = Math.sqrt(this.mouseVelX * this.mouseVelX + this.mouseVelY * this.mouseVelY);
-      if (speed > CONFIG.INTERACTION_SPEED_THRESHOLD) {
-        this.lastInteractionTime = now;
+    // Track when we last received a pointer event (for velocity decay)
+    this.lastPointerTime = performance.now();
 
-        // Activate interaction mode when directly touching OR already active
-        if (isDirectlyOver || this.isActivelyInteracting) {
-          this.isActivelyInteracting = true;
-        }
-      }
-    }
-
-    // Deactivate interaction mode when cursor leaves expanded bounds
-    if (!inExpandedBounds) {
-      this.isActivelyInteracting = false;
+    // Update interaction time if near wrapper
+    if (this.isNearWrapper) {
+      this.lastInteractionTime = performance.now();
     }
   }
 
@@ -503,116 +457,86 @@ class PortraitParticles {
 
     const timeSinceInteraction = now - this.lastInteractionTime;
 
-    // Recovery based on inactivity (regardless of cursor position)
-    const isRecovering = timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
+    // Recovery: ramp spring from SPRING_NORMAL to SPRING_RECOVERY after idle
+    const isRecovering = !this.isNearWrapper && timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
 
-    // Recovery ramp: boost home gravity, reduce drift/cursor influence
-    let recoveryProgress = 0;
+    let springK = CONFIG.SPRING_NORMAL;
+    let driftScale = 1;
+
     if (isRecovering) {
-      recoveryProgress = Math.min(1, (timeSinceInteraction - CONFIG.IDLE_THRESHOLD_MS) / CONFIG.RECOVERY_DURATION_MS);
+      const progress = Math.min(1, (timeSinceInteraction - CONFIG.IDLE_THRESHOLD_MS) / CONFIG.RECOVERY_DURATION_MS);
+      springK = CONFIG.SPRING_NORMAL + (CONFIG.SPRING_RECOVERY - CONFIG.SPRING_NORMAL) * progress;
+      driftScale = 1 - progress * 0.8;  // fade drift as particles settle
     }
-    const driftScale = 1 - recoveryProgress * 0.85;
-    const cursorScale = 1 - recoveryProgress * 0.9;  // fade out cursor influence during recovery
 
-    // Precompute time factor for continuous sine drift
-    const timeFactorX = now * CONFIG.DRIFT_FREQUENCY;
-    const timeFactorY = now * CONFIG.DRIFT_FREQUENCY * 0.9;
-
-    // Precompute constants for Phase 2 optimizations
-    const sigma2x2 = 2 * CONFIG.SIGMA * CONFIG.SIGMA;  // Gaussian denominator
-    const cursorCutoffSq = CONFIG.CURSOR_CUTOFF_SQ;
-    const eps2 = CONFIG.EPS * CONFIG.EPS;
+    // Precompute constants
+    const outerRadiusSq = CONFIG.OUTER_RADIUS * CONFIG.OUTER_RADIUS;
     const maxSpeedSq = CONFIG.MAX_SPEED * CONFIG.MAX_SPEED;
-    const cursorActive = this.isNearWrapper && cursorScale > 0.01;
 
     // Update particles
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
 
       // 
-      // A) HOME GRAVITY (dominant attractor, non-linear spring)
+      // A) HOME GRAVITY (simple linear spring)
       // 
       const homeDistX = p.homeX - p.x;
       const homeDistY = p.homeY - p.y;
-      const homeDist = Math.sqrt(homeDistX * homeDistX + homeDistY * homeDistY);
-
-      // Non-linear spring: stronger when far from home
-      const homeRatio = Math.min(1, homeDist / CONFIG.HOME_RANGE);
-      let springK = CONFIG.SPRING_BASE + CONFIG.SPRING_EXTRA * homeRatio;
-
-      // Boost spring during recovery
-      if (isRecovering) {
-        springK += CONFIG.SPRING_RECOVERY * recoveryProgress;
-      }
-
-      const homeAccelX = homeDistX * springK;
-      const homeAccelY = homeDistY * springK;
 
       // 
-      // B+C) CURSOR FORCES: repulsion + wake + swirl (merged with culling)
-      // Phase 2: Skip particles beyond cutoff radius for massive perf gain
+      // B) CURSOR FORCES: radial push + tangent swirl + velocity drag
       // 
-      let cursorAccelX = 0;
-      let cursorAccelY = 0;
-      let wakeAccelX = 0;
-      let wakeAccelY = 0;
+      let forceX = 0;
+      let forceY = 0;
 
-      if (cursorActive) {
+      if (this.isNearWrapper) {
         const dx = p.x - this.mouseX;
         const dy = p.y - this.mouseY;
         const r2 = dx * dx + dy * dy;
 
-        // Phase 2: Early-out if beyond cutoff (skip exp/pow/sqrt)
-        if (r2 < cursorCutoffSq) {
-          // B) CURSOR REPULSION: softened inverse-square
-          // Optimized: pow(t, 1.5)  t * sqrt(t)
-          const t = r2 + eps2;
-          const denom = t * Math.sqrt(t);
+        // Early-out for particles outside outer radius
+        if (r2 < outerRadiusSq && r2 > 0.1) {
+          const dist = Math.sqrt(r2);
+          const nx = dx / dist;  // normalized radial direction (outward)
+          const ny = dy / dist;
+          const tx = -ny;  // tangent direction
+          const ty = nx;
 
-          if (denom > 0.001) {
-            cursorAccelX = CONFIG.CURSOR_MASS * dx / denom;
-            cursorAccelY = CONFIG.CURSOR_MASS * dy / denom;
-
-            // Clamp cursor acceleration (compare squared first)
-            const cursorAccelMagSq = cursorAccelX * cursorAccelX + cursorAccelY * cursorAccelY;
-            const maxAccelSq = CONFIG.CURSOR_ACCEL_MAX * CONFIG.CURSOR_ACCEL_MAX;
-            if (cursorAccelMagSq > maxAccelSq) {
-              const clampScale = CONFIG.CURSOR_ACCEL_MAX / Math.sqrt(cursorAccelMagSq);
-              cursorAccelX *= clampScale;
-              cursorAccelY *= clampScale;
-            }
-
-            cursorAccelX *= cursorScale;
-            cursorAccelY *= cursorScale;
+          // Strength based on inner/outer radius zones
+          let strength;
+          if (dist < CONFIG.INNER_RADIUS) {
+            // Inner zone: full strength ramping to zero at center
+            strength = 1 - dist / CONFIG.INNER_RADIUS;
+          } else {
+            // Outer zone: fade from 40% to 0
+            strength = (1 - (dist - CONFIG.INNER_RADIUS) / (CONFIG.OUTER_RADIUS - CONFIG.INNER_RADIUS)) * 0.4;
           }
 
-          // C) WAKE DRAG: Gaussian falloff
-          const gaussian = Math.exp(-r2 / sigma2x2);
-          wakeAccelX = this.mouseVelX * CONFIG.WAKE_STRENGTH * gaussian * cursorScale;
-          wakeAccelY = this.mouseVelY * CONFIG.WAKE_STRENGTH * gaussian * cursorScale;
+          // Radial push (outward from cursor)
+          forceX += nx * CONFIG.RADIAL_PUSH * strength;
+          forceY += ny * CONFIG.RADIAL_PUSH * strength;
 
-          // Swirl: tangential flow (only if not too close)
-          if (r2 > 1) {
-            const r = Math.sqrt(r2);
-            const tx = -dy / r;
-            const ty = dx / r;
-            wakeAccelX += tx * CONFIG.SWIRL_STRENGTH * gaussian * cursorScale;
-            wakeAccelY += ty * CONFIG.SWIRL_STRENGTH * gaussian * cursorScale;
-          }
+          // Tangent swirl (perpendicular flow)
+          forceX += tx * CONFIG.TANGENT_SWIRL * strength;
+          forceY += ty * CONFIG.TANGENT_SWIRL * strength;
+
+          // Velocity drag (particles follow cursor motion)
+          forceX += this.mouseVelX * CONFIG.VELOCITY_DRAG * strength;
+          forceY += this.mouseVelY * CONFIG.VELOCITY_DRAG * strength;
         }
       }
 
       // 
-      // D) IDLE DRIFT (continuous sine noise)
+      // C) IDLE DRIFT (hashNoise for organic feel)
       // 
-      const driftX = Math.sin(timeFactorX + p.phaseX) * CONFIG.DRIFT_AMPLITUDE * driftScale;
-      const driftY = Math.sin(timeFactorY + p.phaseY) * CONFIG.DRIFT_AMPLITUDE * driftScale;
+      const driftX = hashNoise(p.seed, now) * CONFIG.DRIFT_AMPLITUDE * driftScale;
+      const driftY = hashNoise(p.seed + 1000, now + 500) * CONFIG.DRIFT_AMPLITUDE * driftScale;
 
       // 
       // APPLY FORCES (dt-scaled)
       // 
-      p.vx += (homeAccelX + cursorAccelX + wakeAccelX + driftX) * dt;
-      p.vy += (homeAccelY + cursorAccelY + wakeAccelY + driftY) * dt;
+      p.vx += (forceX + driftX + homeDistX * springK) * dt;
+      p.vy += (forceY + driftY + homeDistY * springK) * dt;
 
       // Damping
       p.vx *= CONFIG.DAMPING;
@@ -629,22 +553,6 @@ class PortraitParticles {
       // Update position
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-
-      // 
-      // E) HARD DISPLACEMENT CAP (safety: prevent global collapse)
-      // 
-      const finalDistX = p.x - p.homeX;
-      const finalDistY = p.y - p.homeY;
-      const finalDist = Math.sqrt(finalDistX * finalDistX + finalDistY * finalDistY);
-      if (finalDist > CONFIG.HOME_MAX_DISPLACEMENT) {
-        // Project back toward home
-        const capScale = CONFIG.HOME_MAX_DISPLACEMENT / finalDist;
-        p.x = p.homeX + finalDistX * capScale;
-        p.y = p.homeY + finalDistY * capScale;
-        // Also dampen velocity toward home to prevent bouncing
-        p.vx *= 0.5;
-        p.vy *= 0.5;
-      }
     }
 
     // Gradual velocity decay when not receiving pointer events

@@ -59,6 +59,8 @@
 .portrait-wrap:has(.portrait-particles-canvas) .portrait {
   filter: grayscale(0.35) contrast(0.95);
   /* opacity is set by JS - starts at 0 during interaction, fades to 0.2 during recovery */
+  z-index: 1; /* Behind the canvas (z-index: 2) */
+  position: relative; /* Enable z-index */
 }
 
 /* Disable hover effects when particles are active */

@@ -86,7 +86,7 @@ const CONFIG = {
   MAX_SPEED: 12,                // clamp particle speed (higher for fast scatter)
 
   // Drift (idle animation)
-  DRIFT_AMPLITUDE: 0.3,         // sine noise amplitude
+  DRIFT_AMPLITUDE: 0.075,       // sine noise amplitude (1/4 of original 0.3)
   DRIFT_FREQUENCY: 0.0008,      // noise frequency (lower = slower)
 
   // Spring / damping
@@ -528,12 +528,12 @@ class PortraitParticles {
     const isRecovering = this.activationLevel < 0.1 && timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
 
     let springK = CONFIG.SPRING_NORMAL;
-    let driftScale = this.activationLevel;  // drift scales with activation (0 when solid)
+    let driftScale = 1;  // always have drift (subtle organic feel)
 
     if (isRecovering) {
       const progress = Math.min(1, (timeSinceInteraction - CONFIG.IDLE_THRESHOLD_MS) / CONFIG.RECOVERY_DURATION_MS);
       springK = CONFIG.SPRING_NORMAL + (CONFIG.SPRING_RECOVERY - CONFIG.SPRING_NORMAL) * progress;
-      driftScale = 0;  // no drift during recovery
+      driftScale = 1 - progress * 0.5;  // reduce drift during recovery but keep some
     }
 
     // Precompute constants

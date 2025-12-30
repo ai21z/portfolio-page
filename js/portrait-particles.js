@@ -6,20 +6,24 @@
 // BRIGHTNESS: Multiplier for particle RGB (1.0 = original, 1.2 = 20% brighter)
 // Adjust this to make the portrait clearer while preserving shade ratios
 // 
-const BRIGHTNESS_MULT = 1.2;
-const ALPHA_BOOST = 0.05;  // additive boost to alpha (makes particles more solid)
+const BRIGHTNESS_MULT = 1.25;
+const ALPHA_BOOST = 0.08;  // additive boost to alpha (makes particles more solid)
 
 // 
-// PALETTE: 6 green bins from dark → light, each with alpha
-// Base values are scaled by BRIGHTNESS_MULT to preserve shadow/highlight ratios
+// PALETTE: 6 bins from dark → light with page accent colors mixed in
+// - Shadows: teal/blue tint (adds depth)
+// - Mid-tones: necrotic green (main face color)
+// - Highlights: warm ember hints (adds life/dimension)
+// 
+// Page colors: --ember:#C24A2E, --spectral:#8FB4FF, --necrotic:#7AAE8A, --decay-green:#3FFF9F
 // 
 const PALETTE_BASE = [
-  { r: 18, g: 30, b: 24, a: 0.45 },   // bin 0: deep shadow (sparse)
-  { r: 30, g: 48, b: 38, a: 0.55 },   // bin 1: dark green
-  { r: 48, g: 75, b: 58, a: 0.70 },   // bin 2: mid shadow
-  { r: 70, g: 105, b: 82, a: 0.82 },  // bin 3: mid tone
-  { r: 95, g: 135, b: 108, a: 0.90 }, // bin 4: light mid
-  { r: 130, g: 170, b: 142, a: 0.96 }, // bin 5: highlight
+  { r: 15, g: 35, b: 38, a: 0.50 },   // bin 0: deep shadow - teal/blue tint
+  { r: 28, g: 52, b: 48, a: 0.60 },   // bin 1: dark - teal-green blend
+  { r: 48, g: 78, b: 62, a: 0.72 },   // bin 2: mid shadow - necrotic green
+  { r: 75, g: 115, b: 88, a: 0.84 },  // bin 3: mid tone - necrotic green
+  { r: 110, g: 148, b: 115, a: 0.92 }, // bin 4: light mid - warm green
+  { r: 155, g: 175, b: 140, a: 0.98 }, // bin 5: highlight - warm bone/green
 ];
 
 // Apply brightness multiplier (preserves ratios, clamps to 255)

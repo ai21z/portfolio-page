@@ -3,27 +3,26 @@
 // v2: crisp canvas, space-drift motion, cursor wake carving, batched rendering
 
 // 
-// BRIGHTNESS: Multiplier for particle RGB (1.0 = original, 1.2 = 20% brighter)
+// BRIGHTNESS: Multiplier for particle RGB (1.0 = original, 1.3 = 30% brighter)
 // Adjust this to make the portrait clearer while preserving shade ratios
 // 
-const BRIGHTNESS_MULT = 1.25;
-const ALPHA_BOOST = 0.08;  // additive boost to alpha (makes particles more solid)
+const BRIGHTNESS_MULT = 1.35;  // boost overall brightness for clarity
+const ALPHA_BOOST = 0.0;       // handled per-bin now
 
 // 
-// PALETTE: 6 bins from dark → light with page accent colors mixed in
-// - Shadows: teal/blue tint (adds depth)
-// - Mid-tones: necrotic green (main face color)
-// - Highlights: warm ember hints (adds life/dimension)
+// PALETTE: 6 bins from dark → light with 3D depth effect
+// - Shadows: smaller particles, more transparent (recede)
+// - Highlights: larger particles, more opaque (pop forward)
 // 
-// Page colors: --ember:#C24A2E, --spectral:#8FB4FF, --necrotic:#7AAE8A, --decay-green:#3FFF9F
+// Size multipliers create depth: shadows shrink, highlights grow
 // 
 const PALETTE_BASE = [
-  { r: 15, g: 35, b: 38, a: 0.50 },   // bin 0: deep shadow - teal/blue tint
-  { r: 28, g: 52, b: 48, a: 0.60 },   // bin 1: dark - teal-green blend
-  { r: 48, g: 78, b: 62, a: 0.72 },   // bin 2: mid shadow - necrotic green
-  { r: 75, g: 115, b: 88, a: 0.84 },  // bin 3: mid tone - necrotic green
-  { r: 110, g: 148, b: 115, a: 0.92 }, // bin 4: light mid - warm green
-  { r: 155, g: 175, b: 140, a: 0.98 }, // bin 5: highlight - warm bone/green
+  { r: 12, g: 28, b: 32, a: 0.35, size: 0.5 },   // bin 0: deep shadow - small, faint
+  { r: 22, g: 45, b: 42, a: 0.50, size: 0.65 },  // bin 1: dark - teal tint
+  { r: 45, g: 75, b: 60, a: 0.70, size: 0.85 },  // bin 2: mid shadow - necrotic
+  { r: 70, g: 110, b: 85, a: 0.85, size: 1.0 },  // bin 3: mid tone - base size
+  { r: 105, g: 145, b: 112, a: 0.94, size: 1.15 }, // bin 4: light mid - larger
+  { r: 160, g: 185, b: 150, a: 1.0, size: 1.35 },  // bin 5: highlight - largest, solid
 ];
 
 // Apply brightness multiplier (preserves ratios, clamps to 255)
@@ -32,6 +31,7 @@ const PALETTE = PALETTE_BASE.map(c => ({
   g: Math.min(255, Math.round(c.g * BRIGHTNESS_MULT)),
   b: Math.min(255, Math.round(c.b * BRIGHTNESS_MULT)),
   a: Math.min(1, c.a + ALPHA_BOOST),
+  size: c.size,  // size multiplier for 3D depth
 }));
 
 // Precompute fillStyle strings for batched rendering
@@ -322,6 +322,10 @@ class PortraitParticles {
         // Map to display coordinates
         const homeX = x * scaleX;
         const homeY = y * scaleY;
+        
+        // Size varies by bin for 3D depth (shadows small, highlights large)
+        const binSize = PALETTE[binIndex].size;
+        const baseSize = CONFIG.PARTICLE_SIZE_MIN + Math.random() * (CONFIG.PARTICLE_SIZE_MAX - CONFIG.PARTICLE_SIZE_MIN);
 
         const particle = {
           homeX,
@@ -331,7 +335,7 @@ class PortraitParticles {
           vx: 0,
           vy: 0,
           binIndex,
-          size: CONFIG.PARTICLE_SIZE_MIN + Math.random() * (CONFIG.PARTICLE_SIZE_MAX - CONFIG.PARTICLE_SIZE_MIN),
+          size: baseSize * binSize,  // scaled by bin for 3D effect
           seed: Math.random() * 10000,  // for hashNoise drift
         };
 
@@ -536,12 +540,13 @@ class PortraitParticles {
     const isRecovering = this.activationLevel < 0.1 && timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
 
     let springK = CONFIG.SPRING_NORMAL;
-    let driftScale = 1;  // always have drift (subtle organic feel)
+    // Drift scales with activation: 0.25 when idle, 1.0 when fully active
+    let driftScale = 0.25 + this.activationLevel * 0.75;
 
     if (isRecovering) {
       const progress = Math.min(1, (timeSinceInteraction - CONFIG.IDLE_THRESHOLD_MS) / CONFIG.RECOVERY_DURATION_MS);
       springK = CONFIG.SPRING_NORMAL + (CONFIG.SPRING_RECOVERY - CONFIG.SPRING_NORMAL) * progress;
-      driftScale = 1 - progress * 0.5;  // reduce drift during recovery but keep some
+      driftScale = 0.25 * (1 - progress * 0.5);  // reduce to ~12.5% during full recovery
     }
 
     // Precompute constants

@@ -3,9 +3,17 @@
 // v2: crisp canvas, space-drift motion, cursor wake carving, batched rendering
 
 // 
-// PALETTE: 6 green bins from dark  light, each with alpha
+// BRIGHTNESS: Multiplier for particle RGB (1.0 = original, 1.2 = 20% brighter)
+// Adjust this to make the portrait clearer while preserving shade ratios
 // 
-const PALETTE = [
+const BRIGHTNESS_MULT = 1.2;
+const ALPHA_BOOST = 0.05;  // additive boost to alpha (makes particles more solid)
+
+// 
+// PALETTE: 6 green bins from dark → light, each with alpha
+// Base values are scaled by BRIGHTNESS_MULT to preserve shadow/highlight ratios
+// 
+const PALETTE_BASE = [
   { r: 18, g: 30, b: 24, a: 0.45 },   // bin 0: deep shadow (sparse)
   { r: 30, g: 48, b: 38, a: 0.55 },   // bin 1: dark green
   { r: 48, g: 75, b: 58, a: 0.70 },   // bin 2: mid shadow
@@ -13,6 +21,14 @@ const PALETTE = [
   { r: 95, g: 135, b: 108, a: 0.90 }, // bin 4: light mid
   { r: 130, g: 170, b: 142, a: 0.96 }, // bin 5: highlight
 ];
+
+// Apply brightness multiplier (preserves ratios, clamps to 255)
+const PALETTE = PALETTE_BASE.map(c => ({
+  r: Math.min(255, Math.round(c.r * BRIGHTNESS_MULT)),
+  g: Math.min(255, Math.round(c.g * BRIGHTNESS_MULT)),
+  b: Math.min(255, Math.round(c.b * BRIGHTNESS_MULT)),
+  a: Math.min(1, c.a + ALPHA_BOOST),
+}));
 
 // Precompute fillStyle strings for batched rendering
 const PALETTE_STRINGS = PALETTE.map(c => `rgba(${c.r},${c.g},${c.b},${c.a})`);
@@ -54,28 +70,33 @@ const CONFIG = {
   DARK_SKIP_PROBABILITY: 0.2,   // probability to skip dark pixels (bins 0-1)
 
   // Cursor interaction radii (in CSS pixels)
-  INNER_RADIUS: 70,             // strong force zone
-  OUTER_RADIUS: 140,            // weak force zone
+  INNER_RADIUS: 45,             // strong force zone (tight cut)
+  OUTER_RADIUS: 90,             // weak force zone (narrow falloff)
   PROXIMITY_MARGIN: 80,         // extra margin outside wrapper for "near" detection
 
-  // Force magnitudes
-  RADIAL_PUSH: 0.15,            // outward push strength
-  TANGENT_SWIRL: 0.12,          // perpendicular swirl strength
-  VELOCITY_DRAG: 0.25,          // cursor velocity influence
-  MAX_SPEED: 8,                 // clamp particle speed
+  // Portrait crossfade (solid portrait → particles)
+  PORTRAIT_IDLE_OPACITY: 0.2,   // portrait opacity when cursor is away (0 = invisible)
+  ACTIVATION_RADIUS: 200,       // distance from wrapper edge where activation starts
+  ACTIVATION_RAMP_MS: 300,      // ms to ramp activation up/down
+
+  // Force magnitudes (strong slice, particles clear the path)
+  RADIAL_PUSH: 0.45,            // outward push strength (strong to clear path)
+  TANGENT_SWIRL: 0.03,          // perpendicular swirl strength (minimal)
+  VELOCITY_DRAG: 0.2,           // cursor velocity influence
+  MAX_SPEED: 12,                // clamp particle speed (higher for fast scatter)
 
   // Drift (idle animation)
   DRIFT_AMPLITUDE: 0.3,         // sine noise amplitude
   DRIFT_FREQUENCY: 0.0008,      // noise frequency (lower = slower)
 
   // Spring / damping
-  DAMPING: 0.94,                // velocity decay per frame
-  SPRING_NORMAL: 0.012,         // gravity to home during interaction
-  SPRING_RECOVERY: 0.045,       // gravity to home during recovery
+  DAMPING: 0.92,                // velocity decay per frame (slightly more drag)
+  SPRING_NORMAL: 0.025,         // gravity to home during interaction (stronger pull back)
+  SPRING_RECOVERY: 0.12,        // gravity to home during recovery (fast snap back)
 
   // Timing
-  IDLE_THRESHOLD_MS: 1500,      // ms before recovery mode kicks in
-  RECOVERY_DURATION_MS: 2000,   // ms for full recovery ramp
+  IDLE_THRESHOLD_MS: 200,       // ms before recovery mode kicks in (quick)
+  RECOVERY_DURATION_MS: 400,    // ms for full recovery ramp (fast)
 
   // Debug
   DEBUG_PERF: false,            // Enable performance logging (toggle for profiling)
@@ -116,6 +137,11 @@ class PortraitParticles {
     this.isNearWrapper = false;
     this.lastInteractionTime = 0;
     this.lastPointerTime = 0;
+
+    // Activation state (0 = solid portrait, 1 = fully particles)
+    this.activationLevel = 0;
+    this.targetActivation = 0;
+    this.cursorDistToWrapper = 9999;
 
     // Pre-built bins for rendering (avoids per-frame allocation)
     this.bins = [];
@@ -309,9 +335,10 @@ class PortraitParticles {
       }
     }
 
-    // Hide underlying image permanently - particles are the portrait now
+    // Set portrait to idle opacity (semi-visible behind particles)
     if (this.img && this.particles.length > 0) {
-      this.img.style.opacity = '0';
+      this.img.style.opacity = String(CONFIG.PORTRAIT_IDLE_OPACITY);
+      this.img.style.transition = 'opacity 0.15s ease-out';
     }
 
     console.log('[particles]', this.particles.length);
@@ -377,6 +404,31 @@ class PortraitParticles {
       e.clientX <= rect.right + margin &&
       e.clientY >= rect.top - margin &&
       e.clientY <= rect.bottom + margin;
+
+    // Calculate distance from cursor to wrapper edge (negative = inside)
+    const distLeft = rect.left - e.clientX;
+    const distRight = e.clientX - rect.right;
+    const distTop = rect.top - e.clientY;
+    const distBottom = e.clientY - rect.bottom;
+    const distX = Math.max(distLeft, distRight, 0);
+    const distY = Math.max(distTop, distBottom, 0);
+    this.cursorDistToWrapper = Math.sqrt(distX * distX + distY * distY);
+    
+    // If inside wrapper, distance is negative (use 0)
+    if (e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      this.cursorDistToWrapper = 0;
+    }
+
+    // Set target activation based on distance
+    // 0 = cursor far away (solid portrait), 1 = cursor touching (pure particles)
+    if (this.cursorDistToWrapper <= 0) {
+      this.targetActivation = 1;  // inside wrapper = fully active
+    } else if (this.cursorDistToWrapper < CONFIG.ACTIVATION_RADIUS) {
+      this.targetActivation = 1 - (this.cursorDistToWrapper / CONFIG.ACTIVATION_RADIUS);
+    } else {
+      this.targetActivation = 0;  // far away = solid portrait
+    }
 
     // Convert to wrapper-local coords
     const localX = e.clientX - rect.left;
@@ -455,18 +507,33 @@ class PortraitParticles {
     // Phase 0: Start physics timing
     const physicsStart = performance.now();
 
+    // Smooth activation ramping
+    const activationDelta = (this.targetActivation - this.activationLevel);
+    const rampSpeed = dt * (1000 / CONFIG.ACTIVATION_RAMP_MS) / 60;  // normalize to 60fps
+    if (Math.abs(activationDelta) < rampSpeed) {
+      this.activationLevel = this.targetActivation;
+    } else {
+      this.activationLevel += Math.sign(activationDelta) * rampSpeed;
+    }
+
+    // Update portrait opacity based on activation (solid when inactive)
+    if (this.img) {
+      const portraitOpacity = CONFIG.PORTRAIT_IDLE_OPACITY * (1 - this.activationLevel);
+      this.img.style.opacity = String(portraitOpacity);
+    }
+
     const timeSinceInteraction = now - this.lastInteractionTime;
 
     // Recovery: ramp spring from SPRING_NORMAL to SPRING_RECOVERY after idle
-    const isRecovering = !this.isNearWrapper && timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
+    const isRecovering = this.activationLevel < 0.1 && timeSinceInteraction > CONFIG.IDLE_THRESHOLD_MS;
 
     let springK = CONFIG.SPRING_NORMAL;
-    let driftScale = 1;
+    let driftScale = this.activationLevel;  // drift scales with activation (0 when solid)
 
     if (isRecovering) {
       const progress = Math.min(1, (timeSinceInteraction - CONFIG.IDLE_THRESHOLD_MS) / CONFIG.RECOVERY_DURATION_MS);
       springK = CONFIG.SPRING_NORMAL + (CONFIG.SPRING_RECOVERY - CONFIG.SPRING_NORMAL) * progress;
-      driftScale = 1 - progress * 0.8;  // fade drift as particles settle
+      driftScale = 0;  // no drift during recovery
     }
 
     // Precompute constants

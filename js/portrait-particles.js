@@ -163,6 +163,7 @@ class PortraitParticles {
     this.boundHandlePointerMove = this.handlePointerMove.bind(this);
     this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
     this.boundHandleResize = this.handleResize.bind(this);
+    this.boundHandleClick = this.handleClick.bind(this);
     this.boundAnimate = this.animate.bind(this);
 
     this.perfBufferSize = 300;
@@ -409,16 +410,17 @@ class PortraitParticles {
     window.addEventListener('pointermove', this.boundHandlePointerMove);
     document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.addEventListener('resize', this.boundHandleResize);
-    
-    this.wrapper.addEventListener('click', (e) => {
-      const rect = this.wrapper.getBoundingClientRect();
-      const localX = e.clientX - rect.left;
-      const localY = e.clientY - rect.top;
-      
-      if (localX >= 0 && localX <= this.width && localY >= 0 && localY <= this.height) {
-        this.toggleConstellation();
-      }
-    });
+    this.wrapper.addEventListener('click', this.boundHandleClick);
+  }
+
+  handleClick(e) {
+    const rect = this.wrapper.getBoundingClientRect();
+    const localX = e.clientX - rect.left;
+    const localY = e.clientY - rect.top;
+
+    if (localX >= 0 && localX <= this.width && localY >= 0 && localY <= this.height) {
+      this.toggleConstellation();
+    }
   }
 
   handlePointerMove(e) {
@@ -477,6 +479,7 @@ class PortraitParticles {
   handleResize() {
     this.resize();
     this.sampleImage();
+    this.sampleSigil();
   }
 
   shouldRun() {
@@ -1021,6 +1024,9 @@ class PortraitParticles {
     window.removeEventListener('pointermove', this.boundHandlePointerMove);
     document.removeEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.removeEventListener('resize', this.boundHandleResize);
+    if (this.wrapper) {
+      this.wrapper.removeEventListener('click', this.boundHandleClick);
+    }
 
     if (this.canvas) {
       this.canvas.remove();

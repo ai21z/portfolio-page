@@ -118,6 +118,160 @@ function hashNoise(seed, t) {
   return (x - Math.floor(x)) * 2 - 1;
 }
 
+/**
+ * @typedef {Object} Particle
+ * @property {number} homeX - Rest position X
+ * @property {number} homeY - Rest position Y
+ * @property {number} x - Current position X
+ * @property {number} y - Current position Y
+ * @property {number} vx - Velocity X
+ * @property {number} vy - Velocity Y
+ * @property {number} binIndex - Palette bin (0-5)
+ * @property {number} size - Render size
+ * @property {number} seed - Per-particle random seed
+ * @property {boolean} isSigil - Part of constellation sigil
+ */
+
+/**
+ * Level ramp with fixed-time feel across frame rates.
+ * @param {number} current
+ * @param {number} target
+ * @param {number} rampMs
+ * @param {number} dt - normalized dt (1.0 ~= 60fps)
+ * @returns {number}
+ */
+function ramp(current, target, rampMs, dt) {
+  const step = dt * (1000 / rampMs) / 60;
+  const delta = target - current;
+  return Math.abs(delta) <= step ? target : current + Math.sign(delta) * step;
+}
+
+/**
+ * Tracks dirty rectangle bounds for optimized rendering.
+ * Uses exclusive bounds (x1/y1 not included) internally.
+ */
+class DirtyRect {
+  constructor(w, h) {
+    this.w = w;
+    this.h = h;
+    this.reset();
+  }
+
+  resize(w, h) {
+    this.w = w;
+    this.h = h;
+    this.reset();
+  }
+
+  reset() {
+    this.minX = this.w;
+    this.minY = this.h;
+    this.maxX = -1;
+    this.maxY = -1;
+  }
+
+  add(x, y) {
+    if (x < this.minX) this.minX = x;
+    if (x > this.maxX) this.maxX = x;
+    if (y < this.minY) this.minY = y;
+    if (y > this.maxY) this.maxY = y;
+  }
+
+  get valid() {
+    return this.maxX >= this.minX && this.maxY >= this.minY;
+  }
+
+  /**
+   * Writes exclusive bounds into `out` (no allocations).
+   * @param {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} out
+   * @param {number} margin
+   */
+  boundsInto(out, margin = 0) {
+    if (!this.valid) {
+      out.x0 = out.y0 = out.x1 = out.y1 = out.w = out.h = 0;
+      return out;
+    }
+
+    const x0 = Math.max(0, this.minX - margin);
+    const y0 = Math.max(0, this.minY - margin);
+    const x1 = Math.min(this.w, this.maxX + margin + 1);
+    const y1 = Math.min(this.h, this.maxY + margin + 1);
+
+    out.x0 = x0; out.y0 = y0;
+    out.x1 = x1; out.y1 = y1;
+    out.w = x1 - x0;
+    out.h = y1 - y0;
+    return out;
+  }
+}
+
+/**
+ * Unions two already-computed bounds (no allocations).
+ * @param {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} a
+ * @param {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} b
+ * @param {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} out
+ */
+function unionBoundsInto(a, b, out) {
+  const aValid = a.w > 0 && a.h > 0;
+  const bValid = b.w > 0 && b.h > 0;
+
+  if (!aValid && !bValid) {
+    out.x0 = out.y0 = out.x1 = out.y1 = out.w = out.h = 0;
+    return out;
+  }
+  if (!aValid) {
+    out.x0 = b.x0; out.y0 = b.y0; out.x1 = b.x1; out.y1 = b.y1; out.w = b.w; out.h = b.h;
+    return out;
+  }
+  if (!bValid) {
+    out.x0 = a.x0; out.y0 = a.y0; out.x1 = a.x1; out.y1 = a.y1; out.w = a.w; out.h = a.h;
+    return out;
+  }
+
+  const x0 = Math.min(a.x0, b.x0);
+  const y0 = Math.min(a.y0, b.y0);
+  const x1 = Math.max(a.x1, b.x1);
+  const y1 = Math.max(a.y1, b.y1);
+
+  out.x0 = x0; out.y0 = y0;
+  out.x1 = x1; out.y1 = y1;
+  out.w = x1 - x0;
+  out.h = y1 - y0;
+  return out;
+}
+
+/**
+ * Clears a region of the buffer using optimal strategy.
+ * @param {Uint32Array} buf32
+ * @param {number} bufWidth
+ * @param {number} bufHeight
+ * @param {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} bounds
+ * @param {number} dirtyThreshold
+ */
+function clearRegion(buf32, bufWidth, bufHeight, bounds, dirtyThreshold = 0.5) {
+  const w = bounds.w, h = bounds.h;
+  if (w <= 0 || h <= 0) return;
+
+  const dirtyArea = w * h;
+  const totalArea = bufWidth * bufHeight;
+
+  if (dirtyArea > totalArea * dirtyThreshold) {
+    buf32.fill(0);
+    return;
+  }
+
+  if (w === bufWidth) {
+    buf32.fill(0, bounds.y0 * bufWidth, bounds.y1 * bufWidth);
+    return;
+  }
+
+  const x0 = bounds.x0;
+  for (let row = bounds.y0; row < bounds.y1; row++) {
+    const start = row * bufWidth + x0;
+    buf32.fill(0, start, start + w);
+  }
+}
+
 class PortraitParticles {
   constructor() {
     this.canvas = null;
@@ -174,12 +328,12 @@ class PortraitParticles {
     this.perfFrameCount = 0;
     this.lastPerfLogTime = 0;
 
-    // Dirty rect tracking for optimized clearing
-    this.dirtyMinX = 0;
-    this.dirtyMaxX = 0;
-    this.dirtyMinY = 0;
-    this.dirtyMaxY = 0;
-    this.hasDirtyRect = false;
+    // Dirty rect tracking (swap pattern, allocation-free bounds)
+    this.dirtyPrev = null;
+    this.dirtyCurr = null;
+    this._prevBounds = { x0: 0, y0: 0, x1: 0, y1: 0, w: 0, h: 0 };
+    this._currBounds = { x0: 0, y0: 0, x1: 0, y1: 0, w: 0, h: 0 };
+    this._unionBounds = { x0: 0, y0: 0, x1: 0, y1: 0, w: 0, h: 0 };
 
     // Stream state
     this.streamTarget = null;
@@ -265,6 +419,15 @@ class PortraitParticles {
     this.imageData = this.ctx.createImageData(this.bufWidth, this.bufHeight);
     this.buf32 = new Uint32Array(this.imageData.data.buffer);
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Dirty rects depend on buffer size
+    if (!this.dirtyPrev) {
+      this.dirtyPrev = new DirtyRect(this.bufWidth, this.bufHeight);
+      this.dirtyCurr = new DirtyRect(this.bufWidth, this.bufHeight);
+    } else {
+      this.dirtyPrev.resize(this.bufWidth, this.bufHeight);
+      this.dirtyCurr.resize(this.bufWidth, this.bufHeight);
+    }
   }
 
   sampleImage() {
@@ -525,32 +688,14 @@ class PortraitParticles {
 
     const physicsStart = performance.now();
 
-    // Activation ramped smoothly
-    const activationDelta = this.targetActivation - this.activationLevel;
-    const rampSpeed = dt * (1000 / CONFIG.ACTIVATION_RAMP_MS) / 60;
-    if (Math.abs(activationDelta) < rampSpeed) {
-      this.activationLevel = this.targetActivation;
-    } else {
-      this.activationLevel += Math.sign(activationDelta) * rampSpeed;
-    }
+    // Ramp levels smoothly
+    this.activationLevel = ramp(this.activationLevel, this.targetActivation, CONFIG.ACTIVATION_RAMP_MS, dt);
 
     const targetStreamLevel = this.streamTarget ? 1 : 0;
-    const streamDelta = targetStreamLevel - this.streamLevel;
     const streamRampMs = this.streamTarget ? CONFIG.STREAM_RAMP_MS : CONFIG.REFORM_RAMP_MS;
-    const streamRampSpeed = dt * (1000 / streamRampMs) / 60;
-    if (Math.abs(streamDelta) < streamRampSpeed) {
-      this.streamLevel = targetStreamLevel;
-    } else {
-      this.streamLevel += Math.sign(streamDelta) * streamRampSpeed;
-    }
-    
-    const constDelta = this.targetConstellationLevel - this.constellationLevel;
-    const constRampSpeed = dt * (1000 / CONFIG.CONSTELLATION_RAMP_MS) / 60;
-    if (Math.abs(constDelta) < constRampSpeed) {
-      this.constellationLevel = this.targetConstellationLevel;
-    } else {
-      this.constellationLevel += Math.sign(constDelta) * constRampSpeed;
-    }
+    this.streamLevel = ramp(this.streamLevel, targetStreamLevel, streamRampMs, dt);
+
+    this.constellationLevel = ramp(this.constellationLevel, this.targetConstellationLevel, CONFIG.CONSTELLATION_RAMP_MS, dt);
 
     if (this.img) {
       const portraitOpacity = CONFIG.PORTRAIT_IDLE_OPACITY * (1 - this.activationLevel);
@@ -570,7 +715,6 @@ class PortraitParticles {
     }
 
     const outerRadiusSq = CONFIG.OUTER_RADIUS * CONFIG.OUTER_RADIUS;
-    const maxSpeedSq = CONFIG.MAX_SPEED * CONFIG.MAX_SPEED;
     const cursorInside = this.cursorInsideWrapper;
 
     const hasStream = this.streamLevel > 0.01 && this.streamTarget;
@@ -883,75 +1027,40 @@ class PortraitParticles {
     const MARGIN = 2;
     const DIRTY_THRESHOLD = 0.5;
 
-    // Clear previous frame's dirty region
-    if (this.hasDirtyRect) {
-      const clearX = Math.max(0, this.dirtyMinX - MARGIN);
-      const clearY = Math.max(0, this.dirtyMinY - MARGIN);
-      const clearMaxX = Math.min(bufWidth, this.dirtyMaxX + MARGIN + 1);
-      const clearMaxY = Math.min(bufHeight, this.dirtyMaxY + MARGIN + 1);
-      const clearW = clearMaxX - clearX;
-      const clearH = clearMaxY - clearY;
-
-      const dirtyArea = clearW * clearH;
-      const totalArea = bufWidth * bufHeight;
-
-      if (dirtyArea > totalArea * DIRTY_THRESHOLD) {
-        buf32.fill(0);
-      } else if (clearW === bufWidth) {
-        buf32.fill(0, clearY * bufWidth, clearMaxY * bufWidth);
-      } else {
-        for (let row = clearY; row < clearMaxY; row++) {
-          const rowStart = row * bufWidth + clearX;
-          buf32.fill(0, rowStart, rowStart + clearW);
-        }
-      }
+    // 1) Clear previous frame's dirty area
+    const prevBounds = this.dirtyPrev.boundsInto(this._prevBounds, MARGIN);
+    if (prevBounds.w > 0 && prevBounds.h > 0) {
+      clearRegion(buf32, bufWidth, bufHeight, prevBounds, DIRTY_THRESHOLD);
     }
 
+    // 2) Draw particles + track current dirty rect
+    const currRect = this.dirtyCurr;
+    currRect.reset();
+
     const particles = this.particles;
-    const len = particles.length;
-
-    let minX = bufWidth, maxX = 0, minY = bufHeight, maxY = 0;
-
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
       const px = ((p.x + pad) * dpr + 0.5) | 0;
       const py = ((p.y + pad) * dpr + 0.5) | 0;
 
       if (px >= 0 && px < bufWidth && py >= 0 && py < bufHeight) {
         buf32[py * bufWidth + px] = PALETTE_UINT32[p.binIndex];
-        if (px < minX) minX = px;
-        if (px > maxX) maxX = px;
-        if (py < minY) minY = py;
-        if (py > maxY) maxY = py;
+        currRect.add(px, py);
       }
     }
 
-    // Union of cleared region and rendered region for upload
-    const prevMinX = this.dirtyMinX;
-    const prevMaxX = this.dirtyMaxX;
-    const prevMinY = this.dirtyMinY;
-    const prevMaxY = this.dirtyMaxY;
-    const hadPrevDirty = this.hasDirtyRect;
+    const currBounds = currRect.boundsInto(this._currBounds, MARGIN);
 
-    this.dirtyMinX = minX;
-    this.dirtyMaxX = maxX;
-    this.dirtyMinY = minY;
-    this.dirtyMaxY = maxY;
-    this.hasDirtyRect = maxX >= minX && maxY >= minY;
-
-    // Upload union of previous (cleared) and current (rendered) bounds
-    const unionMinX = hadPrevDirty ? Math.min(prevMinX, minX) : minX;
-    const unionMaxX = hadPrevDirty ? Math.max(prevMaxX, maxX) : maxX;
-    const unionMinY = hadPrevDirty ? Math.min(prevMinY, minY) : minY;
-    const unionMaxY = hadPrevDirty ? Math.max(prevMaxY, maxY) : maxY;
-
-    if (this.hasDirtyRect || hadPrevDirty) {
-      const putX = Math.max(0, unionMinX - MARGIN);
-      const putY = Math.max(0, unionMinY - MARGIN);
-      const putW = Math.min(bufWidth, unionMaxX + MARGIN + 1) - putX;
-      const putH = Math.min(bufHeight, unionMaxY + MARGIN + 1) - putY;
-      this.ctx.putImageData(this.imageData, 0, 0, putX, putY, putW, putH);
+    // 3) Upload union(prev, curr) so cleared pixels disappear and new ones appear
+    const union = unionBoundsInto(prevBounds, currBounds, this._unionBounds);
+    if (union.w > 0 && union.h > 0) {
+      this.ctx.putImageData(this.imageData, 0, 0, union.x0, union.y0, union.w, union.h);
     }
+
+    // 4) Swap prev/curr for next frame (zero allocations)
+    const tmp = this.dirtyPrev;
+    this.dirtyPrev = this.dirtyCurr;
+    this.dirtyCurr = tmp;
   }
 
   renderFillRect() {

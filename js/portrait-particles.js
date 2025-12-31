@@ -55,12 +55,47 @@ const CONFIG = {
   PROXIMITY_MARGIN: 80,
 
   // Canvas padding to prevent visible rectangle edge
-  CANVAS_PAD: 180,
+  // Large padding so dust can stream toward distant nav elements
+  CANVAS_PAD: 850,
 
-  // Flow target attraction (hover-driven, independent of cursor proximity)
-  FLOW_STRENGTH: 0.12,
-  FLOW_FALLOFF: 0.004,
-  FLOW_RAMP_MS: 200,
+  // Dust streaming (nav hover - dust particles flow toward target in ribbons)
+  STREAM_STRENGTH: 0.45,            // Pull toward target (stronger = faster)
+  STREAM_CURVE_SCALE: 40,           // How much streams curve (seed-based)
+  STREAM_CURVE_FREQ: 0.004,         // Frequency of curve oscillation
+  STREAM_ORBIT_RADIUS: 45,          // Radius at which particles start orbiting
+  STREAM_ORBIT_SPEED: 0.12,         // Tangential orbit speed
+  STREAM_SPRING_CUT: 1.0,           // Full spring cut for streaming dust
+  STREAM_RAMP_MS: 150,              // Time to reach full streaming (faster)
+  REFORM_RAMP_MS: 300,              // Time to reform
+  STREAM_DAMPING: 0.97,             // Less damping = particles travel further
+  STREAM_BURST_STRENGTH: 0.8,       // Initial outward burst on hover start
+  STREAM_BURST_DURATION_MS: 120,    // How long the burst phase lasts
+  STREAM_MAX_SPEED: 20,             // Higher speed limit for streaming
+  
+  // Staggered launch - particles peel away gradually based on distance
+  STREAM_STAGGER_MS: 350,           // Max delay for furthest particles to launch
+  STREAM_STAGGER_RANDOMNESS: 0.3,   // Random variation in launch timing (0-1)
+  
+  // Speed tiers - particles travel at different speeds for organic feel
+  STREAM_SPEED_FAST: 1.4,           // Fast tier multiplier (~30% of particles)
+  STREAM_SPEED_MEDIUM: 1.0,         // Medium tier multiplier (~40% of particles)
+  STREAM_SPEED_SLOW: 0.6,           // Slow tier multiplier (~30% of particles)
+  
+  // Staggered reform - particles return as cohesive stream, then disperse to homes
+  REFORM_STAGGER_MS: 800,           // Max delay spread for head-body-tail effect
+  REFORM_STAGGER_RANDOMNESS: 0.1,   // Less randomness for cleaner stream look
+  REFORM_FORCE: 0.7,                // Active pull force during stream phase
+  REFORM_DAMPING: 0.95,             // Damping during reform travel
+  REFORM_STREAM_PHASE_DIST: 150,    // Distance at which particles switch from "stream" to "home" targeting
+
+  // Eyes reveal (click easter egg)
+  // Eye regions as fractions of portrait dimensions [x, y, radiusX, radiusY]
+  // Adjust these to match your actual eye positions!
+  LEFT_EYE: { cx: 0.38, cy: 0.38, rx: 0.09, ry: 0.045 },
+  RIGHT_EYE: { cx: 0.62, cy: 0.38, rx: 0.09, ry: 0.045 },
+  EYE_REVEAL_SCATTER: 0.8,          // Force pushing non-eye particles away
+  EYE_REVEAL_SPRING: 0.15,          // Strong spring keeping eye particles in place
+  EYE_REVEAL_RAMP_MS: 300,
 
   PORTRAIT_IDLE_OPACITY: 0.2,
   ACTIVATION_RADIUS: 200,
@@ -70,6 +105,7 @@ const CONFIG = {
   TANGENT_SWIRL: 0.03,
   VELOCITY_DRAG: 0.2,
   MAX_SPEED: 12,
+  MAX_SPEED_DISINTEGRATE: 25,       // Higher speed limit during disintegration
 
   DRIFT_AMPLITUDE: 0.075,
   DRIFT_FREQUENCY: 0.0008,
@@ -82,6 +118,8 @@ const CONFIG = {
   RECOVERY_DURATION_MS: 400,
 
   DEBUG_PERF: false,
+  DEBUG_FLOW: false,
+  DEBUG_EYES: false,  // Draw eye regions
   RENDER_MODE: 'imagedata',
 };
 
@@ -145,11 +183,24 @@ class PortraitParticles {
     this.perfFrameCount = 0;
     this.lastPerfLogTime = 0;
 
-    // Flow target for attention system (portrait-local coords)
-    this.flowTargetLocalX = null;
-    this.flowTargetLocalY = null;
-    this.flowLevel = 0;
-    this.targetFlowLevel = 0;
+    // Disintegration state (nav hover - particles fly toward target)
+    this.streamTarget = null;  // {x, y} in local coords - where dust streams to
+    this.streamLevel = 0;       // 0-1 ramped level
+    this.streamStartTime = 0;   // For time-based effects
+    this.burstApplied = false;  // Track if initial burst was applied
+    this.streamLaunchDelays = null;  // Per-particle launch delays for staggered effect
+    
+    // Reform state (staggered return to portrait)
+    this.isReforming = false;
+    this.reformStartTime = 0;
+    this.reformDelays = null;  // Per-particle reform delays (ms)
+    this.reformNormalizedDelays = null;  // 0-1 normalized for speed correlation
+    this.reformStreamTarget = null;  // Common target all particles stream toward first
+
+    // Eye reveal state (click easter egg)
+    this.eyeRevealActive = false;
+    this.eyeRevealLevel = 0;
+    this.targetEyeRevealLevel = 0;
   }
 
   init(wrapperSelector = '.portrait-wrap') {
@@ -261,6 +312,13 @@ class PortraitParticles {
         const binSize = PALETTE[binIndex].size;
         const baseSize = CONFIG.PARTICLE_SIZE_MIN + Math.random() * (CONFIG.PARTICLE_SIZE_MAX - CONFIG.PARTICLE_SIZE_MIN);
 
+        // Check if particle is in eye region (for reveal effect)
+        const normX = homeX / this.width;
+        const normY = homeY / this.height;
+        const inLeftEye = this.isInEllipse(normX, normY, CONFIG.LEFT_EYE);
+        const inRightEye = this.isInEllipse(normX, normY, CONFIG.RIGHT_EYE);
+        const isEye = inLeftEye || inRightEye;
+
         const particle = {
           homeX, homeY,
           x: homeX, y: homeY,
@@ -268,6 +326,7 @@ class PortraitParticles {
           binIndex,
           size: baseSize * binSize,
           seed: Math.random() * 10000,
+          isEye,
         };
 
         this.particles.push(particle);
@@ -280,7 +339,15 @@ class PortraitParticles {
       this.img.style.transition = 'opacity 0.15s ease-out';
     }
 
-    console.log('[particles]', this.particles.length);
+    const eyeCount = this.particles.filter(p => p.isEye).length;
+    console.log('[particles]', this.particles.length, '| eyes:', eyeCount);
+  }
+
+  // Check if point is inside ellipse region
+  isInEllipse(normX, normY, eye) {
+    const dx = (normX - eye.cx) / eye.rx;
+    const dy = (normY - eye.cy) / eye.ry;
+    return (dx * dx + dy * dy) <= 1;
   }
 
   setupObservers() {
@@ -315,6 +382,18 @@ class PortraitParticles {
     window.addEventListener('pointermove', this.boundHandlePointerMove);
     document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.addEventListener('resize', this.boundHandleResize);
+    
+    // Click inside portrait triggers eye reveal
+    this.wrapper.addEventListener('click', (e) => {
+      // Only trigger if click is inside the portrait bounds
+      const rect = this.wrapper.getBoundingClientRect();
+      const localX = e.clientX - rect.left;
+      const localY = e.clientY - rect.top;
+      
+      if (localX >= 0 && localX <= this.width && localY >= 0 && localY <= this.height) {
+        this.toggleEyeReveal();
+      }
+    });
   }
 
   handlePointerMove(e) {
@@ -419,13 +498,24 @@ class PortraitParticles {
       this.activationLevel += Math.sign(activationDelta) * rampSpeed;
     }
 
-    // Flow level ramped independently (not tied to cursor proximity)
-    const flowDelta = this.targetFlowLevel - this.flowLevel;
-    const flowRampSpeed = dt * (1000 / CONFIG.FLOW_RAMP_MS) / 60;
-    if (Math.abs(flowDelta) < flowRampSpeed) {
-      this.flowLevel = this.targetFlowLevel;
+    // Stream level ramped
+    const targetStreamLevel = this.streamTarget ? 1 : 0;
+    const streamDelta = targetStreamLevel - this.streamLevel;
+    const streamRampMs = this.streamTarget ? CONFIG.STREAM_RAMP_MS : CONFIG.REFORM_RAMP_MS;
+    const streamRampSpeed = dt * (1000 / streamRampMs) / 60;
+    if (Math.abs(streamDelta) < streamRampSpeed) {
+      this.streamLevel = targetStreamLevel;
     } else {
-      this.flowLevel += Math.sign(flowDelta) * flowRampSpeed;
+      this.streamLevel += Math.sign(streamDelta) * streamRampSpeed;
+    }
+    
+    // Eye reveal level ramped
+    const eyeDelta = this.targetEyeRevealLevel - this.eyeRevealLevel;
+    const eyeRampSpeed = dt * (1000 / 400) / 60;  // 400ms ramp
+    if (Math.abs(eyeDelta) < eyeRampSpeed) {
+      this.eyeRevealLevel = this.targetEyeRevealLevel;
+    } else {
+      this.eyeRevealLevel += Math.sign(eyeDelta) * eyeRampSpeed;
     }
 
     // Portrait opacity updated
@@ -450,8 +540,14 @@ class PortraitParticles {
     const maxSpeedSq = CONFIG.MAX_SPEED * CONFIG.MAX_SPEED;
     const cursorInside = this.cursorInsideWrapper;
 
-    // Flow target in portrait-local coords
-    const hasFlowTarget = this.flowTargetLocalX !== null && this.flowLevel > 0.01;
+    // Pre-compute streaming target in local coords
+    const hasStream = this.streamLevel > 0.01 && this.streamTarget;
+    const streamTargetX = hasStream ? this.streamTarget.x : 0;
+    const streamTargetY = hasStream ? this.streamTarget.y : 0;
+    const streamTime = hasStream ? (now - this.streamStartTime) : 0;
+    
+    // Eye reveal active?
+    const hasEyeReveal = this.eyeRevealLevel > 0.01;
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
@@ -460,9 +556,62 @@ class PortraitParticles {
       const homeDistX = p.homeX - p.x;
       const homeDistY = p.homeY - p.y;
 
-      // Colored particles: no spring when cursor inside (sand scatter)
+      // Base spring strength
       let particleSpring = springK;
+      
+      // Colored particles: no spring when cursor inside (sand scatter) - keep this behavior
       if (isColoredParticle && cursorInside) particleSpring = 0;
+      
+      // Dust particles (bins 4-5 = highlights) stream to target
+      const isDust = p.binIndex >= 4;
+      
+      // Streaming: cut spring for dust so they can fly away
+      if (hasStream && isDust) {
+        particleSpring *= (1 - this.streamLevel * CONFIG.STREAM_SPRING_CUT);
+      }
+      
+      // Reforming: staggered return with head-body-tail stream effect
+      // Furthest particles lead the way, creating a magical spell-like stream
+      let isWaitingToReform = false;
+      let isActivelyReforming = false;
+      
+      if (this.isReforming && isDust && this.reformDelays) {
+        const reformTime = now - this.reformStartTime;
+        const reformDelay = this.reformDelays[i];
+        
+        if (reformTime < reformDelay) {
+          // WAITING: Particle hasn't started returning yet - FREEZE it
+          isWaitingToReform = true;
+          particleSpring = 0;  // No spring at all
+        } else {
+          // ACTIVE: This particle is now streaming home
+          isActivelyReforming = true;
+          
+          // CRITICAL: Disable spring during travel - we use active forces only
+          // Spring pulls to individual homes which would scatter the stream!
+          const distToHome = Math.sqrt(homeDistX * homeDistX + homeDistY * homeDistY);
+          const nearHome = distToHome < 20;
+          
+          if (nearHome) {
+            // Very close to home - restore spring for final settle
+            particleSpring = springK * 1.5;
+          } else {
+            // Still traveling - NO spring, use reform forces only
+            particleSpring = 0;
+          }
+        }
+      }
+      
+      // Eye reveal: eye particles get STRONGER spring, non-eye particles lose spring
+      if (hasEyeReveal) {
+        if (p.isEye) {
+          // Eyes stay locked in place - strong spring
+          particleSpring = CONFIG.EYE_REVEAL_SPRING + (springK - CONFIG.EYE_REVEAL_SPRING) * (1 - this.eyeRevealLevel);
+        } else {
+          // Non-eye particles lose their spring, scatter outward
+          particleSpring *= (1 - this.eyeRevealLevel * 0.95);
+        }
+      }
 
       let forceX = 0, forceY = 0;
 
@@ -496,20 +645,134 @@ class PortraitParticles {
         }
       }
 
-      // Flow force: dust particles attracted toward flow target (hover-driven)
-      // Independent of cursor proximity (activationLevel)
-      if (hasFlowTarget && isColoredParticle) {
-        const dx = this.flowTargetLocalX - p.x;
-        const dy = this.flowTargetLocalY - p.y;
+      // DUST STREAMING: Pull dust particles toward target with staggered launch + speed tiers
+      if (hasStream && isDust) {
+        // Get this particle's launch delay
+        const launchDelay = this.streamLaunchDelays ? this.streamLaunchDelays[i] : 0;
+        const particleStreamTime = streamTime - launchDelay;
+        
+        // Only stream if this particle has "launched" (past its delay)
+        if (particleStreamTime > 0) {
+          const dx = streamTargetX - p.x;
+          const dy = streamTargetY - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          // Speed tier based on seed (deterministic per-particle)
+          const tierRoll = (p.seed % 100) / 100;
+          let speedMult;
+          if (tierRoll < 0.3) {
+            speedMult = CONFIG.STREAM_SPEED_FAST;   // 30% fast
+          } else if (tierRoll < 0.7) {
+            speedMult = CONFIG.STREAM_SPEED_MEDIUM; // 40% medium
+          } else {
+            speedMult = CONFIG.STREAM_SPEED_SLOW;   // 30% slow
+          }
+          
+          // Check if we're in burst phase (relative to this particle's launch)
+          const inBurstPhase = particleStreamTime < CONFIG.STREAM_BURST_DURATION_MS;
+          
+          if (dist > 1) {
+            const nx = dx / dist;
+            const ny = dy / dist;
+            
+            // Perpendicular direction for curves
+            const px = -ny;
+            const py = nx;
+            
+            if (inBurstPhase) {
+              // BURST PHASE: Push outward from home position first
+              // Random outward burst direction (seeded for consistency)
+              const burstAngle = p.seed * 6.28;
+              const bx = Math.cos(burstAngle);
+              const by = Math.sin(burstAngle);
+              
+              const burstFade = 1 - (particleStreamTime / CONFIG.STREAM_BURST_DURATION_MS);
+              forceX += bx * CONFIG.STREAM_BURST_STRENGTH * burstFade * this.streamLevel * speedMult;
+              forceY += by * CONFIG.STREAM_BURST_STRENGTH * burstFade * this.streamLevel * speedMult;
+            } else {
+              // Seed-based curve: each particle follows slightly different curved path
+              const curvePhase = p.seed * 6.28 + particleStreamTime * CONFIG.STREAM_CURVE_FREQ;
+              const curveAmount = Math.sin(curvePhase) * CONFIG.STREAM_CURVE_SCALE / (dist + 50);
+              
+              if (dist > CONFIG.STREAM_ORBIT_RADIUS) {
+                // Flying toward target - apply attraction + curve, scaled by speed tier
+                const attraction = CONFIG.STREAM_STRENGTH * this.streamLevel * speedMult;
+                forceX += (nx + px * curveAmount * 0.3) * attraction;
+                forceY += (ny + py * curveAmount * 0.3) * attraction;
+              } else {
+                // Close to target - orbit around it
+                const orbitStrength = CONFIG.STREAM_ORBIT_SPEED * this.streamLevel;
+                forceX += px * orbitStrength;
+                forceY += py * orbitStrength;
+                const centripetal = 0.02 * this.streamLevel;
+                forceX += nx * centripetal;
+                forceY += ny * centripetal;
+              }
+            }
+          }
+        }
+      }
+      
+      // REFORM FORCES: Two-phase return - stream together first, then disperse to homes
+      if (isActivelyReforming && this.reformStreamTarget) {
+        const distToHome = Math.sqrt(homeDistX * homeDistX + homeDistY * homeDistY);
+        
+        // Calculate distance to stream target (portrait center)
+        const streamDx = this.reformStreamTarget.x - p.x;
+        const streamDy = this.reformStreamTarget.y - p.y;
+        const distToStream = Math.sqrt(streamDx * streamDx + streamDy * streamDy);
+        
+        // Speed tier CORRELATED with delay: early particles (head) are faster
+        // This ensures head stays ahead, tail stays behind
+        const normDelay = this.reformNormalizedDelays ? this.reformNormalizedDelays[i] : 0.5;
+        // normDelay: 0 = head (first to leave), 1 = tail (last to leave)
+        // Head gets fast speed, tail gets slow speed
+        const speedMult = CONFIG.STREAM_SPEED_FAST - normDelay * (CONFIG.STREAM_SPEED_FAST - CONFIG.STREAM_SPEED_SLOW);
+        
+        if (distToStream > CONFIG.REFORM_STREAM_PHASE_DIST) {
+          // PHASE 1: Far from portrait - stream TOGETHER toward portrait center
+          // All particles head to the SAME target = cohesive stream
+          if (distToStream > 5) {
+            const nx = streamDx / distToStream;
+            const ny = streamDy / distToStream;
+            
+            // Strong pull toward common target
+            forceX += nx * CONFIG.REFORM_FORCE * speedMult;
+            forceY += ny * CONFIG.REFORM_FORCE * speedMult;
+          }
+        } else {
+          // PHASE 2: Close to portrait - now disperse to individual homes
+          if (distToHome > 5) {
+            const nx = homeDistX / distToHome;
+            const ny = homeDistY / distToHome;
+            
+            // Pull toward individual home
+            forceX += nx * CONFIG.REFORM_FORCE * speedMult * 0.8;
+            forceY += ny * CONFIG.REFORM_FORCE * speedMult * 0.8;
+          }
+        }
+      }
+      
+      // EYE REVEAL: Scatter non-eye particles outward from center
+      if (hasEyeReveal && !p.isEye) {
+        // Push outward from portrait center
+        const centerX = this.width * 0.5;
+        const centerY = this.height * 0.5;
+        const dx = p.x - centerX;
+        const dy = p.y - centerY;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        
         if (dist > 1) {
           const nx = dx / dist;
           const ny = dy / dist;
-          // Attraction with distance falloff
-          const strength = CONFIG.FLOW_STRENGTH * this.flowLevel * (1 / (1 + dist * CONFIG.FLOW_FALLOFF));
-          forceX += nx * strength;
-          forceY += ny * strength;
+          forceX += nx * CONFIG.EYE_REVEAL_SCATTER * this.eyeRevealLevel;
+          forceY += ny * CONFIG.EYE_REVEAL_SCATTER * this.eyeRevealLevel;
         }
+        
+        // Extra chaos to make the scatter look organic
+        const scatterChaos = (Math.random() - 0.5) * 0.3 * this.eyeRevealLevel;
+        forceX += scatterChaos;
+        forceY += scatterChaos;
       }
 
       let particleDriftScale = driftScale;
@@ -518,15 +781,31 @@ class PortraitParticles {
       const driftX = hashNoise(p.seed, now) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
       const driftY = hashNoise(p.seed + 1000, now + 500) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
 
-      p.vx += (forceX + driftX + homeDistX * particleSpring) * dt;
-      p.vy += (forceY + driftY + homeDistY * particleSpring) * dt;
+      // Waiting particles: freeze completely (no forces, kill velocity)
+      if (isWaitingToReform) {
+        p.vx *= 0.85;  // Quickly dampen to stop
+        p.vy *= 0.85;
+      } else {
+        p.vx += (forceX + driftX + homeDistX * particleSpring) * dt;
+        p.vy += (forceY + driftY + homeDistY * particleSpring) * dt;
+      }
 
-      p.vx *= CONFIG.DAMPING;
-      p.vy *= CONFIG.DAMPING;
+      // Damping varies by state
+      let damping = CONFIG.DAMPING;
+      if (hasStream && isDust) {
+        damping = CONFIG.STREAM_DAMPING;  // Less damping when streaming out
+      } else if (isActivelyReforming) {
+        damping = CONFIG.REFORM_DAMPING;  // Reform damping for smooth travel back
+      }
+      p.vx *= damping;
+      p.vy *= damping;
 
+      // Higher speed limit for streaming particles
+      const currentMaxSpeed = (hasStream && isDust) ? CONFIG.STREAM_MAX_SPEED : CONFIG.MAX_SPEED;
+      const currentMaxSpeedSq = currentMaxSpeed * currentMaxSpeed;
       const speedSq = p.vx * p.vx + p.vy * p.vy;
-      if (speedSq > maxSpeedSq) {
-        const scale = CONFIG.MAX_SPEED / Math.sqrt(speedSq);
+      if (speedSq > currentMaxSpeedSq) {
+        const scale = currentMaxSpeed / Math.sqrt(speedSq);
         p.vx *= scale;
         p.vy *= scale;
       }
@@ -589,6 +868,26 @@ class PortraitParticles {
   render() {
     if (CONFIG.RENDER_MODE === 'imagedata') this.renderImageData();
     else this.renderFillRect();
+    
+    // Debug: draw eye ellipses
+    if (CONFIG.DEBUG_EYES) {
+      this.ctx.save();
+      const pad = CONFIG.CANVAS_PAD;
+      this.ctx.strokeStyle = 'rgba(255,0,255,0.8)';
+      this.ctx.lineWidth = 2;
+      
+      for (const eye of [CONFIG.LEFT_EYE, CONFIG.RIGHT_EYE]) {
+        const cx = eye.cx * this.width + pad;
+        const cy = eye.cy * this.height + pad;
+        const rx = eye.rx * this.width;
+        const ry = eye.ry * this.height;
+        
+        this.ctx.beginPath();
+        this.ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+    }
   }
 
   renderImageData() {
@@ -639,20 +938,156 @@ class PortraitParticles {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
-  // Set flow target from viewport coords (hover-driven attention)
-  // Converts to portrait-local coords internally
-  setFlowTargetVp(vpX, vpY) {
-    const rect = this.wrapper.getBoundingClientRect();
-    this.flowTargetLocalX = vpX - rect.left;
-    this.flowTargetLocalY = vpY - rect.top;
-    this.targetFlowLevel = 1;
+  // === DUST STREAMING API ===
+  
+  // Set stream target (local portrait coords)
+  setStreamTarget(localX, localY) {
+    if (!this.streamTarget) {
+      this.streamStartTime = performance.now();
+      // Calculate per-particle launch delays based on distance from target
+      this.calculateLaunchDelays(localX, localY);
+      // Clear any ongoing reform
+      this.isReforming = false;
+      this.reformDelays = null;
+      this.reformNormalizedDelays = null;
+      this.reformStreamTarget = null;
+    }
+    this.streamTarget = { x: localX, y: localY };
+    console.log('[particles] Stream target set:', localX.toFixed(0), localY.toFixed(0));
   }
-
-  // Clear flow target
-  clearFlowTarget() {
-    this.flowTargetLocalX = null;
-    this.flowTargetLocalY = null;
-    this.targetFlowLevel = 0;
+  
+  // Calculate staggered launch delays - closer particles leave first
+  calculateLaunchDelays(targetX, targetY) {
+    const particles = this.particles;
+    const len = particles.length;
+    
+    // Find max distance among dust particles for normalization
+    let maxDist = 0;
+    for (let i = 0; i < len; i++) {
+      const p = particles[i];
+      if (p.binIndex >= 4) {  // Only dust particles
+        const dx = p.homeX - targetX;
+        const dy = p.homeY - targetY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > maxDist) maxDist = dist;
+      }
+    }
+    
+    // Create delay array
+    this.streamLaunchDelays = new Float32Array(len);
+    const staggerMs = CONFIG.STREAM_STAGGER_MS;
+    const randomness = CONFIG.STREAM_STAGGER_RANDOMNESS;
+    
+    for (let i = 0; i < len; i++) {
+      const p = particles[i];
+      if (p.binIndex >= 4 && maxDist > 0) {  // Dust particles
+        const dx = p.homeX - targetX;
+        const dy = p.homeY - targetY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        // Base delay: closer = less delay
+        const normalizedDist = dist / maxDist;
+        const baseDelay = normalizedDist * staggerMs;
+        
+        // Add seed-based randomness so it's not perfectly distance-ordered
+        const randomOffset = (hashNoise(p.seed, 0) * 0.5 + 0.5) * randomness * staggerMs;
+        
+        this.streamLaunchDelays[i] = baseDelay + randomOffset;
+      } else {
+        this.streamLaunchDelays[i] = 0;
+      }
+    }
+  }
+  
+  // Set stream target from viewport coords
+  // Clamps target to stay within canvas bounds so particles don't fly off and disappear
+  setStreamTargetVp(vpX, vpY) {
+    const rect = this.wrapper.getBoundingClientRect();
+    let localX = vpX - rect.left;
+    let localY = vpY - rect.top;
+    
+    // Clamp to canvas bounds (pad - margin for orbit room)
+    const margin = CONFIG.CANVAS_PAD - 30;  // Leave room for orbit
+    localX = Math.max(-margin, Math.min(this.width + margin, localX));
+    localY = Math.max(-margin, Math.min(this.height + margin, localY));
+    
+    this.setStreamTarget(localX, localY);
+  }
+  
+  // Clear stream - dust reforms back to portrait with staggered return
+  clearStream() {
+    if (this.streamTarget) {
+      // Calculate reform delays before clearing target
+      this.calculateReformDelays();
+      this.isReforming = true;
+      this.reformStartTime = performance.now();
+      // Set the common stream target = portrait center
+      // All particles will head HERE first (creating cohesive stream),
+      // then disperse to their individual homes when close
+      this.reformStreamTarget = { x: this.width * 0.5, y: this.height * 0.5 };
+    }
+    this.streamTarget = null;
+    this.streamLaunchDelays = null;
+    console.log('[particles] Stream cleared - reforming as cohesive stream');
+  }
+  
+  // Calculate staggered reform delays - creates head-body-tail stream effect
+  // Uses RANDOM delays since particles are clustered together at the nav icon
+  calculateReformDelays() {
+    const particles = this.particles;
+    const len = particles.length;
+    
+    // Create delay arrays
+    this.reformDelays = new Float32Array(len);
+    this.reformNormalizedDelays = new Float32Array(len);
+    const staggerMs = CONFIG.REFORM_STAGGER_MS;
+    
+    // Use seeded random for consistent behavior but spread particles across full stagger range
+    // This creates clear head-body-tail since particles are clustered together spatially
+    for (let i = 0; i < len; i++) {
+      const p = particles[i];
+      if (p.binIndex >= 4) {  // Dust particles
+        // Use seed to get deterministic "random" delay for each particle
+        // This ensures same particle is always head/body/tail on repeat
+        const seedRandom = (hashNoise(p.seed + 777, 0) + 1) * 0.5;  // 0-1
+        
+        // Full spread across stagger range
+        const delay = seedRandom * staggerMs;
+        
+        this.reformDelays[i] = delay;
+        this.reformNormalizedDelays[i] = seedRandom;  // 0 = head, 1 = tail
+      } else {
+        this.reformDelays[i] = 0;
+        this.reformNormalizedDelays[i] = 0;
+      }
+    }
+    
+    console.log('[particles] Reform delays calculated - stagger:', staggerMs, 'ms');
+  }
+  
+  // === EYE REVEAL API ===
+  
+  // Toggle eye reveal mode
+  toggleEyeReveal() {
+    if (this.eyeRevealActive) {
+      this.cancelEyeReveal();
+    } else {
+      this.triggerEyeReveal();
+    }
+  }
+  
+  // Trigger eye reveal - scatter everything except eyes
+  triggerEyeReveal() {
+    this.eyeRevealActive = true;
+    this.targetEyeRevealLevel = 1;
+    console.log('[particles] Eye reveal triggered - stare into the void');
+  }
+  
+  // Cancel eye reveal - reform face
+  cancelEyeReveal() {
+    this.eyeRevealActive = false;
+    this.targetEyeRevealLevel = 0;
+    console.log('[particles] Eye reveal cancelled - reforming');
   }
 
   destroy() {

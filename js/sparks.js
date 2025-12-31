@@ -197,3 +197,31 @@ export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
     s: 0, v: speed
   });
 }
+
+/**
+ * Compute a route between two points in IMAGE coords.
+ * Returns viewport-projected points for dust flow.
+ * @param {number} fromImgX - start x in image coords
+ * @param {number} fromImgY - start y in image coords
+ * @param {number} toImgX - end x in image coords
+ * @param {number} toImgY - end y in image coords
+ * @returns {Array|null} - array of [vpX, vpY] points or null
+ */
+export function computeRouteVp(fromImgX, fromImgY, toImgX, toImgY) {
+  if (!GRAPH) return null;
+  
+  const fromId = GRAPH.nearestId(fromImgX, fromImgY, 150, 24);
+  const toId = GRAPH.nearestId(toImgX, toImgY, 150, 24);
+  
+  if (fromId == null || fromId < 0 || toId == null || toId < 0) {
+    return null;
+  }
+  
+  // Use regular A* with cache
+  const solved = aStarPath(fromId, toId, GRAPH, PATH_CACHE);
+  if (!solved || solved.length < 2) return null;
+  
+  // Project to viewport coords
+  const pointsVp = projectXY(solved.map(p => ({ x: p.x, y: p.y })));
+  return pointsVp;
+}

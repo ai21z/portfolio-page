@@ -127,3 +127,86 @@ export function aStarPath(idA, idB, graph, pathCache) {
 
   return null;
 }
+
+/**
+ * Stochastic A* for attention routes (subtle variation per hover).
+ * Does NOT use or modify PATH_CACHE.
+ * @param {number} idA - start node id
+ * @param {number} idB - end node id
+ * @param {object} graph - graph object
+ * @param {object} opts - { seed?: number, tieEps?: number, costJitter?: number }
+ * @returns {Array|null} - array of {x,y} points or null
+ */
+export function aStarPathStochastic(idA, idB, graph, opts = {}) {
+  if (!graph || idA < 0 || idB < 0) return null;
+  
+  const { seed = Date.now(), tieEps = 0.15, costJitter = 0.08 } = opts;
+  
+  // Simple seeded random (mulberry32)
+  let rngState = seed | 0;
+  const rand = () => {
+    rngState = (rngState + 0x6D2B79F5) | 0;
+    let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  
+  const nodes = graph.nodes;
+  const neighbors = graph.neighbors;
+
+  const open = new Set([idA]);
+  const came = new Map();
+  const g = new Map([[idA, 0]]);
+  const f = new Map([[idA, 0]]);
+
+  const h = (id) => {
+    const A = nodes[id];
+    const B = nodes[idB];
+    const dx = A.x - B.x;
+    const dy = A.y - B.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  while (open.size) {
+    // Find best fScore
+    let bestF = Infinity;
+    for (const id of open) {
+      const fi = f.get(id) ?? Infinity;
+      if (fi < bestF) bestF = fi;
+    }
+    
+    // Gather candidates within tieEps of best (tie-breaking randomness)
+    const candidates = [];
+    const threshold = bestF * (1 + tieEps);
+    for (const id of open) {
+      const fi = f.get(id) ?? Infinity;
+      if (fi <= threshold) candidates.push(id);
+    }
+    
+    // Pick randomly among candidates
+    const current = candidates[Math.floor(rand() * candidates.length)];
+
+    if (current === idB) {
+      const out = [];
+      for (let c = current; c != null; c = came.get(c)) out.push(nodes[c]);
+      out.reverse();
+      return out;
+    }
+
+    open.delete(current);
+
+    for (const nb of neighbors(current)) {
+      // Add slight cost jitter (seeded)
+      const jitter = 1 + costJitter * (rand() * 2 - 1);
+      const tentative = (g.get(current) ?? Infinity) + jitter;
+      if (tentative < (g.get(nb) ?? Infinity)) {
+        came.set(nb, current);
+        g.set(nb, tentative);
+        f.set(nb, tentative + h(nb));
+        open.add(nb);
+      }
+    }
+  }
+
+  return null;
+}

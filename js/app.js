@@ -29,6 +29,7 @@ import {
   LOCKED_ROUTES,
   NODE_IDS,
   sparkCanvas,
+  sparkCtx,
   sporeCanvas,
   sporeCtx,
   setSparkCanvas,
@@ -52,7 +53,8 @@ import {
 import {
   startSpark,
   drawSparks,
-  startSparkToPoint
+  startSparkToPoint,
+  computeRouteVp
 } from './sparks.js';
 import {
   computeNavOffsets,
@@ -1082,129 +1084,74 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadMycelium().catch(err => console.warn('⚠️ network.json unavailable:', err));
   await initNetworkAndNav();
   
-  // Attention pulse state (hover-driven sparks along mycelium)
-  let attentionPulseInterval = null;
-  let currentAttentionTarget = null;
+  // ═══════════════════════════════════════════════════════════════════
+  // DUST STREAMING: Dust particles flow toward hovered nav elements
+  // ═══════════════════════════════════════════════════════════════════
   
-  function startAttentionPulses(targetVpX, targetVpY) {
-    stopAttentionPulses();
-    currentAttentionTarget = { x: targetVpX, y: targetVpY };
-    
-    // Convert viewport → image coords for spark routing
-    const [imgX, imgY] = toImg(targetVpX, targetVpY);
-    
-    // Spawn initial pulse
-    startSparkToPoint('intro', imgX, imgY, 550);
-    
-    // Spawn repeating pulses while hovering
-    attentionPulseInterval = setInterval(() => {
-      if (currentAttentionTarget) {
-        startSparkToPoint('intro', imgX, imgY, 550);
-      }
-    }, 550);
+  /**
+   * Start dust streaming toward target element.
+   */
+  function startStream(targetVpX, targetVpY) {
+    portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
   }
   
-  function stopAttentionPulses() {
-    if (attentionPulseInterval) {
-      clearInterval(attentionPulseInterval);
-      attentionPulseInterval = null;
-    }
-    currentAttentionTarget = null;
-  }
-  
-  // Burst effect for pointerdown (short-lived, does not block navigation)
-  function triggerBurst(vpX, vpY) {
-    const [imgX, imgY] = toImg(vpX, vpY);
-    // Spawn 2-3 fast sparks
-    startSparkToPoint('intro', imgX, imgY, 900);
-    setTimeout(() => startSparkToPoint('intro', imgX, imgY, 850), 40);
+  function stopStream() {
+    portraitParticles?.clearStream?.();
   }
 
   const nav = document.getElementById('network-nav');
   if (nav) {
-    nav.querySelectorAll('.network-node-label, .network-sigil-node').forEach(el => {
+    const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
+    console.log('[stream] Attaching to', navNodes.length, 'nav nodes');
+    navNodes.forEach(el => {
       const id = el.dataset.node;
       
       el.addEventListener('pointerenter', () => {
+        console.log('[stream] pointerenter on', id);
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
         
-        // Start attention pulses + portrait flow (skip intro/sigil)
-        if (id !== 'intro') {
-          const rect = el.getBoundingClientRect();
-          const vpX = rect.left + rect.width / 2;
-          const vpY = rect.top + rect.height / 2;
-          startAttentionPulses(vpX, vpY);
-          portraitParticles?.setFlowTargetVp?.(vpX, vpY);
-        }
+        // Start streaming for all nav items including sigil
+        const rect = el.getBoundingClientRect();
+        const vpX = rect.left + rect.width / 2;
+        const vpY = rect.top + rect.height / 2;
+        startStream(vpX, vpY);
       });
       
       el.addEventListener('pointerleave', () => {
         handleNavLeave(id, el);
-        stopAttentionPulses();
-        portraitParticles?.clearFlowTarget?.();
+        stopStream();
       });
       
       el.addEventListener('focus', () => {
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        if (id !== 'intro') {
-          const rect = el.getBoundingClientRect();
-          const vpX = rect.left + rect.width / 2;
-          const vpY = rect.top + rect.height / 2;
-          startAttentionPulses(vpX, vpY);
-          portraitParticles?.setFlowTargetVp?.(vpX, vpY);
-        }
+        const rect = el.getBoundingClientRect();
+        const vpX = rect.left + rect.width / 2;
+        const vpY = rect.top + rect.height / 2;
+        startStream(vpX, vpY);
       });
       
       el.addEventListener('blur', () => {
         handleNavLeave(id, el);
-        stopAttentionPulses();
-        portraitParticles?.clearFlowTarget?.();
+        stopStream();
       });
     });
   }
   
-  // Social icons: attention pulses + portrait flow + burst on pointerdown
+  // Social icons: stream on hover
   const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
   socialIcons.forEach(icon => {
     icon.addEventListener('pointerenter', () => {
       const rect = icon.getBoundingClientRect();
       const vpX = rect.left + rect.width / 2;
       const vpY = rect.top + rect.height / 2;
-      startAttentionPulses(vpX, vpY);
-      portraitParticles?.setFlowTargetVp?.(vpX, vpY);
+      startStream(vpX, vpY);
     });
     
     icon.addEventListener('pointerleave', () => {
-      stopAttentionPulses();
-      portraitParticles?.clearFlowTarget?.();
-    });
-    
-    // Pointerdown burst for external links (before navigation)
-    icon.addEventListener('pointerdown', () => {
-      const rect = icon.getBoundingClientRect();
-      const vpX = rect.left + rect.width / 2;
-      const vpY = rect.top + rect.height / 2;
-      triggerBurst(vpX, vpY);
+      stopStream();
     });
   });
   
-  // Title/name element: attention pulses + portrait flow
-  const nameEl = document.querySelector('.name');
-  if (nameEl) {
-    nameEl.addEventListener('pointerenter', () => {
-      const rect = nameEl.getBoundingClientRect();
-      const vpX = rect.left + rect.width / 2;
-      const vpY = rect.top + rect.height / 2;
-      startAttentionPulses(vpX, vpY);
-      portraitParticles?.setFlowTargetVp?.(vpX, vpY);
-    });
-    
-    nameEl.addEventListener('pointerleave', () => {
-      stopAttentionPulses();
-      portraitParticles?.clearFlowTarget?.();
-    });
-  }
-
   const hash = window.location.hash.slice(1);
   
   if (hash.startsWith('blog/')) {

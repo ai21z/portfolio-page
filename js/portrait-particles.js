@@ -88,14 +88,13 @@ const CONFIG = {
   REFORM_DAMPING: 0.95,             // Damping during reform travel
   REFORM_STREAM_PHASE_DIST: 150,    // Distance at which particles switch from "stream" to "home" targeting
 
-  // Eyes reveal (click easter egg)
-  // Eye regions as fractions of portrait dimensions [x, y, radiusX, radiusY]
-  // Adjust these to match your actual eye positions!
-  LEFT_EYE: { cx: 0.38, cy: 0.38, rx: 0.09, ry: 0.045 },
-  RIGHT_EYE: { cx: 0.62, cy: 0.38, rx: 0.09, ry: 0.045 },
-  EYE_REVEAL_SCATTER: 0.8,          // Force pushing non-eye particles away
-  EYE_REVEAL_SPRING: 0.15,          // Strong spring keeping eye particles in place
-  EYE_REVEAL_RAMP_MS: 300,
+  // Constellation mode (click easter egg - sigil reveal)
+  SIGIL_PATH: './artifacts/sigil/AZ-VZ-01.png',
+  SIGIL_BRIGHTNESS_THRESHOLD: 40,   // Min brightness to be considered sigil pixel
+  CONSTELLATION_SCATTER: 0.6,       // Force pushing non-sigil particles away
+  CONSTELLATION_SPRING: 0.2,        // Strong spring keeping sigil particles in place
+  CONSTELLATION_RAMP_MS: 400,       // Transition time
+  CONSTELLATION_DRIFT: 0.15,        // Extra subtle drift for floating effect
 
   PORTRAIT_IDLE_OPACITY: 0.2,
   ACTIVATION_RADIUS: 200,
@@ -119,7 +118,7 @@ const CONFIG = {
 
   DEBUG_PERF: false,
   DEBUG_FLOW: false,
-  DEBUG_EYES: false,  // Draw eye regions
+  DEBUG_SIGIL: false,  // Highlight sigil particles
   RENDER_MODE: 'imagedata',
 };
 
@@ -197,10 +196,11 @@ class PortraitParticles {
     this.reformNormalizedDelays = null;  // 0-1 normalized for speed correlation
     this.reformStreamTarget = null;  // Common target all particles stream toward first
 
-    // Eye reveal state (click easter egg)
-    this.eyeRevealActive = false;
-    this.eyeRevealLevel = 0;
-    this.targetEyeRevealLevel = 0;
+    // Constellation mode state (click easter egg - sigil reveal)
+    this.constellationActive = false;
+    this.constellationLevel = 0;
+    this.targetConstellationLevel = 0;
+    this.sigilMask = null;  // Will hold sampled sigil data
   }
 
   init(wrapperSelector = '.portrait-wrap') {
@@ -224,6 +224,7 @@ class PortraitParticles {
   setup() {
     this.createCanvas();
     this.sampleImage();
+    this.sampleSigil();  // Load sigil for constellation mode
     this.setupObservers();
     this.setupEventListeners();
     this.initialized = true;
@@ -312,13 +313,6 @@ class PortraitParticles {
         const binSize = PALETTE[binIndex].size;
         const baseSize = CONFIG.PARTICLE_SIZE_MIN + Math.random() * (CONFIG.PARTICLE_SIZE_MAX - CONFIG.PARTICLE_SIZE_MIN);
 
-        // Check if particle is in eye region (for reveal effect)
-        const normX = homeX / this.width;
-        const normY = homeY / this.height;
-        const inLeftEye = this.isInEllipse(normX, normY, CONFIG.LEFT_EYE);
-        const inRightEye = this.isInEllipse(normX, normY, CONFIG.RIGHT_EYE);
-        const isEye = inLeftEye || inRightEye;
-
         const particle = {
           homeX, homeY,
           x: homeX, y: homeY,
@@ -326,7 +320,7 @@ class PortraitParticles {
           binIndex,
           size: baseSize * binSize,
           seed: Math.random() * 10000,
-          isEye,
+          isSigil: false,  // Will be set after sigil sampling
         };
 
         this.particles.push(particle);
@@ -339,15 +333,63 @@ class PortraitParticles {
       this.img.style.transition = 'opacity 0.15s ease-out';
     }
 
-    const eyeCount = this.particles.filter(p => p.isEye).length;
-    console.log('[particles]', this.particles.length, '| eyes:', eyeCount);
+    console.log('[particles]', this.particles.length, 'sampled');
   }
 
-  // Check if point is inside ellipse region
-  isInEllipse(normX, normY, eye) {
-    const dx = (normX - eye.cx) / eye.rx;
-    const dy = (normY - eye.cy) / eye.ry;
-    return (dx * dx + dy * dy) <= 1;
+  // Sample sigil image to create constellation mask
+  sampleSigil() {
+    const sigil = new Image();
+    sigil.crossOrigin = 'anonymous';
+    sigil.src = CONFIG.SIGIL_PATH;
+    
+    sigil.onload = () => {
+      const offscreen = document.createElement('canvas');
+      const ctx = offscreen.getContext('2d');
+      const imgW = sigil.naturalWidth;
+      const imgH = sigil.naturalHeight;
+      
+      offscreen.width = imgW;
+      offscreen.height = imgH;
+      ctx.drawImage(sigil, 0, 0, imgW, imgH);
+      
+      let imageData;
+      try {
+        imageData = ctx.getImageData(0, 0, imgW, imgH);
+      } catch (e) {
+        console.warn('[particles] Sigil CORS error:', e);
+        return;
+      }
+      
+      const data = imageData.data;
+      const scaleX = imgW / this.width;
+      const scaleY = imgH / this.height;
+      
+      // Mark particles that overlap with sigil pixels
+      let sigilCount = 0;
+      for (const p of this.particles) {
+        // Map particle home position to sigil image coords
+        const sx = Math.floor(p.homeX * scaleX);
+        const sy = Math.floor(p.homeY * scaleY);
+        
+        if (sx >= 0 && sx < imgW && sy >= 0 && sy < imgH) {
+          const i = (sy * imgW + sx) * 4;
+          const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+          const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+          
+          // Particle is part of sigil if bright enough and has alpha
+          if (brightness > CONFIG.SIGIL_BRIGHTNESS_THRESHOLD && a > 100) {
+            p.isSigil = true;
+            sigilCount++;
+          }
+        }
+      }
+      
+      console.log('[particles] Sigil constellation:', sigilCount, 'particles marked');
+    };
+    
+    sigil.onerror = () => {
+      console.warn('[particles] Failed to load sigil image');
+    };
   }
 
   setupObservers() {
@@ -383,7 +425,7 @@ class PortraitParticles {
     document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.addEventListener('resize', this.boundHandleResize);
     
-    // Click inside portrait triggers eye reveal
+    // Click inside portrait triggers constellation mode (sigil reveal)
     this.wrapper.addEventListener('click', (e) => {
       // Only trigger if click is inside the portrait bounds
       const rect = this.wrapper.getBoundingClientRect();
@@ -391,7 +433,7 @@ class PortraitParticles {
       const localY = e.clientY - rect.top;
       
       if (localX >= 0 && localX <= this.width && localY >= 0 && localY <= this.height) {
-        this.toggleEyeReveal();
+        this.toggleConstellation();
       }
     });
   }
@@ -509,13 +551,13 @@ class PortraitParticles {
       this.streamLevel += Math.sign(streamDelta) * streamRampSpeed;
     }
     
-    // Eye reveal level ramped
-    const eyeDelta = this.targetEyeRevealLevel - this.eyeRevealLevel;
-    const eyeRampSpeed = dt * (1000 / 400) / 60;  // 400ms ramp
-    if (Math.abs(eyeDelta) < eyeRampSpeed) {
-      this.eyeRevealLevel = this.targetEyeRevealLevel;
+    // Constellation level ramped
+    const constDelta = this.targetConstellationLevel - this.constellationLevel;
+    const constRampSpeed = dt * (1000 / CONFIG.CONSTELLATION_RAMP_MS) / 60;
+    if (Math.abs(constDelta) < constRampSpeed) {
+      this.constellationLevel = this.targetConstellationLevel;
     } else {
-      this.eyeRevealLevel += Math.sign(eyeDelta) * eyeRampSpeed;
+      this.constellationLevel += Math.sign(constDelta) * constRampSpeed;
     }
 
     // Portrait opacity updated
@@ -546,8 +588,8 @@ class PortraitParticles {
     const streamTargetY = hasStream ? this.streamTarget.y : 0;
     const streamTime = hasStream ? (now - this.streamStartTime) : 0;
     
-    // Eye reveal active?
-    const hasEyeReveal = this.eyeRevealLevel > 0.01;
+    // Constellation mode active?
+    const hasConstellation = this.constellationLevel > 0.01;
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
@@ -602,14 +644,14 @@ class PortraitParticles {
         }
       }
       
-      // Eye reveal: eye particles get STRONGER spring, non-eye particles lose spring
-      if (hasEyeReveal) {
-        if (p.isEye) {
-          // Eyes stay locked in place - strong spring
-          particleSpring = CONFIG.EYE_REVEAL_SPRING + (springK - CONFIG.EYE_REVEAL_SPRING) * (1 - this.eyeRevealLevel);
+      // Constellation mode: sigil particles stay, others scatter
+      if (hasConstellation) {
+        if (p.isSigil) {
+          // Sigil particles stay locked in place - strong spring
+          particleSpring = CONFIG.CONSTELLATION_SPRING + (springK - CONFIG.CONSTELLATION_SPRING) * (1 - this.constellationLevel);
         } else {
-          // Non-eye particles lose their spring, scatter outward
-          particleSpring *= (1 - this.eyeRevealLevel * 0.95);
+          // Non-sigil particles lose their spring, scatter outward
+          particleSpring *= (1 - this.constellationLevel * 0.98);
         }
       }
 
@@ -753,26 +795,34 @@ class PortraitParticles {
         }
       }
       
-      // EYE REVEAL: Scatter non-eye particles outward from center
-      if (hasEyeReveal && !p.isEye) {
-        // Push outward from portrait center
-        const centerX = this.width * 0.5;
-        const centerY = this.height * 0.5;
-        const dx = p.x - centerX;
-        const dy = p.y - centerY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist > 1) {
-          const nx = dx / dist;
-          const ny = dy / dist;
-          forceX += nx * CONFIG.EYE_REVEAL_SCATTER * this.eyeRevealLevel;
-          forceY += ny * CONFIG.EYE_REVEAL_SCATTER * this.eyeRevealLevel;
+      // CONSTELLATION: Scatter non-sigil particles, sigil particles get subtle float
+      if (hasConstellation) {
+        if (p.isSigil) {
+          // Sigil particles get gentle floating drift (constellation shimmer)
+          const floatX = hashNoise(p.seed + 2000, now * 0.5) * CONFIG.CONSTELLATION_DRIFT * this.constellationLevel;
+          const floatY = hashNoise(p.seed + 3000, now * 0.5 + 500) * CONFIG.CONSTELLATION_DRIFT * this.constellationLevel;
+          forceX += floatX;
+          forceY += floatY;
+        } else {
+          // Non-sigil particles scatter outward and fade into void
+          const centerX = this.width * 0.5;
+          const centerY = this.height * 0.5;
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 1) {
+            const nx = dx / dist;
+            const ny = dy / dist;
+            forceX += nx * CONFIG.CONSTELLATION_SCATTER * this.constellationLevel;
+            forceY += ny * CONFIG.CONSTELLATION_SCATTER * this.constellationLevel;
+          }
+          
+          // Spiral motion for mystical effect
+          const spiralStrength = 0.08 * this.constellationLevel;
+          forceX += dy / (dist + 50) * spiralStrength;
+          forceY -= dx / (dist + 50) * spiralStrength;
         }
-        
-        // Extra chaos to make the scatter look organic
-        const scatterChaos = (Math.random() - 0.5) * 0.3 * this.eyeRevealLevel;
-        forceX += scatterChaos;
-        forceY += scatterChaos;
       }
 
       let particleDriftScale = driftScale;
@@ -868,26 +918,6 @@ class PortraitParticles {
   render() {
     if (CONFIG.RENDER_MODE === 'imagedata') this.renderImageData();
     else this.renderFillRect();
-    
-    // Debug: draw eye ellipses
-    if (CONFIG.DEBUG_EYES) {
-      this.ctx.save();
-      const pad = CONFIG.CANVAS_PAD;
-      this.ctx.strokeStyle = 'rgba(255,0,255,0.8)';
-      this.ctx.lineWidth = 2;
-      
-      for (const eye of [CONFIG.LEFT_EYE, CONFIG.RIGHT_EYE]) {
-        const cx = eye.cx * this.width + pad;
-        const cy = eye.cy * this.height + pad;
-        const rx = eye.rx * this.width;
-        const ry = eye.ry * this.height;
-        
-        this.ctx.beginPath();
-        this.ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
-      this.ctx.restore();
-    }
   }
 
   renderImageData() {
@@ -1065,29 +1095,29 @@ class PortraitParticles {
     console.log('[particles] Reform delays calculated - stagger:', staggerMs, 'ms');
   }
   
-  // === EYE REVEAL API ===
+  // === CONSTELLATION MODE API ===
   
-  // Toggle eye reveal mode
-  toggleEyeReveal() {
-    if (this.eyeRevealActive) {
-      this.cancelEyeReveal();
+  // Toggle constellation mode (sigil reveal)
+  toggleConstellation() {
+    if (this.constellationActive) {
+      this.cancelConstellation();
     } else {
-      this.triggerEyeReveal();
+      this.triggerConstellation();
     }
   }
   
-  // Trigger eye reveal - scatter everything except eyes
-  triggerEyeReveal() {
-    this.eyeRevealActive = true;
-    this.targetEyeRevealLevel = 1;
-    console.log('[particles] Eye reveal triggered - stare into the void');
+  // Trigger constellation - scatter everything except sigil particles
+  triggerConstellation() {
+    this.constellationActive = true;
+    this.targetConstellationLevel = 1;
+    console.log('[particles] Constellation mode - sigil revealed');
   }
   
-  // Cancel eye reveal - reform face
-  cancelEyeReveal() {
-    this.eyeRevealActive = false;
-    this.targetEyeRevealLevel = 0;
-    console.log('[particles] Eye reveal cancelled - reforming');
+  // Cancel constellation - reform portrait
+  cancelConstellation() {
+    this.constellationActive = false;
+    this.targetConstellationLevel = 0;
+    console.log('[particles] Constellation cancelled - reforming');
   }
 
   destroy() {

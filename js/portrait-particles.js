@@ -107,9 +107,9 @@ const CONFIG = {
   IDLE_THRESHOLD_MS: 200,
   RECOVERY_DURATION_MS: 400,
 
-  DEBUG_PERF: fa,
-  DEBUG_FLOW: true,
-  DEBUG_SIGIL: true,
+  DEBUG_PERF: false,
+  DEBUG_FLOW: false,
+  DEBUG_SIGIL: false,
   RENDER_MODE: 'imagedata',
 };
 

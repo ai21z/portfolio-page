@@ -107,9 +107,9 @@ const CONFIG = {
   IDLE_THRESHOLD_MS: 200,
   RECOVERY_DURATION_MS: 400,
 
-  DEBUG_PERF: false,
-  DEBUG_FLOW: false,
-  DEBUG_SIGIL: false,
+  DEBUG_PERF: fa,
+  DEBUG_FLOW: true,
+  DEBUG_SIGIL: true,
   RENDER_MODE: 'imagedata',
 };
 
@@ -174,8 +174,16 @@ class PortraitParticles {
     this.perfFrameCount = 0;
     this.lastPerfLogTime = 0;
 
+    // Dirty rect tracking for optimized clearing
+    this.dirtyMinX = 0;
+    this.dirtyMaxX = 0;
+    this.dirtyMinY = 0;
+    this.dirtyMaxY = 0;
+    this.hasDirtyRect = false;
+
     // Stream state
     this.streamTarget = null;
+    this.lastStreamTarget = null;
     this.streamLevel = 0;
     this.streamStartTime = 0;
     this.burstApplied = false;
@@ -765,9 +773,24 @@ class PortraitParticles {
       const driftX = hashNoise(p.seed, now) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
       const driftY = hashNoise(p.seed + 1000, now + 500) * CONFIG.DRIFT_AMPLITUDE * particleDriftScale;
 
-      if (isWaitingToReform) {
-        p.vx *= 0.85;
-        p.vy *= 0.85;
+      if (isWaitingToReform && this.lastStreamTarget) {
+        const orbitDx = this.lastStreamTarget.x - p.x;
+        const orbitDy = this.lastStreamTarget.y - p.y;
+        const orbitDist = Math.sqrt(orbitDx * orbitDx + orbitDy * orbitDy);
+        if (orbitDist > 1) {
+          const orbitNx = orbitDx / orbitDist;
+          const orbitNy = orbitDy / orbitDist;
+          const orbitPx = -orbitNy;
+          const orbitPy = orbitNx;
+          const orbitForce = CONFIG.STREAM_ORBIT_SPEED * 0.7;
+          p.vx += (orbitPx * orbitForce + driftX) * dt;
+          p.vy += (orbitPy * orbitForce + driftY) * dt;
+          const centripetal = 0.015;
+          p.vx += orbitNx * centripetal * dt;
+          p.vy += orbitNy * centripetal * dt;
+        }
+        p.vx *= 0.96;
+        p.vy *= 0.96;
       } else {
         p.vx += (forceX + driftX + homeDistX * particleSpring) * dt;
         p.vy += (forceY + driftY + homeDistY * particleSpring) * dt;
@@ -857,24 +880,78 @@ class PortraitParticles {
     const bufHeight = this.bufHeight;
     const dpr = this.dpr;
     const pad = CONFIG.CANVAS_PAD;
+    const MARGIN = 2;
+    const DIRTY_THRESHOLD = 0.5;
 
-    buf32.fill(0);
+    // Clear previous frame's dirty region
+    if (this.hasDirtyRect) {
+      const clearX = Math.max(0, this.dirtyMinX - MARGIN);
+      const clearY = Math.max(0, this.dirtyMinY - MARGIN);
+      const clearMaxX = Math.min(bufWidth, this.dirtyMaxX + MARGIN + 1);
+      const clearMaxY = Math.min(bufHeight, this.dirtyMaxY + MARGIN + 1);
+      const clearW = clearMaxX - clearX;
+      const clearH = clearMaxY - clearY;
+
+      const dirtyArea = clearW * clearH;
+      const totalArea = bufWidth * bufHeight;
+
+      if (dirtyArea > totalArea * DIRTY_THRESHOLD) {
+        buf32.fill(0);
+      } else if (clearW === bufWidth) {
+        buf32.fill(0, clearY * bufWidth, clearMaxY * bufWidth);
+      } else {
+        for (let row = clearY; row < clearMaxY; row++) {
+          const rowStart = row * bufWidth + clearX;
+          buf32.fill(0, rowStart, rowStart + clearW);
+        }
+      }
+    }
 
     const particles = this.particles;
     const len = particles.length;
 
+    let minX = bufWidth, maxX = 0, minY = bufHeight, maxY = 0;
+
     for (let i = 0; i < len; i++) {
       const p = particles[i];
-      // Offset by pad so particles at (0,0) render at (pad,pad) in buffer
       const px = ((p.x + pad) * dpr + 0.5) | 0;
       const py = ((p.y + pad) * dpr + 0.5) | 0;
 
       if (px >= 0 && px < bufWidth && py >= 0 && py < bufHeight) {
         buf32[py * bufWidth + px] = PALETTE_UINT32[p.binIndex];
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
       }
     }
 
-    this.ctx.putImageData(this.imageData, 0, 0);
+    // Union of cleared region and rendered region for upload
+    const prevMinX = this.dirtyMinX;
+    const prevMaxX = this.dirtyMaxX;
+    const prevMinY = this.dirtyMinY;
+    const prevMaxY = this.dirtyMaxY;
+    const hadPrevDirty = this.hasDirtyRect;
+
+    this.dirtyMinX = minX;
+    this.dirtyMaxX = maxX;
+    this.dirtyMinY = minY;
+    this.dirtyMaxY = maxY;
+    this.hasDirtyRect = maxX >= minX && maxY >= minY;
+
+    // Upload union of previous (cleared) and current (rendered) bounds
+    const unionMinX = hadPrevDirty ? Math.min(prevMinX, minX) : minX;
+    const unionMaxX = hadPrevDirty ? Math.max(prevMaxX, maxX) : maxX;
+    const unionMinY = hadPrevDirty ? Math.min(prevMinY, minY) : minY;
+    const unionMaxY = hadPrevDirty ? Math.max(prevMaxY, maxY) : maxY;
+
+    if (this.hasDirtyRect || hadPrevDirty) {
+      const putX = Math.max(0, unionMinX - MARGIN);
+      const putY = Math.max(0, unionMinY - MARGIN);
+      const putW = Math.min(bufWidth, unionMaxX + MARGIN + 1) - putX;
+      const putH = Math.min(bufHeight, unionMaxY + MARGIN + 1) - putY;
+      this.ctx.putImageData(this.imageData, 0, 0, putX, putY, putW, putH);
+    }
   }
 
   renderFillRect() {
@@ -960,6 +1037,7 @@ class PortraitParticles {
   
   clearStream() {
     if (this.streamTarget) {
+      this.lastStreamTarget = { ...this.streamTarget };
       this.calculateReformDelays();
       this.isReforming = true;
       this.reformStartTime = performance.now();

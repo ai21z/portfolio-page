@@ -46,6 +46,7 @@ import {
 import {
   computeCoverFromImage,
   toViewport,
+  toImg,
   projectXY
 } from './viewport.js';
 import {
@@ -67,6 +68,7 @@ import {
   imgPointAtRoute
 } from './routes.js';
 import { notebookContact } from './contact.js';
+import { portraitParticles } from './portrait-particles.js';
 
 // Mycelium geometry (exported from Python)
 async function loadMycelium() {
@@ -1079,15 +1081,127 @@ function showSectionWithEffects(sectionName) {
 window.addEventListener('DOMContentLoaded', async () => {
   await loadMycelium().catch(err => console.warn('⚠️ network.json unavailable:', err));
   await initNetworkAndNav();
+  
+  // Attention pulse state (hover-driven sparks along mycelium)
+  let attentionPulseInterval = null;
+  let currentAttentionTarget = null;
+  
+  function startAttentionPulses(targetVpX, targetVpY) {
+    stopAttentionPulses();
+    currentAttentionTarget = { x: targetVpX, y: targetVpY };
+    
+    // Convert viewport → image coords for spark routing
+    const [imgX, imgY] = toImg(targetVpX, targetVpY);
+    
+    // Spawn initial pulse
+    startSparkToPoint('intro', imgX, imgY, 550);
+    
+    // Spawn repeating pulses while hovering
+    attentionPulseInterval = setInterval(() => {
+      if (currentAttentionTarget) {
+        startSparkToPoint('intro', imgX, imgY, 550);
+      }
+    }, 550);
+  }
+  
+  function stopAttentionPulses() {
+    if (attentionPulseInterval) {
+      clearInterval(attentionPulseInterval);
+      attentionPulseInterval = null;
+    }
+    currentAttentionTarget = null;
+  }
+  
+  // Burst effect for pointerdown (short-lived, does not block navigation)
+  function triggerBurst(vpX, vpY) {
+    const [imgX, imgY] = toImg(vpX, vpY);
+    // Spawn 2-3 fast sparks
+    startSparkToPoint('intro', imgX, imgY, 900);
+    setTimeout(() => startSparkToPoint('intro', imgX, imgY, 850), 40);
+  }
 
   const nav = document.getElementById('network-nav');
   if (nav) {
     nav.querySelectorAll('.network-node-label, .network-sigil-node').forEach(el => {
       const id = el.dataset.node;
-      el.addEventListener('pointerenter', () => handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute));
-      el.addEventListener('pointerleave', () => handleNavLeave(id, el));
-      el.addEventListener('focus', () => handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute));
-      el.addEventListener('blur', () => handleNavLeave(id, el));
+      
+      el.addEventListener('pointerenter', () => {
+        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        
+        // Start attention pulses + portrait flow (skip intro/sigil)
+        if (id !== 'intro') {
+          const rect = el.getBoundingClientRect();
+          const vpX = rect.left + rect.width / 2;
+          const vpY = rect.top + rect.height / 2;
+          startAttentionPulses(vpX, vpY);
+          portraitParticles?.setFlowTargetVp?.(vpX, vpY);
+        }
+      });
+      
+      el.addEventListener('pointerleave', () => {
+        handleNavLeave(id, el);
+        stopAttentionPulses();
+        portraitParticles?.clearFlowTarget?.();
+      });
+      
+      el.addEventListener('focus', () => {
+        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        if (id !== 'intro') {
+          const rect = el.getBoundingClientRect();
+          const vpX = rect.left + rect.width / 2;
+          const vpY = rect.top + rect.height / 2;
+          startAttentionPulses(vpX, vpY);
+          portraitParticles?.setFlowTargetVp?.(vpX, vpY);
+        }
+      });
+      
+      el.addEventListener('blur', () => {
+        handleNavLeave(id, el);
+        stopAttentionPulses();
+        portraitParticles?.clearFlowTarget?.();
+      });
+    });
+  }
+  
+  // Social icons: attention pulses + portrait flow + burst on pointerdown
+  const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
+  socialIcons.forEach(icon => {
+    icon.addEventListener('pointerenter', () => {
+      const rect = icon.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      startAttentionPulses(vpX, vpY);
+      portraitParticles?.setFlowTargetVp?.(vpX, vpY);
+    });
+    
+    icon.addEventListener('pointerleave', () => {
+      stopAttentionPulses();
+      portraitParticles?.clearFlowTarget?.();
+    });
+    
+    // Pointerdown burst for external links (before navigation)
+    icon.addEventListener('pointerdown', () => {
+      const rect = icon.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      triggerBurst(vpX, vpY);
+    });
+  });
+  
+  // Title/name element: attention pulses + portrait flow
+  const nameEl = document.querySelector('.name');
+  if (nameEl) {
+    nameEl.addEventListener('pointerenter', () => {
+      const rect = nameEl.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      startAttentionPulses(vpX, vpY);
+      portraitParticles?.setFlowTargetVp?.(vpX, vpY);
+    });
+    
+    nameEl.addEventListener('pointerleave', () => {
+      stopAttentionPulses();
+      portraitParticles?.clearFlowTarget?.();
     });
   }
 

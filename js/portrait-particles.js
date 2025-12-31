@@ -54,6 +54,14 @@ const CONFIG = {
   OUTER_RADIUS: 90,
   PROXIMITY_MARGIN: 80,
 
+  // Canvas padding to prevent visible rectangle edge
+  CANVAS_PAD: 180,
+
+  // Flow target attraction (hover-driven, independent of cursor proximity)
+  FLOW_STRENGTH: 0.12,
+  FLOW_FALLOFF: 0.004,
+  FLOW_RAMP_MS: 200,
+
   PORTRAIT_IDLE_OPACITY: 0.2,
   ACTIVATION_RADIUS: 200,
   ACTIVATION_RAMP_MS: 300,
@@ -136,6 +144,12 @@ class PortraitParticles {
     this.perfRenderMs = new Float32Array(300);
     this.perfFrameCount = 0;
     this.lastPerfLogTime = 0;
+
+    // Flow target for attention system (portrait-local coords)
+    this.flowTargetLocalX = null;
+    this.flowTargetLocalY = null;
+    this.flowLevel = 0;
+    this.targetFlowLevel = 0;
   }
 
   init(wrapperSelector = '.portrait-wrap') {
@@ -173,6 +187,10 @@ class PortraitParticles {
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'portrait-particles-canvas';
     this.canvas.setAttribute('aria-hidden', 'true');
+    
+    // Set CSS variable for padding (used by CSS for positioning)
+    this.wrapper.style.setProperty('--pp-pad', CONFIG.CANVAS_PAD + 'px');
+    
     this.wrapper.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d', { alpha: true });
     this.resize();
@@ -183,12 +201,16 @@ class PortraitParticles {
     this.height = this.img.clientHeight;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    this.bufWidth = Math.round(this.width * this.dpr);
-    this.bufHeight = Math.round(this.height * this.dpr);
+    const pad = CONFIG.CANVAS_PAD;
+    const pad2 = pad * 2;
+
+    // Canvas is larger than wrapper to allow particles to escape without clipping
+    this.bufWidth = Math.round((this.width + pad2) * this.dpr);
+    this.bufHeight = Math.round((this.height + pad2) * this.dpr);
     this.canvas.width = this.bufWidth;
     this.canvas.height = this.bufHeight;
-    this.canvas.style.width = this.width + 'px';
-    this.canvas.style.height = this.height + 'px';
+    this.canvas.style.width = (this.width + pad2) + 'px';
+    this.canvas.style.height = (this.height + pad2) + 'px';
 
     this.imageData = this.ctx.createImageData(this.bufWidth, this.bufHeight);
     this.buf32 = new Uint32Array(this.imageData.data.buffer);
@@ -397,6 +419,15 @@ class PortraitParticles {
       this.activationLevel += Math.sign(activationDelta) * rampSpeed;
     }
 
+    // Flow level ramped independently (not tied to cursor proximity)
+    const flowDelta = this.targetFlowLevel - this.flowLevel;
+    const flowRampSpeed = dt * (1000 / CONFIG.FLOW_RAMP_MS) / 60;
+    if (Math.abs(flowDelta) < flowRampSpeed) {
+      this.flowLevel = this.targetFlowLevel;
+    } else {
+      this.flowLevel += Math.sign(flowDelta) * flowRampSpeed;
+    }
+
     // Portrait opacity updated
     if (this.img) {
       const portraitOpacity = CONFIG.PORTRAIT_IDLE_OPACITY * (1 - this.activationLevel);
@@ -418,6 +449,9 @@ class PortraitParticles {
     const outerRadiusSq = CONFIG.OUTER_RADIUS * CONFIG.OUTER_RADIUS;
     const maxSpeedSq = CONFIG.MAX_SPEED * CONFIG.MAX_SPEED;
     const cursorInside = this.cursorInsideWrapper;
+
+    // Flow target in portrait-local coords
+    const hasFlowTarget = this.flowTargetLocalX !== null && this.flowLevel > 0.01;
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
@@ -459,6 +493,22 @@ class PortraitParticles {
           forceY += ty * CONFIG.TANGENT_SWIRL * strength;
           forceX += this.mouseVelX * CONFIG.VELOCITY_DRAG * strength;
           forceY += this.mouseVelY * CONFIG.VELOCITY_DRAG * strength;
+        }
+      }
+
+      // Flow force: dust particles attracted toward flow target (hover-driven)
+      // Independent of cursor proximity (activationLevel)
+      if (hasFlowTarget && isColoredParticle) {
+        const dx = this.flowTargetLocalX - p.x;
+        const dy = this.flowTargetLocalY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 1) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          // Attraction with distance falloff
+          const strength = CONFIG.FLOW_STRENGTH * this.flowLevel * (1 / (1 + dist * CONFIG.FLOW_FALLOFF));
+          forceX += nx * strength;
+          forceY += ny * strength;
         }
       }
 
@@ -546,6 +596,7 @@ class PortraitParticles {
     const bufWidth = this.bufWidth;
     const bufHeight = this.bufHeight;
     const dpr = this.dpr;
+    const pad = CONFIG.CANVAS_PAD;
 
     buf32.fill(0);
 
@@ -554,8 +605,9 @@ class PortraitParticles {
 
     for (let i = 0; i < len; i++) {
       const p = particles[i];
-      const px = (p.x * dpr + 0.5) | 0;
-      const py = (p.y * dpr + 0.5) | 0;
+      // Offset by pad so particles at (0,0) render at (pad,pad) in buffer
+      const px = ((p.x + pad) * dpr + 0.5) | 0;
+      const py = ((p.y + pad) * dpr + 0.5) | 0;
 
       if (px >= 0 && px < bufWidth && py >= 0 && py < bufHeight) {
         buf32[py * bufWidth + px] = PALETTE_UINT32[p.binIndex];
@@ -567,8 +619,9 @@ class PortraitParticles {
 
   renderFillRect() {
     const ctx = this.ctx;
+    const pad = CONFIG.CANVAS_PAD;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.clearRect(0, 0, this.width, this.height);
+    ctx.clearRect(0, 0, this.width + pad * 2, this.height + pad * 2);
 
     for (let b = 0; b < this.bins.length; b++) {
       const particles = this.bins[b];
@@ -578,11 +631,28 @@ class PortraitParticles {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         const s = p.size;
-        ctx.fillRect(p.x - s * 0.5, p.y - s * 0.5, s, s);
+        // Offset by pad
+        ctx.fillRect(p.x + pad - s * 0.5, p.y + pad - s * 0.5, s, s);
       }
     }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  // Set flow target from viewport coords (hover-driven attention)
+  // Converts to portrait-local coords internally
+  setFlowTargetVp(vpX, vpY) {
+    const rect = this.wrapper.getBoundingClientRect();
+    this.flowTargetLocalX = vpX - rect.left;
+    this.flowTargetLocalY = vpY - rect.top;
+    this.targetFlowLevel = 1;
+  }
+
+  // Clear flow target
+  clearFlowTarget() {
+    this.flowTargetLocalX = null;
+    this.flowTargetLocalY = null;
+    this.targetFlowLevel = 0;
   }
 
   destroy() {

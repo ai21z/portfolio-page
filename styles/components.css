@@ -30,6 +30,8 @@
   z-index: 3;
   opacity: 0.8 !important;
   animation: fadeInPortrait 8.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+  /* Allow canvas to overflow without clipping */
+  overflow: visible;
 }
 
 @keyframes fadeInPortrait {
@@ -69,16 +71,13 @@
   transform: none;
 }
 
-/* Particle canvas overlay - matches image exactly */
+/* Particle canvas overlay - uses CSS variable set by JS for padding */
 .portrait-particles-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
-  /* Use same dimensions as .portrait */
-  width: 380px;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  pointer-events: none; /* let events pass through to window listener */
+  top: calc(-1 * var(--pp-pad, 180px));
+  left: calc(-1 * var(--pp-pad, 180px));
+  /* Canvas size is set by JS (width + pad*2) */
+  pointer-events: none;
   z-index: 2;
 }
 

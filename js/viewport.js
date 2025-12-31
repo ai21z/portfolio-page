@@ -33,6 +33,15 @@ export function toViewport(x, y) {
   return coverMap(x, y);
 }
 
+// Inverse mapping: viewport coords → image/cover space
+export function toImg(vpX, vpY) {
+  if (!COVER.ready || COVER.s <= 0) return [vpX, vpY];
+  return [
+    (vpX - COVER.dx) / COVER.s,
+    (vpY - COVER.dy) / COVER.s
+  ];
+}
+
 export function projectXY(points) {
   return points.map((p) => toViewport(p.x, p.y));
 }

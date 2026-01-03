@@ -28,8 +28,8 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 
 .contact-close {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: max(24px, env(safe-area-inset-top, 24px));
+  right: max(24px, env(safe-area-inset-right, 24px));
   width: 44px;
   height: 44px;
   background: rgba(15,16,20,0.7);
@@ -653,8 +653,8 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   }
 
   .contact-close {
-    top: 12px;
-    right: 12px;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
     width: 44px; /* Maintain 44px minimum touch target */
     height: 44px;
     font-size: 18px;
@@ -805,5 +805,12 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     .notebook-page {
       padding-top: 2rem; /* Reduce top padding since seal is moved */
     }
+  }
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) {
+  .contact-close:hover {
+    transform: none;
   }
 }

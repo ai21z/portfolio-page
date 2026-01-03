@@ -515,13 +515,22 @@
   transition: opacity 400ms ease;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .blog-close {
-    top: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+    width: 44px;
+    height: 44px;
   }
+}
+
+@media (hover: none) {
+  .blog-close:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
   
   .blog-category-header,
   .blog-article-header {

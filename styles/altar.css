@@ -642,7 +642,8 @@ button.ghost:hover {
   display: none !important; /* DISABLED - No radial rays effect */
 }
 
-.altar-close {
+.altar-close,
+.resume-close {
   position: absolute;
   top: 24px;
   right: 24px;
@@ -659,18 +660,37 @@ button.ghost:hover {
   line-height: 1;
   transition: all 150ms ease;
   z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
-.altar-close:hover {
+.altar-close:hover,
+.resume-close:hover {
   background: rgba(15,16,20,0.9);
   border-color: rgba(45,212,175,0.45);
   color: var(--decay-green);
   transform: rotate(90deg);
 }
 
-.altar-close:focus-visible {
+.altar-close:focus-visible,
+.resume-close:focus-visible {
   outline: 2px solid var(--decay-green);
   outline-offset: 4px;
+}
+
+/* Mobile adjustments for altar/resume close buttons */
+@media (max-width: 900px) {
+  .altar-close,
+  .resume-close {
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+  }
+}
+
+@media (hover: none) {
+  .altar-close:hover,
+  .resume-close:hover {
+    transform: none;
+  }
 }
 
 /* Mobile: flow layout (≤900px) */

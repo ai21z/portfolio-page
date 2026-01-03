@@ -1,33 +1,24 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CONTACT FORM — NECROGRAPHIC NOTEBOOK AESTHETIC
-   Aged notebook page with living mycelium network and spiral binding
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ━━━ Contact Section Container ━━━ */
 #contact {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: clamp(24px, 4vw, 64px) clamp(16px, 4vw, 32px);
   position: relative;
   background: rgba(8,9,10,0.85); /* Semi-transparent dark overlay like altar screens */
   z-index: 9; /* Same as altar-screen to allow base background through */
 }
 
-/* Suppress network nav labels when contact is active (but keep sigil visible) */
 body:has(#contact.stage.active-section) .network-node-label {
   pointer-events: none;
   opacity: 0;
   transition: opacity 400ms ease;
 }
 
-/* Hide debug HUD overlay when contact is active */
 body:has(#contact.stage.active-section) #hud-canvas {
   display: none;
 }
 
-/* Hide blog network UI elements when contact is active */
 body:has(#contact.stage.active-section) .dish-labels,
 body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0;
@@ -35,11 +26,10 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   transition: opacity 400ms ease;
 }
 
-/* ━━━ Close Button (matching altar pages) ━━━ */
 .contact-close {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: max(24px, env(safe-area-inset-top, 24px));
+  right: max(24px, env(safe-area-inset-right, 24px));
   width: 44px;
   height: 44px;
   background: rgba(15,16,20,0.7);
@@ -73,14 +63,13 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   outline-offset: 4px;
 }
 
-/* ━━━ Wax Seal (just the sigil image) ━━━ */
 .wax-seal {
   position: absolute;
-  top: 10px;
-  left: 52%;
+  top: clamp(8px, 2vw, 16px);
+  left: 50%;
   transform: translateX(-50%);
-  width: 100px;
-  height: 100px;
+  width: clamp(64px, 12vw, 100px);
+  height: clamp(64px, 12vw, 100px);
   z-index: 4;
   display: flex;
   align-items: center;
@@ -89,19 +78,20 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 }
 
 .seal-sigil {
-  width: 100px;
-  height: 100px;
+  width: clamp(64px, 12vw, 100px);
+  height: clamp(64px, 12vw, 100px);
   transform: rotate(180deg);
   position: relative;
   z-index: 1;
 }
 
-/* ━━━ Notebook Page ━━━ */
 .notebook-page {
   position: relative;
-  max-width: 650px;
-  width: 100%;
-  padding: 5.5rem 2.5rem 1.5rem 4.5rem; /* Extra top padding for seal, reduced bottom, extra left for spiral holes */
+  max-width: 720px;
+  width: min(100%, 720px);
+  padding: clamp(16px, 4vw, 40px);
+  padding-top: clamp(48px, 8vw, 88px); /* Extra top padding for seal */
+  padding-left: clamp(32px, 6vw, 72px); /* Extra left for spiral holes */
   box-shadow: 
     0 10px 40px rgba(0, 0, 0, 0.5),
     inset 0 0 120px rgba(101, 67, 33, 0.3),
@@ -168,26 +158,24 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     );
 }
 
-/* Spiral notebook holes on the left edge */
 .notebook-page::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 30px;
-  width: 20px;
+  left: clamp(12px, 3.5vw, 30px);
+  width: clamp(12px, 3vw, 20px);
   height: 100%;
   background-image: 
     /* Individual holes - circular with inner shadow */
     radial-gradient(circle at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 45%, transparent 50%),
     radial-gradient(circle at center, #0B0B0C 0%, #0B0B0C 40%, transparent 41%);
-  background-size: 20px 20px;
+  background-size: clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px);
   background-position: 0 40px;
   background-repeat: repeat-y;
   pointer-events: none;
   z-index: 3;
 }
 
-/* Additional aging stains and spots */
 .notebook-page::after {
   content: '';
   position: absolute;
@@ -253,7 +241,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   );
 }
 
-/* ━━━ Canvas Overlay (Mycelium Network) ━━━ */
 .notebook-mycelium {
   display: none; /* Disabled - using static CSS coffee stains only */
   position: absolute;
@@ -265,7 +252,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   z-index: 1;
 }
 
-/* ━━━ Form Container ━━━ */
 .notebook-form {
   position: relative;
   z-index: 2;
@@ -316,7 +302,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   overflow: hidden;
 }
 
-/* ━━━ Header ━━━ */
 .notebook-header {
   font-family: 'Special Elite', monospace;
   font-size: 1.8rem;
@@ -338,7 +323,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   line-height: 32px; /* Align with notebook lines */
 }
 
-/* ━━━ Notebook Lines (Decorative Text) ━━━ */
 .notebook-lines {
   font-family: 'Special Elite', monospace;
   font-size: 1rem;
@@ -347,7 +331,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   margin: 0;
 }
 
-/* ━━━ Form Fields ━━━ */
 .notebook-field {
   margin-bottom: 1.2rem;
   position: relative;
@@ -399,7 +382,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   padding-top: 0;
 }
 
-/* ━━━ Character Counter ━━━ */
 .char-counter {
   text-align: right;
   margin-top: 0.25rem;
@@ -411,7 +393,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   color: #8B7D6B;
 }
 
-/* ━━━ Validation Messages ━━━ */
 .validation-msg {
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
@@ -429,7 +410,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   animation: fadeInShake 0.4s ease;
 }
 
-/* ━━━ Submit Button ━━━ */
 .notebook-submit {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
@@ -450,7 +430,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   justify-content: center;
 }
 
-/* Rough rectangle border - like the wrinkled paper edges */
 .notebook-submit::before {
   content: '';
   position: absolute;
@@ -499,7 +478,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0.75;
 }
 
-/* Second layer for depth and roughness */
 .notebook-submit::after {
   content: '';
   position: absolute;
@@ -532,12 +510,51 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 }
 
 .notebook-submit:hover::before {
-  border-color: #1A1510;
-  box-shadow: 
-    2px 0 0 #1A1510,
-    -2px 0 0 #1A1510,
-    0 2px 0 #1A1510,
-    0 -2px 0 #1A1510;
+  border-color: rgba(58, 53, 48, 0.8);
+  opacity: 0.9;
+  animation: submit-wobble-inner 280ms ease-in-out infinite alternate;
+}
+
+.notebook-submit:hover::after {
+  animation: submit-wobble-outer 320ms ease-in-out infinite alternate-reverse;
+}
+
+@keyframes submit-wobble-inner {
+  0%   { 
+    transform: translate(0px, 0px); 
+    border-width: 2px;
+  }
+  33%  { 
+    transform: translate(0.6px, -0.4px); 
+    border-width: 1.8px;
+  }
+  66%  { 
+    transform: translate(-0.4px, 0.5px); 
+    border-width: 2.1px;
+  }
+  100% { 
+    transform: translate(0.3px, 0.3px); 
+    border-width: 1.9px;
+  }
+}
+
+@keyframes submit-wobble-outer {
+  0%   { 
+    transform: translate(0px, 0px); 
+    opacity: 0.45;
+  }
+  33%  { 
+    transform: translate(-0.5px, 0.3px); 
+    opacity: 0.5;
+  }
+  66%  { 
+    transform: translate(0.4px, -0.4px); 
+    opacity: 0.4;
+  }
+  100% { 
+    transform: translate(-0.2px, 0.5px); 
+    opacity: 0.48;
+  }
 }
 
 .notebook-submit:active {
@@ -573,7 +590,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   opacity: 0.6;
 }
 
-/* ━━━ Success Message ━━━ */
 .notebook-success {
   text-align: center;
   padding: 2rem 0;
@@ -585,7 +601,6 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   color: #2A251F;
 }
 
-/* ━━━ Animations ━━━ */
 @keyframes notebookReveal {
   from {
     opacity: 0;
@@ -626,64 +641,176 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   }
 }
 
-/* ━━━ Responsive Design ━━━ */
-@media (max-width: 700px) {
+@media (max-width: 900px) {
   #contact {
-    padding: 2rem 1rem;
+    padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
+    /* Ensure section is scrollable on mobile */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    /* Fix keyboard trap: align to top so content doesn't get pushed off-screen */
+    align-items: flex-start; 
   }
 
   .contact-close {
-    top: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+    width: 44px; /* Maintain 44px minimum touch target */
+    height: 44px;
     font-size: 18px;
   }
 
   .wax-seal {
-    top: 8px;
-    width: 75px;
-    height: 75px;
+    top: 6px;
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
   }
 
   .seal-sigil {
-    width: 75px;
-    height: 75px;
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
   }
 
   .notebook-page {
-    padding: 4.5rem 1.5rem 1.5rem 3.5rem; /* Adjusted top padding for seal, keep left padding for spiral holes */
+    max-width: 100%;
+    width: 100%;
+    /* Mobile-optimized padding: more top space for seal, comfortable sides, left space for spiral */
+    padding: clamp(4rem, 12vw, 5rem) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
+    /* Slightly reduce rotation on mobile for better alignment */
+    transform: rotate(-0.3deg);
   }
 
   .notebook-page::before {
-    left: 20px; /* Adjust hole position for mobile */
+    left: clamp(16px, 5vw, 24px); /* Adjust spiral holes position */
+    width: clamp(10px, 3vw, 16px);
+    background-size: clamp(10px, 3vw, 16px) clamp(10px, 3vw, 16px);
+    background-position: 0 clamp(32px, 8vw, 40px);
   }
 
   .notebook-header {
-    font-size: 1.5rem;
+    font-size: clamp(1.4rem, 5vw, 1.7rem);
+    margin-top: 0;
+    margin-bottom: 0.3rem;
   }
 
   .notebook-subheader {
-    font-size: 0.85rem;
+    font-size: clamp(0.8rem, 3.5vw, 0.9rem);
+    margin-bottom: 1.2rem;
+    line-height: 1.4;
+  }
+
+  .notebook-label {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 0.35rem;
   }
 
   .notebook-input,
   .notebook-textarea {
-    font-size: 0.95rem;
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+    line-height: clamp(28px, 8vw, 32px); /* Slightly tighter line height for mobile */
+    /* Ensure minimum touch-friendly input height */
+    min-height: 44px;
+    padding: 0.5rem 0;
   }
 
-  .notebook-submit {
-    padding: 0.55rem 1.5rem;
-    font-size: 0.8rem;
-    letter-spacing: 1.2px;
+  .notebook-input::placeholder,
+  .notebook-textarea::placeholder {
+    color: rgba(58, 53, 48, 0.85);
+    opacity: 1;
+  }
+
+  .notebook-textarea {
+    min-height: clamp(120px, 30vw, 160px); /* Responsive textarea height */
+    line-height: clamp(28px, 8vw, 32px);
+  }
+
+  .char-counter {
+    margin-top: 0.5rem;
+  }
+
+  .char-count {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+  }
+
+  .validation-msg {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+    margin-top: 0.35rem;
   }
 
   .form-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 1.2rem;
+    margin-top: 1.2rem;
   }
 
   .turnstile-field {
     width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .notebook-submit {
+    /* Ensure minimum 44px touch target height */
+    min-height: 44px;
+    padding: 0.7rem 1.8rem;
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    letter-spacing: clamp(1px, 0.3vw, 1.5px);
+    width: 100%; /* Full width button on mobile */
+    /* Larger touch area for mobile */
+    touch-action: manipulation;
+  }
+
+  .notebook-submit::before {
+    top: -3px;
+    left: -4px;
+    right: -4px;
+    bottom: -3px;
+  }
+
+  .notebook-submit::after {
+    top: -4px;
+    left: -5px;
+    right: -5px;
+    bottom: -4px;
+  }
+
+  .notebook-spinner {
+    width: 14px;
+    height: 14px;
+    margin-left: 0.6rem;
+  }
+
+  .form-status {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 1rem;
+    min-height: 1rem;
+  }
+
+  @media (max-height: 600px) {
+    .wax-seal {
+      left: auto;
+      right: 20px;
+      top: 10px;
+      width: 40px;
+      height: 40px;
+      transform: none;
+    }
+    
+    .seal-sigil {
+      width: 40px;
+      height: 40px;
+    }
+
+    .notebook-page {
+      padding-top: 2rem; /* Reduce top padding since seal is moved */
+    }
+  }
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) {
+  .contact-close:hover {
+    transform: none;
   }
 }

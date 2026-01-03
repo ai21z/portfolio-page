@@ -1,12 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CANVAS & VISUAL EFFECTS
-   - Background layers (#bg)
-   - Canvas overlays (spores, reveal, signals)
-   - Cursor ring (breathing effect)
-   - Paper backdrop
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ━━━ Static Background - Single Layer Truth ━━━ */
+/* Static Background */
 #bg {
   position: fixed;
   inset: 0;
@@ -27,12 +19,10 @@
   z-index: 1;
 }
 
-/* Kill old layered backgrounds if present */
 #bg-deep, #bg-mid, #bg-front {
   display: none !important;
 }
 
-/* ━━━ Canvas Layers: Spores (animated) + Reveal (on-demand) ━━━ */
 #spore-canvas, #reveal-canvas{
   position:fixed;
   top:0; left:0;
@@ -42,7 +32,6 @@
 #spore-canvas{ z-index:3; }
 #reveal-canvas{ z-index:4; }
 
-/* ━━━ Signals Canvas (lightning pulses + spores) ━━━ */
 .signals-canvas{
   position: fixed;
   top: 0;
@@ -55,9 +44,7 @@
   mix-blend-mode: screen;
 }
 
-/* ━━━ Lower compositing pressure while reading; restores sharper text ━━━ */
-/* While content is open, reduce effects that kill subpixel AA (Chrome).
-   See: web.dev/antialiasing-101 and CSSWG note on will-change */
+/* Reduce effects for sharper text when content open */
 body.has-paper-open-global #bg-front-img {
   mix-blend-mode: normal !important;
   opacity: 0.25 !important;
@@ -68,7 +55,6 @@ body.has-paper-open-global .signals-canvas {
   opacity: 0.35 !important;
 }
 
-/* ━━━ Global Backdrop for Paper Focus ━━━ */
 .paper-backdrop{
   position: fixed;
   inset: 0;
@@ -84,7 +70,6 @@ body.has-paper-open-global .signals-canvas {
   pointer-events: auto;
 }
 
-/* ━━━ Breathing Cursor Ring ━━━ */
 .cursor-ring{
   position: fixed;
   width: 20px;
@@ -116,20 +101,18 @@ body.has-paper-open-global .signals-canvas {
   }
 }
 
-/* ━━━ Ambient Photographic Fungus (base layer) ━━━ */
 .fungi-ambient{
   position:absolute; inset:0;
   background:
-    radial-gradient(ellipse 100vw 100vh at 75% 25%, rgba(63,255,159,.025), transparent 55%),
-    radial-gradient(ellipse 120vw 100vh at 25% 75%, rgba(122,174,138,.02), transparent 60%),
-    radial-gradient(ellipse 80vw 80vh at 50% 50%, rgba(74, 92, 82,.015), transparent 65%);
+    radial-gradient(ellipse 100vw 100dvh at 75% 25%, rgba(63,255,159,.025), transparent 55%),
+    radial-gradient(ellipse 120vw 100dvh at 25% 75%, rgba(122,174,138,.02), transparent 60%),
+    radial-gradient(ellipse 80vw 80dvh at 50% 50%, rgba(74, 92, 82,.015), transparent 65%);
   opacity:.95;
   pointer-events:none;
   z-index:0;
   mix-blend-mode:screen;
 }
 
-/* Optional: Add subtle texture if fungi image exists */
 .fungi-ambient::after{
   content:'';
   position:absolute;
@@ -140,7 +123,6 @@ body.has-paper-open-global .signals-canvas {
   mix-blend-mode:multiply;
 }
 
-/* ━━━ Glitch Effect (Subtle, purposeful) ━━━ */
 .glitch-text{
   position:relative;
 }
@@ -177,16 +159,4 @@ body.has-paper-open-global .signals-canvas {
   60%{ clip:rect(72px, 9999px, 44px, 0); }
   80%{ clip:rect(23px, 9999px, 37px, 0); }
   100%{ clip:rect(49px, 9999px, 79px, 0); }
-}
-
-/* ━━━ Ambient Photographic Fungus (base layer) ━━━ */
-.fungi-ambient {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(ellipse 120% 100% at 5% 30%, rgba(45,212,175,0.03), transparent 50%),
-    radial-gradient(ellipse 100% 120% at 95% 70%, rgba(255,122,51,0.025), transparent 50%);
-  opacity: 0.5;
-  pointer-events: none;
 }

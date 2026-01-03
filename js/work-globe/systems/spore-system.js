@@ -1,8 +1,3 @@
-/**
- * SporeSystem - Particle system for spore bursts and orbital particles
- * Handles lightning-triggered emissions and orbital particle injection
- */
-
 export class SporeSystem {
   constructor(gl, maxParticles = 10000) {
     this.gl = gl;
@@ -12,7 +7,6 @@ export class SporeSystem {
     this.lastLightningIntensity = 0;
     this.emissionCooldown = 0;
     
-    // Initialize particle pool
     for (let i = 0; i < maxParticles; i++) {
       this.particles.push({
         position: [0, 0, 0],
@@ -24,33 +18,29 @@ export class SporeSystem {
       });
     }
     
-    // Create buffers
     this.positionBuffer = gl.createBuffer();
     this.velocityBuffer = gl.createBuffer();
     this.lifeBuffer = gl.createBuffer();
     this.sizeBuffer = gl.createBuffer();
     this.phaseBuffer = gl.createBuffer();
-    this.colorBuffer = gl.createBuffer(); // Per-particle color
+    this.colorBuffer = gl.createBuffer();
     
-    // Pre-allocate typed arrays
     this.positionData = new Float32Array(maxParticles * 3);
     this.velocityData = new Float32Array(maxParticles * 3);
     this.lifeData = new Float32Array(maxParticles);
     this.sizeData = new Float32Array(maxParticles);
     this.phaseData = new Float32Array(maxParticles);
-    this.colorData = new Float32Array(maxParticles * 3); // RGB per particle
+    this.colorData = new Float32Array(maxParticles * 3);
     
-    // Create VAO
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     
-    // Setup attributes
     this.setupAttribute(this.positionBuffer, 0, 3, this.positionData);
     this.setupAttribute(this.velocityBuffer, 1, 3, this.velocityData);
     this.setupAttribute(this.lifeBuffer, 2, 1, this.lifeData);
     this.setupAttribute(this.sizeBuffer, 3, 1, this.sizeData);
     this.setupAttribute(this.phaseBuffer, 4, 1, this.phaseData);
-    this.setupAttribute(this.colorBuffer, 5, 3, this.colorData); // Color attribute
+    this.setupAttribute(this.colorBuffer, 5, 3, this.colorData);
     
     gl.bindVertexArray(null);
   }
@@ -74,7 +64,6 @@ export class SporeSystem {
       const radius = Math.sqrt(origin[0]**2 + origin[1]**2 + origin[2]**2);
       const normal = [origin[0]/radius, origin[1]/radius, origin[2]/radius];
       
-      // Tiny particles with surface-biased spread
       for (let i = 0; i < tinyParticles; i++) {
         const particle = this.getInactiveParticle();
         if (!particle) break;
@@ -82,14 +71,12 @@ export class SporeSystem {
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.random() * Math.PI;
         
-        // Create random direction
         let dir = [
           Math.sin(phi) * Math.cos(theta),
           Math.sin(phi) * Math.sin(theta),
           Math.cos(phi)
         ];
         
-        // Project to surface tangent (remove 70% radial component)
         const radialComponent = dir[0]*normal[0] + dir[1]*normal[1] + dir[2]*normal[2];
         dir[0] -= normal[0] * radialComponent * 0.7;
         dir[1] -= normal[1] * radialComponent * 0.7;
@@ -113,13 +100,12 @@ export class SporeSystem {
         ];
         particle.velocity = dir;
         particle.life = 1.0;
-        particle.size = 0.03 + Math.random() * 0.06; // Super tiny (0.03-0.09)
+        particle.size = 0.03 + Math.random() * 0.06;
         particle.active = true;
         
         emitted.push(particle);
       }
       
-      // Regular particles
       for (let i = 0; i < regularParticles; i++) {
         const particle = this.getInactiveParticle();
         if (!particle) break;
@@ -139,7 +125,7 @@ export class SporeSystem {
         dir[2] -= normal[2] * radialComponent * 0.7;
         
         const len = Math.sqrt(dir[0]**2 + dir[1]**2 + dir[2]**2);
-        const speed = 0.5 + Math.random() * 0.7; // 0.5-1.2
+        const speed = 0.5 + Math.random() * 0.7;
         dir[0] = (dir[0]/len) * speed;
         dir[1] = (dir[1]/len) * speed;
         dir[2] = (dir[2]/len) * speed;
@@ -173,7 +159,6 @@ export class SporeSystem {
   
   update(dt, lightningIntensity = 0) {
     if (lightningIntensity > 0.7 && this.lastLightningIntensity < 0.5) {
-      // Get mycelium branch tip positions (sample from actual geometry)
       const tipPositions = this.getMyceliumTips();
       if (tipPositions.length > 0) {
         this.emitBurst(tipPositions, lightningIntensity);
@@ -181,14 +166,12 @@ export class SporeSystem {
     }
     this.lastLightningIntensity = lightningIntensity;
     
-    // Update cooldown
     if (this.emissionCooldown > 0) {
       this.emissionCooldown -= dt;
     }
     
-    // Update physics for all particles
     this.activeParticles = 0;
-    this.orbitalInjectionPoint = 0; // Mark where burst particles end
+    this.orbitalInjectionPoint = 0;
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       if (!p.active) continue;
@@ -199,10 +182,7 @@ export class SporeSystem {
         continue;
       }
       
-      // Three-phase motion: expansion, peak spread, gravity fall
-      
       if (p.life > 0.7) {
-        // Expansion phase: Light drag, particles still moving fast
         const drag = 0.96;
         p.velocity[0] *= drag;
         p.velocity[1] *= drag;
@@ -238,7 +218,6 @@ export class SporeSystem {
       this.sizeData[this.activeParticles] = p.size;
       this.phaseData[this.activeParticles] = p.phase;
       
-      // Default color (0,0,0) means use uniform color
       this.colorData[idx] = 0;
       this.colorData[idx + 1] = 0;
       this.colorData[idx + 2] = 0;
@@ -246,12 +225,10 @@ export class SporeSystem {
       this.activeParticles++;
     }
     
-    // Mark end of burst particles (orbitals will be injected after)
     this.orbitalInjectionPoint = this.activeParticles;
   }
   
   injectOrbitalParticles(orbitals) {
-    // Add orbital particles after burst particles
     orbitals.forEach(orbital => {
       if (this.activeParticles >= this.maxParticles) return;
       
@@ -265,10 +242,9 @@ export class SporeSystem {
       this.velocityData[idx + 2] = 0;
       
       this.lifeData[this.activeParticles] = orbital.life;
-      this.sizeData[this.activeParticles] = orbital.size * 8.0; // MUCH MUCH bigger than regular spores
+      this.sizeData[this.activeParticles] = orbital.size * 8.0;
       this.phaseData[this.activeParticles] = orbital.phase;
       
-      // Use pin color for orbital particles
       this.colorData[idx] = orbital.color[0];
       this.colorData[idx + 1] = orbital.color[1];
       this.colorData[idx + 2] = orbital.color[2];
@@ -276,7 +252,6 @@ export class SporeSystem {
       this.activeParticles++;
     });
     
-    // Update GPU buffers after orbital injection
     if (this.activeParticles > 0) {
       this.updateBuffers();
     }
@@ -305,16 +280,13 @@ export class SporeSystem {
   }
   
   getMyceliumTips() {
-    // Sample random positions from mycelium branches
-    // In real implementation, we'd track actual branch endpoints
     const tips = [];
-    const numTips = 3 + Math.floor(Math.random() * 5); // 3-7 emission points
+    const numTips = 3 + Math.floor(Math.random() * 5);
     
     for (let i = 0; i < numTips; i++) {
-      // Random positions on sphere surface (will be replaced with actual branch tips)
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
-      const r = 1.02; // Slightly above globe surface
+      const r = 1.02;
       
       tips.push([
         r * Math.cos(phi) * Math.cos(theta),

@@ -1,14 +1,4 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RITUAL-BIOGRAPH ALTAR SYSTEM
-   Full-screen circular altar for About/Projects/Blog ritual mode
-   - Altar screen & ring
-   - Core sigil
-   - Necro-slabs (paper cards)
-   - Paper focus mode
-   - Navigation suppression in panel mode
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Full-screen altar canvas (no scroll) */
+/* Full-screen altar canvas */
 .altar-screen {
   position: fixed;
   inset: 0;
@@ -26,16 +16,14 @@
 /* The circular altar */
 .altar {
   position: relative;
-  width: min(92vh, 88vw);
+  width: min(92dvh, 88vw);
   aspect-ratio: 1/1;
 }
 
-/* Rotating scan-sweep - DISABLED for performance */
 .altar::after {
   display: none;
 }
 
-/* Ring SVG */
 .ring {
   position: absolute;
   inset: 0;
@@ -78,7 +66,6 @@
   filter: drop-shadow(0 0 2px rgba(255,122,51,0.9));
 }
 
-/* Core sigil (no portrait - pure geometric) */
 .core {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -86,7 +73,7 @@
 }
 
 .core-plate {
-  width: 28vh;
+  width: 28dvh;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -103,7 +90,6 @@
   overflow: hidden;
 }
 
-/* Hide portrait images */
 .core-plate img {
   display: none;
 }
@@ -119,7 +105,7 @@
   filter: blur(0.6px) contrast(120%);
 }
 
-/* Necro-slabs (aged notebook paper style) */
+/* Aged notebook paper cards */
 .slab {
   position: absolute;
   width: 36%;
@@ -261,7 +247,6 @@
   will-change: transform;
 }
 
-/* Spiral notebook holes on the left edge */
 .slab::before {
   content: '';
   position: absolute;
@@ -280,7 +265,6 @@
   z-index: 3;
 }
 
-/* Coffee stains overlay for each slab */
 .slab::after {
   content: '';
   position: absolute;
@@ -328,7 +312,6 @@
   );
 }
 
-/* Disable hover effects on non-open papers when one is magnified */
 .slab:hover:not(.paper-open) {
   transform: var(--base-transform) scale(1.02);
   box-shadow: 
@@ -337,7 +320,6 @@
     inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.25);
 }
 
-/* Completely disable hover effects on background papers when any paper is open */
 .has-paper-open-global .slab:hover:not(.paper-open) {
   transform: var(--base-transform);
   box-shadow: 
@@ -409,7 +391,6 @@
   border-bottom-color: #654321;
 }
 
-/* Place the slabs around the ring */
 .slab-about {
   left: 2%;
   top: 8%;
@@ -422,21 +403,18 @@
   --rot: 3deg;
 }
 
-/* Bottom paper: same width/shape as others, but centered; set base translate via CSS var */
 .slab-vitals {
   left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
-/* Art's paramour - positioned on the right side */
 .slab-paramour {
   right: 2%;
   bottom: 8%;
   --rot: 2deg;
 }
 
-/* Skills section slab positioning */
 .slab-systems {
   left: 2%;
   top: 8%;
@@ -455,14 +433,12 @@
   --rot: 3deg;
 }
 
-/* The rest of my life - positioned on the left side */
 .slab-restoflife {
   left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
-/* Tech stack list styling - notebook aesthetic */
 .tech-stack {
   list-style: none;
   padding: 0;
@@ -478,25 +454,64 @@
   z-index: 1;
 }
 
+/* Pencil sketch style tags */
 .tech-stack li {
+  position: relative;
   display: inline-block;
-  --tech-pad-v: 4px;
-  --tech-pad-h: 10px;
+  --tech-pad-v: 3px;
+  --tech-pad-h: 7px;
   padding: calc(var(--tech-pad-v) * var(--k)) calc(var(--tech-pad-h) * var(--k));
-  background: rgba(101, 67, 33, 0.15);
+  
+  /* Pencil ink color - no background fill */
+  background: transparent;
+  color: #3a342e;
+  
+  /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;
-  border: calc(var(--tech-border) * var(--k)) solid rgba(101, 67, 33, 0.3);
-  --tech-radius: 3px;
-  border-radius: calc(var(--tech-radius) * var(--k));
-  color: #2A251F;
+  border: calc(var(--tech-border) * var(--k)) solid rgba(60, 48, 38, 0.85);
+  border-radius: 0;
+  
   font-weight: 400;
-  transition: all 100ms ease;
+  letter-spacing: 0.03em;
+  
+  /* Slightly crooked box to kill the "UI" feeling */
+  transform: translateY(0.5px) rotate(-0.4deg) skewX(0.4deg);
+  transition: transform 100ms ease, border-color 100ms ease;
+}
+
+.tech-stack li::before {
+  content: '';
+  position: absolute;
+  inset: -2px -3px;
+  border: 1px solid rgba(60, 48, 38, 0.45);
+  pointer-events: none;
+  
+  /* Static "tremble" effect */
+  transform: translate(1.2px, 0.8px) rotate(0.9deg) skewX(-0.6deg);
+}
+
+.tech-stack li::after {
+  content: '';
+  position: absolute;
+  inset: 1px 2px;
+  border-radius: 0;
+  border: 1px dashed rgba(60, 48, 38, 0.18);
+  pointer-events: none;
 }
 
 .tech-stack li:hover {
-  background: rgba(101, 67, 33, 0.25);
-  border-color: rgba(101, 67, 33, 0.5);
-  transform: translateY(calc(-1px * var(--k)));
+  border-color: rgba(60, 48, 38, 1);
+  transform: translateY(-1px) rotate(0deg) skewX(0deg);
+}
+
+.tech-stack li:hover::before {
+  animation: pencil-wobble-altar 260ms ease-in-out infinite alternate;
+}
+
+@keyframes pencil-wobble-altar {
+  0%   { transform: translate(1.1px, 1.2px) rotate(0.6deg) skewX(-0.5deg); }
+  50%  { transform: translate(0.6px, 1.6px) rotate(1.2deg) skewX(-0.2deg); }
+  100% { transform: translate(1.3px, 0.9px) rotate(0.1deg) skewX(-0.7deg); }
 }
 
 button.ghost {
@@ -525,12 +540,6 @@ button.ghost:hover {
   color: #1A1510;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   OLD PAPER STYLE - DISABLED (using notebook aesthetic in .slab now)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-/* .altar-screen .paper styles moved to .slab with notebook aesthetic */
-
-/* Crisp text rendering for all slabs */
 .slab,
 .slab *{
   -webkit-font-smoothing: antialiased;
@@ -539,12 +548,7 @@ button.ghost:hover {
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PAPER INTERACTION SYSTEM (kept for click/hover behavior)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* ── Focused reading mode (zoom paper to center + dim rest) ── */
-/* Global backdrop (full viewport, unaffected by transformed ancestors) */
+/* Focused reading mode */
 .paper-backdrop{
   position: fixed; inset: 0; z-index: 8;
   background: rgba(6,8,10,0.88);
@@ -554,8 +558,7 @@ button.ghost:hover {
   opacity: 1; pointer-events: auto;
 }
 
-/* Open state: we freeze the element's pixel box and use transform only.
-   This keeps text/layout 1:1 and centers perfectly. */
+/* Paper open state - JS injects positioning */
 .paper.paper-open{
   position: fixed; z-index: 50;
   /* left/top/width/height are injected by JS to match on-wall pixels */
@@ -572,18 +575,13 @@ button.ghost:hover {
   backface-visibility: hidden;
 }
 
-/*
- * [AA-FIX] After animation settles: Keep scale() BUT remove compositor hints
- * This keeps the visual shape perfect while allowing text to re-raster with better AA.
- * The key is removing will-change and backface-visibility after settle.
- */
+/* Settled state - remove compositor hints for better AA */
 .paper.paper-open.paper-open--settled {
   /* Keep the transform exactly as-is (includes scale) */
   will-change: auto !important;
   backface-visibility: visible !important;
 }
 
-/* Prevent hover from nudging the enlarged paper */
 .paper.paper-open:hover{
   transform: translate(var(--open-tx,0), var(--open-ty,0))
              scale(var(--open-scale,1))
@@ -591,12 +589,6 @@ button.ghost:hover {
   box-shadow: 0 calc(25px * var(--k)) calc(70px * var(--k)) rgba(0, 0, 0, 0.8);
 }
 
-/* [DISABLED] This was causing glitching when hovering over opened cards */
-/* .paper.paper-open.paper-open--settled:hover {
-  transform: translate(-50%, -50%) !important;
-} */
-
-/* Tiny breathing ring around your glowing dot when a paper is hoverable */
 .cursor-ring{
   position: fixed;
   width: 20px;
@@ -616,7 +608,7 @@ button.ghost:hover {
   /* Removed breathing animation for performance */
 }
 
-/* While a paper is open, subtly mute the altar visuals behind - USE OPACITY INSTEAD OF FILTER */
+/* Dim background visuals when paper is open */
 .altar-screen.has-paper-open .ring,
 .altar-screen.has-paper-open .core,
 .altar-screen.has-paper-open .slab:not(.paper-open){
@@ -627,36 +619,31 @@ button.ghost:hover {
   will-change: opacity;
 }
 
-/* Keyboard focus ring on papers */
 .altar-screen .paper:focus-visible{
   outline: 2px dashed rgba(57,39,20,.8); outline-offset: 2px;
 }
 
-/* ───────────────── PANEL MODE: suppress background nav ───────────────── */
-/* When any nav page is open, add .nav-suppressed on <body> (see JS below) */
-/* Hide nav labels but keep mycelium background visible */
+/* Suppress background nav when sections open */
 .nav-suppressed .network-node-label,
 .nav-suppressed [data-nav] {
   display: none !important;
 }
-/* Kill clicks into the background network completely */
 .nav-suppressed #network-nav {
   pointer-events: none !important;
 }
 
-/* Keep background image visible in panel mode */
 .nav-suppressed #bg-front-img {
   opacity: 0.35 !important; /* Slightly dimmed but visible */
   filter: contrast(1.15) brightness(0.7);
 }
 
-/* Signals overlay sits above the network, below panels */
+/* Disabled radial rays effect */
 .signals-canvas{
   display: none !important; /* DISABLED - No radial rays effect */
 }
 
-/* Close/Back button (top-right corner) */
-.altar-close {
+.altar-close,
+.resume-close {
   position: absolute;
   top: 24px;
   right: 24px;
@@ -673,52 +660,187 @@ button.ghost:hover {
   line-height: 1;
   transition: all 150ms ease;
   z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
-.altar-close:hover {
+.altar-close:hover,
+.resume-close:hover {
   background: rgba(15,16,20,0.9);
   border-color: rgba(45,212,175,0.45);
   color: var(--decay-green);
   transform: rotate(90deg);
 }
 
-.altar-close:focus-visible {
+.altar-close:focus-visible,
+.resume-close:focus-visible {
   outline: 2px solid var(--decay-green);
   outline-offset: 4px;
 }
 
-/* Removed slow entrance animations for instant display */
-
-/* Responsive scaling (altar scales down instead of reflowing) */
-@media (max-width: 1100px) {
-  .altar {
-    transform: scale(0.92);
-    transform-origin: center;
+/* Mobile adjustments for altar/resume close buttons */
+@media (max-width: 900px) {
+  .altar-close,
+  .resume-close {
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
   }
 }
 
-@media (max-width: 860px) {
-  .altar {
-    transform: scale(0.82);
-  }
-  .slab {
-    font-size: 12px;
+@media (hover: none) {
+  .altar-close:hover,
+  .resume-close:hover {
+    transform: none;
   }
 }
 
-@media (max-width: 680px) {
-  .altar {
-    transform: scale(0.74);
+/* Mobile: flow layout (≤900px) */
+@media (max-width: 900px) {
+
+  #about .ring,
+  #about .core {
+    display: none !important;
+  }
+
+  #about .altar {
+    --gutter: min(0, 16px);
+    padding-inline: var(--gutter);
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+    padding-top: 6rem;
+    display: block !important;
+  }
+
+  #about .slab.paper {
+    position: static !important;
+    inset: auto !important;
+
+    /* key fix: subtract L/R padding + a tiny bleed for the rotation */
+    --tilt-bleed: 8px;
+    /* room for the angled corners */
+    width: calc(100vw - (var(--gutter) * 2) - var(--tilt-bleed)) !important;
+    max-width: 540px !important;
+    /* “fit-to-content” ceiling */
+    margin: 0 auto 30px !important;
+    /* your 30px gap */
+
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+
+    transform: rotate(var(--rot, -1.5deg)) translateZ(0) !important;
+    transform-origin: center !important;
+    will-change: auto !important;
+  }
+
+  #about .slab.paper:last-child {
+    margin-bottom: max(40px, 10vh) !important;
+  }
+
+  #about.stage {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    /* iOS smooth scroll */
+    touch-action: pan-y;
+    /* don’t hijack vertical scroll */
+  }
+
+  #about .slab.paper {
+    cursor: default !important;
+    /* Layering: default to z-index 1, smooth filter transitions */
+    z-index: 1;
+    filter: none;
+    transition: filter 160ms ease;
+  }
+
+  #about .slab.paper:focus,
+  #about .slab.paper:focus-visible {
+    outline: none !important;
+  }
+
+  #about .altar.has-front .slab.paper:not(.is-front) {
+    filter: blur(2.2px) brightness(.95) !important;
+  }
+
+  #about .slab.paper.is-front {
+    filter: none !important;
+    z-index: 10 !important;
+    transform: rotate(var(--rot, -1.5deg)) translateZ(0) scale(1.02) !important;
+  }
+
+  #skills .ring,
+  #skills .core {
+    display: none !important;
+  }
+
+  #skills .altar {
+    --gutter: min(0, 16px);
+    padding-inline: var(--gutter);
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+    padding-top: 6rem;
+    display: block !important;
+  }
+
+  #skills .slab.paper {
+    position: static !important;
+    inset: auto !important;
+
+    /* key fix: subtract L/R padding + a tiny bleed for the rotation */
+    --tilt-bleed: 8px;
+    /* room for the angled corners */
+    width: calc(100vw - (var(--gutter) * 2) - var(--tilt-bleed)) !important;
+    max-width: 540px !important;
+    /* "fit-to-content" ceiling */
+    margin: 0 auto 30px !important;
+    /* your 30px gap */
+
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+
+    transform: rotate(var(--rot, -1.5deg)) translateZ(0) !important;
+    transform-origin: center !important;
+    will-change: auto !important;
+  }
+
+  #skills .slab.paper:last-child {
+    margin-bottom: max(40px, 10vh) !important;
+  }
+
+  #skills.stage {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    /* iOS smooth scroll */
+    touch-action: pan-y;
+    /* don't hijack vertical scroll */
+  }
+
+  #skills .slab.paper {
+    cursor: default !important;
+    /* Layering: default to z-index 1, smooth filter transitions */
+    z-index: 1;
+    filter: none;
+    transition: filter 160ms ease;
+  }
+
+  #skills .slab.paper:focus,
+  #skills .slab.paper:focus-visible {
+    outline: none !important;
+  }
+
+  #skills .altar.has-front .slab.paper:not(.is-front) {
+    filter: blur(2.2px) brightness(.95) !important;
+  }
+
+  #skills .slab.paper.is-front {
+    filter: none !important;
+    z-index: 10 !important;
+    transform: rotate(var(--rot, -1.5deg)) translateZ(0) scale(1.02) !important;
   }
 }
 
-@media (max-width: 520px) {
-  .altar {
-    transform: scale(0.66);
-  }
-}
-
-/* Prefers reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .altar-screen {
     animation: none;

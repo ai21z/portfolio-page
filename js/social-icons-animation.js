@@ -1,7 +1,4 @@
-/**
- * Social Icons WebGL Animation
- * Adds subtle, randomized floating motion to each icon sphere
- */
+// Social icons floating animation
 
 class SocialIconsAnimation {
   constructor() {
@@ -18,7 +15,6 @@ class SocialIconsAnimation {
   }
 
   init() {
-    // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.setup());
     } else {
@@ -34,30 +30,24 @@ class SocialIconsAnimation {
       return;
     }
 
-    // Create animation data for each icon (excluding split bubble)
     iconElements.forEach((element, index) => {
       this.icons.push({
         element,
-        // Random phase offsets for unique motion
         phaseX: Math.random() * Math.PI * 2,
         phaseY: Math.random() * Math.PI * 2,
         phaseRotate: Math.random() * Math.PI * 2,
         phaseScale: Math.random() * Math.PI * 2,
-        // Random frequencies for varied motion
-        frequencyX: 0.3 + Math.random() * 0.4, // 0.3-0.7
-        frequencyY: 0.4 + Math.random() * 0.5, // 0.4-0.9
-        frequencyRotate: 0.2 + Math.random() * 0.3, // 0.2-0.5
-        frequencyScale: 0.5 + Math.random() * 0.4, // 0.5-0.9
-        // Random amplitudes for subtle motion
-        amplitudeX: 6 + Math.random() * 4, // 6-10px
-        amplitudeY: 6 + Math.random() * 4, // 6-10px
-        amplitudeRotate: 2 + Math.random() * 3, // 2-5 degrees
-        amplitudeScale: 0.02 + Math.random() * 0.04, // 0.02-0.06 scale
-        // Store original position for hover detection
+        frequencyX: 0.3 + Math.random() * 0.4,
+        frequencyY: 0.4 + Math.random() * 0.5,
+        frequencyRotate: 0.2 + Math.random() * 0.3,
+        frequencyScale: 0.5 + Math.random() * 0.4,
+        amplitudeX: 6 + Math.random() * 4,
+        amplitudeY: 6 + Math.random() * 4,
+        amplitudeRotate: 2 + Math.random() * 3,
+        amplitudeScale: 0.02 + Math.random() * 0.04,
         isHovered: false
       });
 
-      // Add hover listeners
       element.addEventListener('mouseenter', () => {
         this.icons[index].isHovered = true;
       });
@@ -67,7 +57,6 @@ class SocialIconsAnimation {
       });
     });
 
-    // Handle split bubble interactions separately
     this.setupSplitBubble();
 
     this.start();
@@ -160,7 +149,7 @@ class SocialIconsAnimation {
   animate() {
     if (!this.isActive) return;
 
-    this.time += 0.016; // ~60fps
+    this.time += 0.016;
 
     this.icons.forEach(icon => {
       const {
@@ -171,16 +160,13 @@ class SocialIconsAnimation {
         isHovered
       } = icon;
 
-      // Calculate subtle movements using sine waves with different phases
       const translateX = Math.sin(this.time * frequencyX + phaseX) * amplitudeX;
       const translateY = Math.sin(this.time * frequencyY + phaseY) * amplitudeY;
       const rotate = Math.sin(this.time * frequencyRotate + phaseRotate) * amplitudeRotate;
       const scale = 1 + Math.sin(this.time * frequencyScale + phaseScale) * amplitudeScale;
 
-      // Reduce motion when hovered for better UX
       const hoverDamping = isHovered ? 0.3 : 1;
 
-      // Apply transform
       element.style.transform = `
         translate(${translateX * hoverDamping}px, ${translateY * hoverDamping}px)
         rotate(${rotate * hoverDamping}deg)

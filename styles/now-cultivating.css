@@ -6,8 +6,7 @@
  * Step 2: Flippable cards (deferred)
  */
 
-/* ━━━ Stage Container ━━━ */
-
+/* Stage container */
 .now-stage {
   position: fixed;
   inset: 0;
@@ -33,40 +32,40 @@
   pointer-events: auto;
 }
 
-/* ━━━ Close Button ━━━ */
-
+/* Close button */
 .now-close {
   position: fixed;
   top: 24px;
   right: 24px;
   z-index: 100;
-  width: 48px;
-  height: 48px;
-  background: rgba(11, 11, 12, 0.7);
-  border: 1px solid rgba(45, 212, 175, 0.3);
+  width: 44px;
+  height: 44px;
+  background: rgba(15, 16, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
-  color: rgba(45, 212, 175, 0.9);
-  font-size: 28px;
+  display: grid;
+  place-items: center;
+  color: rgba(232, 232, 234, 0.7);
+  font-size: 20px;
   line-height: 1;
   cursor: var(--cursor-spore, pointer);
-  transition: all 180ms ease;
+  transition: all 150ms ease;
   backdrop-filter: blur(8px);
 }
 
 .now-close:hover {
-  background: rgba(11, 11, 12, 0.9);
-  border-color: rgba(45, 212, 175, 0.7);
-  transform: scale(1.08);
-  box-shadow: 0 0 20px rgba(45, 212, 175, 0.4);
+  background: rgba(15, 16, 20, 0.9);
+  border-color: rgba(45, 212, 175, 0.45);
+  color: var(--decay-green);
+  transform: rotate(90deg);
 }
 
 .now-close:focus-visible {
-  outline: 2px dashed rgba(45, 212, 175, 0.8);
+  outline: 2px solid var(--decay-green);
   outline-offset: 4px;
 }
 
-/* ━━━ Hero Header ━━━ */
-
+/* Hero header */
 .now-header {
   text-align: center;
   margin-bottom: 20px;
@@ -117,38 +116,7 @@
   }
 }
 
-/* ━━━ Card Chamber ━━━ */
-
-.now-chamber {
-  position: relative;
-  width: 90vw;
-  max-width: 1200px;
-  height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 15;
-}
-
-.now-card-constellation {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Placeholder for future cards */
-.now-card-constellation::after {
-  content: 'Cards coming in Step 2...';
-  font-size: 14px;
-  color: rgba(230, 227, 216, 0.3);
-  font-style: italic;
-}
-
-/* ━━━ Atmospheric Fog (reuse from projects-wheel) ━━━ */
-
+/* Atmospheric fog */
 .now-fog-layers {
   position: absolute;
   inset: 0;
@@ -183,8 +151,7 @@
   50% { transform: translateX(2%) translateY(-3%); }
 }
 
-/* ━━━ Reduced Motion ━━━ */
-
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .now-header {
     animation: none;
@@ -200,34 +167,43 @@
   }
 }
 
-/* ━━━ Responsive ━━━ */
-
-@media (max-width: 768px) {
+/* Responsive */
+@media (max-width: 900px) {
   .now-stage {
-    padding-top: 60px;
+    padding-top: clamp(70px, 15vw, 90px);
+    /* Enable smooth scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
   
   .now-header {
-    margin-bottom: 30px;
+    margin-bottom: clamp(24px, 6vw, 36px);
+    padding: 0 clamp(16px, 4vw, 20px);
   }
   
   .now-title {
-    font-size: clamp(28px, 6vw, 36px);
+    font-size: clamp(26px, 7vw, 36px);
+    margin-bottom: clamp(8px, 2vw, 12px);
   }
   
   .now-subtitle {
-    font-size: clamp(14px, 3vw, 18px);
-  }
-  
-  .now-chamber {
-    height: 50vh;
+    font-size: clamp(14px, 3.5vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 16px);
   }
   
   .now-close {
-    top: 16px;
-    right: 16px;
-    width: 42px;
-    height: 42px;
+    /* Ensure it doesn't overlap with status bar */
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+    /* Maintain 44px minimum touch target */
+    width: 44px;
+    height: 44px;
     font-size: 24px;
+  }
+}
+
+@media (hover: none) {
+  .now-close:hover {
+    transform: none;
   }
 }

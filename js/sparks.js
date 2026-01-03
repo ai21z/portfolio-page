@@ -1,5 +1,4 @@
-// ━━━ Spark Animation System ━━━
-// Handles animated sparks traveling along mycelium paths
+// Spark animation system
 
 import { cumulativeLengths, pointAt } from './utils.js';
 import { aStarPath } from './graph.js';
@@ -11,29 +10,16 @@ import {
   NODE_IDS,
   ACTIVE_ANIMS,
   setActiveAnims,
-  cascadeActive,
-  cascadeAnims,
-  setCascadeActive,
-  setCascadeAnims,
   sparkCtx,
   sparkCanvas,
-  MYC_MAP,
   ritualActive,
   followerSparks,
   LOCKED_ROUTES,
-  lastSparkTs,
-  setLastSparkTs
 } from './state.js';
 import { projectXY } from './viewport.js';
 
 const loggedPathFailures = new Set();
 
-/**
- * Starts a spark animation from one node to another.
- * @param {string} fromKey - Source node key
- * @param {string} toKey - Destination node key
- * @param {number} speedPxPerSec - Speed in pixels per second (default: 650)
- */
 export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   if (prefersReducedMotion || !GRAPH) return;
   if (ACTIVE_ANIMS.length >= MAX_SPARKS) ACTIVE_ANIMS.shift();
@@ -45,7 +31,6 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   let idA = NODE_IDS[fromKey];
   let idB = NODE_IDS[toKey];
   
-  // Recompute NODE_IDS if invalid
   if (idA == null || idB == null || idA < 0 || idB < 0) {
     for (const [id, pt] of Object.entries(NAV_COORDS)) {
       NODE_IDS[id] = GRAPH.nearestId(pt.x, pt.y, 80, 24);
@@ -92,129 +77,11 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   });
 }
 
-/**
- * Triggers a cascade effect across all graph nodes (ritual mode).
- */
-export function ritualCascade() {
-  if (prefersReducedMotion) {
-    document.querySelectorAll('.network-node-label, .network-sigil-node').forEach(n => {
-      n.classList.add('motion-highlight');
-      setTimeout(() => n.classList.remove('motion-highlight'), 200);
-    });
-    return;
-  }
-  if (cascadeActive) return;
-  setCascadeActive(true);
-  setCascadeAnims([]);
-
-  if (!GRAPH || !MYC_MAP) {
-    setCascadeActive(false);
-    return;
-  }
-
-  const visited = new Set();
-  const queue = [];
-  for (const id of GRAPH.nodes.keys()) {
-    queue.push({ id, depth: 0 });
-  }
-
-  const edges = [];
-  visited.clear();
-  for (let i = 0; i < queue.length; i++) {
-    const { id, depth } = queue[i];
-    if (visited.has(id)) continue;
-    visited.add(id);
-
-    for (const nb of GRAPH.neighbors(id)) {
-      if (!visited.has(nb)) {
-        edges.push({ from: id, to: nb, depth });
-      }
-    }
-  }
-
-  edges.forEach((edge, idx) => {
-    const delay = (edge.depth * 30) + (idx % 5) * 15;
-    setTimeout(() => {
-      const fromPt = GRAPH.nodes[edge.from];
-      const toPt = GRAPH.nodes[edge.to];
-      if (!fromPt || !toPt) return;
-
-      const pathImg = [fromPt, toPt];
-      const proj = projectXY(pathImg);
-      const cum = cumulativeLengths(proj);
-      const len = cum[cum.length - 1];
-      if (!len) return;
-
-      cascadeAnims.push({
-        projPts: proj,
-        cum,
-        len,
-        s: 0,
-        v: 800,
-        alpha: 0.15 + Math.random() * 0.1
-      });
-    }, delay);
-  });
-
-  setTimeout(() => {
-    setCascadeActive(false);
-    setCascadeAnims([]);
-  }, 1800);
-}
-
-/**
- * Draws the cascade animations (ritual mode).
- * @param {number} dt - Delta time in seconds
- */
-export function drawCascade(dt) {
-  if (!cascadeActive || cascadeAnims.length === 0) return;
-
-  const survivors = [];
-  for (const anim of cascadeAnims) {
-    anim.s += anim.v * dt;
-    if (anim.s > anim.len) continue;
-
-    const head = pointAt(anim.projPts, anim.cum, anim.s);
-    const tail = pointAt(anim.projPts, anim.cum, Math.max(0, anim.s - 40));
-
-    sparkCtx.save();
-    sparkCtx.lineCap = 'round';
-
-    sparkCtx.strokeStyle = `rgba(143,180,255,${anim.alpha * 0.5})`;
-    sparkCtx.lineWidth = 12;
-    sparkCtx.shadowBlur = 24;
-    sparkCtx.shadowColor = `rgba(143,180,255,${anim.alpha * 0.3})`;
-    sparkCtx.beginPath();
-    sparkCtx.moveTo(tail[0], tail[1]);
-    sparkCtx.lineTo(head[0], head[1]);
-    sparkCtx.stroke();
-
-    sparkCtx.strokeStyle = `rgba(194,74,46,${anim.alpha * 0.3})`;
-    sparkCtx.lineWidth = 6;
-    sparkCtx.shadowBlur = 16;
-    sparkCtx.beginPath();
-    sparkCtx.moveTo(tail[0], tail[1]);
-    sparkCtx.lineTo(head[0], head[1]);
-    sparkCtx.stroke();
-
-    sparkCtx.restore();
-    survivors.push(anim);
-  }
-  setCascadeAnims(survivors);
-}
-
-/**
- * Draws all active spark animations.
- * @param {number} dt - Delta time in seconds
- * @param {Function} pointAtRoute - Function to get position on a locked route
- */
 export function drawSparks(dt, pointAtRoute) {
   if (!sparkCtx || !sparkCanvas) return;
   const cssW = window.innerWidth;
   const cssH = window.innerHeight;
   sparkCtx.clearRect(0, 0, cssW, cssH);
-
-  drawCascade(dt);
 
   const trailLen = 60;
   const survivors = [];
@@ -269,18 +136,15 @@ export function drawSparks(dt, pointAtRoute) {
 
   setActiveAnims(survivors);
 
-  // Follower light dots: glowing dots that move with each label (no trails)
   if (ritualActive && followerSparks.length && !prefersReducedMotion){
     for (const f of followerSparks){
       const route = LOCKED_ROUTES[f.id];
       if (!route || !route.projPts || route.projPts.length < 2) continue;
       
-      // Get current position (head only, no tail) - requires pointAtRoute from routes module
       const head = pointAtRoute(route, route.s);
 
       sparkCtx.save();
 
-      // Outer glow
       sparkCtx.fillStyle = `rgba(143,180,255,${0.25 * f.alpha})`;
       sparkCtx.shadowBlur = 20;
       sparkCtx.shadowColor = `rgba(143,180,255,${0.4 * f.alpha})`;
@@ -288,7 +152,6 @@ export function drawSparks(dt, pointAtRoute) {
       sparkCtx.arc(head[0], head[1], 8, 0, Math.PI * 2);
       sparkCtx.fill();
 
-      // Mid glow
       sparkCtx.fillStyle = `rgba(122,174,138,${0.6 * f.alpha})`;
       sparkCtx.shadowBlur = 12;
       sparkCtx.shadowColor = `rgba(122,174,138,${0.7 * f.alpha})`;
@@ -296,7 +159,6 @@ export function drawSparks(dt, pointAtRoute) {
       sparkCtx.arc(head[0], head[1], 4, 0, Math.PI * 2);
       sparkCtx.fill();
 
-      // Bright core
       sparkCtx.fillStyle = `rgba(200,255,220,${0.9 * f.alpha})`;
       sparkCtx.shadowBlur = 8;
       sparkCtx.shadowColor = 'rgba(200,255,220,0.8)';
@@ -309,20 +171,12 @@ export function drawSparks(dt, pointAtRoute) {
   }
 }
 
-/**
- * Starts a spark animation to a specific point in image space.
- * @param {string} fromKey - Source node key
- * @param {number} imgX - Target x coordinate in image space
- * @param {number} imgY - Target y coordinate in image space
- * @param {number} speed - Speed in pixels per second (default: 750)
- */
 export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
   if (prefersReducedMotion || !GRAPH) return;
   
   const fromId = NODE_IDS[fromKey];
   if (fromId == null || fromId < 0) return;
   
-  // Find nearest graph node to target point
   const toId = GRAPH.nearestId(imgX, imgY, 96, 24);
   if (toId == null || toId < 0) {
     console.warn(`[LOCKED-ROUTE] No graph node near (${imgX.toFixed(0)}, ${imgY.toFixed(0)}) for spark`);
@@ -345,15 +199,29 @@ export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
 }
 
 /**
- * Main spark animation loop.
- * @param {number} ts - Timestamp from requestAnimationFrame
- * @param {Function} updateMovingLabels - Function to update moving label positions
- * @param {Function} pointAtRoute - Function to get position on a locked route
+ * Compute a route between two points in IMAGE coords.
+ * Returns viewport-projected points for dust flow.
+ * @param {number} fromImgX - start x in image coords
+ * @param {number} fromImgY - start y in image coords
+ * @param {number} toImgX - end x in image coords
+ * @param {number} toImgY - end y in image coords
+ * @returns {Array|null} - array of [vpX, vpY] points or null
  */
-export function sparkLoop(ts, updateMovingLabels, pointAtRoute) {
-  const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
-  setLastSparkTs(ts);
-  updateMovingLabels(dt); // Move labels along their branch tails
-  drawSparks(dt, pointAtRoute);
-  requestAnimationFrame((newTs) => sparkLoop(newTs, updateMovingLabels, pointAtRoute));
+export function computeRouteVp(fromImgX, fromImgY, toImgX, toImgY) {
+  if (!GRAPH) return null;
+  
+  const fromId = GRAPH.nearestId(fromImgX, fromImgY, 150, 24);
+  const toId = GRAPH.nearestId(toImgX, toImgY, 150, 24);
+  
+  if (fromId == null || fromId < 0 || toId == null || toId < 0) {
+    return null;
+  }
+  
+  // Use regular A* with cache
+  const solved = aStarPath(fromId, toId, GRAPH, PATH_CACHE);
+  if (!solved || solved.length < 2) return null;
+  
+  // Project to viewport coords
+  const pointsVp = projectXY(solved.map(p => ({ x: p.x, y: p.y })));
+  return pointsVp;
 }

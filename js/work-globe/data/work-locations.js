@@ -1,69 +1,57 @@
-/**
- * Work experience location data
- * Contains geographical positions and career history
- */
-
 export const WORK_LOCATIONS = {
-  larissa: {
-    name: 'Larissa, Greece',
-    imageCoords: { x: 777, y: 330 }, // Pin A position on texture
-    color: [0.48, 0.68, 0.54], // decay-green RGB
+  greece: {
+    name: 'Greece',
+    imageCoords: { x: 777, y: 330 },
+    color: [0.48, 0.68, 0.54],
     entries: [
       {
-        company: 'MSc Environmental Engineering',
-        position: 'Research & Thesis',
-        period: '2015 — 2017',
+        company: 'Environmental Engineering & Lab Work',
+        position: 'B.Eng studies, chemistry labs & research',
+        period: 'Studies & early career',
         responsibilities: [
-          'Water & soil quality analysis',
-          'Laboratory methods & calibration',
-          'Environmental compliance research'
+          'B.Eng Environmental Engineering (University of Western Macedonia)',
+          'Water / soil / wastewater quality analysis in chemistry labs',
+          'Greenhouse-gas emissions and environmental reporting work',
         ]
       },
       {
-        company: 'Freelance & Early Career',
-        position: 'Multiple Roles',
-        period: '2015 — 2020',
+        company: 'Transition to Software & AI',
+        position: 'Freelance, M.Sc. Software Engineering, EU platforms',
+        period: 'Freelance & postgraduate work',
         responsibilities: [
-          'Environmental data analysis',
-          'Greek ↔ English translation',
-          'Early software development'
+          'Greek ↔ English transcription & translation on work-on-demand platforms, i18n/l10n projects',
+          'M.Sc. Software Engineering (University of Thessaly)',
+          'Software Engineer at Netcompany-Intrasoft: Full-stack development on EU statistical platforms (Java/Spring, React/Angular)',
+          'Early data annotation & AI-related work'
         ]
       }
     ]
   },
-  barcelona: {
-    name: 'Barcelona, Spain',
-    imageCoords: { x: 689, y: 310 }, // Pin B position on texture
-    color: [1.0, 0.48, 0.2], // orange RGB
+
+  spain: {
+    name: 'Spain',
+    imageCoords: { x: 689, y: 310 },
+    color: [1.0, 0.48, 0.2],
     entries: [
       {
-        company: 'ADP',
-        position: 'Senior Software Engineer',
-        period: '2023 — Present',
-        responsibilities: [
-          'Backend architecture & system design',
-          'API development & integration',
-          'Technical leadership & mentoring'
-        ]
-      },
-      {
-        company: 'Netcompany-Intrasoft',
+        company: 'ADP (Lyric HCM)',
         position: 'Software Engineer',
-        period: '2021 — 2023',
+        period: '2024 — Present',
         responsibilities: [
-          'Full-stack development (Java, React)',
-          'RESTful web services',
-          'Test-driven development'
+          'Software Engineer on Lyric HCM payroll platform',
+          'Development & cross-region integrations under strict compliance',
+          'Authoring developer runbooks, ADRs & troubleshooting guides'
         ]
       },
       {
-        company: 'Freelance Work',
-        position: 'Developer & Translator',
-        period: '2020 — Present',
+        company: 'Data Annotation & Personal Projects',
+        position: 'LLM testing, evaluation & tool-building (remote)',
+        period: 'Alongside primary roles',
         responsibilities: [
-          'Data annotation for AI training',
-          'i18n/l10n services',
-          'Custom web development'
+          'AI model evaluation for code generation, reasoning and content quality',
+          'Prompt, rubric and acceptance-test design for coding, refactoring & debugging tasks',
+          'Design and development of local-first tools & prototypes (e.g. LOQ-J, True-Rolls)',
+          'Experiments with local LLM workflows, retrieval (RAG) and developer productivity tooling'
         ]
       }
     ]

@@ -1,7 +1,3 @@
-/**
- * Globe shaders - main Earth sphere rendering
- */
-
 export const GLOBE_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

@@ -1,7 +1,3 @@
-/**
- * Data stream and text billboard shaders
- */
-
 export const DATA_STREAM_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

@@ -4,26 +4,21 @@ if (!window.__BLOG_NETWORK_VERSION) {
   window.__BLOG_NETWORK_VERSION = BLOG_NETWORK_VERSION;
 }
 
-// ━━━ CONFIG ━━━
-export const PETRI_K = 0.42;  // Petri dish radius = PETRI_K * min(cssW, cssH)
-export const AUTO_CENTER = true;  // Auto-compute shift from data bounds (set false to use FIXED_SHIFT)
-export const FIXED_SHIFT = [0, 0];  // Debugging override when AUTO_CENTER=false
+const PETRI_K = 0.42;
+const AUTO_CENTER = true;
+const FIXED_SHIFT = [0, 0];
 
 const PAL = {
   ABYSS: [0.05, 0.06, 0.07],        // soft charcoal background
-  // Branch color variations (more diverse palette)
   BRANCH1: [0.25, 0.35, 0.28],      // mossy green
   BRANCH2: [0.30, 0.40, 0.45],      // blue-teal
   BRANCH3: [0.35, 0.30, 0.25],      // earthy brown
   BRANCH4: [0.28, 0.32, 0.38],      // slate gray-blue
-  // Fusion colors
   FUSION1: [0.40, 0.50, 0.35],      // bright moss
   FUSION2: [0.35, 0.45, 0.50],      // aqua
-  // Hub accent colors
   EMBER1: [0.70, 0.45, 0.25],       // warm orange
   EMBER2: [0.65, 0.35, 0.40],       // rose
   EMBER3: [0.55, 0.50, 0.30],       // olive gold
-  // Cyst glows
   GLOW1:  [0.50, 0.60, 0.45],       // soft green
   GLOW2:  [0.45, 0.55, 0.60],       // cyan
   GLOW3:  [0.60, 0.50, 0.40],       // amber
@@ -33,15 +28,13 @@ const PAL = {
   BONE:   [0.788, 0.761, 0.702],    // #C9C2B3
 };
 
-// Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
   return Math.min(Math.max(1, window.devicePixelRatio || 1), 2); // cap at 2x for performance
 }
 
 const VIEW = { W: 1920, H: 1080 };
 
-// ━━━ CENTERING HELPER ━━━
-export function computeNetworkCentroid(paths) {
+function computeNetworkCentroid(paths) {
   const B = {minX: +Infinity, minY: +Infinity, maxX: -Infinity, maxY: -Infinity};
   for (const path of (paths || [])) {
     for (const [x, y] of path) {
@@ -51,13 +44,12 @@ export function computeNetworkCentroid(paths) {
       if (y > B.maxY) B.maxY = y;
     }
   }
-  if (!isFinite(B.minX)) return [VIEW.W * 0.5, VIEW.H * 0.5]; // fallback if no paths
+  if (!isFinite(B.minX)) return [VIEW.W * 0.5, VIEW.H * 0.5];
   const netCx = (B.minX + B.maxX) * 0.5;
   const netCy = (B.minY + B.maxY) * 0.5;
   return [netCx, netCy];
 }
 
-// ---------- GLSL (WebGL2) ----------
 const VS_FSQ = `#version 300 es
 precision highp float;
 const vec2 P[3]=vec2[3](vec2(-1.,-1.),vec2(3.,-1.),vec2(-1.,3.));
@@ -423,7 +415,6 @@ void main(){
   o = vec4(clamp(col, 0.0, 1.0), alpha * 0.92);
 }`;
 
-// ---------- utils ----------
 const q = (sel)=>document.querySelector(sel);
 function compile(gl, type, src){
   const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
@@ -439,34 +430,20 @@ function program(gl, vs, fs){
   return p;
 }
 
-// ---------- main ----------
 let initialized = false;
 let animationActive = false;
 
 async function initBlogNetwork(){
-  if (initialized) return; // Only init once
+  if (initialized) return;
   
-  console.log('[Blog Network WebGL] Script loaded, starting init...');
   const canvas = q('#blog-network-canvas');
-  console.log('[Blog Network WebGL] Canvas element:', canvas);
-  if (!canvas) {
-    console.error('[Blog Network WebGL] Canvas element not found!');
-    return;
-  }
+  if (!canvas) return;
   const gl = canvas.getContext('webgl2', { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
-  console.log('[Blog Network WebGL] WebGL2 context:', gl);
   if(!gl){ console.error('WebGL2 not available'); return; }
 
   // Load network JSON
-  console.log('[Blog Network WebGL] Fetching network data...');
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
-  console.log('[Blog Network WebGL] Fetch response:', res.status, res.ok);
   const data = await res.json();
-  console.log('[Blog Network WebGL] Loaded network:', {
-    paths: data.paths?.length,
-    hubs: data.hubs?.length,
-    firstPath: data.paths?.[0]?.slice(0, 2)
-  });
 
   // Build geometry buffers (segments)
   const segs = [];
@@ -577,12 +554,6 @@ async function initBlogNetwork(){
   });
   const segCount = segs.length/7;
   const nodeCount = nodes.length/4;
-  console.log('[Blog Network WebGL] Built geometry:', {
-    segments: segCount,
-    firstSeg: segs.slice(0, 7),
-    totalFloats: segs.length,
-    nodes: nodeCount
-  });
 
   // infected/cyst nodes (every 12th)
   const cysts = [];
@@ -673,7 +644,6 @@ async function initBlogNetwork(){
   const progSeg   = program(gl, VS_SEG, FS_SEG);
   const progCyst  = program(gl, VS_CYST, FS_CYST);
   const progNode  = program(gl, VS_NODE, FS_NODE);
-  console.log('[Blog Network WebGL] Shaders compiled:', { progPaper, progSeg, progCyst, progNode });
 
   // Create main VAO
   const vaoSeg  = makeVAOforSegments();
@@ -722,13 +692,6 @@ async function initBlogNetwork(){
     
     vaoByHub[hubId] = { vao, count: hubSegCount };
   }
-  
-  console.log('[Blog Network WebGL] VAOs created:', { 
-    vaoSeg, 
-    vaoCyst, 
-    vaoNode,
-    perHubCounts: Object.fromEntries(Object.entries(vaoByHub).map(([k,v]) => [k, v.count]))
-  });
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -853,7 +816,6 @@ async function initBlogNetwork(){
 
     svg.append(shadow, agar, meniscus, rimInner, rimOuter, spec1, spec2);
     
-    console.log('[Blog WebGL] Built realistic Petri dish:', {cx, cy, r});
     return {cx, cy, r};
   }
 
@@ -877,8 +839,6 @@ async function initBlogNetwork(){
       gl.uniform1f(gl.getUniformLocation(prog,'uDpr'), dpr);
     }
     gl.useProgram(null);
-    
-    console.log('[Blog WebGL] Dish uniforms (CSS px):', {cxCss, cyCss, rCss, dpr});
   }
 
   // Build curved labels OUTSIDE dish rim
@@ -913,27 +873,39 @@ async function initBlogNetwork(){
       const span = 70 * Math.PI/180;  // Wider arc for bigger text
       const a0 = (c.midDeg*Math.PI/180) - span/2;
       const a1 = (c.midDeg*Math.PI/180) + span/2;
+      
+      // Hit zone centered between rim and label for full coverage
+      const hitR = dish.r + 30; // Midpoint between rim (~r+14) and label (~r+48)
+      const hx0 = cx + hitR*Math.cos(a0), hy0 = cy + hitR*Math.sin(a0);
+      const hx1 = cx + hitR*Math.cos(a1), hy1 = cy + hitR*Math.sin(a1);
+      
+      // Label text path at outer radius
       const x0 = cx + outerR*Math.cos(a0), y0 = cy + outerR*Math.sin(a0);
       const x1 = cx + outerR*Math.cos(a1), y1 = cy + outerR*Math.sin(a1);
 
-      // Hit zone path (thick stroke for easy clicking)
-      const path = document.createElementNS(svg.namespaceURI,'path');
-      path.setAttribute('id', arcId);
-      path.setAttribute('d', `M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1}`);
-      path.setAttribute('fill','none');
-      path.setAttribute('stroke','transparent');
-      path.setAttribute('stroke-width','48'); // Larger hit zone
-      path.style.pointerEvents='stroke';
-      svg.appendChild(path);
-
-      // Clickable group with text
+      // Clickable group with hit zone and text
       const grp = document.createElementNS(svg.namespaceURI,'g');
       grp.classList.add('arc-btn');
       grp.dataset.hub = c.id;
       grp.setAttribute('tabindex','0');
       grp.setAttribute('role','button');
       grp.setAttribute('aria-label', `${c.text} — open category`);
-      grp.style.pointerEvents='auto';
+
+      // Hit zone path - covers rim through label area
+      const hitPath = document.createElementNS(svg.namespaceURI,'path');
+      hitPath.setAttribute('d', `M ${hx0} ${hy0} A ${hitR} ${hitR} 0 0 1 ${hx1} ${hy1}`);
+      hitPath.setAttribute('fill','none');
+      hitPath.setAttribute('stroke','transparent');
+      hitPath.setAttribute('stroke-width','72'); // Covers rim (r+14) to beyond label (r+48)
+      grp.appendChild(hitPath);
+
+      // Text path for label positioning
+      const textArc = document.createElementNS(svg.namespaceURI,'path');
+      textArc.setAttribute('id', arcId);
+      textArc.setAttribute('d', `M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1}`);
+      textArc.setAttribute('fill','none');
+      textArc.setAttribute('stroke','none');
+      grp.appendChild(textArc);
 
       const text = document.createElementNS(svg.namespaceURI,'text');
       text.setAttribute('class','arc-label');
@@ -986,27 +958,98 @@ async function initBlogNetwork(){
     zoomText.appendChild(zoomTextPath);
     svg.appendChild(zoomText);
     
-    console.log('[Blog WebGL] Built curved labels outside rim:', cfg.map(c => c.id));
+    // Clock dots - orbiting between rim and labels
+    const clockR = dish.r + 30; // Same track as hit zones, between rim and labels
+    
+    // Hour dot (largest, brass/dish color)
+    const hourDot = document.createElementNS(svg.namespaceURI,'circle');
+    hourDot.setAttribute('id','clock-hour');
+    hourDot.setAttribute('r','7');
+    hourDot.setAttribute('fill','rgba(180, 150, 110, 0.8)');
+    hourDot.style.pointerEvents='none';
+    svg.appendChild(hourDot);
+    
+    // Minute dot (medium, ominous green like craft)
+    const minDot = document.createElementNS(svg.namespaceURI,'circle');
+    minDot.setAttribute('id','clock-minute');
+    minDot.setAttribute('r','4.5');
+    minDot.setAttribute('fill','rgba(45, 140, 90, 0.75)');
+    minDot.style.pointerEvents='none';
+    svg.appendChild(minDot);
+    
+    // Second dot (smallest, ominous purple like convergence)
+    const secDot = document.createElementNS(svg.namespaceURI,'circle');
+    secDot.setAttribute('id','clock-second');
+    secDot.setAttribute('r','2.5');
+    secDot.setAttribute('fill','rgba(130, 85, 145, 0.7)');
+    secDot.style.pointerEvents='none';
+    svg.appendChild(secDot);
+    
+    // Get user timezone, fallback to Barcelona
+    let userTimezone;
+    try {
+      userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid';
+    } catch {
+      userTimezone = 'Europe/Madrid';
+    }
+    
+    let lastMinute = -1;
+    
+    // Get time components in target timezone
+    function getTimeInZone() {
+      const now = new Date();
+      const h = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, hour: 'numeric', hour12: false }));
+      const m = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, minute: 'numeric' }));
+      const s = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, second: 'numeric' }));
+      const ms = now.getMilliseconds();
+      return { h, m, s, ms };
+    }
+    
+    // Smooth clock animation using requestAnimationFrame
+    function animateClock() {
+      const { h, m, s, ms } = getTimeInZone();
+      
+      // Smooth fractional values for continuous motion
+      const secSmooth = s + ms / 1000;
+      const minSmooth = m + secSmooth / 60;
+      const hrSmooth = (h % 12) + minSmooth / 60;
+      
+      // Convert to angles (12 o'clock = -90° in SVG, clockwise)
+      const hourAngle = (hrSmooth * 30 - 90) * Math.PI / 180;
+      const minAngle = (minSmooth * 6 - 90) * Math.PI / 180;
+      const secAngle = (secSmooth * 6 - 90) * Math.PI / 180;
+      
+      // Position dots
+      hourDot.setAttribute('cx', cx + clockR * Math.cos(hourAngle));
+      hourDot.setAttribute('cy', cy + clockR * Math.sin(hourAngle));
+      minDot.setAttribute('cx', cx + clockR * Math.cos(minAngle));
+      minDot.setAttribute('cy', cy + clockR * Math.sin(minAngle));
+      secDot.setAttribute('cx', cx + clockR * Math.cos(secAngle));
+      secDot.setAttribute('cy', cy + clockR * Math.sin(secAngle));
+      
+      // Update sr-only time for accessibility (only on minute change)
+      if (m !== lastMinute) {
+        lastMinute = m;
+        const hubStatus = document.getElementById('hub-status');
+        if (hubStatus) {
+          const h12 = (h % 12) || 12;
+          const ampm = h < 12 ? 'AM' : 'PM';
+          hubStatus.textContent = `Current time: ${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+        }
+      }
+      
+      requestAnimationFrame(animateClock);
+    }
+    
+    // Start smooth animation
+    animateClock();
   }
 
-  // ━━━ AUTO-CENTERING ━━━
-  // Compute network centroid from data and center in design space
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
   const shift = AUTO_CENTER 
     ? [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy]
     : FIXED_SHIFT;
-  
-  console.log('[Blog WebGL] Auto-centering:', {
-    enabled: AUTO_CENTER,
-    networkCentroid: [netCx, netCy],
-    shift,
-    targetCenter: [VIEW.W * 0.5, VIEW.H * 0.5],
-    offsetPercent: [
-      Math.abs(shift[0]) / VIEW.W * 100,
-      Math.abs(shift[1]) / VIEW.H * 100
-    ].map(v => v.toFixed(2) + '%')
-  });
-  
+
   let resizeTimeout = null;
   let currentDish = null;
   
@@ -1027,11 +1070,6 @@ async function initBlogNetwork(){
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
-      console.log('[Blog Network WebGL] Canvas resized:', {
-        cssSize: `${cssW}x${cssH}`,
-        bufferSize: `${w}x${h}`,
-        dpr: dpr
-      });
     }
     
     // scale & offset to fit 1920x1080
@@ -1045,7 +1083,6 @@ async function initBlogNetwork(){
     buildLabels(currentDish);
     
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
-    console.log('[Blog WebGL] Emitting transform:', { scale, offsetX: offX, offsetY: offY, cssW, cssH });
     window.dispatchEvent(new CustomEvent('blog:transform', {
       detail: {
         scale,
@@ -1067,10 +1104,6 @@ async function initBlogNetwork(){
     if (resizeTimeout) clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       fit = resize();
-      console.log('[Blog Network WebGL] Resize stabilized:', {
-        scale: fit.scale.toFixed(4),
-        size: `${fit.cssW}x${fit.cssH}`
-      });
     }, 100); // Wait 100ms after last resize event
   });
   
@@ -1080,17 +1113,9 @@ async function initBlogNetwork(){
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      console.log('[Blog Network WebGL] DPR changed to', dpr);
       fit = resize();
     }
   }, 500);
-  console.log('[Blog Network WebGL] Canvas setup:', {
-    canvasSize: `${canvas.width}x${canvas.height}`,
-    cssSize: `${fit.cssW}x${fit.cssH}`,
-    scale: fit.scale,
-    offset: [fit.offX, fit.offY],
-    shift
-  });
 
   let hoveredHubId = null;
   let activeHub = null;
@@ -1131,14 +1156,12 @@ async function initBlogNetwork(){
     // Emit hover events when hub changes
     if (hoveredHubId !== prevHovered) {
       if (hoveredHubId) {
-        console.log('[Blog WebGL] Hover:', hoveredHubId);
         window.dispatchEvent(new CustomEvent('blog:hover', { 
-          detail: { hubId: hoveredHubId } 
+          detail: { hubId: hoveredHubId, source: 'hub-point' } 
         }));
       } else {
-        console.log('[Blog WebGL] Hover off');
         window.dispatchEvent(new CustomEvent('blog:hover-off', { 
-          detail: {} 
+          detail: { hubId: prevHovered, source: 'hub-point' } 
         }));
       }
     }
@@ -1153,12 +1176,9 @@ async function initBlogNetwork(){
     
     const now = performance.now();
     if (now - lastClickTime < CLICK_DEBOUNCE) {
-      console.log('[Blog WebGL] Click debounced (too fast)');
       return;
     }
     lastClickTime = now;
-    
-    console.log('[Blog WebGL] Click: navigating to', hoveredHubId);
     
     // Brief spotlight effect (150ms) - non-blocking
     activeHub = hoveredHubId;
@@ -1181,21 +1201,19 @@ async function initBlogNetwork(){
     }
   });
   
-  // Listen for external hover events (from rim labels)
+  // Listen for external hover events (from rim labels and memo)
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
-    if (source === 'rim-label' && hubId && hubId !== 'source') {
-      console.log('[Blog WebGL] External hover from rim label:', hubId);
+    if ((source === 'rim-label' || source === 'memo') && hubId && hubId !== 'source') {
       hoveredHubId = hubId;
       canvas.style.cursor = 'pointer';
     }
   });
   
   window.addEventListener('blog:hover-off', (e) => {
-    const { hubId } = e.detail;
-    // Only clear if we're currently hovering this hub
-    if (hoveredHubId === hubId) {
-      console.log('[Blog WebGL] External hover-off:', hubId);
+    const { hubId, source } = e.detail;
+    // Clear if from memo (no hubId check) or if matching hub
+    if (source === 'memo' || hoveredHubId === hubId) {
       hoveredHubId = null;
       canvas.style.cursor = 'default';
     }
@@ -1214,7 +1232,10 @@ async function initBlogNetwork(){
   
   // Wheel zoom (clamp to 0.75x - 1.0x base scale)
   const baseScale = fit.scale;
-  let userZoom = 1.0;
+  let userZoom = 0.81;
+  fit.scale = baseScale * userZoom;
+  fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;
+  fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
   
   function updateZoomIndicator() {
     const zoomTextContent = document.getElementById('zoom-text-content');
@@ -1223,6 +1244,7 @@ async function initBlogNetwork(){
       zoomTextContent.textContent = `• ZOOM ${zoomPercent}% •`;
     }
   }
+  updateZoomIndicator(); // Set initial indicator to match default zoom
   
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -1258,22 +1280,9 @@ async function initBlogNetwork(){
   // animate
   let last = performance.now();
   let frameCount = 0;
-  console.log('[Blog Network WebGL] Starting animation loop...');
   function loop(now){
     const dt = now-last; if(dt<1000/30){ requestAnimationFrame(loop); return; } // 30 FPS cap
     last = now;
-    
-    // Debug: Log first 3 frames to verify rendering
-    if (frameCount < 3) {
-      console.log(`[Blog Network WebGL] Frame ${frameCount}: rendering`, {
-        canvasSize: `${canvas.width}x${canvas.height}`,
-        viewport: `${fit.cssW}x${fit.cssH}`,
-        scale: fit.scale,
-        segmentCount: vaoSeg.count,
-        nodeCount: vaoNode.count,
-        cystCount: vaoCyst.count
-      });
-    }
     frameCount++;
 
     // PAPER (renders background)
@@ -1308,17 +1317,7 @@ async function initBlogNetwork(){
     set3(progSeg,'uEmber3', PAL.EMBER3);
     gl.uniform1f(gl.getUniformLocation(progSeg,'uEmberR'), 86.0);
     setHubs(progSeg);
-    
-    // DEBUG: Log segment draw call on first frame
-    if (frameCount === 1) {
-      console.log('[Blog Network WebGL] Drawing segments:', {
-        instanceCount: vaoSeg.count,
-        scale: fit.scale,
-        offset: [fit.offX, fit.offY],
-        shift: shift
-      });
-    }
-    
+
     if (!activeHub) {
       // OVERVIEW MODE: Draw all segments with optional hover highlight
       gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 1.0);
@@ -1394,7 +1393,37 @@ async function initBlogNetwork(){
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoCyst.count);
     gl.bindVertexArray(null);
 
-    // Hover halo (breathing ember) — simple overdraw using cyst shader idea
+    // Hub point pulsing glow (subtle, ominous breathing)
+    for (let i = 0; i < hubPos.length; i++) {
+      const hub = data.hubs[i];
+      if (!hub) continue;
+      // Gentle pulse: each hub has offset phase for organic feel
+      const phase = now * 0.0008 + i * 1.57; // ~0.8 sec period, π/2 offset between hubs
+      const pulse = 0.4 + 0.15 * Math.sin(phase); // subtle 0.25-0.55 range
+      const size = 8 + 3 * Math.sin(phase * 0.7); // gentle size breathing
+      
+      gl.useProgram(progCyst);
+      set2(progCyst,'uScale', fit.scale, fit.scale);
+      set2(progCyst,'uOffset', fit.offX, fit.offY);
+      set2(progCyst,'uShift', shift[0], shift[1]);
+      set2(progCyst,'uRes', fit.cssW, fit.cssH);
+      gl.uniform1f(gl.getUniformLocation(progCyst,'uTime'), now*0.001);
+      gl.uniform1f(gl.getUniformLocation(progCyst,'uDpr'), currentDPR());
+      // Dim ember colors for subtle glow
+      set3(progCyst,'uGlow1', [PAL.EMBER1[0]*pulse, PAL.EMBER1[1]*pulse, PAL.EMBER1[2]*pulse]);
+      set3(progCyst,'uGlow2', [PAL.EMBER2[0]*pulse, PAL.EMBER2[1]*pulse, PAL.EMBER2[2]*pulse]);
+      set3(progCyst,'uGlow3', [PAL.EMBER3[0]*pulse, PAL.EMBER3[1]*pulse, PAL.EMBER3[2]*pulse]);
+      set3(progCyst,'uBranch1', PAL.BRANCH1);
+      
+      vaoCyst.data.set([hub.x, hub.y, size, i * 0.5], 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, vaoCyst.data.subarray(0,4));
+      gl.bindVertexArray(vaoCyst.vao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, 1);
+      gl.bindVertexArray(null);
+    }
+
+    // Hover halo (breathing ember) — brighter overdraw when hovered
     if(hoveredHubId){
       const hub = data.hubs.find(h=>h.id===hoveredHubId);
       if(hub){
@@ -1429,7 +1458,6 @@ async function initBlogNetwork(){
   }
   
   initialized = true;
-  console.log('[Blog Network WebGL] Initialization complete!');
   
   // Pause/resume when blog section visibility changes
   let running = false;
@@ -1461,24 +1489,18 @@ async function initBlogNetwork(){
 // Wait for DOM to be ready, then init when blog section becomes visible
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Blog Network WebGL] DOM loaded, waiting for blog section...');
     watchForBlogSection();
   });
 } else {
-  console.log('[Blog Network WebGL] DOM already loaded, watching for blog section...');
   watchForBlogSection();
 }
 
 function watchForBlogSection() {
   const blogSection = document.getElementById('blog');
-  if (!blogSection) {
-    console.error('[Blog Network WebGL] Blog section not found!');
-    return;
-  }
+  if (!blogSection) return;
   
   // Check if already visible
   if (blogSection.classList.contains('active-section')) {
-    console.log('[Blog Network WebGL] Blog section already visible, initializing...');
     initBlogNetwork();
     return;
   }
@@ -1488,7 +1510,6 @@ function watchForBlogSection() {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
         if (blogSection.classList.contains('active-section')) {
-          console.log('[Blog Network WebGL] Blog section became visible, initializing...');
           initBlogNetwork();
           observer.disconnect(); // Stop watching after init
         }
@@ -1500,6 +1521,4 @@ function watchForBlogSection() {
     attributes: true,
     attributeFilter: ['class']
   });
-  
-  console.log('[Blog Network WebGL] Watching for blog section to become visible...');
 }

@@ -1,7 +1,3 @@
-/**
- * Atmosphere and fog effect shaders
- */
-
 export const ATMOSPHERE_VERTEX_SHADER = `#version 300 es
 precision highp float;
 

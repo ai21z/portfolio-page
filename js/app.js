@@ -1,37 +1,13 @@
-/* ━━━ Necrography — Vissarion Zounarakis ━━━
- * Smart Navigation Node Placement System
- * - Static fungal mycelium background image
- * - Non-overlapping anchor-based node placement
- * - Automatic collision avoidance with content
- * - Branch-reveal highlight effect on hover
- * - Full accessibility support
+/* Necrography — Vissarion Zounarakis
+ * Navigation system with mycelium background and spark animations
  */
 
-// ━━━ Module Imports ━━━
-import { sizeCanvas, cumulativeLengths, pointAt, approach } from './utils.js';
+
+import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
-import { initNow, destroyNow } from './now-cultivating.js';
-import { initWorkGlobe, cleanupWorkGlobe } from './work-globe-webgl.js';
 import socialIconsAnimation from './social-icons-animation.js';
-// Blog network now uses WebGL version loaded directly in HTML
-// import blogNetwork from './blog-network.js';
-// Resume spirals - DISABLED FOR NOW
-// TODO: Re-enable later by uncommenting: import { initResumeSpirals } from './resume-spirals.js';
-// import { initResumeSpirals } from './resume-spirals.js';
-import {
-  RITUAL_RETURN_MS,
-  NAV_SPEED_WHEN_ACTIVE,
-  NAV_COORDS,
-  NAV_ORDER,
-  LABEL_OFFSET_PX,
-  LABEL_SPEEDS,
-  DEFAULT_SPEED,
-  MAX_SPARKS,
-  MIN_ROUTE_LEN_PX,
-  MAX_ROUTE_LEN_PX,
-  RESAMPLE_STEP_PX,
-  RESAMPLE_MIN_POINTS
-} from './config.js';
+import { initHubToIcons } from './hub-to-icons.js';
+import { NAV_COORDS } from './config.js';
 import {
   prefersReducedMotion,
   hudEnabled,
@@ -48,53 +24,41 @@ import {
   PATH_CACHE,
   setGraph,
   ritualActive,
-  followerSparks,
   setRitualActive,
   setFollowerSparks,
   LOCKED_ROUTES,
-  setLockedRoutes,
   NODE_IDS,
-  NAV_OFFSETS,
-  currentNavHover,
-  setCurrentNavHover,
   sparkCanvas,
   sparkCtx,
   sporeCanvas,
   sporeCtx,
   setSparkCanvas,
   setSparkCtx,
-  setSporeCanvas,
   setSporeCtx,
   ACTIVE_ANIMS,
-  cascadeAnims,
-  cascadeActive,
   spores,
   lastSporeFrame,
   lastSparkTs,
   setActiveAnims,
-  setCascadeAnims,
-  setCascadeActive,
   setSpores,
   setLastSporeFrame,
   setLastSparkTs
 } from './state.js';
 import {
   computeCoverFromImage,
-  coverMap,
   toViewport,
+  toImg,
   projectXY
 } from './viewport.js';
 import {
   startSpark,
-  ritualCascade,
   drawSparks,
-  startSparkToPoint
+  startSparkToPoint,
+  computeRouteVp
 } from './sparks.js';
 import {
   computeNavOffsets,
   showSection,
-  createNavLabel,
-  createSigilNode,
   layoutNavNodes,
   handleNavEnter,
   handleNavLeave,
@@ -106,24 +70,15 @@ import {
   imgPointAtRoute
 } from './routes.js';
 import { notebookContact } from './contact.js';
+import { portraitParticles } from './portrait-particles.js';
 
-// ━━━ A11y: Insert current year in footer ━━━
-const yearElement = document.getElementById('yr');
-if (yearElement) yearElement.textContent = new Date().getFullYear();
-
-// ━━━ Mycelium Geometry System (Exported from Python) ━━━
-/**
- * Load exported geometry JSON and preload background image.
- */
+// Mycelium geometry (exported from Python)
 async function loadMycelium() {
   const response = await fetch('artifacts/network.json');
   setMycMap(await response.json());
-  console.log(`✅ Loaded ${MYC_MAP.paths.length} paths, ${MYC_MAP.junctions.length} junctions`);
 }
 
-/* ━━━ Image-Space Graph + Pathfinding ━━━ */
-
-// ━━━ HUD Rendering ━━━
+// HUD rendering
 function initHUD() {
   if (!hudCanvas) {
     const canvas = document.createElement('canvas');
@@ -137,7 +92,7 @@ function initHUD() {
   hudCanvas.height = window.innerHeight;
 }
 
-// [LOCKED-ROUTE] HUD shows white anchor, cyan locked route, green live position
+// HUD: white anchor, cyan route, green live position
 function renderHUD() {
   if (!hudEnabled) return;
   if (!hudCtx) initHUD();
@@ -147,7 +102,6 @@ function renderHUD() {
   for (const [id, pt] of Object.entries(NAV_COORDS)) {
     const [tx, ty] = toViewport(pt.x, pt.y);
     
-    // White: design anchor
     hudCtx.fillStyle = '#fff';
     hudCtx.beginPath();
     hudCtx.arc(tx, ty, 4, 0, Math.PI * 2);
@@ -157,7 +111,6 @@ function renderHUD() {
     hudCtx.font = '10px monospace';
     hudCtx.fillText(`${id} anchor`, tx + 8, ty - 8);
 
-    // Cyan: locked route polyline
     const route = LOCKED_ROUTES[id];
     if (route && route.projPts.length > 1) {
       hudCtx.strokeStyle = 'rgba(0,255,255,.4)';
@@ -171,7 +124,6 @@ function renderHUD() {
       hudCtx.lineWidth = 1;
     }
 
-    // Green: live label position
     const el = document.querySelector(`[data-node="${id}"]`);
     if (el) {
       const rect = el.getBoundingClientRect();
@@ -186,7 +138,6 @@ function renderHUD() {
       hudCtx.fillStyle = '#0f0';
       hudCtx.fillText(`live (${Math.round(cx)},${Math.round(cy)})`, cx + 8, cy + 16);
 
-      // Check orthogonal distance to locked route
       if (route && route.projPts.length > 1) {
         let minDist = Infinity;
         for (let i = 1; i < route.projPts.length; i++) {
@@ -224,7 +175,7 @@ function toggleHUD() {
   }
 }
 
-// ━━━ Initialize canvas contexts (sparkCanvas already imported from state) ━━━
+// Canvas init
 if (!sparkCanvas) {
   const canvas = document.createElement('canvas');
   canvas.id = 'spark-canvas';
@@ -237,7 +188,7 @@ if (sporeCanvas) {
   setSporeCtx(sporeCanvas.getContext('2d'));
 }
 
-// Main spark animation loop - wraps imported draw functions
+// Spark animation loop
 function sparkLoopWrapper(ts) {
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
@@ -267,13 +218,12 @@ function resizeAll() {
     return { ...anim, projPts, cum, len, s };
   }).filter(Boolean));
 
-  // [LOCKED-ROUTE] Reproject locked routes (keep imgPts unchanged, only update projPts/cum/len)
+// Reproject routes on resize
   for (const [id, route] of Object.entries(LOCKED_ROUTES)) {
     const projPts = projectXY(route.imgPts);
     const cum = cumulativeLengths(projPts);
     const len = cum[cum.length - 1];
     
-    // Preserve s ratio and update boundaries
     const sRatio = route.len > 0 ? route.s / route.len : 0.5;
     const sHomeRatio = route.len > 0 ? route.sHome / route.len : 0.5;
     
@@ -289,14 +239,12 @@ function resizeAll() {
   if (sporeCtx) createSpores();
 }
 
-// Wait for background image before ANY layout or initialization
+// Init after background loads
 function initAfterImageLoad() {
   if (!bgImg) {
     console.error('❌ bgImg element not found!');
     return;
   }
-  
-  console.log(`🖼️ Background image loaded: ${bgImg.naturalWidth}×${bgImg.naturalHeight}px`);
   
   // Compute cover using naturalWidth/naturalHeight
   if (!computeCoverFromImage()) {
@@ -306,29 +254,21 @@ function initAfterImageLoad() {
   
   computeNavOffsets(); // Compute offsets with proper base dimensions
   
-  // First layout now happens AFTER image loads
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
-  
-  console.log(`✅ Initial layout complete — ritual is ${ritualActive ? 'ACTIVE' : 'OFF'}`);
-  
-  // Now safe to do full resize setup
+
   sizeCanvas(sparkCanvas);
   sizeCanvas(sporeCanvas);
   if (sporeCtx) createSpores();
   
-  // Start animation loops
   requestAnimationFrame(sparkLoopWrapper);
   startSpores();
 }
 
-// GATE all initialization on image load
+// Gate init on image load
 if (bgImg) {
   if (!bgImg.complete) {
-    console.log(`⏳ Waiting for background image to load...`);
     bgImg.addEventListener('load', initAfterImageLoad, { once: true });
   } else if (bgImg.naturalWidth > 0) {
-    // Already loaded
-    console.log(`✅ Background image already loaded`);
     initAfterImageLoad();
   } else {
     console.warn('⚠️ Background image complete but no naturalWidth, waiting for load event');
@@ -338,19 +278,15 @@ if (bgImg) {
   console.error('❌ #bg-front-img element not found in DOM');
 }
 
-// Keep updated on resize
-let resizeTimer = 0;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = window.setTimeout(resizeAll, 80);
-}, { passive: true });
+// Throttled resize
+const resizeAllThrottled = throttle(resizeAll, 150);
+window.addEventListener('resize', resizeAllThrottled, { passive: true });
+window.addEventListener('orientationchange', resizeAllThrottled, { passive: true });
 
-/* ━━━ Ritual Toggle (Sigil) — P0 FIX #3, #4 ━━━ */
+// Ritual toggle (sigil)
 function toggleRitualFromSigil(el){
   setRitualActive(!ritualActive);
   
-  // Apply rotation to CHILD img#sigil only (not parent .network-sigil-node)
-  // Simple toggle: 0° when off, 180° when on
   const img = el.querySelector('img#sigil');
   if (img) {
     img.style.transform = `rotate(${ritualActive ? 180 : 0}deg)`;
@@ -359,37 +295,24 @@ function toggleRitualFromSigil(el){
     console.warn('⚠️ img#sigil not found in sigil node');
   }
 
-  // spore burst at sigil center
   const r = el.getBoundingClientRect();
   simpleParticles(r.left + r.width/2, r.top + r.height/2);
 
-  // Proper ritual gating with logging
   if (ritualActive){
     startRitualMotion();
     attachFollowerSparks();
-    console.log(`🔮 Ritual ACTIVATED (ritualActive=${ritualActive}) — ${followerSparks.length} follower sparks attached, rotation=180°`);
   } else {
     stopRitualMotion();
     detachFollowerSparks();
     sendLightningHome(); // one quick, zippy home ping per nav
-    console.log(`🔮 Ritual DEACTIVATED (ritualActive=${ritualActive}) — labels returning to anchors, rotation=0°`);
   }
   
-  // Update layout to apply/remove offsets immediately
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
 function wireSigilToggle(){
   const sigil = document.querySelector('.network-sigil-node');
   const sigilImg = sigil ? sigil.querySelector('img#sigil') : null;
-  
-  // Debug check for proper DOM structure
-  console.log('Sigil elements found:', { 
-    sigilWrap: !!sigil, 
-    sigilImg: !!sigilImg,
-    sigilClass: sigil?.className,
-    imgId: sigilImg?.id 
-  });
   
   if (!sigil) {
     console.warn('⚠️ .network-sigil-node not found — toggle will not work');
@@ -406,7 +329,6 @@ function wireSigilToggle(){
       toggleRitualFromSigil(sigil);
     }
   });
-  console.log('✅ Sigil toggle wired — click to activate ritual');
 }
 
 function attachFollowerSparks(){
@@ -432,8 +354,6 @@ function startRitualMotion(){
   for (const route of Object.values(LOCKED_ROUTES)){
     if (!route) continue;
     
-    // FIX: Pick initial direction based on position within route bounds
-    // If closer to sMin, go forward (+1); if closer to sMax, go backward (-1)
     const distToMin = Math.abs(route.s - route.sMin);
     const distToMax = Math.abs(route.s - route.sMax);
     
@@ -446,16 +366,14 @@ function startRitualMotion(){
 }
 
 function stopRitualMotion(){
-  // Reset all routes back to home position (anchor)
-  // This ensures next activation starts from anchors, not from where they stopped
+  // Reset routes to home position
   for (const route of Object.values(LOCKED_ROUTES)){
     if (!route) continue;
     route.s = route.sHome;
   }
-  console.log('🏠 Routes reset to home positions (anchors)');
 }
 
-// ━━━ Spores Layer (ambient) ━━━
+// Ambient spores
 
 function createSpores() {
   if (!sporeCanvas || !sporeCtx) return;
@@ -527,9 +445,9 @@ function nearestNodeId(pt) {
   return GRAPH.nearestId(pt.x, pt.y, 96, 24);
 }
 
-// ━━━ [LOCKED-ROUTE] Stable Single-Branch Label Motion ━━━
+// Label motion along locked routes
 
-// [LOCKED-ROUTE] Resample polyline to uniform spacing in image space
+// Resample polyline to uniform spacing
 function resamplePolyline(pts, step = 10) {
   if (!pts || pts.length < 2) return pts;
   
@@ -553,7 +471,6 @@ function resamplePolyline(pts, step = 10) {
     accumulated = segLen - localDist;
   }
   
-  // Always include endpoint
   const last = pts[pts.length - 1];
   if (resampled[resampled.length - 1] !== last) {
     resampled.push(last);
@@ -562,7 +479,7 @@ function resamplePolyline(pts, step = 10) {
   return resampled;
 }
 
-// [LOCKED-ROUTE] Find closest point on polyline and return arc-length
+// Project point onto polyline and return arc length
 function projectOntoPolyline(px, py, polyline) {
   let bestDist = Infinity;
   let bestS = 0;
@@ -600,7 +517,7 @@ function projectOntoPolyline(px, py, polyline) {
   return { dist: bestDist, s: bestS };
 }
 
-// [LOCKED-ROUTE] Slice polyline by arc-length window [sStart, sEnd]
+// Slice polyline by arc length window
 function slicePolylineByS(poly, sStart, sEnd) {
   if (!poly || poly.length < 2) return poly;
   
@@ -620,9 +537,7 @@ function slicePolylineByS(poly, sStart, sEnd) {
     const segLen = Math.hypot(x0 - x1, y0 - y1);
     const segEnd = cumS + segLen;
     
-    // Segment overlaps [sStart, sEnd]?
     if (segEnd >= sStart && cumS <= sEnd) {
-      // Add start interpolation if needed
       if (result.length === 0 && cumS < sStart) {
         const t = (sStart - cumS) / segLen;
         result.push([
@@ -631,12 +546,10 @@ function slicePolylineByS(poly, sStart, sEnd) {
         ]);
       }
       
-      // Add endpoint if within window
       if (cumS >= sStart && cumS <= sEnd) {
         result.push([x0, y0]);
       }
       
-      // Add end interpolation if we've passed sEnd
       if (segEnd > sEnd && cumS < sEnd) {
         const t = (sEnd - cumS) / segLen;
         result.push([
@@ -654,12 +567,11 @@ function slicePolylineByS(poly, sStart, sEnd) {
   return result.length >= 2 ? result : poly;
 }
 
-// [LOCKED-ROUTE] Ritual: sparks to all current label positions
+// Send sparks to current label positions
 function ritualCatchUp() {
   if (prefersReducedMotion) return;
   
   let delay = 0;
-  // Iterate over what's actually locked
   for (const id of Object.keys(LOCKED_ROUTES)) {
     const route = LOCKED_ROUTES[id];
     if (!route) continue;
@@ -674,12 +586,12 @@ function ritualCatchUp() {
   }
 }
 
-// ━━━ Initialization ━━━
+// Init network and navigation
 async function initNetworkAndNav() {
   if (!MYC_MAP) return;
 
   setGraph(buildGraphFromPaths(MYC_MAP.paths));
-  computeNavOffsets();                 // AFTER graph built
+  computeNavOffsets();
   PATH_CACHE.clear();
 
   for (const [id, pt] of Object.entries(NAV_COORDS)) {
@@ -690,31 +602,29 @@ async function initNetworkAndNav() {
   if (introId != null && introId >= 0) {
     for (const [id, gid] of Object.entries(NODE_IDS)) {
       if (id === 'intro' || gid == null || gid < 0) continue;
-      aStarPath(introId, gid, GRAPH, PATH_CACHE); // warm both ways
+      aStarPath(introId, gid, GRAPH, PATH_CACHE);
       aStarPath(gid, introId, GRAPH, PATH_CACHE);
     }
   }
 
-  // [LOCKED-ROUTE] Lock each label to a single polyline (never re-snap)
+  // Lock each label to a single polyline
   buildLockedRoutes();
 
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
-// ━━━ Blog: Hub menu controls ━━━
+// Blog hub controls
 function initBlogControls() {
-  console.log('[Blog Nav] Initializing blog controls...');
+  populateBlogCounts();
   
   const hubButtons = document.querySelectorAll('.hub-btn');
   
-  // Hub button wiring for navigation
   let lastButtonClickTime = 0;
   const BUTTON_DEBOUNCE = 300; // ms
   
   hubButtons.forEach(btn => {
     const hubId = btn.dataset.hub;
     
-    // Hover events
     btn.addEventListener('mouseenter', () => {
       window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId, source: 'menu' } }));
     });
@@ -723,7 +633,6 @@ function initBlogControls() {
       window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId } }));
     });
     
-    // Focus events (keyboard navigation)
     btn.addEventListener('focus', () => {
       window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId, source: 'menu' } }));
     });
@@ -732,11 +641,9 @@ function initBlogControls() {
       window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId } }));
     });
     
-    // Click + keyboard activation (debounced)
     const activateHub = () => {
       const now = performance.now();
       if (now - lastButtonClickTime < BUTTON_DEBOUNCE) {
-        console.log('[Blog Nav] Button click debounced (too fast)');
         return;
       }
       lastButtonClickTime = now;
@@ -754,7 +661,6 @@ function initBlogControls() {
     });
   });
   
-  // Listen for WebGL canvas click navigation (hub nodes)
   window.addEventListener('blog:navigate', (e) => {
     const { hubId } = e.detail;
     if (hubId) {
@@ -762,12 +668,10 @@ function initBlogControls() {
     }
   });
   
-  // Listen for rim label hover (trigger WebGL hub highlight)
   document.addEventListener('mouseover', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      console.log('[Blog Nav] Rim label hover:', hubId);
       window.dispatchEvent(new CustomEvent('blog:hover', { 
         detail: { hubId, source: 'rim-label' }
       }));
@@ -784,45 +688,49 @@ function initBlogControls() {
     }
   });
   
-  // Listen for rim label clicks (.arc-btn in dish-labels)
+  // Sync arc-btn highlight when hub points are hovered (bidirectional)
+  window.addEventListener('blog:hover', (e) => {
+    const { hubId, source } = e.detail;
+    if (source === 'hub-point' && hubId) {
+      const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
+      if (arcBtn) arcBtn.classList.add('hovered');
+    }
+  });
+  
+  window.addEventListener('blog:hover-off', (e) => {
+    const { hubId, source } = e.detail;
+    if (source === 'hub-point' && hubId) {
+      const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
+      if (arcBtn) arcBtn.classList.remove('hovered');
+    }
+  });
+  
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      console.log('[Blog Nav] Rim label clicked:', hubId);
       enterHub(hubId);
     }
   });
   
-  // Listen for rim label keyboard activation
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const arcBtn = e.target.closest('.arc-btn');
       if (arcBtn && arcBtn.dataset.hub) {
         e.preventDefault();
         const hubId = arcBtn.dataset.hub;
-        console.log('[Blog Nav] Rim label activated (kbd):', hubId);
         enterHub(hubId);
       }
     }
   });
   
-  // Listen for Map button click
   const btnMap = document.getElementById('btn-map');
   if (btnMap) {
     btnMap.addEventListener('click', () => {
-      console.log('[Blog Nav] Map button clicked');
       exitToMap();
     });
   }
   
-  // Legacy: Listen for Petri Map button click (may not exist anymore)
-  window.addEventListener('blog:map', () => {
-    console.log('[Blog Nav] Map button clicked (legacy event)');
-    exitToMap();
-  });
-  
-  // Wire up aria-live status for hover announcements
   const hubStatus = document.getElementById('hub-status');
   const HUB_INFO = {
     craft: { title: 'CRAFT', desc: 'Tools, code, and making by hand' },
@@ -831,7 +739,6 @@ function initBlogControls() {
     convergence: { title: 'CONVERGENCE', desc: 'Where disciplines meet' }
   };
   
-  // Create tooltip element
   const tooltip = document.createElement('div');
   tooltip.className = 'blog-hub-tooltip';
   tooltip.innerHTML = `
@@ -849,7 +756,6 @@ function initBlogControls() {
       const info = HUB_INFO[hubId];
       hubStatus.textContent = `Preview: ${info.title}. ${info.desc}.`;
       
-      // Show tooltip
       tooltipTitle.textContent = info.title;
       tooltipDesc.textContent = info.desc;
       tooltip.classList.add('visible');
@@ -860,111 +766,117 @@ function initBlogControls() {
     if (hubStatus) {
       hubStatus.textContent = '';
     }
-    // Hide tooltip
     tooltip.classList.remove('visible');
   });
-  
-  console.log('[Blog Nav] Blog controls initialized');
 }
 
-// ━━━ Blog: Category/Article navigation ━━━
+// Blog category and article navigation
 
-// Unified hub entry (called by both rim labels and canvas hub clicks)
+function updateBlogNavActive(hubId) {
+  document.querySelectorAll('.blog-nav-link').forEach(link => {
+    if (link.dataset.hub === hubId) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+}
+
 function enterHub(hubId) {
-  // Ignore source node
   if (!hubId || hubId === 'source') {
-    console.warn('[Blog Nav] Cannot enter hub:', hubId);
     return;
   }
   
-  console.log('[Blog Nav] Entering hub:', hubId);
-  
-  // Set mode to 'category' on blog section
   const blogSection = document.getElementById('blog');
   if (blogSection) {
     blogSection.dataset.mode = 'category';
     blogSection.classList.add('in-category'); // Legacy support
   }
   
-  // Hide dish labels (we're in reading mode now)
   const dishLabels = document.getElementById('dish-labels');
   if (dishLabels) {
     dishLabels.style.display = 'none';
   }
   
-  // Show category view
+  updateBlogNavActive(hubId);
+  
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
+    categoryView.setAttribute('data-category', hubId);
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
-    console.log('[Blog Nav] Category view opened for:', hubId);
-  } else {
-    console.error('[Blog Nav] Category view element not found!');
   }
   
-  // Update URL
   history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
 }
 
-// Exit to map view (reverses enterHub)
 function exitToMap() {
-  console.log('[Blog Nav] Exiting to map');
-  
-  // Set mode back to 'map'
   const blogSection = document.getElementById('blog');
   if (blogSection) {
     blogSection.dataset.mode = 'map';
     blogSection.classList.remove('in-category');
   }
   
-  // Show dish labels again
   const dishLabels = document.getElementById('dish-labels');
   if (dishLabels) {
     dishLabels.style.display = '';
   }
   
-  // Hide category and article views
+  updateBlogNavActive(null);
+  
   const categoryView = document.getElementById('blog-category-view');
   const articleView = document.getElementById('blog-article-view');
   if (categoryView) categoryView.setAttribute('hidden', '');
   if (articleView) articleView.setAttribute('hidden', '');
-  
-  console.log('[Blog Nav] Returned to map view');
-  
-  // Update URL
+
   history.pushState({ view: 'map' }, '', '#blog');
 }
 
-// Legacy alias for backwards compatibility
 function enterBlogCategory(hubId) { return enterHub(hubId); }
 function exitBlogCategory() { return exitToMap(); }
 
-// Legacy alias for showMapRoot (now just calls exitToMap)
-function showMapRoot() {
-  exitToMap();
+let ARTICLES_REGISTRY = null;
+
+async function loadArticlesRegistry() {
+  if (ARTICLES_REGISTRY) return ARTICLES_REGISTRY;
+  
+  try {
+    const res = await fetch('./blog/articles.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    ARTICLES_REGISTRY = await res.json();
+    return ARTICLES_REGISTRY;
+  } catch (err) {
+    console.warn('[Blog] Could not load articles.json, using fallback:', err.message);
+    ARTICLES_REGISTRY = { craft: [], cosmos: [], codex: [], convergence: [] };
+    return ARTICLES_REGISTRY;
+  }
 }
 
-function loadCategoryContent(hubId) {
+async function populateBlogCounts() {
+  const registry = await loadArticlesRegistry();
+  const hubs = ['craft', 'cosmos', 'codex', 'convergence'];
+  
+  hubs.forEach(hub => {
+    const count = (registry[hub] || []).length;
+    const countText = count > 0 ? `(${count})` : '';
+    
+    const memoCount = document.querySelector(`.blog-memo-count[data-hub="${hub}"]`);
+    if (memoCount) memoCount.textContent = countText;
+    
+    const specCount = document.querySelector(`.specimen-count[data-hub="${hub}"]`);
+    if (specCount) specCount.textContent = countText;
+  });
+}
+
+async function loadCategoryContent(hubId) {
   const content = document.getElementById('blog-category-content');
   const titleEl = document.getElementById('blog-category-title');
   if (!content) return;
   
-  // Hardcoded sample articles for now
-  const ARTICLES = {
-    craft: [
-      { id: 'lorem-hand', title: 'Hand & Ember', date: 'January 15, 2024', excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...' }
-    ],
-    codex: [
-      { id: 'lorem-runes', title: 'Runes in Silence', date: 'February 3, 2024', excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...' }
-    ],
-    cosmos: [],
-    convergence: []
-  };
-  
-  const articles = ARTICLES[hubId] || [];
+  const registry = await loadArticlesRegistry();
+  const articles = registry[hubId] || [];
   const hubTitle = hubId.toUpperCase();
   
-  // Update header title
   if (titleEl) titleEl.textContent = hubTitle;
   
   content.innerHTML = `
@@ -980,7 +892,6 @@ function loadCategoryContent(hubId) {
     </div>
   `;
   
-  // Wire article clicks
   content.querySelectorAll('.blog-article-item').forEach(item => {
     const articleId = item.dataset.article;
     const activateArticle = () => {
@@ -997,33 +908,93 @@ function loadCategoryContent(hubId) {
   });
 }
 
+// Article scroll navigation
+function initArticleScrollNav() {
+  const scrollNav = document.querySelector('.article-scroll-nav');
+  if (!scrollNav) return;
+  
+  const articleView = document.getElementById('blog-article-view');
+  const articleContent = document.getElementById('blog-article-content');
+  if (!articleView || !articleContent) return;
+  
+  const SCROLL_AMOUNT = 300; // ~10 lines
+  const THRESHOLD = 400; // ~15 lines - show/hide threshold
+  
+  scrollNav.querySelectorAll('.scroll-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      
+      switch (action) {
+        case 'top':
+          articleView.scrollTo({ top: 0, behavior: 'smooth' });
+          break;
+        case 'up':
+          articleView.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'smooth' });
+          break;
+        case 'down':
+          articleView.scrollBy({ top: SCROLL_AMOUNT, behavior: 'smooth' });
+          break;
+        case 'bottom':
+          articleView.scrollTo({ top: articleView.scrollHeight, behavior: 'smooth' });
+          break;
+      }
+    });
+  });
+  
+  const updateScrollNav = () => {
+    const isArticleVisible = !articleView.hidden && articleView.offsetParent !== null;
+    if (!isArticleVisible) {
+      scrollNav.classList.remove('visible');
+      return;
+    }
+    
+    const scrollTop = articleView.scrollTop;
+    const scrollHeight = articleView.scrollHeight;
+    const clientHeight = articleView.clientHeight;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    
+    const pastTop = scrollTop > THRESHOLD;
+    const beforeEnd = distanceFromBottom > THRESHOLD;
+    const shouldShow = pastTop && beforeEnd;
+    
+    scrollNav.classList.toggle('visible', shouldShow);
+  };
+  
+  articleView.addEventListener('scroll', updateScrollNav);
+  
+  const observer = new MutationObserver(() => {
+    if (!articleView.hidden) {
+      articleView.scrollTop = 0;
+    }
+    updateScrollNav();
+  });
+  observer.observe(articleView, { attributes: true, attributeFilter: ['hidden'] });
+  
+  updateScrollNav();
+}
+
 function enterBlogArticle(hubId, articleId) {
-  console.log('[Blog Nav] Entering article:', hubId, articleId);
+  const categoryView = document.getElementById('blog-category-view');
+  if (categoryView) {
+    categoryView.setAttribute('hidden', '');
+  }
   
-  // Hide category view
-  document.getElementById('blog-category-view')?.setAttribute('hidden', '');
+  updateBlogNavActive(hubId);
   
-  // Show article view
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
     articleView.removeAttribute('hidden');
     loadArticleContent(hubId, articleId);
   }
   
-  // Update URL
   history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
 }
 
 function exitBlogArticle() {
-  console.log('[Blog Nav] Exiting article');
-  
-  // Show category view
   document.getElementById('blog-category-view')?.removeAttribute('hidden');
   
-  // Hide article view
   document.getElementById('blog-article-view')?.setAttribute('hidden', '');
   
-  // Restore category URL
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     const hubId = history.state?.hubId || 'craft';
@@ -1033,26 +1004,24 @@ function exitBlogArticle() {
 
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
-  const titleEl = document.getElementById('blog-article-title');
   if (!content) return;
   
-  // Load from existing HTML files
-  fetch(`./blog/${hubId}/${articleId}.html`)
-    .then(res => res.text())
+  const path = `./blog/${hubId}/${articleId}.html`;
+  
+  fetch(path)
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      return res.text();
+    })
     .then(html => {
-      // Extract body content (simple parser)
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const article = doc.querySelector('.article-container');
       if (article) {
         content.innerHTML = article.innerHTML;
-        // Update header title from article's h1
-        const articleTitle = article.querySelector('h1');
-        if (titleEl && articleTitle) {
-          titleEl.textContent = articleTitle.textContent;
-        }
         
-        // Wire up breadcrumb and back button navigation
         setupArticleNavigation(content, hubId);
       } else {
         content.innerHTML = '<p>Article not found.</p>';
@@ -1061,14 +1030,23 @@ function loadArticleContent(hubId, articleId) {
     })
     .catch(err => {
       console.error('[Blog Nav] Failed to load article:', err);
-      content.innerHTML = '<p>Failed to load article.</p>';
-      if (titleEl) titleEl.textContent = 'Error';
+      content.innerHTML = `
+        <div style="padding: 40px; text-align: center;">
+          <p style="color: rgba(201, 194, 179, 0.7); margin-bottom: 16px;">Failed to load article.</p>
+          <p style="color: rgba(201, 194, 179, 0.5); font-size: 0.9em;">
+            ${err.message || 'Network error'}<br>
+            <small>Path: ./blog/${hubId}/${articleId}.html</small>
+          </p>
+          <p style="color: rgba(201, 194, 179, 0.4); font-size: 0.85em; margin-top: 24px;">
+            Note: This page requires a local server (e.g., <code>npx serve</code> or VS Code Live Server)
+          </p>
+        </div>
+      `;
+      if (titleEl) titleEl.textContent = 'Error Loading Article';
     });
 }
 
-// Set up navigation for article breadcrumbs and back button
 function setupArticleNavigation(container, hubId) {
-  // Handle breadcrumb clicks
   const breadcrumbLinks = container.querySelectorAll('.breadcrumb a');
   breadcrumbLinks.forEach(link => {
     link.addEventListener('click', (e) => {
@@ -1076,16 +1054,13 @@ function setupArticleNavigation(container, hubId) {
       const href = link.getAttribute('href');
       
       if (href.includes('#blog?hub=') || href.includes('#blog/')) {
-        // Category breadcrumb - go back to category view
         exitBlogArticle();
       } else if (href.includes('#blog')) {
-        // Blog root breadcrumb - go back to map
         exitToMap();
       }
     });
   });
   
-  // Handle back button clicks
   const backButton = container.querySelector('.back-button');
   if (backButton) {
     backButton.addEventListener('click', (e) => {
@@ -1095,68 +1070,107 @@ function setupArticleNavigation(container, hubId) {
   }
 }
 
-// ━━━ Section visibility wrapper (controls blog network and other section-specific features) ━━━
+// Section visibility with effects
 function showSectionWithEffects(sectionName) {
-  console.log('[App] showSectionWithEffects called:', sectionName);
   showSection(sectionName, startRitualBackground, stopRitualBackground);
   
-  // Emit blog:visible event for overlay
   const isBlogVisible = sectionName === 'blog';
   window.dispatchEvent(new CustomEvent('blog:visible', {
     detail: { visible: isBlogVisible }
   }));
-  
-  const blog = document.getElementById('blog');
-  console.log('[App] Section visibility IMMEDIATE:', {
-    blogExists: !!blog,
-    hasActiveSection: blog?.classList.contains('active-section'),
-    allClasses: blog?.className,
-    opacity: getComputedStyle(blog || {}).opacity,
-    display: getComputedStyle(blog || {}).display,
-    pointerEvents: getComputedStyle(blog || {}).pointerEvents,
-    emittedBlogVisible: isBlogVisible
-  });
-  
-  // Check again after CSS transition completes (0.8s)
-  setTimeout(() => {
-    const blogAfter = document.getElementById('blog');
-    console.log('[App] Section visibility AFTER TRANSITION (0.8s):', {
-      opacity: getComputedStyle(blogAfter || {}).opacity,
-      display: getComputedStyle(blogAfter || {}).display,
-      pointerEvents: getComputedStyle(blogAfter || {}).pointerEvents,
-      visible: getComputedStyle(blogAfter || {}).opacity === '1'
-    });
-  }, 900);
-  
-  // Blog network visibility now handled by WebGL version
-  // if (sectionName === 'blog') {
-  //   blogNetwork.show();
-  // } else {
-  //   blogNetwork.hide();
-  // }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   await loadMycelium().catch(err => console.warn('⚠️ network.json unavailable:', err));
   await initNetworkAndNav();
+  
+  // ═══════════════════════════════════════════════════════════════════
+  // DUST STREAMING: Dust particles flow toward hovered nav elements
+  // ═══════════════════════════════════════════════════════════════════
+  
+  /**
+   * Start dust streaming toward target element.
+   */
+  function startStream(targetVpX, targetVpY) {
+    portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
+  }
+  
+  function stopStream() {
+    portraitParticles?.clearStream?.();
+  }
 
   const nav = document.getElementById('network-nav');
   if (nav) {
-    nav.querySelectorAll('.network-node-label, .network-sigil-node').forEach(el => {
+    const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
+    console.log('[stream] Attaching to', navNodes.length, 'nav nodes');
+    navNodes.forEach(el => {
       const id = el.dataset.node;
-      el.addEventListener('pointerenter', () => handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute));
-      el.addEventListener('pointerleave', () => handleNavLeave(id, el));
-      el.addEventListener('focus', () => handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute));
-      el.addEventListener('blur', () => handleNavLeave(id, el));
+      
+      el.addEventListener('pointerenter', () => {
+        console.log('[stream] pointerenter on', id);
+        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        
+        // Start streaming for all nav items including sigil
+        const rect = el.getBoundingClientRect();
+        const vpX = rect.left + rect.width / 2;
+        const vpY = rect.top + rect.height / 2;
+        startStream(vpX, vpY);
+      });
+      
+      el.addEventListener('pointerleave', () => {
+        handleNavLeave(id, el);
+        stopStream();
+      });
+      
+      el.addEventListener('focus', () => {
+        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        const rect = el.getBoundingClientRect();
+        const vpX = rect.left + rect.width / 2;
+        const vpY = rect.top + rect.height / 2;
+        startStream(vpX, vpY);
+      });
+      
+      el.addEventListener('blur', () => {
+        handleNavLeave(id, el);
+        stopStream();
+      });
     });
   }
-
-  // Honor hash on load, or default to intro
+  
+  // Social icons: stream on hover
+  const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
+  socialIcons.forEach(icon => {
+    icon.addEventListener('pointerenter', () => {
+      const rect = icon.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      startStream(vpX, vpY);
+    });
+    
+    icon.addEventListener('pointerleave', () => {
+      stopStream();
+    });
+  });
+  
   const hash = window.location.hash.slice(1);
-  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills'];
-  const initialSection = validSections.includes(hash) ? hash : 'intro';
-  console.log(`🎯 Page Load: hash="${hash}", showing section="${initialSection}"`);
-  showSectionWithEffects(initialSection);
+  
+  if (hash.startsWith('blog/')) {
+    const parts = hash.split('/');
+    const hubId = parts[1];
+    const articleId = parts[2];
+    
+    showSectionWithEffects('blog');
+    
+    if (articleId) {
+      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+    } else if (hubId) {
+      setTimeout(() => enterHub(hubId), 100);
+    }
+  } else {
+    const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
+    const initialSection = validSections.includes(hash) ? hash : 'intro';
+    showSectionWithEffects(initialSection);
+  }
 
   if (hudEnabled) {
     initHUD();
@@ -1166,7 +1180,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'H') toggleHUD();
     
-    // ESC key for blog navigation
     if (e.key === 'Escape') {
       const articleView = document.getElementById('blog-article-view');
       const categoryView = document.getElementById('blog-category-view');
@@ -1179,60 +1192,86 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Initialize ritual background system
   initRitualBackground();
 
-  // Initialize contact form
   notebookContact.init();
 
-  // Initialize social icons animation (vials)
   socialIconsAnimation.init();
 
-  // NOTE: Blog network now uses WebGL version loaded directly in HTML
-  // blogNetwork.init();
-
-  // Contact section: click background to close
   const contactSection = document.getElementById('contact');
   if (contactSection) {
     contactSection.addEventListener('click', (e) => {
-      // Only close if clicking directly on the section (background), not on the notebook or its children
       if (e.target === contactSection) {
         showSectionWithEffects('intro');
       }
     });
   }
   
-  // ━━━ Blog: Hub menu wiring ━━━
   initBlogControls();
   
-  // Blog Map buttons (in category and article views)
   document.getElementById('btn-map-category')?.addEventListener('click', exitToMap);
   document.getElementById('btn-map-article')?.addEventListener('click', exitToMap);
+  
+  document.querySelectorAll('.blog-nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const hubId = link.dataset.hub;
+      if (hubId === 'map') {
+        exitToMap();
+      } else {
+        enterHub(hubId);
+      }
+    });
+  });
+  
+  initArticleScrollNav();
 });
 
-// ━━━ Post-load layout (fonts & image settling) ━━━
+// Mobile menu
+const sigilBtn = document.getElementById('myco-sigil-btn');
+const menuDlg  = document.getElementById('necro-menu');
+
+if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
+  sigilBtn.addEventListener('click', () => {
+    menuDlg.showModal();
+    sigilBtn.setAttribute('aria-expanded', 'true');
+  });
+
+  menuDlg.addEventListener('click', (e) => {
+    if (e.target === menuDlg) menuDlg.close();
+  });
+  menuDlg.querySelector('[data-close]')?.addEventListener('click', () => menuDlg.close());
+  menuDlg.addEventListener('close', () => sigilBtn.setAttribute('aria-expanded','false'));
+
+  menuDlg.querySelectorAll('[data-nav-open]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const section = a.getAttribute('data-nav-open');
+      document.dispatchEvent(new CustomEvent('open-section', { detail: section }));
+      if (section) location.hash = section;
+      menuDlg.close();
+    });
+  });
+}
+
+// Post-load layout
 window.addEventListener('load', () => {
-  // Ensure cover is recomputed after all assets settle
   if (COVER.ready) {
     computeCoverFromImage();
     computeNavOffsets();
     layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
     if (hudEnabled) renderHUD();
   }
+  
+  initHubToIcons();
 });
 
-// ━━━ Glitch Text Effect Setup ━━━
+// Glitch text effect
 const glitchElements = document.querySelectorAll('.glitch-text');
 glitchElements.forEach(el => {
   el.setAttribute('data-text', el.textContent);
 });
 
-// ━━━ Removed duplicate sigil handler (using wireSigilToggle() instead) ━━━
-
-/**
- * Simple Particle Effect (kept for use by toggleRitualFromSigil)
- * Creates ~12 lightweight particles that fly outward and fade
- */
+// Simple particle effect
 function simpleParticles(x, y) {
   if (prefersReducedMotion) return;
   
@@ -1267,33 +1306,16 @@ function simpleParticles(x, y) {
     
     layer.appendChild(particle);
     
-    // Animate in next frame
     requestAnimationFrame(() => {
       particle.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
       particle.style.opacity = '0';
     });
   }
   
-  // Clean up after animation
   setTimeout(() => layer.remove(), 600);
 }
 
-/* ━━━ NOTES ━━━
- * Navigation:
- * - NAV_COORDS provides fixed 1920×1080 anchors; toViewportCover() keeps them glued to the artwork.
- * - GRAPH is an A* graph derived from artifacts/network.json so sparks hug real mycelium branches.
- *
- * Motion:
- * - Sparks animate as lightweight dots with additive glow; PATH_CACHE prevents redundant routing.
- * - prefers-reduced-motion skips animation and applies motion-highlight styling instead.
- * - Ambient spores pause when reduced motion is requested.
- *
- * Accessibility:
- * - Labels remain keyboard focusable with focus-visible styling and click handlers.
- * - showSection() keeps content panes in sync with nav state.
- */
-
-// ━━━ Debug Helper (Console Command) ━━━
+// Debug helper (console command)
 window.verifyAlignment = function() {
   console.log('\n=== ALIGNMENT VERIFICATION ===');
   console.log(`Ritual Active: ${ritualActive}`);
@@ -1316,10 +1338,26 @@ window.verifyAlignment = function() {
   console.log('\nRun this command after load and after toggling ritual to verify alignment.\n');
 };
 
-// ━━━ Hash change listener (back/forward navigation) ━━━
+// Hash change (back/forward)
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.slice(1);
-  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills'];
+  
+  if (hash.startsWith('blog/')) {
+    const parts = hash.split('/');
+    const hubId = parts[1]; // craft, cosmos, convergence, codex
+    const articleId = parts[2]; // optional article slug
+    
+    showSectionWithEffects('blog');
+    
+    if (articleId) {
+      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+    } else if (hubId) {
+      setTimeout(() => enterHub(hubId), 100);
+    }
+    return;
+  }
+  
+  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash);
   } else if (!hash) {
@@ -1327,7 +1365,7 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-// ━━━ Back button handler (for altar screens) ━━━
+// Back button (altar screens)
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="go-intro"]');
   if (!btn) return;
@@ -1335,22 +1373,170 @@ document.addEventListener('click', (e) => {
   showSectionWithEffects('intro');
 });
 
-// ━━━ About: Paper focus (zoom to center + backdrop dim) ━━━
-initAboutPaperFocus();
-initSkillsPaperFocus();
-initNow();
-initWorkGlobe();
-// Resume spirals disabled for now
-// TODO: Re-enable later by uncommenting: initResumeSpirals();
-// initResumeSpirals();
-initPaperHoverRing();
+// Section navigation
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.section-nav-link');
+  if (!link) return;
+  e.preventDefault();
+  const targetSection = link.dataset.section;
+  if (targetSection) {
+    showSectionWithEffects(targetSection);
+  }
+});
+
+// Paper focus (desktop)
+const mqWide = window.matchMedia('(min-width: 901px)');
+if (mqWide.matches) {
+  initAboutPaperFocus();       // desktop/tablet-wide only
+  initSkillsPaperFocus();      // desktop/tablet-wide only
+}
+mqWide.addEventListener('change', (e) => {
+  if (e.matches) {
+    initAboutPaperFocus();
+    initSkillsPaperFocus();
+  }
+});
+
+const mqMobile = window.matchMedia('(max-width: 900px)');
+
+function aboutMobileInertify() {
+  const papers = document.querySelectorAll('#about [data-paper]');
+  papers.forEach(el => {
+    if (el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
+    el.setAttribute('aria-disabled', 'true');
+  });
+}
+
+function aboutRestoreFocusForWide() {
+  const papers = document.querySelectorAll('#about [data-paper]');
+  papers.forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.removeAttribute('aria-disabled');
+  });
+}
+
+if (mqMobile.matches) aboutMobileInertify();
+mqMobile.addEventListener('change', e => {
+  if (e.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
+});
+
+(function () {
+  const mqMobile = window.matchMedia('(max-width: 900px)');
+  const altarSel = '#about .altar';
+
+  function bindAboutFrontToggle() {
+    const altar = document.querySelector(altarSel);
+    if (!altar || altar.__frontBound) return;
+    altar.__frontBound = true;
+
+    altar.addEventListener('click', (e) => {
+      const card = e.target.closest('.slab.paper');
+
+      // 1) Clicked the background → clear everything (no blur)
+      if (!card) {
+        altar.classList.remove('has-front');
+        altar.querySelectorAll('.slab.paper.is-front')
+             .forEach(el => el.classList.remove('is-front'));
+        return;
+      }
+
+      // 2) Don’t toggle when clicking real controls inside the card
+      if (e.target.closest('a,button,[role="button"]')) return;
+
+      // 3) Toggle front: if card is already front → clear; else set it front
+      const isFront = card.classList.contains('is-front');
+      
+      // Always clear all is-front classes first
+      altar.querySelectorAll('.slab.paper.is-front')
+           .forEach(el => el.classList.remove('is-front'));
+      
+      // If card was NOT front, set it as front and add has-front to altar
+      // If card WAS front, remove has-front from altar (clears blur on all cards)
+      if (!isFront) {
+        altar.classList.add('has-front');
+        card.classList.add('is-front');
+      } else {
+        // Remove has-front class - CSS will handle blur clearing automatically
+        altar.classList.remove('has-front');
+      }
+    }, { passive: true });
+  }
+
+  function unbindState() {
+    const altar = document.querySelector(altarSel);
+    if (!altar) return;
+    altar.classList.remove('has-front');
+    altar.querySelectorAll('.slab.paper.is-front')
+         .forEach(el => el.classList.remove('is-front'));
+  }
+
+  if (mqMobile.matches) bindAboutFrontToggle();
+  mqMobile.addEventListener('change', e => {
+    if (e.matches) bindAboutFrontToggle(); else unbindState();
+  });
+})();
+
+// Skills mobile blur toggle
+(function() {
+  const mqMobile = window.matchMedia('(max-width: 900px)');
+  const altarSel = '#skills .altar';
+
+  function bindSkillsFrontToggle() {
+    const altar = document.querySelector(altarSel);
+    if (!altar || altar.__frontBound) return;
+    altar.__frontBound = true;
+
+    altar.addEventListener('click', (e) => {
+      const card = e.target.closest('.slab.paper');
+
+      // 1) Clicked the background → clear everything (no blur)
+      if (!card) {
+        altar.classList.remove('has-front');
+        altar.querySelectorAll('.slab.paper.is-front')
+             .forEach(el => el.classList.remove('is-front'));
+        return;
+      }
+
+      if (e.target.closest('a,button,[role="button"]')) return;
+
+      // 3) Toggle front: if card is already front → clear; else set it front
+      const isFront = card.classList.contains('is-front');
+      
+      // Always clear all is-front classes first
+      altar.querySelectorAll('.slab.paper.is-front')
+           .forEach(el => el.classList.remove('is-front'));
+      
+      // If card was NOT front, set it as front and add has-front to altar
+      // If card WAS front, remove has-front from altar (clears blur on all cards)
+      if (!isFront) {
+        altar.classList.add('has-front');
+        card.classList.add('is-front');
+      } else {
+        // Remove has-front class - CSS will handle blur clearing automatically
+        altar.classList.remove('has-front');
+      }
+    }, { passive: true });
+  }
+
+  function unbindState() {
+    const altar = document.querySelector(altarSel);
+    if (!altar) return;
+    altar.classList.remove('has-front');
+    altar.querySelectorAll('.slab.paper.is-front')
+         .forEach(el => el.classList.remove('is-front'));
+  }
+
+  if (mqMobile.matches) bindSkillsFrontToggle();
+  mqMobile.addEventListener('change', e => {
+    if (e.matches) bindSkillsFrontToggle(); else unbindState();
+  });
+})();
 
 // [AA-FIX] Watch for DPR changes (zoom/display scaling)
 let lastDPR = window.devicePixelRatio || 1;
 setInterval(() => {
   const currentDPR = window.devicePixelRatio || 1;
   if (currentDPR !== lastDPR) {
-    console.log(`[AA-FIX] DPR changed from ${lastDPR} to ${currentDPR}`);
     lastDPR = currentDPR;
     // If a card is open, recompute its position
     const openCard = document.querySelector('.paper-open');
@@ -1367,33 +1553,17 @@ setInterval(() => {
   }
 }, 500);
 
-/**
- * initAboutPaperFocus
- * 
- * Click (or Enter/Space) on an About "paper" zooms it to center and darkens the rest.
- * ESC or clicking the backdrop closes it.
- */
 function initAboutPaperFocus(){
   initPaperFocusForSection('about');
 }
 
-/**
- * initSkillsPaperFocus
- * 
- * Click (or Enter/Space) on a Skills "paper" zooms it to center and darkens the rest.
- * ESC or clicking the backdrop closes it.
- */
 function initSkillsPaperFocus(){
   initPaperFocusForSection('skills');
 }
 
-/**
- * Generic paper focus for altar sections
- */
 function initPaperFocusForSection(sectionId){
   const section = document.getElementById(sectionId);
   if (!section) return;
-  // Remove any old, scoped overlays (they caused the rectangle issue)
   section.querySelectorAll('.paper-overlay')?.forEach(n=>n.remove());
 
   const backdrop = document.getElementById('paper-backdrop');
@@ -1404,11 +1574,10 @@ function initPaperFocusForSection(sectionId){
   
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
-    // ensure focusable for keyboard users
     if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
     
     p.addEventListener('click', () => {
-      // Toggle: if this paper is already open, close it; otherwise open it
+      if (window.innerWidth <= 900) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
       } else {
@@ -1416,6 +1585,8 @@ function initPaperFocusForSection(sectionId){
       }
     });
     p.addEventListener('keydown', (e) => {
+      if (window.innerWidth <= 900) return;
+      
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (p.classList.contains('paper-open')) {
@@ -1433,24 +1604,18 @@ function initPaperFocusForSection(sectionId){
   
   function openPaper(el){
     if (document.body.classList.contains('has-paper-open-global')) return;
-    // Freeze current pixels before portaling
     const r = el.getBoundingClientRect();
     const computed = getComputedStyle(el);
     
-    // Utility: integer pixel snapping for crispness
     const ipx = (n) => Math.round(Number(n) || 0);
     
-    // Create an invisible placeholder that holds the exact same space and positioning
     const placeholder = document.createElement('div');
-    // Copy all the classes so it gets the same CSS positioning rules
     placeholder.className = el.className.replace('paper-open', '') + ' paper-placeholder';
     placeholder.style.visibility = 'hidden';
     placeholder.style.pointerEvents = 'none';
-    // Don't override the CSS positioning - let it use the same rules
     
     el.__portal = { parent: el.parentNode, placeholder: placeholder };
     el.__portal.parent.insertBefore(placeholder, el);
-    // Move to <body> so fixed positioning uses viewport (avoids rectangle/backdrop bugs)
     document.body.appendChild(el);
     el.classList.add('paper-open');
     el.style.position = 'fixed';
@@ -1459,12 +1624,10 @@ function initPaperFocusForSection(sectionId){
     el.style.width  = `${r.width}px`;
     el.style.height = `${r.height}px`;
     
-    // Start with transform at 0 (paper at original position)
     el.style.setProperty('--open-tx', '0px');
     el.style.setProperty('--open-ty', '0px');
     el.style.setProperty('--open-scale', '1');
     
-    // Compute center translation and scale to fit
     const vw = window.innerWidth, vh = window.innerHeight;
     const cx = r.left + r.width/2, cy = r.top + r.height/2;
     const tx = ipx((vw/2) - cx);
@@ -1473,21 +1636,18 @@ function initPaperFocusForSection(sectionId){
     const fitH = (vh * 0.80) / r.height;
     const scale = Math.min(fitW, fitH, 2.4);
     
-    // Expose final layout size (rounded) for settled state
     const targetW = ipx(r.width * scale);
     const targetH = ipx(r.height * scale);
     el.style.setProperty('--open-w', `${targetW}px`);
     el.style.setProperty('--open-h', `${targetH}px`);
     
-    // Animate to magnified state in next frame
     requestAnimationFrame(() => {
       el.style.setProperty('--open-tx', `${tx}px`);
       el.style.setProperty('--open-ty', `${ty}px`);
       el.style.setProperty('--open-scale', `${scale}`);
     });
     
-    // [AA-FIX] When transform transition finishes, demote from compositor for better AA
-    // We keep the scale() but remove will-change to allow subpixel rendering
+    // Demote from compositor after transition for better AA
     let settled = false;
     const applySettle = () => {
       if (settled) return;
@@ -1495,14 +1655,10 @@ function initPaperFocusForSection(sectionId){
       
       el.classList.add('paper-open--settled');
       
-      // Force compositor demotion - inline styles + CSS !important rules
       el.style.willChange = 'auto';
       el.style.backfaceVisibility = 'visible';
       
-      // Force browser to re-evaluate layer promotion
       void el.offsetHeight;
-      
-      console.log('[AA-FIX] Settled:', el.className, 'willChange:', getComputedStyle(el).willChange);
     };
     
     const onEnd = (e) => {
@@ -1512,27 +1668,21 @@ function initPaperFocusForSection(sectionId){
     };
     el.addEventListener('transitionend', onEnd, { once: true });
     
-    // Fallback: ensure settle happens even if transitionend doesn't fire
-    setTimeout(applySettle, 350); // 300ms transition + 50ms buffer
+    setTimeout(applySettle, 350);
     
-    // Accessibility + backdrop
     el.setAttribute('role','dialog');
     el.setAttribute('aria-modal','true');
     document.body.classList.add('has-paper-open-global');
     requestAnimationFrame(() => el.focus({ preventScroll:true }));
     document.addEventListener('keydown', onEsc);
-    // Hide hover ring while opened
     document.body.classList.remove('hovering-paper');
   }
-  
+
   function closePaper(){
     const openEl = document.querySelector('.paper-open');
     if (openEl){
-      // [AA-FIX] Remove settled state and re-enable will-change for closing animation
       openEl.classList.remove('paper-open--settled');
       openEl.style.willChange = 'transform';
-      
-      // animate back to wall
       openEl.style.setProperty('--open-tx','0px');
       openEl.style.setProperty('--open-ty','0px');
       openEl.style.setProperty('--open-scale','1');
@@ -1549,7 +1699,6 @@ function initPaperFocusForSection(sectionId){
         openEl.style.removeProperty('--open-tx');
         openEl.style.removeProperty('--open-ty');
         openEl.style.removeProperty('--open-scale');
-        // restore into original DOM position
         if (openEl.__portal){
           openEl.__portal.parent.insertBefore(openEl, openEl.__portal.placeholder);
           openEl.__portal.placeholder.remove();
@@ -1564,22 +1713,16 @@ function initPaperFocusForSection(sectionId){
   }
 }
 
-// ───────────────────────── Breathing Ring Around Cursor (paper hover) ─────────────────────────
-/**
- * Thin breathing ring around your existing glowing cursor while papers are hoverable
- */
+// Cursor hover ring
 function initPaperHoverRing(){
   const ring = document.getElementById('cursor-ring');
   if (!ring) return;
-  
-  // Track cursor position smoothly using RAF for 60fps updates
   let currentX = 0, currentY = 0;
   let targetX = 0, targetY = 0;
   let rafId = null;
   
   const updatePosition = () => {
-    // Smooth interpolation for buttery movement
-    currentX += (targetX - currentX) * 1.0; // 1.0 = instant (no lag)
+    currentX += (targetX - currentX) * 1.0;
     currentY += (targetY - currentY) * 1.0;
     
     ring.style.left = currentX + 'px';
@@ -1587,17 +1730,13 @@ function initPaperHoverRing(){
     
     rafId = requestAnimationFrame(updatePosition);
   };
-  
-  // Start the animation loop
   updatePosition();
   
-  // Update target position on mouse move
   document.addEventListener('mousemove', (e) => {
     targetX = e.clientX;
     targetY = e.clientY;
   }, { passive: true });
   
-  // Show ring when hovering clickable papers (not when one is already open)
   const about = document.getElementById('about');
   if (!about) return;
   
@@ -1614,19 +1753,18 @@ function initPaperHoverRing(){
   }, true);
 }
 
-// ───────────────────────── Ritual Background (panel mode) ─────────────────────────
+// Ritual background (disabled)
 var SIGNALS = {
   canvas: null,
   ctx: null,
   raf: 0,
   interval: 0,
-  pulses: [],  // moving fronts along edges or radial rays
-  spores: [],  // drifting dots
+  pulses: [],
+  spores: [],
   lastTs: 0
 };
 
 function initRitualBackground(){
-  // DISABLED FOR PERFORMANCE - No radial rays effect
   return;
 }
 function createSignalsCanvas(){
@@ -1649,12 +1787,10 @@ function getSigilCenter(){
 }
 
 function startRitualBackground(){
-  // DISABLED FOR PERFORMANCE - No more radial rays effect
   return;
 }
 
 function stopRitualBackground(){
-  // DISABLED FOR PERFORMANCE - No cleanup needed
   if (typeof SIGNALS === 'undefined') return;
   const sigil = getSigilEl();
   if (sigil) sigil.classList.remove('sigil-spin', 'sigil-kick');
@@ -1665,7 +1801,6 @@ function stopRitualBackground(){
   if (SIGNALS.ctx) SIGNALS.ctx.clearRect(0,0,SIGNALS.canvas.width, SIGNALS.canvas.height);
 }
 
-// Try to use real graph edges if available; otherwise radial rays fallback
 function collectEdges(){
   const candidates = [
     window.MYCELIUM?.links, window.MYCELIUM?.edges,
@@ -1674,7 +1809,6 @@ function collectEdges(){
   const nodes = (window.MYCELIUM?.nodes || window.graph?.nodes || window.__network?.nodes || window.NETWORK?.nodes) || [];
   if (!candidates || !nodes.length) return null;
   const byId = new Map(nodes.map(n => [n.id ?? n.name ?? n.i, n]));
-  // Map to screen coords if your renderer maintains node.screenX/Y; else use x/y
   return candidates
     .map(e => {
       const a = byId.get(e.source?.id ?? e.source ?? e.a ?? e.from);
@@ -1690,18 +1824,15 @@ function collectEdges(){
 }
 
 function triggerLightningBurst(){
-  // micro kick on the sigil
   const sigil = getSigilEl();
   if (sigil) {
-    sigil.classList.remove('sigil-kick'); // restart animation
+    sigil.classList.remove('sigil-kick');
     void sigil.offsetWidth;
     sigil.classList.add('sigil-kick');
   }
   const center = getSigilCenter();
   const edges = collectEdges();
   if (edges) {
-    // Create a traveling front along every edge outward from center
-    // We sort edges by their min distance to center so the cascade looks radial.
     const ranked = edges.map(e => {
       const mx = (e.ax + e.bx)*0.5, my = (e.ay + e.by)*0.5;
       const d = Math.hypot(mx - center.x, my - center.y);
@@ -1712,14 +1843,12 @@ function triggerLightningBurst(){
       SIGNALS.pulses.push({
         type: 'edge',
         ax: e.ax, ay: e.ay, bx: e.bx, by: e.by,
-        // stagger start by distance for wave effect
         start: t0 + i*0.006,
-        speed: 2200,   // px/s of front progression
-        life: 0.35     // how long the glow lingers
+        speed: 2200,
+        life: 0.35
       });
     });
   } else {
-    // Fallback: 180 radial rays (additive)
     const t0 = performance.now()/1000;
     for (let i=0;i<180;i++){
       const a = (i/180)*Math.PI*2;
@@ -1735,7 +1864,6 @@ function triggerLightningBurst(){
       });
     }
   }
-  // Spawn spores peeling off the sigil
   for (let i=0;i<24;i++){
     const ang = Math.random()*Math.PI*2;
     const v = 30 + Math.random()*90; // px/s
@@ -1750,12 +1878,9 @@ function triggerLightningBurst(){
 function renderSignals(dt){
   const ctx = SIGNALS.ctx; if (!ctx) return;
   const w = SIGNALS.canvas.clientWidth, h = SIGNALS.canvas.clientHeight;
-  // Fade trail (additive-soft persistence)
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = 'rgba(0,0,0,0.20)';
   ctx.fillRect(0,0,w,h);
-
-  // Draw pulses
   ctx.globalCompositeOperation = 'lighter';
   const now = performance.now()/1000;
   const pulses = SIGNALS.pulses;
@@ -1767,7 +1892,6 @@ function renderSignals(dt){
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     if (p.type === 'edge'){
-      // front progress [0..1]
       const segLen = Math.hypot(p.bx - p.ax, p.by - p.ay);
       const prog = Math.min(1, (age * p.speed) / segLen);
       const bx = p.ax + (p.bx - p.ax)*prog;
@@ -1776,7 +1900,6 @@ function renderSignals(dt){
       ctx.strokeStyle = `rgba(45,212,175,${0.75*glow})`;
       ctx.lineWidth = 2.0;
       ctx.beginPath(); ctx.moveTo(p.ax, p.ay); ctx.lineTo(bx, by); ctx.stroke();
-      // white-hot core
       ctx.strokeStyle = `rgba(255,255,255,${0.25*glow})`; ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(p.ax, p.ay); ctx.lineTo(bx, by); ctx.stroke();
     } else { // ray
@@ -1792,8 +1915,6 @@ function renderSignals(dt){
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(bx, by); ctx.stroke();
     }
   }
-
-  // Draw spores
   const spores = SIGNALS.spores;
   for (let i=spores.length-1; i>=0; i--){
     const s = spores[i];
@@ -1802,7 +1923,6 @@ function renderSignals(dt){
     const fade = 1 - (s.t / s.life);
     ctx.fillStyle = `rgba(45,212,175,${0.9*fade})`;
     ctx.beginPath(); ctx.arc(s.x, s.y, 1.2 + (1.6*fade), 0, Math.PI*2); ctx.fill();
-    // rare ember flickers
     if (Math.random() < 0.03){
       ctx.fillStyle = `rgba(255,122,51,${0.6*fade})`;
       ctx.beginPath(); ctx.arc(s.x, s.y, 1.0, 0, Math.PI*2); ctx.fill();

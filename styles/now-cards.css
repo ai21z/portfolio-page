@@ -1,9 +1,6 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NOW — CULTIVATING CARDS
-   Four flippable project cards with FLIP animation and a11y
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* Now cultivating cards */
 
-/* ━━━ Design Tokens ━━━ */
+/* Design tokens */
 :root {
   --now-slab-bg: #0B0D0E;
   --now-slab-glow: #19CBB3;
@@ -21,7 +18,7 @@
   }
 }
 
-/* ━━━ Filter Chips ━━━ */
+/* Filter chips */
 .now-filters {
   display: flex;
   justify-content: center;
@@ -65,10 +62,11 @@
   color: #E6E3D8;
 }
 
-/* ━━━ Card Grid ━━━ */
+/* Card grid */
 .now-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 450px));
+  justify-content: center;  /* Center the cards */
   gap: 32px;
   max-width: 1200px;
   margin: 0 auto;
@@ -99,26 +97,44 @@
   text-align: center;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 901px) {
   .now-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .now-card-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    grid-template-columns: 1fr;  /* Single column on mobile */
+    gap: 16px;
+    padding: 0 16px 60px;
+    justify-items: center;  /* Center single column cards */
   }
 }
 
-/* ━━━ Card Container (3D perspective) ━━━ */
+@media (min-width: 500px) and (max-width: 900px) {
+  .now-card-grid {
+    grid-template-columns: repeat(2, 1fr);  /* 2 columns on tablets */
+  }
+}
+
+/* Card container (3D perspective) */
 .now-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.4 / 1;
+  max-width: 450px;
+  aspect-ratio: 1.4 / 1;  /* ~321px height at 450px width */
   perspective: 1000px;
   transition: opacity 300ms ease, filter 300ms ease;
+}
+
+@media (max-width: 900px) {
+  .now-card {
+    max-width: 320px;
+    aspect-ratio: 1 / 1;  /* Square: 320px × 320px */
+    min-height: 0;
+    height: auto;
+  }
 }
 
 .now-card[data-hidden="true"] {
@@ -131,6 +147,10 @@
   pointer-events: none;
 }
 
+.now-card.active {
+  aspect-ratio: auto !important;
+}
+
 /* Card inner (flips) - JS controls transform */
 .now-card-inner {
   position: relative;
@@ -140,7 +160,7 @@
   transform-origin: center;
 }
 
-/* ━━━ Card Face Shared Styles ━━━ */
+/* Card face shared styles */
 .now-card-face {
   position: absolute;
   inset: 0;
@@ -151,11 +171,11 @@
               0 0 0 1px rgba(25, 203, 179, 0.1);
 }
 
-/* ━━━ Front Face (interactive button) - LOGO ONLY ━━━ */
+/* Front face (interactive button) */
 .now-card-front {
   display: grid;
   place-items: center;
-  padding: clamp(24px, 4vw, 56px);
+  padding: 24px;
   cursor: pointer;
   border: 2px solid rgba(25, 203, 179, 0.15);
   box-shadow: 
@@ -164,6 +184,12 @@
     0 0 8px rgba(25, 203, 179, 0.3),
     0 0 16px rgba(25, 203, 179, 0.15);
   transition: all 250ms ease;
+}
+
+@media (max-width: 900px) {
+  .now-card-front {
+    padding: 16px;
+  }
 }
 
 .now-card-front:hover,
@@ -194,6 +220,13 @@
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
 }
 
+@media (max-width: 900px) {
+  .now-card-logo {
+    width: 85%;
+    max-width: 140px;
+  }
+}
+
 /* True Rolls - Bigger for visual balance */
 .now-card[data-id="truerolls"] .now-card-front {
   display: flex;
@@ -206,6 +239,14 @@
   margin: 0 auto;
 }
 
+@media (max-width: 900px) {
+  .now-card[data-id="truerolls"] .now-card-logo {
+    width: 100%;
+    max-width: none;
+    transform: scale(2.2);
+  }
+}
+
 /* TMT - Full bleed background */
 .now-card[data-id="tmt"] .now-card-front {
   padding: clamp(24px, 5vw, 48px);
@@ -214,20 +255,20 @@
   background-repeat: no-repeat;
 }
 
-/* Status Pill */
+/* Status Pill (smaller, inline with title) */
 .now-card-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin: 0;
   width: fit-content;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .now-card-status.high {
@@ -274,7 +315,7 @@
   display: none;
 }
 
-/* ━━━ Back Face (dialog content) ━━━ */
+/* Back face (dialog content) */
 .now-card-back {
   transform: rotateY(180deg);
   display: flex;
@@ -299,10 +340,10 @@
 
 /* One-liner on back */
 .now-card-line {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: rgba(230, 227, 216, 0.75);
-  margin: 0;
+  margin: 0 0 12px 0;
   letter-spacing: 0.01em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-style: italic;
@@ -310,11 +351,21 @@
 
 /* Title */
 .now-card-title {
-  font-size: clamp(18px, 3vw, 22px);
+  font-size: clamp(16px, 2.5vw, 18px);
   font-weight: 600;
   color: #E6E3D8;
-  margin: 0 0 16px 0;
+  margin: 0;
   letter-spacing: -0.01em;
+  flex: 1;
+}
+
+/* Header row (title + status inline) */
+.now-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 /* Bullets */
@@ -398,7 +449,7 @@
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
 
-/* ━━━ Active Card (centered & magnified) ━━━ */
+/* Active card */
 .now-card.active {
   /* Position, transform, and scale set dynamically via FLIP */
   z-index: 50 !important;
@@ -409,7 +460,7 @@
   pointer-events: none;
 }
 
-/* ━━━ Reduced Motion ━━━ */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .now-card,
   .now-card-inner {
@@ -437,50 +488,75 @@
   }
 }
 
-/* ━━━ Mobile Adjustments ━━━ */
-@media (max-width: 768px) {
+/* Mobile adjustments */
+@media (max-width: 900px) {
   .now-filters {
-    gap: 8px;
+    gap: clamp(8px, 2vw, 12px);
     flex-wrap: wrap;
-    margin-bottom: 30px;
+    margin-bottom: clamp(24px, 6vw, 32px);
+    padding: 0 clamp(16px, 4vw, 20px);
   }
   
   .now-filter-chip {
-    padding: 6px 14px;
-    font-size: 13px;
+    /* Ensure 44px minimum touch target */
+    padding: clamp(10px, 3vw, 12px) clamp(16px, 4vw, 20px);
+    font-size: clamp(13px, 3.5vw, 14px);
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .now-card-front {
-    padding: 24px 20px;
+    padding: clamp(20px, 5vw, 24px);
   }
   
   .now-card-logo {
-    max-height: 72px;
+    max-height: clamp(60px, 15vw, 80px);
   }
   
   .now-card-back {
-    padding: 28px 24px;
+    padding: clamp(24px, 6vw, 32px);
+    /* Enable scrolling for long content */
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .now-card-title {
-    font-size: 18px;
+    font-size: clamp(17px, 4.5vw, 20px);
+    margin-bottom: clamp(12px, 3vw, 16px);
   }
   
   .now-card-bullets li {
-    font-size: 13px;
+    font-size: clamp(13px, 3.5vw, 14px);
+    line-height: 1.5;
   }
   
   .now-card-line {
-    font-size: 13px;
+    font-size: clamp(13px, 3.5vw, 14px);
   }
   
-  /* Ensure dialog fits on small screens */
+  .now-card-status {
+    font-size: clamp(11px, 3vw, 12px);
+  }
+  
+  .now-card-cta {
+    /* Ensure 44px minimum touch target */
+    min-height: 44px;
+    padding: clamp(10px, 3vw, 12px) clamp(20px, 5vw, 24px);
+    font-size: clamp(13px, 3.5vw, 14px);
+    touch-action: manipulation;
+  }
+  
+  /* Ensure dialog fits on small screens with comfortable margins */
   .now-card.active {
-    max-height: 90vh !important;
+    max-height: 85dvh !important;
+    max-width: 95vw !important;
   }
 }
 
-/* ━━━ Focus Trap Helper ━━━ */
+/* Focus trap helper */
 .now-card-back[aria-hidden="true"] {
   visibility: hidden;
 }

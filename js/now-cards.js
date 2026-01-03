@@ -1,54 +1,20 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NOW — CULTIVATING CARDS
-   
-   IMPLEMENTATION DECISIONS:
-   
-   1. FLIP Animation:
-      - Uses First-Last-Invert-Play pattern for smooth flip-to-center
-      - Records initial rect, applies target state (centered + scaled), 
-        measures final rect, inverts with transform, then plays transition
-      - Removes will-change after animation to prevent compositor issues
-   
-   2. Accessibility:
-      - Front faces are <button> elements with aria-expanded
-      - Back faces are dialogs with role="dialog", aria-modal="true"
-      - Focus management: traps focus in dialog, restores on close
-      - Roving tabindex for keyboard nav (Arrow keys between cards)
-      - Esc closes active card, outside click supported
-   
-   3. Reduced Motion:
-      - Detects prefers-reduced-motion and swaps flip for fade
-      - CSS handles transform removal, JS only manages opacity states
-      - No background pulses when reduced motion is preferred
-   
-   4. Background Hooks:
-      - Emits optional events (card:hover, card:activate, card:close)
-      - Safe no-op if global mycoBg is undefined
-      - Future-proof for interactive background integration
-   
-   5. Performance:
-      - Lazy image loading with loading="lazy"
-      - will-change only during animations, removed after
-      - Single RAF for FLIP calculations
-      - Idempotent init/destroy (no memory leaks)
-   
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+// Now cards with FLIP animation
 
-// ━━━ Logo Path Helper ━━━
+import { viewportSize } from './utils.js';
+
 const LOGO = (name) => `/artifacts/projects/logos/${name}`;
 
-// ━━━ Data Model ━━━
 const NOW_STREAMS = [
   {
     id: 'adp',
     logo: LOGO('ADP-noBG.png'),
-    title: 'ADP — Senior Software Engineer',
-    line: 'Backend architecture for HCM SaaS at scale',
+    title: 'ADP - Software Engineer',
+    line: 'Maintenance and development for HCM SaaS at scale',
     status: 'high',
-    tags: [], // No tech stack pills for ADP
+    tags: [],
     bullets: [
       'Large-scale platform, steady SLAs',
-      'Technical leadership & mentoring'
+      'Implementation of new features and bug fixes, testing, code reviews, documentation'
     ],
     links: [{ label: 'Work history', href: '#work' }],
     category: 'engineering'
@@ -59,7 +25,7 @@ const NOW_STREAMS = [
     title: 'LOQ-J — Local-First RAG',
     line: 'Semantic search, zero cloud, pure Java',
     status: 'brewing',
-    tags: ['Java', 'Lucene', 'Ollama'],
+    tags: ['Java', 'Lucene', 'Local LLMs'],
     bullets: [
       'Lucene 10 vectors + BM25 hybrid',
       'Local LLM, reproducible workflows'
@@ -70,7 +36,7 @@ const NOW_STREAMS = [
   {
     id: 'truerolls',
     logo: LOGO('TRUE-ROLLS-noBG.png'),
-    title: 'True Rolls — Verifiable Dice',
+    title: 'True Rolls - Dice',
     line: 'Cryptographic fairness for tabletop',
     status: 'brewing',
     tags: ['HKDF', 'ChaCha20', 'Cryptography'],
@@ -94,11 +60,10 @@ const NOW_STREAMS = [
     ],
     links: [{ label: 'Listen soon', href: '#' }],
     category: 'art',
-    hidden: true // Hidden until songs are ready
+    hidden: true
   }
 ];
 
-// ━━━ State ━━━
 let activeCard = null;
 let currentFilter = 'engineering';
 let cards = [];
@@ -107,77 +72,42 @@ let backdrop = null;
 let prefersReducedMotion = false;
 let focusBeforeOpen = null;
 
-// Status emoji mapping
 const STATUS_EMOJI = {
   high: '🔥',
   brewing: '⚗️',
   growing: '🌱'
 };
 
-// Status label mapping
 const STATUS_LABEL = {
   high: 'High',
   brewing: 'Brewing',
   growing: 'Growing'
 };
 
-// ━━━ Initialization ━━━
 export function initNowCards() {
-  console.log('[NOW-CARDS] Initializing...');
-  
-  // Check reduced motion preference
   prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
-  // Get backdrop (reuse existing)
   backdrop = document.getElementById('paper-backdrop');
-  
-  // Render cards
   renderCards();
-  
-  // Wire filters
   wireFilters();
-  
-  // Apply initial filter
   applyFilter(currentFilter);
-  
-  // Check for deep link
   handleDeepLink();
-  
-  // Wire keyboard navigation
   wireKeyboardNav();
-  
-  // Wire global Esc handler
   document.addEventListener('keydown', handleEscKey);
-  
-  console.log('[NOW-CARDS] Ready');
 }
 
-// ━━━ Cleanup ━━━
 export function destroyNowCards() {
-  console.log('[NOW-CARDS] Destroying...');
-  
-  // Close any open card
   if (activeCard) {
     closeCard(activeCard, false);
   }
-  
-  // Remove event listeners
   document.removeEventListener('keydown', handleEscKey);
-  
-  // Clear references
   cards = [];
   filterChips = [];
   activeCard = null;
   focusBeforeOpen = null;
-  
-  // Clear grid
   const grid = document.getElementById('now-card-grid');
   if (grid) grid.innerHTML = '';
-  
-  console.log('[NOW-CARDS] Destroyed');
 }
 
-// ━━━ Render Cards ━━━
 function renderCards() {
   const grid = document.getElementById('now-card-grid');
   if (!grid) return;
@@ -186,7 +116,6 @@ function renderCards() {
   cards = [];
   
   NOW_STREAMS.forEach((stream, index) => {
-    // Skip hidden cards
     if (stream.hidden) return;
     
     const card = createCard(stream, index);
@@ -194,7 +123,6 @@ function renderCards() {
     cards.push(card);
   });
   
-  // Add "Coming soon..." message if Art & Music filter is empty
   const artCards = NOW_STREAMS.filter(s => s.category === 'art' && !s.hidden);
   if (artCards.length === 0) {
     const comingSoon = document.createElement('div');
@@ -206,7 +134,6 @@ function renderCards() {
   }
 }
 
-// ━━━ Create Card Element ━━━
 function createCard(stream, index) {
   const card = document.createElement('div');
   card.className = 'now-card';
@@ -214,25 +141,21 @@ function createCard(stream, index) {
   card.dataset.category = stream.category;
   card.dataset.index = index;
   
-  // Inner (3D flip container)
   const inner = document.createElement('div');
   inner.className = 'now-card-inner';
   
-  // Front face (button) - LOGO ONLY
   const front = document.createElement('button');
   front.className = 'now-card-face now-card-front';
   front.setAttribute('aria-expanded', 'false');
   front.setAttribute('aria-label', `View details for ${stream.title}`);
-  front.tabIndex = index === 0 ? 0 : -1; // Roving tabindex
+  front.tabIndex = index === 0 ? 0 : -1;
   
-  // TMT gets full-bleed background image
   if (stream.id === 'tmt') {
     front.style.backgroundImage = `url(${stream.logo})`;
     front.style.backgroundSize = '75%';
     front.style.backgroundPosition = 'center';
     front.style.backgroundRepeat = 'no-repeat';
   } else {
-    // Others get centered logo
     const logo = document.createElement('img');
     logo.src = stream.logo;
     logo.alt = '';
@@ -241,9 +164,7 @@ function createCard(stream, index) {
     front.appendChild(logo);
   }
   
-  // Wire click
   front.addEventListener('click', () => {
-    // Toggle: if this card is already active, close it; otherwise open it
     if (activeCard === card) {
       closeCard(card);
     } else {
@@ -251,7 +172,6 @@ function createCard(stream, index) {
     }
   });
   
-  // Back face (dialog)
   const back = document.createElement('div');
   back.className = 'now-card-face now-card-back';
   back.setAttribute('role', 'dialog');
@@ -259,40 +179,32 @@ function createCard(stream, index) {
   back.setAttribute('aria-labelledby', `card-title-${stream.id}`);
   back.setAttribute('aria-hidden', 'true');
   
-  // Make back face closeable by clicking anywhere on it
   back.addEventListener('click', (e) => {
-    // Don't close if clicking a link (let the link work)
     if (e.target.tagName === 'A') return;
-    // Close on any other click
     closeCard(card);
   });
   
-  // Title
+  const header = document.createElement('div');
+  header.className = 'now-card-header';
+  
   const title = document.createElement('h3');
   title.id = `card-title-${stream.id}`;
   title.className = 'now-card-title';
   title.textContent = stream.title;
-  back.appendChild(title);
+  header.appendChild(title);
   
-  // Meta row (status + tagline)
-  const meta = document.createElement('div');
-  meta.className = 'now-card-meta';
-  
-  // Status pill
   const status = document.createElement('div');
   status.className = `now-card-status ${stream.status}`;
   status.innerHTML = `<span aria-hidden="true">${STATUS_EMOJI[stream.status]}</span> ${STATUS_LABEL[stream.status]}`;
-  meta.appendChild(status);
+  header.appendChild(status);
   
-  // One-liner
+  back.appendChild(header);
+  
   const line = document.createElement('p');
   line.className = 'now-card-line';
   line.textContent = stream.line;
-  meta.appendChild(line);
+  back.appendChild(line);
   
-  back.appendChild(meta);
-  
-  // Tags
   if (stream.tags && stream.tags.length > 0) {
     const tags = document.createElement('div');
     tags.className = 'now-card-tags';
@@ -305,7 +217,6 @@ function createCard(stream, index) {
     back.appendChild(tags);
   }
   
-  // Bullets
   if (stream.bullets && stream.bullets.length > 0) {
     const bullets = document.createElement('ul');
     bullets.className = 'now-card-bullets';
@@ -317,7 +228,6 @@ function createCard(stream, index) {
     back.appendChild(bullets);
   }
   
-  // Links (CTAs)
   if (stream.links && stream.links.length > 0) {
     const links = document.createElement('div');
     links.className = 'now-card-links';
@@ -331,7 +241,6 @@ function createCard(stream, index) {
     back.appendChild(links);
   }
   
-  // Seal (for personal projects: LOQ-J and True Rolls)
   if (stream.id === 'loqj' || stream.id === 'truerolls') {
     const seal = document.createElement('div');
     seal.className = 'now-card-seal';
@@ -344,7 +253,6 @@ function createCard(stream, index) {
     back.appendChild(seal);
   }
   
-  // Assemble
   inner.appendChild(front);
   inner.appendChild(back);
   card.appendChild(inner);
@@ -352,70 +260,59 @@ function createCard(stream, index) {
   return card;
 }
 
-// ━━━ Open Card (FLIP Animation) ━━━
 function openCard(card, stream) {
   if (activeCard === card) return;
   
-  // Close any open card first
   if (activeCard) {
     closeCard(activeCard, false);
   }
   
-  // Save focus origin
   focusBeforeOpen = document.activeElement;
   
-  // Emit background hook
   emitBackgroundEvent('card:activate', { id: stream.id });
   
-  // Get elements
   const front = card.querySelector('.now-card-front');
   const back = card.querySelector('.now-card-back');
   const inner = card.querySelector('.now-card-inner');
   
-  // Update ARIA
   front.setAttribute('aria-expanded', 'true');
   back.setAttribute('aria-hidden', 'false');
   
-  // Show backdrop
   if (backdrop) {
     backdrop.style.display = 'block';
-    // Backdrop click closes
     backdrop.addEventListener('click', () => closeCard(card), { once: true });
   }
   
-  // Dim other cards
   cards.forEach(c => {
     if (c !== card) c.classList.add('dimmed');
   });
   
-  // Mark as active
   card.classList.add('active');
   activeCard = card;
   
-  // FLIP: First - record initial position
   const first = card.getBoundingClientRect();
   
-  // Calculate target dimensions (proper dialog size, not scaled)
-  const isMobile = window.innerWidth <= 768;
-  const maxWidth = isMobile ? window.innerWidth * 0.95 : Math.min(600, window.innerWidth * 0.9);
-  const maxHeight = isMobile ? window.innerHeight * 0.8 : Math.min(700, window.innerHeight * 0.85);
+  card._originalRect = {
+    left: first.left,
+    top: first.top,
+    width: first.width,
+    height: first.height
+  };
   
-  // Calculate actual position of filters (they're in document flow now)
+  const { w: viewportWidth, h: viewportHeight } = viewportSize();
+  const isMobile = viewportWidth <= 900;
+  const maxWidth = isMobile ? Math.min(viewportWidth * 0.88, 320) : 450;
+  const maxHeight = isMobile ? Math.min(viewportHeight * 0.65, 380) : Math.min(420, viewportHeight * 0.75);
+  
   const navFilters = document.querySelector('.now-filters');
   const navRect = navFilters ? navFilters.getBoundingClientRect() : null;
-  const navMargin = 30; // Space below filters
-  const navBottom = navRect ? navRect.bottom + navMargin : 150; // Fallback if not found
+  const navMargin = 30;
+  const navBottom = navRect ? navRect.bottom + navMargin : 150;
   
-  // Center position horizontally, but ensure top is below nav
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
   const targetLeft = (viewportWidth - maxWidth) / 2;
   const centeredTop = (viewportHeight - maxHeight) / 2;
-  
-  // Ensure card is positioned below nav pills (never overlap)
   const targetTop = Math.max(navBottom, centeredTop);
   
-  // Set card to fixed at original position
   card.style.position = 'fixed';
   card.style.left = `${first.left}px`;
   card.style.top = `${first.top}px`;
@@ -423,9 +320,7 @@ function openCard(card, stream) {
   card.style.height = `${first.height}px`;
   card.style.zIndex = '50';
   
-  // Reduced motion check
   if (prefersReducedMotion) {
-    // Simple center + fade
     card.style.left = `${targetLeft}px`;
     card.style.top = `${targetTop}px`;
     card.style.width = `${maxWidth}px`;
@@ -442,49 +337,56 @@ function openCard(card, stream) {
     return;
   }
   
-  // FLIP animation
   requestAnimationFrame(() => {
-    // Start with current position
     card.style.transition = 'none';
-    inner.style.transform = 'rotateY(0deg)';
+    inner.style.transform = 'rotateY(0deg) scale(1)';
     inner.style.transition = 'none';
     
+    const centerLeft = (viewportWidth - first.width) / 2;
+    const centerTop = Math.max(navBottom, (viewportHeight - first.height) / 2);
+    
     requestAnimationFrame(() => {
-      // Enable transitions
-      card.style.willChange = 'left, top, width, height';
-      card.style.transition = 'all 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+      card.style.willChange = 'left, top, width, height, transform';
+      card.style.transition = 'left 280ms ease-out, top 280ms ease-out, transform 280ms ease-out';
       inner.style.willChange = 'transform';
-      inner.style.transition = 'transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
       
-      // Animate to target position and size
-      card.style.left = `${targetLeft}px`;
-      card.style.top = `${targetTop}px`;
-      card.style.width = `${maxWidth}px`;
-      card.style.height = `${maxHeight}px`;
-      inner.style.transform = 'rotateY(180deg)';
+      card.style.left = `${centerLeft}px`;
+      card.style.top = `${centerTop}px`;
+      card.style.transform = 'scale(1.02)';
       
-      // Add flipped class for CSS
-      card.classList.add('flipped');
-      
-      // Remove will-change after animation
       setTimeout(() => {
-        card.style.willChange = 'auto';
-        inner.style.willChange = 'auto';
-      }, 560);
+        card.style.transition = 'width 320ms ease-in-out, height 320ms ease-in-out, left 320ms ease-in-out, top 320ms ease-in-out, transform 320ms ease-in-out';
+        inner.style.transition = 'transform 400ms cubic-bezier(0.34, 1.2, 0.64, 1)';
+        
+        const finalLeft = (viewportWidth - maxWidth) / 2;
+        const finalTop = Math.max(navBottom, (viewportHeight - maxHeight) / 2);
+        
+        card.style.left = `${finalLeft}px`;
+        card.style.top = `${finalTop}px`;
+        card.style.width = `${maxWidth}px`;
+        card.style.height = `${maxHeight}px`;
+        card.style.transform = 'scale(1)';
+        inner.style.transform = 'rotateY(180deg)';
+        
+        card.classList.add('flipped');
+        
+        setTimeout(() => {
+          card.style.willChange = 'auto';
+          inner.style.willChange = 'auto';
+          card.style.transform = '';
+        }, 400);
+      }, 280);
     });
   });
   
-  // Focus management - focus first interactive element
   setTimeout(() => {
     const firstFocusable = back.querySelector('a[href], button');
     if (firstFocusable) firstFocusable.focus();
   }, 300);
   
-  // Wire focus trap
   wireFocusTrap(back);
 }
 
-// ━━━ Close Card ━━━
 function closeCard(card, restoreFocus = true) {
   if (!card) return;
   
@@ -492,46 +394,54 @@ function closeCard(card, restoreFocus = true) {
   const back = card.querySelector('.now-card-back');
   const inner = card.querySelector('.now-card-inner');
   
-  // Update ARIA
   front.setAttribute('aria-expanded', 'false');
   back.setAttribute('aria-hidden', 'true');
   
-  // Hide backdrop
   if (backdrop) {
     backdrop.style.display = 'none';
   }
   
-  // Un-dim other cards
   cards.forEach(c => c.classList.remove('dimmed'));
   
-  // Remove flip class
   card.classList.remove('flipped');
   
-  // Get the card's original position in grid
   const index = parseInt(card.dataset.index);
   const grid = document.getElementById('now-card-grid');
   const gridRect = grid.getBoundingClientRect();
   const gridStyle = window.getComputedStyle(grid);
   const gap = parseInt(gridStyle.gap) || 32;
   
-  // Calculate original position (approximate)
-  // Note: This is a simplified calculation; actual position depends on grid layout
-  const cardsPerRow = window.innerWidth > 768 ? 2 : 1;
+  const { w } = viewportSize();
+  const cardsPerRow = w > 768 ? 2 : 1;
   const row = Math.floor(index / cardsPerRow);
   const col = index % cardsPerRow;
   
-  // For more accurate positioning, we could cache original positions
-  // For now, animate back with opacity fade
-  
-  // Animate back to origin
-  if (!prefersReducedMotion) {
-    card.style.transition = 'all 560ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 400ms ease';
-    inner.style.transition = 'transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+  if (!prefersReducedMotion && card._originalRect) {
+    const orig = card._originalRect;
+    const { w: viewportWidth, h: viewportHeight } = viewportSize();
+    
+    const centerLeft = (viewportWidth - orig.width) / 2;
+    const centerTop = (viewportHeight - orig.height) / 2;
+    
+    card.style.transition = 'width 320ms ease-in-out, height 320ms ease-in-out, left 320ms ease-in-out, top 320ms ease-in-out, transform 320ms ease-in-out';
+    inner.style.transition = 'transform 400ms cubic-bezier(0.34, 1.2, 0.64, 1)';
+    
+    card.style.left = `${centerLeft}px`;
+    card.style.top = `${centerTop}px`;
+    card.style.width = `${orig.width}px`;
+    card.style.height = `${orig.height}px`;
+    card.style.transform = 'scale(1.02)';
     inner.style.transform = 'rotateY(0deg)';
-    card.style.opacity = '0';
+    
+    setTimeout(() => {
+      card.style.transition = 'left 280ms ease-out, top 280ms ease-out, transform 280ms ease-out';
+      
+      card.style.left = `${orig.left}px`;
+      card.style.top = `${orig.top}px`;
+      card.style.transform = 'scale(1)';
+    }, 320);
   }
   
-  // Restore position after animation
   setTimeout(() => {
     card.classList.remove('active');
     card.style.position = '';
@@ -542,24 +452,24 @@ function closeCard(card, restoreFocus = true) {
     card.style.zIndex = '';
     card.style.opacity = '';
     card.style.transition = '';
+    card.style.transform = '';
     inner.style.transform = '';
     inner.style.transition = '';
-  }, prefersReducedMotion ? 300 : 560);
+    
+    delete card._originalRect;
+  }, prefersReducedMotion ? 300 : 620);
   
-  // Restore focus
   if (restoreFocus && focusBeforeOpen) {
     focusBeforeOpen.focus();
     focusBeforeOpen = null;
   }
   
-  // Emit background hook
   const id = card.dataset.id;
   emitBackgroundEvent('card:close', { id });
   
   activeCard = null;
 }
 
-// ━━━ Wire Filters ━━━
 function wireFilters() {
   const filterButtons = document.querySelectorAll('.now-filter-chip');
   filterChips = Array.from(filterButtons);
@@ -569,7 +479,6 @@ function wireFilters() {
       const filter = btn.dataset.filter;
       applyFilter(filter);
       
-      // Update ARIA
       filterChips.forEach(chip => {
         chip.setAttribute('aria-selected', chip === btn ? 'true' : 'false');
       });
@@ -577,7 +486,6 @@ function wireFilters() {
   });
 }
 
-// ━━━ Apply Filter ━━━
 function applyFilter(filter) {
   currentFilter = filter;
   
@@ -595,7 +503,6 @@ function applyFilter(filter) {
     }
   });
   
-  // Show/hide "Coming soon..." message
   const comingSoon = document.getElementById('art-coming-soon');
   if (comingSoon) {
     if (filter === 'art' || filter === 'all') {
@@ -605,11 +512,9 @@ function applyFilter(filter) {
     }
   }
   
-  // Update roving tabindex for visible cards
   updateTabIndex();
 }
 
-// ━━━ Update Roving Tabindex ━━━
 function updateTabIndex() {
   const visibleCards = cards.filter(c => c.dataset.hidden !== 'true');
   visibleCards.forEach((card, index) => {
@@ -618,10 +523,8 @@ function updateTabIndex() {
   });
 }
 
-// ━━━ Keyboard Navigation (Arrow Keys) ━━━
 function wireKeyboardNav() {
   document.addEventListener('keydown', (e) => {
-    // Only handle arrow keys when focus is on a card
     const activeElement = document.activeElement;
     if (!activeElement || !activeElement.classList.contains('now-card-front')) return;
     
@@ -652,7 +555,6 @@ function wireKeyboardNav() {
       const targetCard = visibleCards[targetIndex];
       const targetBtn = targetCard.querySelector('.now-card-front');
       
-      // Update tabindex
       visibleCards.forEach((card, index) => {
         const btn = card.querySelector('.now-card-front');
         btn.tabIndex = index === targetIndex ? 0 : -1;
@@ -663,7 +565,6 @@ function wireKeyboardNav() {
   });
 }
 
-// ━━━ Focus Trap (for dialog) ━━━
 function wireFocusTrap(dialog) {
   const focusableSelectors = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
   const focusableElements = dialog.querySelectorAll(focusableSelectors);
@@ -689,7 +590,6 @@ function wireFocusTrap(dialog) {
   dialog.addEventListener('keydown', trapFocus);
 }
 
-// ━━━ Global Esc Handler ━━━
 function handleEscKey(e) {
   if (e.key === 'Escape' && activeCard) {
     closeCard(activeCard);
@@ -698,19 +598,16 @@ function handleEscKey(e) {
   }
 }
 
-// ━━━ Deep Link Support ━━━
 function handleDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const filter = params.get('filter');
   const cardId = params.get('card');
   
-  // Apply filter if present
   if (filter && ['all', 'engineering', 'art'].includes(filter)) {
     const chip = filterChips.find(c => c.dataset.filter === filter);
     if (chip) chip.click();
   }
   
-  // Open card if present
   if (cardId) {
     setTimeout(() => {
       const card = cards.find(c => c.dataset.id === cardId);
@@ -722,9 +619,14 @@ function handleDeepLink() {
   }
 }
 
-// ━━━ Background Event Emitter (optional, no-op safe) ━━━
 function emitBackgroundEvent(event, data) {
   if (typeof window.mycoBg?.emit === 'function') {
     window.mycoBg.emit(event, data);
   }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNowCards);
+} else {
+  initNowCards();
 }

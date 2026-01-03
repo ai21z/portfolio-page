@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/**
- * OG Image Generator for Necrography
- * Creates a 1200×630 Open Graph image from the sigil
- */
+// OG image generator: creates 1200×630 image from sigil
 
 import sharp from 'sharp';
 import { mkdir } from 'fs/promises';
@@ -13,13 +10,11 @@ const OUTPUT_DIR = './og';
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-// Create og directory
 await mkdir(OUTPUT_DIR, { recursive: true });
 
 console.log('🖼️  Generating Open Graph image...\n');
 
 try {
-  // Create a dark background with the sigil centered and scaled appropriately
   const sigil = await sharp(SOURCE)
     .resize(400, 400, {
       fit: 'contain',
@@ -27,7 +22,6 @@ try {
     })
     .toBuffer();
 
-  // Create SVG with text overlay (using system fonts to avoid encoding issues)
   const svgOverlay = `
     <svg width="${WIDTH}" height="${HEIGHT}">
       <style>
@@ -55,13 +49,13 @@ try {
       width: WIDTH,
       height: HEIGHT,
       channels: 4,
-      background: { r: 11, g: 11, b: 12, alpha: 1 } // --abyss
+      background: { r: 11, g: 11, b: 12, alpha: 1 }
     }
   })
   .composite([
     {
       input: sigil,
-      top: Math.floor((HEIGHT - 400) / 2) - 40, // Center vertically, shifted up a bit
+      top: Math.floor((HEIGHT - 400) / 2) - 40,
       left: Math.floor((WIDTH - 400) / 2)
     },
     {

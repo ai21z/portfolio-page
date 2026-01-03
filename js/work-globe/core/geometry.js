@@ -1,8 +1,3 @@
-/**
- * 3D geometry generation utilities
- * Functions for creating sphere, pin, and mycelium geometries
- */
-
 export function createSphereGeometry(radius, segments, rings) {
   const positions = [];
   const normals = [];
@@ -26,7 +21,7 @@ export function createSphereGeometry(radius, segments, rings) {
       positions.push(x, y, z);
       normals.push(x / radius, y / radius, z / radius);
       
-      // UV mapping: flip U horizontally (1 - seg/segments) to correct mirroring
+      // U flipped to correct texture mirroring
       uvs.push(1.0 - (seg / segments), ring / rings);
     }
   }
@@ -36,7 +31,7 @@ export function createSphereGeometry(radius, segments, rings) {
       const a = ring * (segments + 1) + seg;
       const b = a + segments + 1;
 
-      // Reverse winding order for outward-facing triangles (CW when viewed from outside)
+      // CW winding for outward faces
       indices.push(a, a + 1, b);
       indices.push(b, a + 1, b + 1);
     }
@@ -55,10 +50,6 @@ export function createPinGeometry(baseRadius = 0.02, height = 1.0, sides = 6) {
   const normals = [];
   const indices = [];
   
-  // Create hexagonal crystal pin pointing outward
-  // Base at y=0, tip at y=height
-  
-  // Bottom cap (at globe surface)
   for (let i = 0; i < sides; i++) {
     const angle = (i / sides) * Math.PI * 2;
     const x = Math.cos(angle) * baseRadius;
@@ -67,8 +58,7 @@ export function createPinGeometry(baseRadius = 0.02, height = 1.0, sides = 6) {
     normals.push(0, -1, 0);
   }
   
-  // Top cap (tapered to point)
-  const tipRadius = baseRadius * 0.2; // Sharp tip
+  const tipRadius = baseRadius * 0.2;
   for (let i = 0; i < sides; i++) {
     const angle = (i / sides) * Math.PI * 2;
     const x = Math.cos(angle) * tipRadius;
@@ -77,33 +67,28 @@ export function createPinGeometry(baseRadius = 0.02, height = 1.0, sides = 6) {
     normals.push(0, 1, 0);
   }
   
-  // Tip point
   const tipIdx = positions.length / 3;
   positions.push(0, height * 1.2, 0);
   normals.push(0, 1, 0);
   
-  // Build faces
   for (let i = 0; i < sides; i++) {
     const curr = i;
     const next = (i + 1) % sides;
     const currTop = sides + i;
     const nextTop = sides + ((i + 1) % sides);
     
-    // Side face (quad)
     indices.push(curr, next, nextTop);
     indices.push(curr, nextTop, currTop);
     
-    // Calculate side normal
     const idx = curr * 3;
     const x = positions[idx];
     const z = positions[idx + 2];
     const nx = x / baseRadius;
     const nz = z / baseRadius;
     normals[idx] = nx;
-    normals[idx + 1] = 0.3; // Slight upward angle
+    normals[idx + 1] = 0.3;
     normals[idx + 2] = nz;
     
-    // Tip triangle
     indices.push(currTop, nextTop, tipIdx);
   }
   
@@ -115,12 +100,7 @@ export function createPinGeometry(baseRadius = 0.02, height = 1.0, sides = 6) {
   };
 }
 
-// ━━━ MYCELIUM HYPHAE GENERATOR ━━━
-// Noise-advected surface paths with branching, merging, and tapering
-
-// Simple 2D Perlin-like noise for direction field
 function noise2D(x, y) {
-  // Simple pseudo-random noise (deterministic)
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
 }
@@ -153,10 +133,9 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     tubeSegments = 6           // Cross-section resolution
   } = options;
   
-  const paths = [];           // All generated paths
-  const occupancyGrid = [];   // Spatial hash for kill/merge detection
+  const paths = [];
+  const occupancyGrid = [];
   
-  // Helper: Convert lat/lon to grid cell
   function toGridKey(lat, lon) {
     const gridSize = 20; // 20x20 degree cells
     const latCell = Math.floor((lat + Math.PI/2) / (Math.PI / gridSize));
@@ -164,7 +143,6 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     return `${latCell},${lonCell}`;
   }
   
-  // Helper: Check if position is near existing path
   function isNearPath(lat, lon, checkRadius) {
     const key = toGridKey(lat, lon);
     const nearby = occupancyGrid[key] || [];
@@ -180,16 +158,13 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     return null;
   }
   
-  // Helper: Add point to occupancy grid
   function addToGrid(lat, lon, pathId, segmentId) {
     const key = toGridKey(lat, lon);
     if (!occupancyGrid[key]) occupancyGrid[key] = [];
     occupancyGrid[key].push({ lat, lon, pathId, segmentId });
   }
   
-  // Generate a single path with noise-advected growth
   function growPath(startLat, startLon, initialDir, pathId, depth = 0, maxDepth = 2) {
-    // Prevent infinite recursion
     if (depth > maxDepth) return { segments: [], killed: false, pathId };
     
     const segments = [];
@@ -203,45 +178,37 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     const length = minLength + Math.floor(Math.random() * (maxLength - minLength));
     
     for (let step = 0; step < length && !killed; step++) {
-      // Sample noise field for direction advection
       const noiseVal = fbmNoise(lon * 3, lat * 3, 3);
-      const noiseAngle = noiseVal * Math.PI * 0.3; // ±54 degrees influence
+      const noiseAngle = noiseVal * Math.PI * 0.3;
       
-      // Advect direction
       direction += noiseAngle * 0.15 + (Math.random() - 0.5) * 0.1;
       
-      // Move along direction
       const dlat = Math.sin(direction) * stepSize;
-      const dlon = Math.cos(direction) * stepSize / Math.max(Math.cos(lat), 0.3); // Adjust for latitude compression
+      // Adjusted for latitude compression
+      const dlon = Math.cos(direction) * stepSize / Math.max(Math.cos(lat), 0.3);
       
       lat += dlat;
       lon += dlon;
       
-      // Wrap longitude
       if (lon > Math.PI) lon -= Math.PI * 2;
       if (lon < -Math.PI) lon += Math.PI * 2;
       
-      // Clamp latitude (avoid poles)
       lat = Math.max(-Math.PI * 0.45, Math.min(Math.PI * 0.45, lat));
       
-      // Check for kill condition
       const nearPoint = isNearPath(lat, lon, killRadius);
       if (nearPoint && nearPoint.pathId !== pathId) {
         killed = true;
-        // Mark as merge point if very close
         if (isNearPath(lat, lon, mergeRadius)) {
-          width = widthNode; // Swell at merge
+          width = widthNode;
         }
         break;
       }
       
-      // Taper width toward tip
-      const tipTaper = 1.0 - (step / length) * 0.7; // 70% thinner at tip
+      const tipTaper = 1.0 - (step / length) * 0.7;
       const currentWidth = width * tipTaper;
       
-      // Convert to 3D position - match sphere geometry coordinate system
-      // Lat: -π/2 (south) to +π/2 (north), Lon: -π to +π (wraps at date line)
-      const r = radius * 1.008; // Very close to surface (0.8% above)
+      // Spherical to cartesian
+      const r = radius * 1.008;
       const x = r * Math.cos(lat) * Math.cos(lon);
       const y = r * Math.sin(lat);
       const z = r * Math.cos(lat) * Math.sin(lon);
@@ -249,16 +216,13 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
       segments.push({ x, y, z, lat, lon, width: currentWidth, age: age++ });
       addToGrid(lat, lon, pathId, segments.length - 1);
       
-      // Branching (only if not at max depth)
       if (depth < maxDepth && step > 10 && step < length - 10 && Math.random() < branchProb) {
-        // Spawn sub-branch with wide angle
-        const branchAngle = direction + (Math.random() - 0.5) * Math.PI * 0.6; // ±108 degrees
+        const branchAngle = direction + (Math.random() - 0.5) * Math.PI * 0.6;
         const branchLength = Math.floor(length * (0.4 + Math.random() * 0.3));
         const subPath = growPath(lat, lon, branchAngle, paths.length, depth + 1, maxDepth);
         if (subPath.segments.length > 5) {
           paths.push(subPath);
         }
-        // Mark branch node with wider width
         segments[segments.length - 1].width = widthNode;
       }
     }
@@ -266,26 +230,23 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     return { segments, killed, pathId };
   }
   
-  // Grow from all seed points
   seeds.forEach((seed, i) => {
     const { lat, lon } = seed;
-    // Spawn 3-5 main branches from each seed
     const numBranches = 3 + Math.floor(Math.random() * 3);
     for (let b = 0; b < numBranches; b++) {
       const direction = (b / numBranches) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-      const path = growPath(lat, lon, direction, paths.length, 0, 2); // Start at depth 0, max depth 2
+      const path = growPath(lat, lon, direction, paths.length, 0, 2);
       if (path.segments.length > 5) {
         paths.push(path);
       }
     }
   });
   
-  // Build tube geometry from all paths
   const positions = [];
   const normals = [];
   const uvs = [];
   const indices = [];
-  const ages = []; // Per-vertex age for animation
+  const ages = [];
   
   paths.forEach(path => {
     if (path.segments.length < 2) return;
@@ -295,7 +256,6 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     path.segments.forEach((seg, i) => {
       const t = i / (path.segments.length - 1);
       
-      // Calculate tangent
       let tangent = { x: 0, y: 0, z: 1 };
       if (i < path.segments.length - 1) {
         const next = path.segments[i + 1];
@@ -310,11 +270,9 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
         }
       }
       
-      // Create cross-section ring
       for (let s = 0; s < tubeSegments; s++) {
         const angle = (s / tubeSegments) * Math.PI * 2;
         
-        // Perpendicular vectors
         const perpX = -tangent.z;
         const perpZ = tangent.x;
         const perpLen = Math.sqrt(perpX * perpX + perpZ * perpZ) || 1;
@@ -338,10 +296,9 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
         normals.push(offsetX / nLen, offsetY / nLen, offsetZ / nLen);
         
         uvs.push(s / tubeSegments, t);
-        ages.push(seg.age); // Store age for growth animation
+        ages.push(seg.age);
       }
       
-      // Create triangles
       if (i > 0) {
         for (let s = 0; s < tubeSegments; s++) {
           const current = vertexOffset + i * tubeSegments + s;

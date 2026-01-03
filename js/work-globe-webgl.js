@@ -41,6 +41,19 @@ let autoRotate = true;
 let time = 0;
 let lastFrameTime = 0;
 
+// Cached uniform locations (avoid getUniformLocation every frame)
+let uniformCache = {};
+
+// Reusable arrays to avoid allocations in render loop
+const scaledModelFog = new Float32Array(16);
+const scaledModelLightning = new Float32Array(16);
+
+// Stored handler references for proper cleanup
+let boundResizeHandler = null;
+let boundTouchStartHandler = null;
+let boundTouchEndHandler = null;
+let dprCheckIntervalId = null;
+
 let isMobile = false;
 
 function updateMobileState() {
@@ -56,6 +69,19 @@ let texturesReady = false;
 function checkAllTexturesLoaded() {
   if (earthTexture && fogTexture && lightningTexture) {
     texturesReady = true;
+  }
+}
+
+/**
+ * Cache uniform locations for a program to avoid getUniformLocation calls every frame.
+ * @param {WebGLProgram} program 
+ * @param {string} programKey - Unique key for this program's cache
+ * @param {string[]} uniformNames - Array of uniform names to cache
+ */
+function cacheUniforms(program, programKey, uniformNames) {
+  uniformCache[programKey] = {};
+  for (const name of uniformNames) {
+    uniformCache[programKey][name] = gl.getUniformLocation(program, name);
   }
 }
 
@@ -152,6 +178,15 @@ function initWorkGlobe() {
   if (!textBillboardProgram) {
     console.error('❌ Failed to create text billboard shader program!');
   }
+
+  // Cache uniform locations for all programs (avoids getUniformLocation every frame)
+  cacheUniforms(globeProgram, 'globe', ['uProjection', 'uView', 'uModel', 'uTime', 'uDaymap', 'uUseDaymap']);
+  cacheUniforms(atmosphereProgram, 'atmosphere', ['uProjection', 'uView', 'uModel']);
+  cacheUniforms(fogProgram, 'fog', ['uProjection', 'uView', 'uModel', 'uFogTex', 'uFogTint', 'uFogStrength', 'uFogScroll', 'uTime']);
+  cacheUniforms(lightningProgram, 'lightning', ['uProjection', 'uView', 'uModel', 'uLightningTex', 'uLightningColor', 'uLightningGain', 'uLightningScroll', 'uTime', 'uFlickerFreq', 'uFlickerDuty']);
+  cacheUniforms(myceliumProgram, 'mycelium', ['uProjection', 'uView', 'uModel', 'uTime', 'uBodyColor', 'uCoreColor', 'uCoreGain', 'uGrowthTime', 'uOpacityNoise']);
+  cacheUniforms(myceliumCoreProgram, 'myceliumCore', ['uProjection', 'uView', 'uModel', 'uTime', 'uCoreColor', 'uCoreGain', 'uGrowthTime']);
+  cacheUniforms(sporeProgram, 'spore', ['uProjection', 'uView', 'uModel', 'uTime', 'uSporeColor', 'uEmberColor']);
 
   const sphere = createSphereGeometry(1.0, 40, 40);
   sphereVertexCount = sphere.indices.length;
@@ -307,13 +342,13 @@ function initWorkGlobe() {
   let touchStartTime = 0;
   let touchStartPos = { x: 0, y: 0 };
   
-  canvas.addEventListener('touchstart', (e) => {
+  boundTouchStartHandler = (e) => {
     touchStartTime = Date.now();
     const touch = e.touches[0];
     touchStartPos = { x: touch.clientX, y: touch.clientY };
-  }, { passive: true });
+  };
   
-  canvas.addEventListener('touchend', (e) => {
+  boundTouchEndHandler = (e) => {
     const touchDuration = Date.now() - touchStartTime;
     const touch = e.changedTouches[0];
     const moveDistance = Math.sqrt(
@@ -329,15 +364,19 @@ function initWorkGlobe() {
         hideLocationInfo();
       }
     }
-  }, { passive: true });
+  };
   
-  window.addEventListener('resize', () => {
+  canvas.addEventListener('touchstart', boundTouchStartHandler, { passive: true });
+  canvas.addEventListener('touchend', boundTouchEndHandler, { passive: true });
+  
+  boundResizeHandler = () => {
     updateMobileState();
     resizeCanvas();
-  });
+  };
+  window.addEventListener('resize', boundResizeHandler);
   
   let lastDPR = currentDPR();
-  setInterval(() => {
+  dprCheckIntervalId = setInterval(() => {
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
@@ -400,25 +439,20 @@ function render(deltaTime) {
   gl.useProgram(globeProgram);
   gl.bindVertexArray(globeVAO);
 
-  const uProjection = gl.getUniformLocation(globeProgram, 'uProjection');
-  const uView = gl.getUniformLocation(globeProgram, 'uView');
-  const uModel = gl.getUniformLocation(globeProgram, 'uModel');
-  const uTime = gl.getUniformLocation(globeProgram, 'uTime');
-  const uDaymap = gl.getUniformLocation(globeProgram, 'uDaymap');
-  const uUseDaymap = gl.getUniformLocation(globeProgram, 'uUseDaymap');
-
-  gl.uniformMatrix4fv(uProjection, false, projectionMatrix);
-  gl.uniformMatrix4fv(uView, false, viewMatrix);
-  gl.uniformMatrix4fv(uModel, false, modelMatrix);
-  gl.uniform1f(uTime, time);
+  // Use cached uniform locations
+  const globeUniforms = uniformCache.globe;
+  gl.uniformMatrix4fv(globeUniforms.uProjection, false, projectionMatrix);
+  gl.uniformMatrix4fv(globeUniforms.uView, false, viewMatrix);
+  gl.uniformMatrix4fv(globeUniforms.uModel, false, modelMatrix);
+  gl.uniform1f(globeUniforms.uTime, time);
   
   if (texturesReady && earthTexture) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, earthTexture);
-    gl.uniform1i(uDaymap, 0);
-    gl.uniform1i(uUseDaymap, 1);
+    gl.uniform1i(globeUniforms.uDaymap, 0);
+    gl.uniform1i(globeUniforms.uUseDaymap, 1);
   } else {
-    gl.uniform1i(uUseDaymap, 0);
+    gl.uniform1i(globeUniforms.uUseDaymap, 0);
   }
   
   gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
@@ -432,13 +466,10 @@ function render(deltaTime) {
   gl.cullFace(gl.FRONT);
   gl.enable(gl.CULL_FACE);
 
-  const uProjectionAtm = gl.getUniformLocation(atmosphereProgram, 'uProjection');
-  const uViewAtm = gl.getUniformLocation(atmosphereProgram, 'uView');
-  const uModelAtm = gl.getUniformLocation(atmosphereProgram, 'uModel');
-
-  gl.uniformMatrix4fv(uProjectionAtm, false, projectionMatrix);
-  gl.uniformMatrix4fv(uViewAtm, false, viewMatrix);
-  gl.uniformMatrix4fv(uModelAtm, false, modelMatrix);
+  const atmUniforms = uniformCache.atmosphere;
+  gl.uniformMatrix4fv(atmUniforms.uProjection, false, projectionMatrix);
+  gl.uniformMatrix4fv(atmUniforms.uView, false, viewMatrix);
+  gl.uniformMatrix4fv(atmUniforms.uModel, false, modelMatrix);
 
   gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
 
@@ -458,26 +489,17 @@ function render(deltaTime) {
     gl.useProgram(myceliumProgram);
     gl.bindVertexArray(myceliumVAO);
     
-    const uProjectionMyc = gl.getUniformLocation(myceliumProgram, 'uProjection');
-    const uViewMyc = gl.getUniformLocation(myceliumProgram, 'uView');
-    const uModelMyc = gl.getUniformLocation(myceliumProgram, 'uModel');
-    const uTimeMyc = gl.getUniformLocation(myceliumProgram, 'uTime');
-    const uBodyColor = gl.getUniformLocation(myceliumProgram, 'uBodyColor');
-    const uCoreColor = gl.getUniformLocation(myceliumProgram, 'uCoreColor');
-    const uCoreGain = gl.getUniformLocation(myceliumProgram, 'uCoreGain');
-    const uGrowthTime = gl.getUniformLocation(myceliumProgram, 'uGrowthTime');
-    const uOpacityNoise = gl.getUniformLocation(myceliumProgram, 'uOpacityNoise');
-    
-    gl.uniformMatrix4fv(uProjectionMyc, false, projectionMatrix);
-    gl.uniformMatrix4fv(uViewMyc, false, viewMatrix);
-    gl.uniformMatrix4fv(uModelMyc, false, modelMatrix);
-    gl.uniform1f(uTimeMyc, time);
+    const mycUniforms = uniformCache.mycelium;
+    gl.uniformMatrix4fv(mycUniforms.uProjection, false, projectionMatrix);
+    gl.uniformMatrix4fv(mycUniforms.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(mycUniforms.uModel, false, modelMatrix);
+    gl.uniform1f(mycUniforms.uTime, time);
     // Using intro page palette: darker necrotic for body, bright decay-green for highlights
-    gl.uniform3f(uBodyColor, 0.35, 0.50, 0.40); // Darkened necrotic - fibrous mass
-    gl.uniform3f(uCoreColor, 0.247, 1.0, 0.624); // rgb(63, 255, 159) - decay-green glow!
-    gl.uniform1f(uCoreGain, 0.0); // No core in body pass
-    gl.uniform1f(uGrowthTime, myceliumGrowthTime);
-    gl.uniform1f(uOpacityNoise, 0.025); // 2.5% opacity variation
+    gl.uniform3f(mycUniforms.uBodyColor, 0.35, 0.50, 0.40); // Darkened necrotic - fibrous mass
+    gl.uniform3f(mycUniforms.uCoreColor, 0.247, 1.0, 0.624); // rgb(63, 255, 159) - decay-green glow!
+    gl.uniform1f(mycUniforms.uCoreGain, 0.0); // No core in body pass
+    gl.uniform1f(mycUniforms.uGrowthTime, myceliumGrowthTime);
+    gl.uniform1f(mycUniforms.uOpacityNoise, 0.025); // 2.5% opacity variation
     
     gl.drawElements(gl.TRIANGLES, myceliumVertexCount, gl.UNSIGNED_SHORT, 0);
   }
@@ -491,21 +513,14 @@ function render(deltaTime) {
     gl.useProgram(myceliumCoreProgram);
     gl.bindVertexArray(myceliumVAO);
     
-    const uProjectionCore = gl.getUniformLocation(myceliumCoreProgram, 'uProjection');
-    const uViewCore = gl.getUniformLocation(myceliumCoreProgram, 'uView');
-    const uModelCore = gl.getUniformLocation(myceliumCoreProgram, 'uModel');
-    const uTimeCore = gl.getUniformLocation(myceliumCoreProgram, 'uTime');
-    const uCoreColorCore = gl.getUniformLocation(myceliumCoreProgram, 'uCoreColor');
-    const uCoreGainCore = gl.getUniformLocation(myceliumCoreProgram, 'uCoreGain');
-    const uGrowthTimeCore = gl.getUniformLocation(myceliumCoreProgram, 'uGrowthTime');
-    
-    gl.uniformMatrix4fv(uProjectionCore, false, projectionMatrix);
-    gl.uniformMatrix4fv(uViewCore, false, viewMatrix);
-    gl.uniformMatrix4fv(uModelCore, false, modelMatrix);
-    gl.uniform1f(uTimeCore, time);
-    gl.uniform3f(uCoreColorCore, 0.247, 1.0, 0.624); // Decay-green glint - memorable!
-    gl.uniform1f(uCoreGainCore, 0.15); // Slightly brighter for visibility
-    gl.uniform1f(uGrowthTimeCore, myceliumGrowthTime);
+    const coreUniforms = uniformCache.myceliumCore;
+    gl.uniformMatrix4fv(coreUniforms.uProjection, false, projectionMatrix);
+    gl.uniformMatrix4fv(coreUniforms.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(coreUniforms.uModel, false, modelMatrix);
+    gl.uniform1f(coreUniforms.uTime, time);
+    gl.uniform3f(coreUniforms.uCoreColor, 0.247, 1.0, 0.624); // Decay-green glint - memorable!
+    gl.uniform1f(coreUniforms.uCoreGain, 0.15); // Slightly brighter for visibility
+    gl.uniform1f(coreUniforms.uGrowthTime, myceliumGrowthTime);
     
     gl.drawElements(gl.TRIANGLES, myceliumVertexCount, gl.UNSIGNED_SHORT, 0);
   }
@@ -519,37 +534,28 @@ function render(deltaTime) {
     gl.useProgram(fogProgram);
     gl.bindVertexArray(globeVAO);
     
-    // Scale model matrix slightly (1.012x) to sit above surface
+    // Scale model matrix slightly (1.012x) to sit above surface - reuse pre-allocated array
     const fogScale = 1.012;
-    const scaledModel = new Float32Array(16);
     for (let i = 0; i < 16; i++) {
-      scaledModel[i] = modelMatrix[i];
+      scaledModelFog[i] = modelMatrix[i];
       if (i === 0 || i === 5 || i === 10) {
-        scaledModel[i] *= fogScale;
+        scaledModelFog[i] *= fogScale;
       }
     }
     
-    const uProjectionFog = gl.getUniformLocation(fogProgram, 'uProjection');
-    const uViewFog = gl.getUniformLocation(fogProgram, 'uView');
-    const uModelFog = gl.getUniformLocation(fogProgram, 'uModel');
-    const uFogTex = gl.getUniformLocation(fogProgram, 'uFogTex');
-    const uFogTint = gl.getUniformLocation(fogProgram, 'uFogTint');
-    const uFogStrength = gl.getUniformLocation(fogProgram, 'uFogStrength');
-    const uFogScroll = gl.getUniformLocation(fogProgram, 'uFogScroll');
-    const uTimeFog = gl.getUniformLocation(fogProgram, 'uTime');
-    
-    gl.uniformMatrix4fv(uProjectionFog, false, projectionMatrix);
-    gl.uniformMatrix4fv(uViewFog, false, viewMatrix);
-    gl.uniformMatrix4fv(uModelFog, false, scaledModel);
+    const fogUniforms = uniformCache.fog;
+    gl.uniformMatrix4fv(fogUniforms.uProjection, false, projectionMatrix);
+    gl.uniformMatrix4fv(fogUniforms.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(fogUniforms.uModel, false, scaledModelFog);
     
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, fogTexture);
-    gl.uniform1i(uFogTex, 1);
+    gl.uniform1i(fogUniforms.uFogTex, 1);
     
-    gl.uniform3f(uFogTint, 0.15, 0.22, 0.20); // Lighter, more subtle green
-    gl.uniform1f(uFogStrength, 0.20); // Reduced from 0.35 - much more transparent
-    gl.uniform2f(uFogScroll, 0.002, 0.0007);
-    gl.uniform1f(uTimeFog, time);
+    gl.uniform3f(fogUniforms.uFogTint, 0.15, 0.22, 0.20); // Lighter, more subtle green
+    gl.uniform1f(fogUniforms.uFogStrength, 0.20); // Reduced from 0.35 - much more transparent
+    gl.uniform2f(fogUniforms.uFogScroll, 0.002, 0.0007);
+    gl.uniform1f(fogUniforms.uTime, time);
     
     gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
   }
@@ -563,41 +569,30 @@ function render(deltaTime) {
     gl.useProgram(lightningProgram);
     gl.bindVertexArray(globeVAO);
     
-    // Use same scaled model as fog
+    // Use same scaled model as fog - reuse pre-allocated array
     const lightningScale = 1.012;
-    const scaledModel = new Float32Array(16);
     for (let i = 0; i < 16; i++) {
-      scaledModel[i] = modelMatrix[i];
+      scaledModelLightning[i] = modelMatrix[i];
       if (i === 0 || i === 5 || i === 10) {
-        scaledModel[i] *= lightningScale;
+        scaledModelLightning[i] *= lightningScale;
       }
     }
     
-    const uProjectionLightning = gl.getUniformLocation(lightningProgram, 'uProjection');
-    const uViewLightning = gl.getUniformLocation(lightningProgram, 'uView');
-    const uModelLightning = gl.getUniformLocation(lightningProgram, 'uModel');
-    const uLightningTex = gl.getUniformLocation(lightningProgram, 'uLightningTex');
-    const uLightningColor = gl.getUniformLocation(lightningProgram, 'uLightningColor');
-    const uLightningGain = gl.getUniformLocation(lightningProgram, 'uLightningGain');
-    const uLightningScroll = gl.getUniformLocation(lightningProgram, 'uLightningScroll');
-    const uTimeLightning = gl.getUniformLocation(lightningProgram, 'uTime');
-    const uFlickerFreq = gl.getUniformLocation(lightningProgram, 'uFlickerFreq');
-    const uFlickerDuty = gl.getUniformLocation(lightningProgram, 'uFlickerDuty');
-    
-    gl.uniformMatrix4fv(uProjectionLightning, false, projectionMatrix);
-    gl.uniformMatrix4fv(uViewLightning, false, viewMatrix);
-    gl.uniformMatrix4fv(uModelLightning, false, scaledModel);
+    const lightningUniforms = uniformCache.lightning;
+    gl.uniformMatrix4fv(lightningUniforms.uProjection, false, projectionMatrix);
+    gl.uniformMatrix4fv(lightningUniforms.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(lightningUniforms.uModel, false, scaledModelLightning);
     
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, lightningTexture);
-    gl.uniform1i(uLightningTex, 2);
+    gl.uniform1i(lightningUniforms.uLightningTex, 2);
     
-    gl.uniform3f(uLightningColor, 0.35, 0.70, 0.60); // Softer teal
-    gl.uniform1f(uLightningGain, 0.50); // Reduced from 0.9 - much more subtle
-    gl.uniform2f(uLightningScroll, 0.005, -0.001);
-    gl.uniform1f(uTimeLightning, time);
-    gl.uniform1f(uFlickerFreq, 0.5);
-    gl.uniform1f(uFlickerDuty, 0.04);
+    gl.uniform3f(lightningUniforms.uLightningColor, 0.35, 0.70, 0.60); // Softer teal
+    gl.uniform1f(lightningUniforms.uLightningGain, 0.50); // Reduced from 0.9 - much more subtle
+    gl.uniform2f(lightningUniforms.uLightningScroll, 0.005, -0.001);
+    gl.uniform1f(lightningUniforms.uTime, time);
+    gl.uniform1f(lightningUniforms.uFlickerFreq, 0.5);
+    gl.uniform1f(lightningUniforms.uFlickerDuty, 0.04);
     
     gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
   }
@@ -634,13 +629,13 @@ function render(deltaTime) {
     
     gl.useProgram(sporeProgram);
     
-    gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uProjection'), false, projectionMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uView'), false, viewMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(sporeProgram, 'uModel'), false, modelMatrix);
-    gl.uniform1f(gl.getUniformLocation(sporeProgram, 'uTime'), time);
-    
-    gl.uniform3f(gl.getUniformLocation(sporeProgram, 'uSporeColor'), 0.247, 1.0, 0.624);
-    gl.uniform3f(gl.getUniformLocation(sporeProgram, 'uEmberColor'), 0.784, 1.0, 0.863); // Ember color #C8FFDC
+    const sporeUniforms = uniformCache.spore;
+    gl.uniformMatrix4fv(sporeUniforms.uProjection, false, projectionMatrix);
+    gl.uniformMatrix4fv(sporeUniforms.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(sporeUniforms.uModel, false, modelMatrix);
+    gl.uniform1f(sporeUniforms.uTime, time);
+    gl.uniform3f(sporeUniforms.uSporeColor, 0.247, 1.0, 0.624);
+    gl.uniform3f(sporeUniforms.uEmberColor, 0.784, 1.0, 0.863); // Ember color #C8FFDC
     
     sporeSystem.render(sporeProgram);
   }
@@ -1299,30 +1294,99 @@ function cleanupWorkGlobe() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
+  
+  // Clear the DPR check interval
+  if (dprCheckIntervalId) {
+    clearInterval(dprCheckIntervalId);
+    dprCheckIntervalId = null;
+  }
 
   if (gl) {
-    gl.deleteProgram(globeProgram);
-    gl.deleteProgram(atmosphereProgram);
-    gl.deleteProgram(fogProgram);
-    gl.deleteProgram(lightningProgram);
-    gl.deleteVertexArray(globeVAO);
+    // Delete all programs
+    if (globeProgram) gl.deleteProgram(globeProgram);
+    if (atmosphereProgram) gl.deleteProgram(atmosphereProgram);
+    if (fogProgram) gl.deleteProgram(fogProgram);
+    if (lightningProgram) gl.deleteProgram(lightningProgram);
+    if (myceliumProgram) gl.deleteProgram(myceliumProgram);
+    if (myceliumCoreProgram) gl.deleteProgram(myceliumCoreProgram);
+    if (sporeProgram) gl.deleteProgram(sporeProgram);
+    if (pinProgram) gl.deleteProgram(pinProgram);
+    if (dataStreamProgram) gl.deleteProgram(dataStreamProgram);
+    if (textBillboardProgram) gl.deleteProgram(textBillboardProgram);
+    if (moonProgram) gl.deleteProgram(moonProgram);
     
+    // Delete VAOs
+    if (globeVAO) gl.deleteVertexArray(globeVAO);
+    if (myceliumVAO) gl.deleteVertexArray(myceliumVAO);
+    
+    // Delete textures
     if (earthTexture) gl.deleteTexture(earthTexture);
     if (fogTexture) gl.deleteTexture(fogTexture);
     if (lightningTexture) gl.deleteTexture(lightningTexture);
   }
 
-  canvas.removeEventListener('pointerdown', onPointerDown);
-  canvas.removeEventListener('pointermove', onPointerMove);
-  canvas.removeEventListener('pointerup', onPointerUp);
-  canvas.removeEventListener('pointerleave', onPointerUp);
-  window.removeEventListener('resize', resizeCanvas);
+  // Remove event listeners using stored references
+  if (canvas) {
+    canvas.removeEventListener('pointerdown', onPointerDown);
+    canvas.removeEventListener('pointermove', onPointerMove);
+    canvas.removeEventListener('pointerup', onPointerUp);
+    canvas.removeEventListener('pointerleave', onPointerUp);
+    if (boundTouchStartHandler) canvas.removeEventListener('touchstart', boundTouchStartHandler);
+    if (boundTouchEndHandler) canvas.removeEventListener('touchend', boundTouchEndHandler);
+  }
+  if (boundResizeHandler) {
+    window.removeEventListener('resize', boundResizeHandler);
+  }
   
   hideLocationInfo();
+  hideProjectPanel();
+  
   const infoBubble = document.querySelector('.work-location-info');
   if (infoBubble) {
     infoBubble.remove();
   }
+  const projectPanel = document.querySelector('.project-panel');
+  if (projectPanel) {
+    projectPanel.remove();
+  }
+
+  // Reset all module-level state so re-init works correctly
+  gl = null;
+  canvas = null;
+  globeProgram = null;
+  atmosphereProgram = null;
+  fogProgram = null;
+  lightningProgram = null;
+  myceliumProgram = null;
+  myceliumCoreProgram = null;
+  sporeProgram = null;
+  pinProgram = null;
+  dataStreamProgram = null;
+  textBillboardProgram = null;
+  moonProgram = null;
+  globeVAO = null;
+  sphereVertexCount = 0;
+  myceliumVAO = null;
+  myceliumVertexCount = 0;
+  myceliumGrowthTime = 0;
+  sporeSystem = null;
+  workPinSystem = null;
+  dataStreamSystem = null;
+  moonOrbitSystem = null;
+  earthTexture = null;
+  fogTexture = null;
+  lightningTexture = null;
+  texturesReady = false;
+  rotation = { x: 0, y: 0 };
+  rotationVelocity = { x: 0, y: 0 };
+  isDragging = false;
+  autoRotate = true;
+  time = 0;
+  lastFrameTime = 0;
+  uniformCache = {};
+  boundResizeHandler = null;
+  boundTouchStartHandler = null;
+  boundTouchEndHandler = null;
 }
 
 function autoInit() {

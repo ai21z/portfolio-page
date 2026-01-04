@@ -130,24 +130,24 @@ export async function onRequestPost(context) {
   const redisConfigured = Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
   
   if (redisConfigured) {
-    const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN
-    });
-
-    const ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(5, '10 m'),
-      analytics: true,
-      prefix: 'contact'
-    });
-
-    const emailKey = `email:${data.email.toLowerCase()}`;
-    const ipKey = ipAddress ? `ip:${ipAddress}` : null;
-    const keysToCheck = [emailKey];
-    if (ipKey) keysToCheck.push(ipKey);
-
     try {
+      const redis = new Redis({
+        url: env.UPSTASH_REDIS_REST_URL,
+        token: env.UPSTASH_REDIS_REST_TOKEN
+      });
+
+      const ratelimit = new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, '10 m'),
+        analytics: true,
+        prefix: 'contact'
+      });
+
+      const emailKey = `email:${data.email.toLowerCase()}`;
+      const ipKey = ipAddress ? `ip:${ipAddress}` : null;
+      const keysToCheck = [emailKey];
+      if (ipKey) keysToCheck.push(ipKey);
+
       for (const key of keysToCheck) {
         const result = await ratelimit.limit(key);
         if (!result.success) {
@@ -157,8 +157,8 @@ export async function onRequestPost(context) {
         }
       }
     } catch (error) {
-      console.error('[contact] rate limiter unavailable', error);
-      return jsonResponse(503, { error: 'Rate limit service unavailable. Please retry later.' });
+      // Rate limiting failed - log but continue (graceful degradation)
+      console.warn('[contact] rate limiter unavailable, proceeding without rate limit:', error.message);
     }
   }
 

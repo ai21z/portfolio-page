@@ -46,7 +46,7 @@
 }
 
 .portrait {
-  width: 380px;
+  width: clamp(380px, 24vw, 520px);
   height: auto;
   border-radius: 0;
   object-fit: contain;
@@ -71,12 +71,12 @@
   transform: none;
 }
 
-/* Particle canvas overlay - uses CSS variable set by JS for padding */
+/* Particle canvas overlay - uses CSS variables set by JS for padding */
 .portrait-particles-canvas {
   position: absolute;
-  top: calc(-1 * var(--pp-pad, 180px));
-  left: calc(-1 * var(--pp-pad, 180px));
-  /* Canvas size is set by JS (width + pad*2) */
+  top: calc(-1 * var(--pp-pad-top, 180px));
+  left: calc(-1 * var(--pp-pad-left, 180px));
+  /* Canvas size is set by JS (width + padLeft + padRight) */
   pointer-events: none;
   z-index: 2;
 }
@@ -198,6 +198,20 @@
   .living-sigils {
     left: -48px;
     top: 18%;
+  }
+}
+
+@media (min-width: 1440px) {
+  .living-sigils {
+    left: -100px;
+    gap: 28px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .living-sigils {
+    left: -120px;
+    gap: 32px;
   }
 }
 

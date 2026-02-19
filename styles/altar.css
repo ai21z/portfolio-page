@@ -335,14 +335,14 @@
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
   color: #2A251F;
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
-  font-size: clamp(14px, 1.4vw, 18px);
+  font-size: clamp(14px, 1.4vw, 22px);
   position: relative;
   z-index: 1;
 }
 
 .slab p,
 .slab li {
-  font-size: clamp(11px, 1.05vw, 13px);
+  font-size: clamp(11px, 1.05vw, 16px);
   line-height: 1.35;
   color: #3A3530;
   position: relative;
@@ -372,7 +372,7 @@
   justify-content: space-between;
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
-  font-size: clamp(10px, 1vw, 12px);
+  font-size: clamp(10px, 1vw, 15px);
   color: #3A3530;
 }
 
@@ -448,7 +448,7 @@
   flex-wrap: wrap;
   --tech-gap: 6px;
   gap: calc(var(--tech-gap) * var(--k));
-  font-size: clamp(10px, 1.1vw, 13px);
+  font-size: clamp(10px, 1.1vw, 16px);
   line-height: 1.3;
   position: relative;
   z-index: 1;
@@ -528,7 +528,7 @@ button.ghost {
   padding: calc(var(--btn-pad-v) * var(--k)) calc(var(--btn-pad-h) * var(--k));
   cursor: var(--cursor-spore), pointer;
   font-family: inherit;
-  font-size: clamp(10px, 1vw, 12px);
+  font-size: clamp(10px, 1vw, 14px);
   transition: all 150ms ease;
   position: relative;
   z-index: 1;

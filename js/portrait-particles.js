@@ -53,7 +53,9 @@ const CONFIG = {
   OUTER_RADIUS: 90,
   PROXIMITY_MARGIN: 80,
 
-  CANVAS_PAD: 850,
+  CANVAS_PAD: 850,          // legacy reference / minimum fallback
+  CANVAS_PAD_MIN: 200,      // floor per side so idle particles always have breathing room
+  CANVAS_MAX_DIM: 3200,     // cap CSS dimension per axis to limit memory
 
   // Streaming
   STREAM_STRENGTH: 0.45,
@@ -282,6 +284,10 @@ class PortraitParticles {
     this.width = 0;
     this.height = 0;
     this.dpr = 1;
+    this.padLeft = CONFIG.CANVAS_PAD;
+    this.padRight = CONFIG.CANVAS_PAD;
+    this.padTop = CONFIG.CANVAS_PAD;
+    this.padBottom = CONFIG.CANVAS_PAD;
 
     this.mouseX = -9999;
     this.mouseY = -9999;
@@ -394,7 +400,7 @@ class PortraitParticles {
     this.canvas.className = 'portrait-particles-canvas';
     this.canvas.setAttribute('aria-hidden', 'true');
     
-    this.wrapper.style.setProperty('--pp-pad', CONFIG.CANVAS_PAD + 'px');
+    // CSS variables for positioning are set by resize()
     
     this.wrapper.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d', { alpha: true });
@@ -406,15 +412,44 @@ class PortraitParticles {
     this.height = this.img.clientHeight;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const pad = CONFIG.CANVAS_PAD;
-    const pad2 = pad * 2;
+    // --- Asymmetric padding: cover full viewport from portrait position ---
+    const rect = this.wrapper.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const minPad = CONFIG.CANVAS_PAD_MIN;
 
-    this.bufWidth = Math.round((this.width + pad2) * this.dpr);
-    this.bufHeight = Math.round((this.height + pad2) * this.dpr);
-    this.canvas.width = this.bufWidth;
+    this.padLeft   = Math.max(minPad, Math.ceil(rect.left) + 50);
+    this.padRight  = Math.max(minPad, Math.ceil(vw - rect.right) + 50);
+    this.padTop    = Math.max(minPad, Math.ceil(rect.top) + 50);
+    this.padBottom = Math.max(minPad, Math.ceil(vh - rect.bottom) + 50);
+
+    // Cap total canvas CSS dimensions to limit memory
+    const maxDim = CONFIG.CANVAS_MAX_DIM;
+    let cssW = this.width + this.padLeft + this.padRight;
+    let cssH = this.height + this.padTop + this.padBottom;
+    if (cssW > maxDim) {
+      const s = maxDim / cssW;
+      this.padLeft  = Math.floor(this.padLeft * s);
+      this.padRight = Math.floor(this.padRight * s);
+      cssW = this.width + this.padLeft + this.padRight;
+    }
+    if (cssH > maxDim) {
+      const s = maxDim / cssH;
+      this.padTop    = Math.floor(this.padTop * s);
+      this.padBottom = Math.floor(this.padBottom * s);
+      cssH = this.height + this.padTop + this.padBottom;
+    }
+
+    // Update CSS positioning (canvas offset = left/top padding)
+    this.wrapper.style.setProperty('--pp-pad-left', this.padLeft + 'px');
+    this.wrapper.style.setProperty('--pp-pad-top', this.padTop + 'px');
+
+    this.bufWidth  = Math.round(cssW * this.dpr);
+    this.bufHeight = Math.round(cssH * this.dpr);
+    this.canvas.width  = this.bufWidth;
     this.canvas.height = this.bufHeight;
-    this.canvas.style.width = (this.width + pad2) + 'px';
-    this.canvas.style.height = (this.height + pad2) + 'px';
+    this.canvas.style.width  = cssW + 'px';
+    this.canvas.style.height = cssH + 'px';
 
     this.imageData = this.ctx.createImageData(this.bufWidth, this.bufHeight);
     this.buf32 = new Uint32Array(this.imageData.data.buffer);
@@ -1023,7 +1058,8 @@ class PortraitParticles {
     const bufWidth = this.bufWidth;
     const bufHeight = this.bufHeight;
     const dpr = this.dpr;
-    const pad = CONFIG.CANVAS_PAD;
+    const padL = this.padLeft;
+    const padT = this.padTop;
     const MARGIN = 2;
     const DIRTY_THRESHOLD = 0.5;
 
@@ -1040,8 +1076,8 @@ class PortraitParticles {
     const particles = this.particles;
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
-      const px = ((p.x + pad) * dpr + 0.5) | 0;
-      const py = ((p.y + pad) * dpr + 0.5) | 0;
+      const px = ((p.x + padL) * dpr + 0.5) | 0;
+      const py = ((p.y + padT) * dpr + 0.5) | 0;
 
       if (px >= 0 && px < bufWidth && py >= 0 && py < bufHeight) {
         buf32[py * bufWidth + px] = PALETTE_UINT32[p.binIndex];
@@ -1065,9 +1101,12 @@ class PortraitParticles {
 
   renderFillRect() {
     const ctx = this.ctx;
-    const pad = CONFIG.CANVAS_PAD;
+    const padL = this.padLeft;
+    const padT = this.padTop;
+    const cssW = this.width + this.padLeft + this.padRight;
+    const cssH = this.height + this.padTop + this.padBottom;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.clearRect(0, 0, this.width + pad * 2, this.height + pad * 2);
+    ctx.clearRect(0, 0, cssW, cssH);
 
     for (let b = 0; b < this.bins.length; b++) {
       const particles = this.bins[b];
@@ -1077,7 +1116,7 @@ class PortraitParticles {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         const s = p.size;
-        ctx.fillRect(p.x + pad - s * 0.5, p.y + pad - s * 0.5, s, s);
+        ctx.fillRect(p.x + padL - s * 0.5, p.y + padT - s * 0.5, s, s);
       }
     }
 
@@ -1137,9 +1176,13 @@ class PortraitParticles {
     let localX = vpX - rect.left;
     let localY = vpY - rect.top;
 
-    const margin = CONFIG.CANVAS_PAD - 30;
-    localX = Math.max(-margin, Math.min(this.width + margin, localX));
-    localY = Math.max(-margin, Math.min(this.height + margin, localY));
+    // Clamp to canvas area (asymmetric margins)
+    const mL = this.padLeft - 30;
+    const mR = this.padRight - 30;
+    const mT = this.padTop - 30;
+    const mB = this.padBottom - 30;
+    localX = Math.max(-mL, Math.min(this.width + mR, localX));
+    localY = Math.max(-mT, Math.min(this.height + mB, localY));
 
     this.setStreamTarget(localX, localY);
   }

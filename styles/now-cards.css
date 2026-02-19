@@ -68,7 +68,7 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 450px));
   justify-content: center;  /* Center the cards */
   gap: 32px;
-  max-width: 1200px;
+  max-width: clamp(1200px, 75vw, 1600px);
   margin: 0 auto;
   padding: 0 20px 60px;
   z-index: 10;
@@ -103,6 +103,12 @@
   }
 }
 
+@media (min-width: 1440px) {
+  .now-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .now-card-grid {
     grid-template-columns: 1fr;  /* Single column on mobile */
@@ -122,8 +128,8 @@
 .now-card {
   position: relative;
   width: 100%;
-  max-width: 450px;
-  aspect-ratio: 1.4 / 1;  /* ~321px height at 450px width */
+  max-width: 500px;
+  aspect-ratio: 1.4 / 1;  /* ~357px height at 500px width */
   perspective: 1000px;
   transition: opacity 300ms ease, filter 300ms ease;
 }

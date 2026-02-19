@@ -118,3 +118,20 @@ a, button {
     gap: 16px;
   }
 }
+
+/* === Widescreen typography & spacing =================================== */
+@media (min-width: 1440px) {
+  :root {
+    --text-base: clamp(17px, 1.2vw, 20px);
+    --text-2xl: clamp(48px, 3.8vw, 64px);
+    --gap-large: calc(var(--unit) * 8);  /* 64px */
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --text-base: clamp(18px, 1vw, 22px);
+    --text-2xl: clamp(56px, 3.2vw, 76px);
+    --gap-large: calc(var(--unit) * 10); /* 80px */
+  }
+}

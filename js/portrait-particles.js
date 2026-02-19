@@ -428,16 +428,18 @@ class PortraitParticles {
     let cssW = this.width + this.padLeft + this.padRight;
     let cssH = this.height + this.padTop + this.padBottom;
     if (cssW > maxDim) {
-      const s = maxDim / cssW;
-      this.padLeft  = Math.floor(this.padLeft * s);
-      this.padRight = Math.floor(this.padRight * s);
-      cssW = this.width + this.padLeft + this.padRight;
+      const availW = maxDim - this.width;
+      const totalPadW = this.padLeft + this.padRight;
+      this.padLeft  = Math.floor(availW * this.padLeft / totalPadW);
+      this.padRight = availW - this.padLeft;
+      cssW = maxDim;
     }
     if (cssH > maxDim) {
-      const s = maxDim / cssH;
-      this.padTop    = Math.floor(this.padTop * s);
-      this.padBottom = Math.floor(this.padBottom * s);
-      cssH = this.height + this.padTop + this.padBottom;
+      const availH = maxDim - this.height;
+      const totalPadH = this.padTop + this.padBottom;
+      this.padTop    = Math.floor(availH * this.padTop / totalPadH);
+      this.padBottom = availH - this.padTop;
+      cssH = maxDim;
     }
 
     // Update CSS positioning (canvas offset = left/top padding)

@@ -55,7 +55,7 @@ const CONFIG = {
 
   CANVAS_PAD: 850,          // legacy reference / minimum fallback
   CANVAS_PAD_MIN: 200,      // floor per side so idle particles always have breathing room
-  CANVAS_MAX_DIM: 3200,     // cap CSS dimension per axis to limit memory
+  CANVAS_MAX_BUF: 4096 * 4096, // max buffer pixels – DPR is reduced to stay within budget
 
   // Streaming
   STREAM_STRENGTH: 0.45,
@@ -389,6 +389,10 @@ class PortraitParticles {
     this.setupEventListeners();
     this.initialized = true;
 
+    // Re-compute canvas dimensions once the entry animation settles so
+    // padding and DPR are based on the final (untransformed) wrapper position.
+    this.wrapper.addEventListener('animationend', () => this.resize(), { once: true });
+
     const introSection = document.querySelector('.stage[data-section="intro"]');
     if (introSection?.classList.contains('active-section')) {
       this.start();
@@ -418,28 +422,27 @@ class PortraitParticles {
     const vh = window.innerHeight;
     const minPad = CONFIG.CANVAS_PAD_MIN;
 
-    this.padLeft   = Math.max(minPad, Math.ceil(rect.left) + 50);
-    this.padRight  = Math.max(minPad, Math.ceil(vw - rect.right) + 50);
-    this.padTop    = Math.max(minPad, Math.ceil(rect.top) + 50);
-    this.padBottom = Math.max(minPad, Math.ceil(vh - rect.bottom) + 50);
+    // Estimate untransformed position (compensates for CSS transform on wrapper,
+    // e.g. during the fadeInPortrait scale animation).  translateY is small
+    // (≤10 px) and covered by the 50 px margin added below.
+    const uLeft   = rect.left + (rect.width  - this.width)  * 0.5;
+    const uTop    = rect.top  + (rect.height - this.height) * 0.5;
+    const uRight  = uLeft + this.width;
+    const uBottom = uTop  + this.height;
 
-    // Cap total canvas CSS dimensions to limit memory
-    const maxDim = CONFIG.CANVAS_MAX_DIM;
+    this.padLeft   = Math.max(minPad, Math.ceil(uLeft)          + 50);
+    this.padRight  = Math.max(minPad, Math.ceil(vw - uRight)    + 50);
+    this.padTop    = Math.max(minPad, Math.ceil(uTop)           + 50);
+    this.padBottom = Math.max(minPad, Math.ceil(vh - uBottom)   + 50);
+
     let cssW = this.width + this.padLeft + this.padRight;
     let cssH = this.height + this.padTop + this.padBottom;
-    if (cssW > maxDim) {
-      const availW = maxDim - this.width;
-      const totalPadW = this.padLeft + this.padRight;
-      this.padLeft  = Math.floor(availW * this.padLeft / totalPadW);
-      this.padRight = availW - this.padLeft;
-      cssW = maxDim;
-    }
-    if (cssH > maxDim) {
-      const availH = maxDim - this.height;
-      const totalPadH = this.padTop + this.padBottom;
-      this.padTop    = Math.floor(availH * this.padTop / totalPadH);
-      this.padBottom = availH - this.padTop;
-      cssH = maxDim;
+
+    // Cap buffer size to limit memory; reduce DPR instead of CSS coverage
+    const maxBuf = CONFIG.CANVAS_MAX_BUF;
+    const estBuf = Math.round(cssW * this.dpr) * Math.round(cssH * this.dpr);
+    if (estBuf > maxBuf) {
+      this.dpr = Math.max(0.5, Math.sqrt(maxBuf / (cssW * cssH)));
     }
 
     // Update CSS positioning (canvas offset = left/top padding)
@@ -623,8 +626,10 @@ class PortraitParticles {
 
   handleClick(e) {
     const rect = this.wrapper.getBoundingClientRect();
-    const localX = e.clientX - rect.left;
-    const localY = e.clientY - rect.top;
+    const sx = rect.width  > 0 ? this.width  / rect.width  : 1;
+    const sy = rect.height > 0 ? this.height / rect.height : 1;
+    const localX = (e.clientX - rect.left) * sx;
+    const localY = (e.clientY - rect.top)  * sy;
 
     if (localX >= 0 && localX <= this.width && localY >= 0 && localY <= this.height) {
       this.toggleConstellation();
@@ -665,8 +670,11 @@ class PortraitParticles {
       this.targetActivation = 0;
     }
 
-    const localX = e.clientX - rect.left;
-    const localY = e.clientY - rect.top;
+    // Convert to local coords, compensating for CSS transforms (scale animation)
+    const sx = rect.width  > 0 ? this.width  / rect.width  : 1;
+    const sy = rect.height > 0 ? this.height / rect.height : 1;
+    const localX = (e.clientX - rect.left) * sx;
+    const localY = (e.clientY - rect.top)  * sy;
 
     this.mouseVelX = localX - this.mouseX;
     this.mouseVelY = localY - this.mouseY;
@@ -1175,8 +1183,13 @@ class PortraitParticles {
   
   setStreamTargetVp(vpX, vpY) {
     const rect = this.wrapper.getBoundingClientRect();
-    let localX = vpX - rect.left;
-    let localY = vpY - rect.top;
+
+    // Convert viewport → wrapper-local, compensating for CSS transforms
+    // (e.g. the fadeInPortrait scale animation on .portrait-wrap).
+    const sx = rect.width  > 0 ? this.width  / rect.width  : 1;
+    const sy = rect.height > 0 ? this.height / rect.height : 1;
+    let localX = (vpX - rect.left) * sx;
+    let localY = (vpY - rect.top)  * sy;
 
     // Clamp to canvas area (asymmetric margins)
     const mL = this.padLeft - 30;

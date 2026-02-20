@@ -41,7 +41,7 @@ const PALETTE_UINT32 = PALETTE.map(c => {
 });
 
 const CONFIG = {
-  SAMPLE_SPACING: 1,
+  SAMPLE_SPACING: 2,
   PARTICLE_SKIP_PROBABILITY: 0.0,
   PARTICLE_SIZE_MIN: 0.6,
   PARTICLE_SIZE_MAX: 1.1,
@@ -116,8 +116,9 @@ const CONFIG = {
 };
 
 function hashNoise(seed, t) {
-  const x = Math.sin(seed * 12.9898 + t * CONFIG.DRIFT_FREQUENCY) * 43758.5453;
-  return (x - Math.floor(x)) * 2 - 1;
+  const k = (seed * 0x9E3779B9 + (t * CONFIG.DRIFT_FREQUENCY * 1000) | 0) | 0;
+  const h = Math.imul(k ^ (k >>> 16), 0x45d9f3b) ^ (k >>> 13);
+  return ((h & 0xFFFF) / 32768) - 1;
 }
 
 /**
@@ -769,6 +770,12 @@ class PortraitParticles {
     
     const hasConstellation = this.constellationLevel > 0.01;
 
+    // Pre-compute all damping powers once per frame (avoids Math.pow per particle)
+    const dampNormal   = Math.pow(CONFIG.DAMPING, dt);
+    const dampStream   = Math.pow(CONFIG.STREAM_DAMPING, dt);
+    const dampReform   = Math.pow(CONFIG.REFORM_DAMPING, dt);
+    const dampOrbit    = Math.pow(0.96, dt);
+
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       const isColoredParticle = p.binIndex <= 1 || p.binIndex >= 4;
@@ -978,21 +985,22 @@ class PortraitParticles {
           p.vx += orbitNx * centripetal * dt;
           p.vy += orbitNy * centripetal * dt;
         }
-        p.vx *= 0.96;
-        p.vy *= 0.96;
+        const orbitDamp = dampOrbit;
+        p.vx *= orbitDamp;
+        p.vy *= orbitDamp;
       } else {
         p.vx += (forceX + driftX + homeDistX * particleSpring) * dt;
         p.vy += (forceY + driftY + homeDistY * particleSpring) * dt;
       }
 
-      let damping = CONFIG.DAMPING;
+      let dampPow = dampNormal;
       if (hasStream && isDust) {
-        damping = CONFIG.STREAM_DAMPING;
+        dampPow = dampStream;
       } else if (isActivelyReforming) {
-        damping = CONFIG.REFORM_DAMPING;
+        dampPow = dampReform;
       }
-      p.vx *= damping;
-      p.vy *= damping;
+      p.vx *= dampPow;
+      p.vy *= dampPow;
 
       const currentMaxSpeed = (hasStream && isDust) ? CONFIG.STREAM_MAX_SPEED : CONFIG.MAX_SPEED;
       const currentMaxSpeedSq = currentMaxSpeed * currentMaxSpeed;
@@ -1009,8 +1017,9 @@ class PortraitParticles {
 
     const timeSincePointer = now - this.lastPointerTime;
     if (timeSincePointer > 50) {
-      this.mouseVelX *= 0.92;
-      this.mouseVelY *= 0.92;
+      const mouseDecay = Math.pow(0.92, dt);
+      this.mouseVelX *= mouseDecay;
+      this.mouseVelY *= mouseDecay;
     }
 
     const physicsEnd = performance.now();

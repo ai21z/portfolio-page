@@ -20,6 +20,21 @@ import { projectXY } from './viewport.js';
 
 const loggedPathFailures = new Set();
 
+// Pre-rendered glow sprite — avoids expensive runtime shadowBlur
+const GLOW_SIZE = 64;
+const _glowCanvas = document.createElement('canvas');
+_glowCanvas.width = GLOW_SIZE;
+_glowCanvas.height = GLOW_SIZE;
+const _glowCtx = _glowCanvas.getContext('2d');
+const _grad = _glowCtx.createRadialGradient(GLOW_SIZE/2, GLOW_SIZE/2, 0, GLOW_SIZE/2, GLOW_SIZE/2, GLOW_SIZE/2);
+_grad.addColorStop(0, 'rgba(200,255,220,1)');
+_grad.addColorStop(0.15, 'rgba(200,255,220,0.8)');
+_grad.addColorStop(0.4, 'rgba(122,174,138,0.3)');
+_grad.addColorStop(0.7, 'rgba(143,180,255,0.1)');
+_grad.addColorStop(1, 'rgba(143,180,255,0)');
+_glowCtx.fillStyle = _grad;
+_glowCtx.fillRect(0, 0, GLOW_SIZE, GLOW_SIZE);
+
 export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   if (prefersReducedMotion || !GRAPH) return;
   if (ACTIVE_ANIMS.length >= MAX_SPARKS) ACTIVE_ANIMS.shift();
@@ -97,38 +112,33 @@ export function drawSparks(dt, pointAtRoute) {
     sparkCtx.lineCap = 'round';
     sparkCtx.lineJoin = 'round';
 
+    // Layer 1: wide outer glow (no shadowBlur — layered strokes create glow naturally)
     sparkCtx.strokeStyle = 'rgba(143,180,255,0.2)';
     sparkCtx.lineWidth = 8;
-    sparkCtx.shadowBlur = 20;
-    sparkCtx.shadowColor = 'rgba(143,180,255,0.4)';
     sparkCtx.beginPath();
     sparkCtx.moveTo(tail[0], tail[1]);
     sparkCtx.lineTo(head[0], head[1]);
     sparkCtx.stroke();
 
+    // Layer 2: mid green
     sparkCtx.strokeStyle = 'rgba(122,174,138,0.6)';
     sparkCtx.lineWidth = 4;
-    sparkCtx.shadowBlur = 12;
-    sparkCtx.shadowColor = 'rgba(122,174,138,0.7)';
     sparkCtx.beginPath();
     sparkCtx.moveTo(tail[0], tail[1]);
     sparkCtx.lineTo(head[0], head[1]);
     sparkCtx.stroke();
 
+    // Layer 3: bright core
     sparkCtx.strokeStyle = 'rgba(240,255,245,0.9)';
     sparkCtx.lineWidth = 2;
-    sparkCtx.shadowBlur = 8;
     sparkCtx.beginPath();
     sparkCtx.moveTo(tail[0], tail[1]);
     sparkCtx.lineTo(head[0], head[1]);
     sparkCtx.stroke();
 
-    sparkCtx.fillStyle = 'rgba(200,255,220,1)';
-    sparkCtx.shadowBlur = 12;
-    sparkCtx.shadowColor = 'rgba(200,255,220,0.8)';
-    sparkCtx.beginPath();
-    sparkCtx.arc(head[0], head[1], 2.8, 0, Math.PI * 2);
-    sparkCtx.fill();
+    // Head dot: pre-rendered glow sprite instead of arc + shadowBlur
+    const glowR = 16;
+    sparkCtx.drawImage(_glowCanvas, head[0] - glowR, head[1] - glowR, glowR * 2, glowR * 2);
 
     sparkCtx.restore();
     survivors.push(anim);
@@ -143,29 +153,14 @@ export function drawSparks(dt, pointAtRoute) {
       
       const head = pointAtRoute(route, route.s);
 
+      // Follower spark: pre-rendered glow sprite at multiple sizes for layered glow
       sparkCtx.save();
-
-      sparkCtx.fillStyle = `rgba(143,180,255,${0.25 * f.alpha})`;
-      sparkCtx.shadowBlur = 20;
-      sparkCtx.shadowColor = `rgba(143,180,255,${0.4 * f.alpha})`;
-      sparkCtx.beginPath();
-      sparkCtx.arc(head[0], head[1], 8, 0, Math.PI * 2);
-      sparkCtx.fill();
-
-      sparkCtx.fillStyle = `rgba(122,174,138,${0.6 * f.alpha})`;
-      sparkCtx.shadowBlur = 12;
-      sparkCtx.shadowColor = `rgba(122,174,138,${0.7 * f.alpha})`;
-      sparkCtx.beginPath();
-      sparkCtx.arc(head[0], head[1], 4, 0, Math.PI * 2);
-      sparkCtx.fill();
-
-      sparkCtx.fillStyle = `rgba(200,255,220,${0.9 * f.alpha})`;
-      sparkCtx.shadowBlur = 8;
-      sparkCtx.shadowColor = 'rgba(200,255,220,0.8)';
-      sparkCtx.beginPath();
-      sparkCtx.arc(head[0], head[1], 2, 0, Math.PI * 2);
-      sparkCtx.fill();
-
+      sparkCtx.globalAlpha = 0.4 * f.alpha;
+      sparkCtx.drawImage(_glowCanvas, head[0] - 20, head[1] - 20, 40, 40);
+      sparkCtx.globalAlpha = 0.7 * f.alpha;
+      sparkCtx.drawImage(_glowCanvas, head[0] - 10, head[1] - 10, 20, 20);
+      sparkCtx.globalAlpha = 0.9 * f.alpha;
+      sparkCtx.drawImage(_glowCanvas, head[0] - 5, head[1] - 5, 10, 10);
       sparkCtx.restore();
     }
   }

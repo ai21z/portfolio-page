@@ -188,12 +188,31 @@ if (sporeCanvas) {
   setSporeCtx(sporeCanvas.getContext('2d'));
 }
 
+// Pre-rendered spore glow sprite — avoids expensive runtime shadowBlur
+const _SPORE_GLOW_SIZE = 32;
+const _sporeGlowCanvas = document.createElement('canvas');
+_sporeGlowCanvas.width = _SPORE_GLOW_SIZE;
+_sporeGlowCanvas.height = _SPORE_GLOW_SIZE;
+const _sgCtx = _sporeGlowCanvas.getContext('2d');
+const _sgGrad = _sgCtx.createRadialGradient(_SPORE_GLOW_SIZE/2, _SPORE_GLOW_SIZE/2, 0, _SPORE_GLOW_SIZE/2, _SPORE_GLOW_SIZE/2, _SPORE_GLOW_SIZE/2);
+_sgGrad.addColorStop(0, 'rgba(200,255,220,1)');
+_sgGrad.addColorStop(0.25, 'rgba(122,174,138,0.7)');
+_sgGrad.addColorStop(0.6, 'rgba(122,174,138,0.2)');
+_sgGrad.addColorStop(1, 'rgba(122,174,138,0)');
+_sgCtx.fillStyle = _sgGrad;
+_sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
+
 // Spark animation loop
 function sparkLoopWrapper(ts) {
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
-  updateMovingLabels(dt, pointAtRoute);
-  drawSparks(dt, pointAtRoute);
+
+  // Only run sparks/labels when intro section is active
+  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
+  if (introActive && !document.hidden) {
+    updateMovingLabels(dt, pointAtRoute);
+    drawSparks(dt, pointAtRoute);
+  }
   requestAnimationFrame(sparkLoopWrapper);
 }
 
@@ -401,6 +420,13 @@ function drawSpores(ts) {
   const c = sporeCtx;
   const w = window.innerWidth;
   const h = window.innerHeight;
+
+  // Skip drawing when intro section is not active
+  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
+  if (!introActive || document.hidden) {
+    c.clearRect(0, 0, w, h);
+    return;
+  }
   c.clearRect(0, 0, w, h);
 
   for (const s of spores) {
@@ -411,18 +437,19 @@ function drawSpores(ts) {
     const scalePulse = 0.8 + 0.4 * (Math.sin(ts * 0.0015 + s.scalePhase) + 1) / 2;
     const radius = s.r * scalePulse;
 
-    c.shadowBlur = 8;
-    c.shadowColor = `rgba(122,174,138,${s.a * pulse * 0.6})`;
-    c.fillStyle = `rgba(122,174,138,${s.a * pulse})`;
-    c.beginPath();
-    c.arc(s.x, s.y, radius, 0, Math.PI * 2);
-    c.fill();
+    // Use pre-rendered glow sprite instead of shadowBlur
+    const glowDiam = radius * 6; // Sprite covers glow area
+    c.globalAlpha = s.a * pulse;
+    c.drawImage(_sporeGlowCanvas, s.x - glowDiam / 2, s.y - glowDiam / 2, glowDiam, glowDiam);
 
-    c.shadowBlur = 0;
-    c.fillStyle = `rgba(200,255,220,${s.a * pulse * 0.8})`;
+    // Bright core dot
+    c.globalAlpha = s.a * pulse * 0.8;
+    c.fillStyle = 'rgba(200,255,220,1)';
     c.beginPath();
     c.arc(s.x, s.y, radius * 0.4, 0, Math.PI * 2);
     c.fill();
+
+    c.globalAlpha = 1;
   }
 }
 

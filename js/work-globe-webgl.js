@@ -414,8 +414,9 @@ function render(deltaTime) {
     rotation.y += rotationVelocity.x;
     rotation.x += rotationVelocity.y;
 
-    rotationVelocity.x *= 0.95;
-    rotationVelocity.y *= 0.95;
+    const rotDecay = Math.pow(0.95, deltaTime * 60);
+    rotationVelocity.x *= rotDecay;
+    rotationVelocity.y *= rotDecay;
 
     if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
       rotation.y += 0.002;
@@ -704,6 +705,7 @@ function animate(timestamp) {
     render(0.016); // First frame uses assumed 60fps
     return;
   }
+
   const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
   lastFrameTime = timestamp;
   

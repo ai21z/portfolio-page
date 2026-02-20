@@ -68,6 +68,10 @@ export class WorkPinSystem {
     this.orbitalParticles = [];
     this.maxOrbitalsPerPin = 8;
     
+    this._pinUniformsCache = null;
+    this._textUniformsCache = null;
+    this._worldPosVec = new Float32Array(3); // Pre-allocated for renderText
+    
     this.initializePins();
     this.setupBuffers();
     this.createBillboardGeometry();
@@ -321,17 +325,31 @@ export class WorkPinSystem {
     return particles;
   }
   
+  _cachePinUniforms(program) {
+    const gl = this.gl;
+    this._pinUniformsCache = {
+      uProjection: gl.getUniformLocation(program, 'uProjection'),
+      uView: gl.getUniformLocation(program, 'uView'),
+      uModel: gl.getUniformLocation(program, 'uModel'),
+      uTime: gl.getUniformLocation(program, 'uTime'),
+      uCameraPos: gl.getUniformLocation(program, 'uCameraPos'),
+    };
+  }
+
   render(program, projMatrix, viewMatrix, modelMatrix, time, cameraPos) {
     if (this.pins.length === 0) return;
     
     const gl = this.gl;
     gl.bindVertexArray(this.vao);
     
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uProjection'), false, projMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uView'), false, viewMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uModel'), false, modelMatrix);
-    gl.uniform1f(gl.getUniformLocation(program, 'uTime'), time);
-    gl.uniform3fv(gl.getUniformLocation(program, 'uCameraPos'), cameraPos);
+    if (!this._pinUniformsCache) this._cachePinUniforms(program);
+    const u = this._pinUniformsCache;
+    
+    gl.uniformMatrix4fv(u.uProjection, false, projMatrix);
+    gl.uniformMatrix4fv(u.uView, false, viewMatrix);
+    gl.uniformMatrix4fv(u.uModel, false, modelMatrix);
+    gl.uniform1f(u.uTime, time);
+    gl.uniform3fv(u.uCameraPos, cameraPos);
     
     gl.drawElementsInstanced(
       gl.TRIANGLES,
@@ -422,6 +440,19 @@ export class WorkPinSystem {
     }
   }
   
+  _cacheTextUniforms(program) {
+    const gl = this.gl;
+    this._textUniformsCache = {
+      uProjection: gl.getUniformLocation(program, 'uProjection'),
+      uView: gl.getUniformLocation(program, 'uView'),
+      uWorldPos: gl.getUniformLocation(program, 'uWorldPos'),
+      uSize: gl.getUniformLocation(program, 'uSize'),
+      uHoverProgress: gl.getUniformLocation(program, 'uHoverProgress'),
+      uAlpha: gl.getUniformLocation(program, 'uAlpha'),
+      uTextTexture: gl.getUniformLocation(program, 'uTextTexture'),
+    };
+  }
+
   renderText(program, projMatrix, viewMatrix) {
     const gl = this.gl;
     
@@ -446,23 +477,30 @@ export class WorkPinSystem {
     
     if (isMobile) return;
     
+    if (!this._textUniformsCache) this._cacheTextUniforms(program);
+    const u = this._textUniformsCache;
+    
     gl.bindVertexArray(this.billboardVAO);
     
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uProjection'), false, projMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uView'), false, viewMatrix);
+    gl.uniformMatrix4fv(u.uProjection, false, projMatrix);
+    gl.uniformMatrix4fv(u.uView, false, viewMatrix);
+    
+    const wp = this._worldPosVec;
     
     this.pins.forEach((pin, i) => {
       const quad = this.textQuads.get(pin.key);
       if (!quad || quad.alpha < 0.01) return;
       
-      gl.uniform3fv(gl.getUniformLocation(program, 'uWorldPos'), new Float32Array(pin.basePos));
-      gl.uniform2f(gl.getUniformLocation(program, 'uSize'), 5.0, 2.0);
-      gl.uniform1f(gl.getUniformLocation(program, 'uHoverProgress'), pin.hovered ? 1.0 : 0.0);
-      gl.uniform1f(gl.getUniformLocation(program, 'uAlpha'), quad.alpha);
+      // Reuse pre-allocated Float32Array instead of new Float32Array per frame
+      wp[0] = pin.basePos[0]; wp[1] = pin.basePos[1]; wp[2] = pin.basePos[2];
+      gl.uniform3fv(u.uWorldPos, wp);
+      gl.uniform2f(u.uSize, 5.0, 2.0);
+      gl.uniform1f(u.uHoverProgress, pin.hovered ? 1.0 : 0.0);
+      gl.uniform1f(u.uAlpha, quad.alpha);
       
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, quad.texture);
-      gl.uniform1i(gl.getUniformLocation(program, 'uTextTexture'), 0);
+      gl.uniform1i(u.uTextTexture, 0);
       
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
     });

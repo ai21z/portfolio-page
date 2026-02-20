@@ -7,6 +7,9 @@ export class SporeSystem {
     this.lastLightningIntensity = 0;
     this.emissionCooldown = 0;
     
+    // Free-list: stack of inactive particle indices for O(1) acquisition
+    this.freeList = [];
+    
     for (let i = 0; i < maxParticles; i++) {
       this.particles.push({
         position: [0, 0, 0],
@@ -16,6 +19,7 @@ export class SporeSystem {
         phase: Math.random() * Math.PI * 2,
         active: false
       });
+      this.freeList.push(i);
     }
     
     this.positionBuffer = gl.createBuffer();
@@ -154,7 +158,9 @@ export class SporeSystem {
   }
   
   getInactiveParticle() {
-    return this.particles.find(p => !p.active);
+    if (this.freeList.length === 0) return null;
+    const idx = this.freeList.pop();
+    return this.particles[idx];
   }
   
   update(dt, lightningIntensity = 0) {
@@ -172,6 +178,13 @@ export class SporeSystem {
     
     this.activeParticles = 0;
     this.orbitalInjectionPoint = 0;
+    
+    // Pre-compute drag powers once per frame (avoids Math.pow per particle)
+    const dt60 = dt * 60;
+    const dragHigh = Math.pow(0.96, dt60);
+    const dragMid  = Math.pow(0.93, dt60);
+    const dragLow  = Math.pow(0.90, dt60);
+    
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       if (!p.active) continue;
@@ -179,25 +192,23 @@ export class SporeSystem {
       p.life -= dt * 0.35;
       if (p.life <= 0) {
         p.active = false;
+        this.freeList.push(i); // Return to free-list for O(1) reuse
         continue;
       }
       
       if (p.life > 0.7) {
-        const drag = 0.96;
-        p.velocity[0] *= drag;
-        p.velocity[1] *= drag;
-        p.velocity[2] *= drag;
+        p.velocity[0] *= dragHigh;
+        p.velocity[1] *= dragHigh;
+        p.velocity[2] *= dragHigh;
       } else if (p.life > 0.3) {
-        const drag = 0.93;
-        p.velocity[0] *= drag;
-        p.velocity[1] *= drag;
-        p.velocity[2] *= drag;
+        p.velocity[0] *= dragMid;
+        p.velocity[1] *= dragMid;
+        p.velocity[2] *= dragMid;
         p.velocity[1] -= dt * 0.3;
       } else {
-        const drag = 0.90;
-        p.velocity[0] *= drag;
-        p.velocity[1] *= drag;
-        p.velocity[2] *= drag;
+        p.velocity[0] *= dragLow;
+        p.velocity[1] *= dragLow;
+        p.velocity[2] *= dragLow;
         p.velocity[1] -= dt * 1.2;
       }
       

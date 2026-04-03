@@ -109,7 +109,7 @@
 .slab {
   position: absolute;
   width: 36%;
-  max-height: 43%;
+  max-height: 45%;
   
   /* Container queries: font sizes use cqi (% of card width) so they
      scale with the card itself, not the browser viewport/zoom */
@@ -349,7 +349,7 @@
 .slab li {
   /* cqi: proportional to card width, not viewport */
   font-size: clamp(10.5px, 4.2cqi, 15px);
-  line-height: 1.45;
+  line-height: 1.35;
   color: #3A3530;
   position: relative;
   z-index: 1;

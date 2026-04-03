@@ -204,6 +204,7 @@ _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 
 // Spark animation loop — only runs when intro is active
 let _sparkRafId = null;
+let _sporeRafId = null;
 function sparkLoopWrapper(ts) {
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
@@ -459,7 +460,6 @@ function drawSpores(ts) {
   }
 }
 
-let _sporeRafId = null;
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
   if (!sporeCtx) setSporeCtx(sporeCanvas.getContext('2d'));

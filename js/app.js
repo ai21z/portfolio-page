@@ -2,6 +2,8 @@
  * Navigation system with mycelium background and spark animations
  */
 
+// Signal to inline bootstrap that the ES-module loaded successfully
+window.__appBooted = true;
 
 import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';

@@ -1168,6 +1168,49 @@
     window.__turnstileOnLoad = function () {
       document.dispatchEvent(new CustomEvent('turnstile-loaded'));
     };
+
+    /* Navigation safety-net — runs in ALL browsers even if ES modules fail.
+       If app.js loads normally, it sets window.__appBooted and this code is inert. */
+    (function () {
+      var VALID = ['about','skills','work','blog','now','contact','resume'];
+      var INTRO_ID = 'main';
+
+      function activateFromHash() {
+        if (window.__appBooted) return;          // app.js took over — bail out
+        var hash = location.hash.slice(1);
+        var stages = document.querySelectorAll('.stage');
+        if (VALID.indexOf(hash) !== -1) {
+          for (var i = 0; i < stages.length; i++) {
+            var s = stages[i];
+            if (s.id === hash)        s.classList.add('active-section');
+            else if (s.id === INTRO_ID) s.classList.remove('active-section');
+            else                        s.classList.remove('active-section');
+          }
+        } else {
+          // No valid hash → show intro
+          for (var j = 0; j < stages.length; j++) {
+            var st = stages[j];
+            if (st.id === INTRO_ID) st.classList.add('active-section');
+            else                    st.classList.remove('active-section');
+          }
+        }
+      }
+
+      window.addEventListener('hashchange', activateFromHash);
+
+      // Also handle close (×) buttons — navigate to empty hash
+      document.addEventListener('click', function (e) {
+        if (window.__appBooted) return;
+        var btn = e.target.closest
+          ? e.target.closest('[data-action="go-intro"]')
+          : null;
+        if (btn) {
+          e.preventDefault();
+          history.replaceState(null, '', location.pathname);
+          activateFromHash();
+        }
+      });
+    })();
   </script>
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=__turnstileOnLoad"></script>
   <script type="module" src="./js/app.js"></script>

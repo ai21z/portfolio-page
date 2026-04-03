@@ -1692,6 +1692,10 @@ function initPaperFocusForSection(sectionId){
     
     const ipx = (n) => Math.round(Number(n) || 0);
     
+    // Capture the REAL content height (scrollHeight) before clipping
+    // The closed-state max-height clips content; we need the full height for the open state
+    const realContentH = Math.max(el.scrollHeight, r.height);
+    
     const placeholder = document.createElement('div');
     placeholder.className = el.className.replace('paper-open', '') + ' paper-placeholder';
     placeholder.style.visibility = 'hidden';
@@ -1705,22 +1709,22 @@ function initPaperFocusForSection(sectionId){
     el.style.left = `${r.left}px`;
     el.style.top  = `${r.top}px`;
     el.style.width  = `${r.width}px`;
-    el.style.height = `${r.height}px`;
+    el.style.height = `${realContentH}px`;
     
     el.style.setProperty('--open-tx', '0px');
     el.style.setProperty('--open-ty', '0px');
     el.style.setProperty('--open-scale', '1');
     
     const vw = window.innerWidth, vh = window.innerHeight;
-    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const cx = r.left + r.width/2, cy = r.top + realContentH/2;
     const tx = ipx((vw/2) - cx);
     const ty = ipx((vh/2) - cy);
     const fitW = (vw * 0.86) / r.width;
-    const fitH = (vh * 0.80) / r.height;
+    const fitH = (vh * 0.80) / realContentH;
     const scale = Math.min(fitW, fitH, 2.4);
     
     const targetW = ipx(r.width * scale);
-    const targetH = ipx(r.height * scale);
+    const targetH = ipx(realContentH * scale);
     el.style.setProperty('--open-w', `${targetW}px`);
     el.style.setProperty('--open-h', `${targetH}px`);
     

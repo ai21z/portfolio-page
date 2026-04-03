@@ -109,7 +109,7 @@
 .slab {
   position: absolute;
   width: 36%;
-  max-height: 32%;
+  max-height: 40%;
   
   /* Scaling factor for decorative geometry: 1 by default, set to --open-scale when settled */
   --k: 1;
@@ -573,6 +573,9 @@ button.ghost:hover {
   /* GPU acceleration hints */
   will-change: transform;
   backface-visibility: hidden;
+  /* Remove clipping so full content is visible when expanded */
+  max-height: none;
+  overflow: visible;
 }
 
 /* Settled state - remove compositor hints for better AA */

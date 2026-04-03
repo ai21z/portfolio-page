@@ -202,19 +202,32 @@ _sgGrad.addColorStop(1, 'rgba(122,174,138,0)');
 _sgCtx.fillStyle = _sgGrad;
 _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 
-// Spark animation loop
+// Spark animation loop — only runs when intro is active
+let _sparkRafId = null;
 function sparkLoopWrapper(ts) {
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
 
   // Only run sparks/labels when intro section is active
-  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
+  const introActive = _introStage?.classList.contains('active-section');
   if (introActive && !document.hidden) {
     updateMovingLabels(dt, pointAtRoute);
     drawSparks(dt, pointAtRoute);
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  } else {
+    // Clear canvases and stop the loop
+    if (sparkCtx && sparkCanvas) sparkCtx.clearRect(0, 0, sparkCanvas.width, sparkCanvas.height);
+    _sparkRafId = null;
   }
-  requestAnimationFrame(sparkLoopWrapper);
 }
+function ensureSparkLoop() {
+  if (_sparkRafId == null) {
+    setLastSparkTs(performance.now());
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  }
+}
+// Cache the intro stage element to avoid DOM queries every frame
+const _introStage = document.querySelector('.stage[data-section="intro"]');
 
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
@@ -279,7 +292,7 @@ function initAfterImageLoad() {
   sizeCanvas(sporeCanvas);
   if (sporeCtx) createSpores();
   
-  requestAnimationFrame(sparkLoopWrapper);
+  ensureSparkLoop();
   startSpores();
 }
 
@@ -420,13 +433,6 @@ function drawSpores(ts) {
   const c = sporeCtx;
   const w = window.innerWidth;
   const h = window.innerHeight;
-
-  // Skip drawing when intro section is not active
-  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
-  if (!introActive || document.hidden) {
-    c.clearRect(0, 0, w, h);
-    return;
-  }
   c.clearRect(0, 0, w, h);
 
   for (const s of spores) {
@@ -453,6 +459,7 @@ function drawSpores(ts) {
   }
 }
 
+let _sporeRafId = null;
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
   if (!sporeCtx) setSporeCtx(sporeCanvas.getContext('2d'));
@@ -460,11 +467,32 @@ function startSpores() {
   createSpores();
 
   function loop(ts) {
+    const introActive = _introStage?.classList.contains('active-section');
+    if (!introActive || document.hidden) {
+      // Clear and stop loop — will restart when section becomes active
+      if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+      _sporeRafId = null;
+      return;
+    }
     drawSpores(ts);
-    requestAnimationFrame(loop);
+    _sporeRafId = requestAnimationFrame(loop);
   }
 
-  requestAnimationFrame(loop);
+  _sporeRafId = requestAnimationFrame(loop);
+}
+function ensureSporeLoop() {
+  if (_sporeRafId == null && !prefersReducedMotion && sporeCanvas) {
+    _sporeRafId = requestAnimationFrame(function loop(ts) {
+      const introActive = _introStage?.classList.contains('active-section');
+      if (!introActive || document.hidden) {
+        if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+        _sporeRafId = null;
+        return;
+      }
+      drawSpores(ts);
+      _sporeRafId = requestAnimationFrame(loop);
+    });
+  }
 }
 
 function nearestNodeId(pt) {
@@ -1105,6 +1133,12 @@ function showSectionWithEffects(sectionName) {
   window.dispatchEvent(new CustomEvent('blog:visible', {
     detail: { visible: isBlogVisible }
   }));
+
+  // Restart intro-only loops when navigating back to intro
+  if (sectionName === 'intro') {
+    ensureSparkLoop();
+    ensureSporeLoop();
+  }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -1559,26 +1593,46 @@ mqMobile.addEventListener('change', e => {
   });
 })();
 
-// [AA-FIX] Watch for DPR changes (zoom/display scaling)
+// [AA-FIX] Watch for DPR changes via matchMedia (event-driven, no polling)
 let lastDPR = window.devicePixelRatio || 1;
-setInterval(() => {
-  const currentDPR = window.devicePixelRatio || 1;
-  if (currentDPR !== lastDPR) {
-    lastDPR = currentDPR;
-    // If a card is open, recompute its position
-    const openCard = document.querySelector('.paper-open');
-    if (openCard) {
-      const r = openCard.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const cx = r.left + r.width/2, cy = r.top + r.height/2;
-      const ipx = (n) => Math.round(Number(n) || 0);
-      const tx = ipx((vw/2) - cx);
-      const ty = ipx((vh/2) - cy);
-      openCard.style.setProperty('--open-tx', `${tx}px`);
-      openCard.style.setProperty('--open-ty', `${ty}px`);
+function watchDPR() {
+  const mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  mql.addEventListener('change', function onDprChange() {
+    const currentDPR = window.devicePixelRatio || 1;
+    if (currentDPR !== lastDPR) {
+      lastDPR = currentDPR;
+      // Dispatch an event other modules can listen to
+      window.dispatchEvent(new CustomEvent('dpr-changed', { detail: { dpr: currentDPR } }));
+      // If a card is open, recompute its position
+      const openCard = document.querySelector('.paper-open');
+      if (openCard) {
+        const r = openCard.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const cx = r.left + r.width/2, cy = r.top + r.height/2;
+        const ipx = (n) => Math.round(Number(n) || 0);
+        const tx = ipx((vw/2) - cx);
+        const ty = ipx((vh/2) - cy);
+        openCard.style.setProperty('--open-tx', `${tx}px`);
+        openCard.style.setProperty('--open-ty', `${ty}px`);
+      }
+    }
+    // Re-attach for the new DPR value
+    mql.removeEventListener('change', onDprChange);
+    watchDPR();
+  }, { once: true });
+}
+watchDPR();
+
+// Pause/resume intro loops when tab visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const introActive = _introStage?.classList.contains('active-section');
+    if (introActive) {
+      ensureSparkLoop();
+      ensureSporeLoop();
     }
   }
-}, 500);
+});
 
 function initAboutPaperFocus(){
   initPaperFocusForSection('about');
@@ -1740,13 +1794,14 @@ function initPaperFocusForSection(sectionId){
   }
 }
 
-// Cursor hover ring
+// Cursor hover ring — only runs when hovering a paper element
 function initPaperHoverRing(){
   const ring = document.getElementById('cursor-ring');
   if (!ring) return;
   let currentX = 0, currentY = 0;
   let targetX = 0, targetY = 0;
   let rafId = null;
+  let isHovering = false;
   
   const updatePosition = () => {
     currentX += (targetX - currentX) * 1.0;
@@ -1755,29 +1810,47 @@ function initPaperHoverRing(){
     ring.style.left = currentX + 'px';
     ring.style.top = currentY + 'px';
     
-    rafId = requestAnimationFrame(updatePosition);
+    if (isHovering) {
+      rafId = requestAnimationFrame(updatePosition);
+    } else {
+      rafId = null;
+    }
   };
-  updatePosition();
+  // Don't start the loop immediately — it starts on hover
   
   document.addEventListener('mousemove', (e) => {
     targetX = e.clientX;
     targetY = e.clientY;
   }, { passive: true });
   
+  const startRing = () => {
+    isHovering = true;
+    if (!rafId) rafId = requestAnimationFrame(updatePosition);
+  };
+  const stopRing = () => {
+    isHovering = false;
+    // rafId will self-clear on next frame
+  };
+  
   const about = document.getElementById('about');
-  if (!about) return;
-  
-  about.addEventListener('mouseenter', (e) => {
-    if (e.target.closest('.paper') && !document.body.classList.contains('has-paper-open-global')) {
-      document.body.classList.add('hovering-paper');
-    }
-  }, true);
-  
-  about.addEventListener('mouseleave', (e) => {
-    if (e.target.closest('.paper')) {
-      document.body.classList.remove('hovering-paper');
-    }
-  }, true);
+  const skills = document.getElementById('skills');
+
+  [about, skills].forEach(section => {
+    if (!section) return;
+    section.addEventListener('mouseenter', (e) => {
+      if (e.target.closest('.paper') && !document.body.classList.contains('has-paper-open-global')) {
+        document.body.classList.add('hovering-paper');
+        startRing();
+      }
+    }, true);
+    
+    section.addEventListener('mouseleave', (e) => {
+      if (e.target.closest('.paper')) {
+        document.body.classList.remove('hovering-paper');
+        stopRing();
+      }
+    }, true);
+  });
 }
 
 // Ritual background (disabled)

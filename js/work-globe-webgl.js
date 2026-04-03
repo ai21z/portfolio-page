@@ -100,6 +100,12 @@ function initWorkGlobe() {
 
   if (!gl) {
     console.error('WebGL2 not supported');
+    // Show fallback message
+    canvas.style.display = 'none';
+    const fallback = document.createElement('div');
+    fallback.className = 'webgl-fallback-visible';
+    fallback.textContent = 'WebGL2 is not available in your browser. The globe visualization requires a modern browser with WebGL2 support.';
+    canvas.parentNode.insertBefore(fallback, canvas.nextSibling);
     return;
   }
 
@@ -375,14 +381,16 @@ function initWorkGlobe() {
   };
   window.addEventListener('resize', boundResizeHandler);
   
+  // Listen for DPR changes dispatched by app.js (event-driven, no polling)
   let lastDPR = currentDPR();
-  dprCheckIntervalId = setInterval(() => {
+  const dprHandler = () => {
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
       resizeCanvas();
     }
-  }, 500);
+  };
+  window.addEventListener('dpr-changed', dprHandler);
 
   try {
     initAutoWriter();

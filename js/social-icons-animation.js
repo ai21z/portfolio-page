@@ -4,8 +4,10 @@ class SocialIconsAnimation {
   constructor() {
     this.icons = [];
     this.time = 0;
+    this.lastTimestamp = 0;
     this.animationFrameId = null;
     this.isActive = false;
+    this.isSectionVisible = true;
     this.splitContainer = null;
     this.splitEnterHandler = null;
     this.splitLeaveHandler = null;
@@ -135,6 +137,7 @@ class SocialIconsAnimation {
   start() {
     if (this.isActive) return;
     this.isActive = true;
+    this.lastTimestamp = 0;
     this.animate();
   }
 
@@ -146,10 +149,21 @@ class SocialIconsAnimation {
     }
   }
 
-  animate() {
+  animate(timestamp) {
     if (!this.isActive) return;
 
-    this.time += 0.016;
+    // Compute real delta time (clamped to prevent jumps after tab switch)
+    if (!timestamp) timestamp = performance.now();
+    const dt = this.lastTimestamp ? Math.min((timestamp - this.lastTimestamp) / 1000, 0.1) : 0.016;
+    this.lastTimestamp = timestamp;
+
+    // Skip work if section is not visible (but keep loop alive for quick resume)
+    if (!this.isSectionVisible) {
+      this.animationFrameId = requestAnimationFrame((ts) => this.animate(ts));
+      return;
+    }
+
+    this.time += dt;
 
     this.icons.forEach(icon => {
       const {
@@ -174,7 +188,7 @@ class SocialIconsAnimation {
       `;
     });
 
-    this.animationFrameId = requestAnimationFrame(() => this.animate());
+    this.animationFrameId = requestAnimationFrame((ts) => this.animate(ts));
   }
 
   destroy() {
@@ -223,6 +237,16 @@ document.addEventListener('visibilitychange', () => {
     socialIconsAnimation.start();
   }
 });
+
+// Gate animation to intro section visibility (icons only visible there)
+const _introStageForIcons = document.querySelector('.stage[data-section="intro"]');
+if (_introStageForIcons) {
+  const obs = new MutationObserver(() => {
+    socialIconsAnimation.isSectionVisible = _introStageForIcons.classList.contains('active-section');
+  });
+  obs.observe(_introStageForIcons, { attributes: true, attributeFilter: ['class'] });
+  socialIconsAnimation.isSectionVisible = _introStageForIcons.classList.contains('active-section');
+}
 
 // Respect prefers-reduced-motion
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

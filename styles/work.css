@@ -312,6 +312,7 @@
   line-height: 1;
   transition: all 150ms ease;
   z-index: 1000;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -341,6 +342,7 @@
   padding: 16px;
   font-family: 'Space Mono', monospace;
   z-index: 10;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   pointer-events: none;
@@ -463,6 +465,7 @@
   border-radius: 4px;
   border: 1px solid rgba(63, 255, 159, 0.3);
   display: inline-block;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   white-space: pre-wrap;

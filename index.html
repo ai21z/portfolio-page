@@ -23,6 +23,10 @@
   <!-- PWA Manifest -->
   <link rel="manifest" href="./manifest.json" />
   
+  <!-- Preload critical resources -->
+  <link rel="preload" href="./styles/main.css?v=20251109-1930" as="style" />
+  <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
+  
   <link rel="stylesheet" href="./styles/main.css?v=20251109-1930" />
 </head>
 <body>
@@ -467,7 +471,7 @@
       <!-- Footer (grid row 4) -->
       <footer class="foot" aria-label="Footer">
         <small>
-            Lovecrafted by · <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" /> · Vissarion Zounarakis 2025 · <a href="mailto:ariszoun@gmail.com" aria-label="Email" style="color: #69a0a0;">ariszoun@gmail.com</a>
+            Lovecrafted by · <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" loading="lazy" /> · Vissarion Zounarakis 2025 · <a href="mailto:ariszoun@gmail.com" aria-label="Email" style="color: #69a0a0;">ariszoun@gmail.com</a>
         </small>
         <span class="foot-coords">41.3874° N, 2.1686° E</span>
       </footer>
@@ -536,7 +540,7 @@
       <!-- Portrait / sigil core -->
       <div class="core">
         <div class="core-plate">
-          <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" onerror="this.style.display='none'"/>
+          <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" onerror="this.style.display='none'"/>
           <div class="sigil-fallback" aria-hidden="true"></div>
         </div>
       </div>
@@ -635,7 +639,7 @@
       <!-- Portrait / sigil core -->
       <div class="core">
         <div class="core-plate">
-          <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" onerror="this.style.display='none'"/>
+          <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" onerror="this.style.display='none'"/>
           <div class="sigil-fallback" aria-hidden="true"></div>
         </div>
       </div>
@@ -818,7 +822,10 @@
     <!-- Dish-first map container (desktop only) -->
     <div id="blog-map" class="blog-map">
       <!-- WebGL Canvas (base layer, z:20) -->
-      <canvas id="blog-network-canvas" class="blog-network-canvas"></canvas>
+      <canvas id="blog-network-canvas" class="blog-network-canvas">
+        <!-- Fallback for browsers without WebGL2 -->
+        <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the blog network visualization.</p>
+      </canvas>
       
       <!-- Petri dish overlay (visual only, z:30) -->
       <svg id="dish" class="dish" aria-hidden="true"></svg>
@@ -981,7 +988,10 @@
     </nav>
     
     <div class="work-globe-container">
-      <canvas id="work-globe-canvas"></canvas>
+      <canvas id="work-globe-canvas">
+        <!-- Fallback for browsers without WebGL2 -->
+        <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the globe visualization.</p>
+      </canvas>
       
       <!-- Desktop HUD: Memorandum -->
       <div class="work-memorandum desktop-only">
@@ -1036,7 +1046,7 @@
     <div class="notebook-page">
       <!-- Blood-red wax seal at top center -->
       <div class="wax-seal" aria-hidden="true">
-        <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" class="seal-sigil" />
+        <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" class="seal-sigil" loading="lazy" />
       </div>
       
       <!-- Canvas for mycelium network animation -->

@@ -32,6 +32,19 @@
 #spore-canvas{ z-index:3; }
 #reveal-canvas{ z-index:4; }
 
+/* WebGL2 fallback message (shown when context creation fails) */
+.webgl-fallback-visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--bone, #E6E3D8);
+  font-size: 14px;
+  text-align: center;
+  opacity: 0.7;
+  min-height: 200px;
+}
+
 .signals-canvas{
   position: fixed;
   top: 0;

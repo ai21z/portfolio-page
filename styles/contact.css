@@ -43,6 +43,7 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   line-height: 1;
   transition: all 0.3s ease;
   z-index: 11;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 0;
 }

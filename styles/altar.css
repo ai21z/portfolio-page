@@ -660,6 +660,7 @@ button.ghost:hover {
   line-height: 1;
   transition: all 150ms ease;
   z-index: 10;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 

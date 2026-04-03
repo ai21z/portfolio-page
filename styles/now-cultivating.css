@@ -50,6 +50,7 @@
   line-height: 1;
   cursor: var(--cursor-spore, pointer);
   transition: all 150ms ease;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 

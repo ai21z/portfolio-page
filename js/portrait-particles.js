@@ -1,4 +1,7 @@
 // Portrait Particle Effect - Desktop only
+import { cappedDpr, isFirefox } from './utils.js';
+
+const FIREFOX = isFirefox();
 
 const BRIGHTNESS_MULT = 1.35;
 const ALPHA_BOOST = 0.0;
@@ -41,13 +44,13 @@ const PALETTE_UINT32 = PALETTE.map(c => {
 });
 
 const CONFIG = {
-  SAMPLE_SPACING: 2,
-  PARTICLE_SKIP_PROBABILITY: 0.0,
+  SAMPLE_SPACING: FIREFOX ? 3 : 2,
+  PARTICLE_SKIP_PROBABILITY: FIREFOX ? 0.12 : 0.0,
   PARTICLE_SIZE_MIN: 0.6,
   PARTICLE_SIZE_MAX: 1.1,
   BRIGHTNESS_THRESHOLD: 8,
   ALPHA_THRESHOLD: 180,
-  DARK_SKIP_PROBABILITY: 0.2,
+  DARK_SKIP_PROBABILITY: FIREFOX ? 0.35 : 0.2,
 
   INNER_RADIUS: 45,
   OUTER_RADIUS: 90,
@@ -55,7 +58,7 @@ const CONFIG = {
 
   CANVAS_PAD: 850,          // legacy reference / minimum fallback
   CANVAS_PAD_MIN: 200,      // floor per side so idle particles always have breathing room
-  CANVAS_MAX_BUF: 4096 * 4096, // max buffer pixels – DPR is reduced to stay within budget
+  CANVAS_MAX_BUF: (FIREFOX ? 3072 : 4096) * (FIREFOX ? 3072 : 4096), // max buffer pixels – DPR is reduced to stay within budget
 
   // Streaming
   STREAM_STRENGTH: 0.45,
@@ -82,7 +85,8 @@ const CONFIG = {
   REFORM_STREAM_PHASE_DIST: 150,
 
   // Constellation mode (click easter egg)
-  SIGIL_PATH: './artifacts/sigil/AZ-VZ-01.png',
+  SIGIL_PATH: './artifacts/sigil/AZ-VZ-01.webp',
+  SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-VZ-01.png',
   SIGIL_BRIGHTNESS_THRESHOLD: 40,
   CONSTELLATION_SCATTER: 0.6,
   CONSTELLATION_SPRING: 0.2,
@@ -415,7 +419,7 @@ class PortraitParticles {
   resize() {
     this.width = this.img.clientWidth;
     this.height = this.img.clientHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = cappedDpr(1.5);
 
     // --- Asymmetric padding: cover full viewport from portrait position ---
     const rect = this.wrapper.getBoundingClientRect();
@@ -541,7 +545,6 @@ class PortraitParticles {
   sampleSigil() {
     const sigil = new Image();
     sigil.crossOrigin = 'anonymous';
-    sigil.src = CONFIG.SIGIL_PATH;
     
     sigil.onload = () => {
       const offscreen = document.createElement('canvas');
@@ -586,8 +589,14 @@ class PortraitParticles {
     };
     
     sigil.onerror = () => {
+      if (sigil.src.endsWith('/AZ-VZ-01.webp') || sigil.src.endsWith('AZ-VZ-01.webp')) {
+        sigil.src = CONFIG.SIGIL_FALLBACK_PATH;
+        return;
+      }
       console.warn('[particles] Failed to load sigil image');
     };
+
+    sigil.src = CONFIG.SIGIL_PATH;
   }
 
   setupObservers() {

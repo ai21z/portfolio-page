@@ -6,6 +6,9 @@
   "scripts": {
     "generate-icons": "node generate-icons.js",
     "generate-og": "node generate-og.js",
+    "generate:network-lite": "node scripts/generate-network-lite.mjs",
+    "generate:webp-assets": "node scripts/generate-webp-assets.mjs",
+    "generate:perf-assets": "npm run generate:network-lite && npm run generate:webp-assets",
     "preview": "http-server . -p 4173 -a 127.0.0.1",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"

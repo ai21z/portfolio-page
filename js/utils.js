@@ -1,8 +1,18 @@
 // Utility functions
 
+export function isFirefox() {
+  return /\bFirefox\//.test(navigator.userAgent);
+}
+
+export function cappedDpr(max = 1.5) {
+  const dpr = window.devicePixelRatio || 1;
+  const browserMax = isFirefox() ? Math.min(max, 1.25) : max;
+  return Math.min(Math.max(1, dpr), browserMax);
+}
+
 export function sizeCanvas(canvas) {
   if (!canvas) return;
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = cappedDpr(1.5);
   canvas.width = Math.floor(window.innerWidth * dpr);
   canvas.height = Math.floor(window.innerHeight * dpr);
   canvas.style.width = `${window.innerWidth}px`;

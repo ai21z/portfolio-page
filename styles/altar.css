@@ -109,8 +109,12 @@
 .slab {
   position: absolute;
   width: 36%;
-  max-height: 32%;
+  max-height: 45%;
   
+  /* Container queries: font sizes use cqi (% of card width) so they
+     scale with the card itself, not the browser viewport/zoom */
+  container-type: inline-size;
+
   /* Scaling factor for decorative geometry: 1 by default, set to --open-scale when settled */
   --k: 1;
   
@@ -124,8 +128,8 @@
   
   color: #2A251F;
   
-  /* Ruled line spacing (base values in px) */
-  --rule-gap: 31px;
+  /* Ruled line spacing — scales with container width so lines match font size */
+  --rule-gap: clamp(19px, 7.5cqi, 32px);
   --rule-thickness: 1px;
 
   /* Border radius variables (base values in px) */
@@ -335,14 +339,16 @@
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
   color: #2A251F;
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
-  font-size: clamp(14px, 1.4vw, 22px);
+  /* cqi = % of container (card) inline-size — immune to browser zoom changes */
+  font-size: clamp(12px, 5cqi, 20px);
   position: relative;
   z-index: 1;
 }
 
 .slab p,
 .slab li {
-  font-size: clamp(11px, 1.05vw, 16px);
+  /* cqi: proportional to card width, not viewport */
+  font-size: clamp(10.5px, 4.2cqi, 15px);
   line-height: 1.35;
   color: #3A3530;
   position: relative;
@@ -372,7 +378,7 @@
   justify-content: space-between;
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
-  font-size: clamp(10px, 1vw, 15px);
+  font-size: clamp(9.5px, 3.8cqi, 14px);
   color: #3A3530;
 }
 
@@ -448,7 +454,8 @@
   flex-wrap: wrap;
   --tech-gap: 6px;
   gap: calc(var(--tech-gap) * var(--k));
-  font-size: clamp(10px, 1.1vw, 16px);
+  /* cqi: scales with card width, not viewport */
+  font-size: clamp(9.5px, 3.8cqi, 15px);
   line-height: 1.3;
   position: relative;
   z-index: 1;
@@ -529,7 +536,7 @@ button.ghost {
   cursor: var(--cursor-spore), pointer;
   font-family: inherit;
   font-size: clamp(10px, 1vw, 14px);
-  transition: all 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   position: relative;
   z-index: 1;
 }
@@ -573,6 +580,9 @@ button.ghost:hover {
   /* GPU acceleration hints */
   will-change: transform;
   backface-visibility: hidden;
+  /* Remove clipping so full content is visible when expanded */
+  max-height: none;
+  overflow: visible;
 }
 
 /* Settled state - remove compositor hints for better AA */
@@ -658,8 +668,9 @@ button.ghost:hover {
   color: rgba(232,232,234,0.7);
   font-size: 20px;
   line-height: 1;
-  transition: all 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   z-index: 10;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 

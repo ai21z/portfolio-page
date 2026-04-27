@@ -50,13 +50,32 @@ export function loadTexture(gl, url, options = {}) {
     new Uint8Array([0, 0, 0, 255]));
   
   const image = new Image();
+  let usingFallback = false;
+
+  const textureSource = () => {
+    const maxSize = options.maxSize || 0;
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    const largest = Math.max(width, height);
+
+    if (!maxSize || largest <= maxSize) return image;
+
+    const scale = maxSize / largest;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext('2d', { alpha: true });
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  };
+
   image.onload = () => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     
     // Don't flip Y - we handle orientation in UV generation
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource());
     
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
       options.mipmap !== false ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
@@ -75,7 +94,7 @@ export function loadTexture(gl, url, options = {}) {
     if (ext) {
       const maxAniso = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
       gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 
-        Math.min(8, maxAniso));
+        Math.min(options.anisotropy ?? 8, maxAniso));
     }
     
     if (options.onLoad) {
@@ -84,6 +103,11 @@ export function loadTexture(gl, url, options = {}) {
   };
   
   image.onerror = () => {
+    if (options.fallbackUrl && !usingFallback) {
+      usingFallback = true;
+      image.src = options.fallbackUrl;
+      return;
+    }
     console.error(`Failed to load texture: ${url}`);
   };
   

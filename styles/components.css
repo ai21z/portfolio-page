@@ -52,7 +52,7 @@
   object-fit: contain;
   border: none;
   box-shadow: none;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   filter: grayscale(0.2) contrast(1.05);
   opacity: 0.95;
 }
@@ -148,6 +148,12 @@
   margin: 0 2px;
   opacity: 0.5;
   filter: brightness(1.1);
+}
+
+.foot picture {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: middle;
 }
 
 .foot a {
@@ -252,7 +258,6 @@
   text-decoration: none;
   z-index: 2;
   transition: filter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
 }
 
 .sigil-vial:hover {
@@ -293,6 +298,7 @@
   border: 2px solid rgba(143, 180, 255, 0.35);
   border-radius: 50%;
   overflow: visible;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 
     /* INNER DEPTH - 3D concave surface */
@@ -302,7 +308,7 @@
     0 0 16px rgba(143, 180, 255, 0.3),
     0 0 24px rgba(122, 174, 138, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.5);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sigil-vial:hover .vial-glass {
@@ -405,7 +411,7 @@
   color: rgba(230, 227, 216, 0.9);
   opacity: 0.85;
   filter: drop-shadow(0 0 4px rgba(122, 174, 138, 0.4));
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 2;
 }
 
@@ -573,6 +579,7 @@
     background: none !important;
     border: none !important;
     box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     transform: none !important;
     top: auto !important;

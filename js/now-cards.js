@@ -246,7 +246,11 @@ function createCard(stream, index) {
     seal.className = 'now-card-seal';
     seal.setAttribute('aria-hidden', 'true');
     const sealImg = document.createElement('img');
-    sealImg.src = '/artifacts/sigil/no-bg-seal-sigil.png';
+    sealImg.src = '/artifacts/sigil/no-bg-seal-sigil.webp';
+    sealImg.onerror = () => {
+      sealImg.onerror = null;
+      sealImg.src = '/artifacts/sigil/no-bg-seal-sigil.png';
+    };
     sealImg.alt = '';
     sealImg.className = 'now-card-seal-img';
     seal.appendChild(sealImg);

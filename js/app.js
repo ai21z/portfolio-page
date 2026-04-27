@@ -2,6 +2,8 @@
  * Navigation system with mycelium background and spark animations
  */
 
+// Signal to inline bootstrap that the ES-module loaded successfully
+window.__appBooted = true;
 
 import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
@@ -73,9 +75,57 @@ import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 
 // Mycelium geometry (exported from Python)
+let myceliumReadyPromise = null;
+let navStreamsWired = false;
+let blogNetworkModulePromise = null;
+let workGlobeModulePromise = null;
+let nowCardsModulePromise = null;
+
+function ensureSectionModule(sectionName) {
+  if (sectionName === 'blog' && !blogNetworkModulePromise) {
+    blogNetworkModulePromise = import('./blog-network-webgl.js').catch((err) => {
+      blogNetworkModulePromise = null;
+      console.warn('⚠️ blog network module unavailable:', err);
+    });
+  }
+
+  if (sectionName === 'work' && !workGlobeModulePromise) {
+    workGlobeModulePromise = import('./work-globe-webgl.js').catch((err) => {
+      workGlobeModulePromise = null;
+      console.warn('⚠️ work globe module unavailable:', err);
+    });
+  }
+
+  if (sectionName === 'now' && !nowCardsModulePromise) {
+    nowCardsModulePromise = import('./now-cards.js').catch((err) => {
+      nowCardsModulePromise = null;
+      console.warn('⚠️ now cards module unavailable:', err);
+    });
+  }
+}
+
 async function loadMycelium() {
-  const response = await fetch('artifacts/network.json');
-  setMycMap(await response.json());
+  if (MYC_MAP) return MYC_MAP;
+  const response = await fetch('artifacts/network-lite.json');
+  const data = await response.json();
+  setMycMap(data);
+  return data;
+}
+
+function ensureMyceliumReady() {
+  if (GRAPH) return Promise.resolve(true);
+  if (!myceliumReadyPromise) {
+    myceliumReadyPromise = (async () => {
+      await loadMycelium();
+      await initNetworkAndNav();
+      return true;
+    })().catch((err) => {
+      myceliumReadyPromise = null;
+      console.warn('⚠️ network-lite.json unavailable:', err);
+      return false;
+    });
+  }
+  return myceliumReadyPromise;
 }
 
 // HUD rendering
@@ -202,19 +252,33 @@ _sgGrad.addColorStop(1, 'rgba(122,174,138,0)');
 _sgCtx.fillStyle = _sgGrad;
 _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 
-// Spark animation loop
+// Spark animation loop — only runs when intro is active
+let _sparkRafId = null;
+let _sporeRafId = null;
 function sparkLoopWrapper(ts) {
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
 
   // Only run sparks/labels when intro section is active
-  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
+  const introActive = _introStage?.classList.contains('active-section');
   if (introActive && !document.hidden) {
     updateMovingLabels(dt, pointAtRoute);
     drawSparks(dt, pointAtRoute);
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  } else {
+    // Clear canvases and stop the loop
+    if (sparkCtx && sparkCanvas) sparkCtx.clearRect(0, 0, sparkCanvas.width, sparkCanvas.height);
+    _sparkRafId = null;
   }
-  requestAnimationFrame(sparkLoopWrapper);
 }
+function ensureSparkLoop() {
+  if (_sparkRafId == null) {
+    setLastSparkTs(performance.now());
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  }
+}
+// Cache the intro stage element to avoid DOM queries every frame
+const _introStage = document.querySelector('.stage[data-section="intro"]');
 
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
@@ -274,12 +338,13 @@ function initAfterImageLoad() {
   computeNavOffsets(); // Compute offsets with proper base dimensions
   
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
+  wireNavigationStreams();
 
   sizeCanvas(sparkCanvas);
   sizeCanvas(sporeCanvas);
   if (sporeCtx) createSpores();
   
-  requestAnimationFrame(sparkLoopWrapper);
+  ensureSparkLoop();
   startSpores();
 }
 
@@ -305,6 +370,15 @@ window.addEventListener('orientationchange', resizeAllThrottled, { passive: true
 // Ritual toggle (sigil)
 function toggleRitualFromSigil(el){
   setRitualActive(!ritualActive);
+  if (!GRAPH) {
+    void ensureMyceliumReady().then((ready) => {
+      if (ready && ritualActive) {
+        startRitualMotion();
+        layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
+        ritualCatchUp();
+      }
+    });
+  }
   
   const img = el.querySelector('img#sigil');
   if (img) {
@@ -420,13 +494,6 @@ function drawSpores(ts) {
   const c = sporeCtx;
   const w = window.innerWidth;
   const h = window.innerHeight;
-
-  // Skip drawing when intro section is not active
-  const introActive = document.querySelector('.stage[data-section="intro"]')?.classList.contains('active-section');
-  if (!introActive || document.hidden) {
-    c.clearRect(0, 0, w, h);
-    return;
-  }
   c.clearRect(0, 0, w, h);
 
   for (const s of spores) {
@@ -460,11 +527,32 @@ function startSpores() {
   createSpores();
 
   function loop(ts) {
+    const introActive = _introStage?.classList.contains('active-section');
+    if (!introActive || document.hidden) {
+      // Clear and stop loop — will restart when section becomes active
+      if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+      _sporeRafId = null;
+      return;
+    }
     drawSpores(ts);
-    requestAnimationFrame(loop);
+    _sporeRafId = requestAnimationFrame(loop);
   }
 
-  requestAnimationFrame(loop);
+  _sporeRafId = requestAnimationFrame(loop);
+}
+function ensureSporeLoop() {
+  if (_sporeRafId == null && !prefersReducedMotion && sporeCanvas) {
+    _sporeRafId = requestAnimationFrame(function loop(ts) {
+      const introActive = _introStage?.classList.contains('active-section');
+      if (!introActive || document.hidden) {
+        if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+        _sporeRafId = null;
+        return;
+      }
+      drawSpores(ts);
+      _sporeRafId = requestAnimationFrame(loop);
+    });
+  }
 }
 
 function nearestNodeId(pt) {
@@ -1100,74 +1188,91 @@ function setupArticleNavigation(container, hubId) {
 // Section visibility with effects
 function showSectionWithEffects(sectionName) {
   showSection(sectionName, startRitualBackground, stopRitualBackground);
+  ensureSectionModule(sectionName);
   
   const isBlogVisible = sectionName === 'blog';
   window.dispatchEvent(new CustomEvent('blog:visible', {
     detail: { visible: isBlogVisible }
   }));
+
+  // Restart intro-only loops when navigating back to intro
+  if (sectionName === 'intro') {
+    ensureSparkLoop();
+    ensureSporeLoop();
+  }
+}
+
+function startStream(targetVpX, targetVpY) {
+  portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
+}
+
+function stopStream() {
+  portraitParticles?.clearStream?.();
+}
+
+function wireNavigationStreams() {
+  if (navStreamsWired) return;
+  const nav = document.getElementById('network-nav');
+  if (!nav) return;
+
+  const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
+  if (!navNodes.length) return;
+
+  navStreamsWired = true;
+  navNodes.forEach(el => {
+    const id = el.dataset.node;
+    const runNavEnter = () => {
+      if (!id) return;
+      if (GRAPH || prefersReducedMotion) {
+        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        return;
+      }
+
+      void ensureMyceliumReady().then((ready) => {
+        if (!ready) return;
+        if (el.matches(':hover') || document.activeElement === el) {
+          handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        }
+      });
+    };
+
+    const runStream = () => {
+      const rect = el.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      startStream(vpX, vpY);
+    };
+
+    el.addEventListener('pointerenter', () => {
+      runNavEnter();
+      runStream();
+    });
+
+    el.addEventListener('pointerleave', () => {
+      handleNavLeave(id, el);
+      stopStream();
+    });
+
+    el.addEventListener('focus', () => {
+      runNavEnter();
+      runStream();
+    });
+
+    el.addEventListener('blur', () => {
+      handleNavLeave(id, el);
+      stopStream();
+    });
+  });
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  await loadMycelium().catch(err => console.warn('⚠️ network.json unavailable:', err));
-  await initNetworkAndNav();
-  
-  // ═══════════════════════════════════════════════════════════════════
-  // DUST STREAMING: Dust particles flow toward hovered nav elements
-  // ═══════════════════════════════════════════════════════════════════
-  
-  /**
-   * Start dust streaming toward target element.
-   */
-  function startStream(targetVpX, targetVpY) {
-    portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
-  }
-  
-  function stopStream() {
-    portraitParticles?.clearStream?.();
-  }
+  wireNavigationStreams();
 
-  const nav = document.getElementById('network-nav');
-  if (nav) {
-    const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
-    console.log('[stream] Attaching to', navNodes.length, 'nav nodes');
-    navNodes.forEach(el => {
-      const id = el.dataset.node;
-      
-      el.addEventListener('pointerenter', () => {
-        console.log('[stream] pointerenter on', id);
-        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        
-        // Start streaming for all nav items including sigil
-        const rect = el.getBoundingClientRect();
-        const vpX = rect.left + rect.width / 2;
-        const vpY = rect.top + rect.height / 2;
-        startStream(vpX, vpY);
-      });
-      
-      el.addEventListener('pointerleave', () => {
-        handleNavLeave(id, el);
-        stopStream();
-      });
-      
-      el.addEventListener('focus', () => {
-        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        const rect = el.getBoundingClientRect();
-        const vpX = rect.left + rect.width / 2;
-        const vpY = rect.top + rect.height / 2;
-        startStream(vpX, vpY);
-      });
-      
-      el.addEventListener('blur', () => {
-        handleNavLeave(id, el);
-        stopStream();
-      });
-    });
-  }
-  
   // Social icons: stream on hover
   const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
   socialIcons.forEach(icon => {
     icon.addEventListener('pointerenter', () => {
+      if (!GRAPH) void ensureMyceliumReady();
       const rect = icon.getBoundingClientRect();
       const vpX = rect.left + rect.width / 2;
       const vpY = rect.top + rect.height / 2;
@@ -1178,7 +1283,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       stopStream();
     });
   });
-  
+
+  if (location.hash && location.hash !== '#intro') {
+    void ensureMyceliumReady();
+  }
+
   const hash = window.location.hash.slice(1);
   
   if (hash.startsWith('blog/')) {
@@ -1559,26 +1668,46 @@ mqMobile.addEventListener('change', e => {
   });
 })();
 
-// [AA-FIX] Watch for DPR changes (zoom/display scaling)
+// [AA-FIX] Watch for DPR changes via matchMedia (event-driven, no polling)
 let lastDPR = window.devicePixelRatio || 1;
-setInterval(() => {
-  const currentDPR = window.devicePixelRatio || 1;
-  if (currentDPR !== lastDPR) {
-    lastDPR = currentDPR;
-    // If a card is open, recompute its position
-    const openCard = document.querySelector('.paper-open');
-    if (openCard) {
-      const r = openCard.getBoundingClientRect();
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const cx = r.left + r.width/2, cy = r.top + r.height/2;
-      const ipx = (n) => Math.round(Number(n) || 0);
-      const tx = ipx((vw/2) - cx);
-      const ty = ipx((vh/2) - cy);
-      openCard.style.setProperty('--open-tx', `${tx}px`);
-      openCard.style.setProperty('--open-ty', `${ty}px`);
+function watchDPR() {
+  const mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  mql.addEventListener('change', function onDprChange() {
+    const currentDPR = window.devicePixelRatio || 1;
+    if (currentDPR !== lastDPR) {
+      lastDPR = currentDPR;
+      // Dispatch an event other modules can listen to
+      window.dispatchEvent(new CustomEvent('dpr-changed', { detail: { dpr: currentDPR } }));
+      // If a card is open, recompute its position
+      const openCard = document.querySelector('.paper-open');
+      if (openCard) {
+        const r = openCard.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const cx = r.left + r.width/2, cy = r.top + r.height/2;
+        const ipx = (n) => Math.round(Number(n) || 0);
+        const tx = ipx((vw/2) - cx);
+        const ty = ipx((vh/2) - cy);
+        openCard.style.setProperty('--open-tx', `${tx}px`);
+        openCard.style.setProperty('--open-ty', `${ty}px`);
+      }
+    }
+    // Re-attach for the new DPR value
+    mql.removeEventListener('change', onDprChange);
+    watchDPR();
+  }, { once: true });
+}
+watchDPR();
+
+// Pause/resume intro loops when tab visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const introActive = _introStage?.classList.contains('active-section');
+    if (introActive) {
+      ensureSparkLoop();
+      ensureSporeLoop();
     }
   }
-}, 500);
+});
 
 function initAboutPaperFocus(){
   initPaperFocusForSection('about');
@@ -1636,6 +1765,10 @@ function initPaperFocusForSection(sectionId){
     
     const ipx = (n) => Math.round(Number(n) || 0);
     
+    // Capture the REAL content height (scrollHeight) before clipping
+    // The closed-state max-height clips content; we need the full height for the open state
+    const realContentH = Math.max(el.scrollHeight, r.height);
+    
     const placeholder = document.createElement('div');
     placeholder.className = el.className.replace('paper-open', '') + ' paper-placeholder';
     placeholder.style.visibility = 'hidden';
@@ -1649,22 +1782,22 @@ function initPaperFocusForSection(sectionId){
     el.style.left = `${r.left}px`;
     el.style.top  = `${r.top}px`;
     el.style.width  = `${r.width}px`;
-    el.style.height = `${r.height}px`;
+    el.style.height = `${realContentH}px`;
     
     el.style.setProperty('--open-tx', '0px');
     el.style.setProperty('--open-ty', '0px');
     el.style.setProperty('--open-scale', '1');
     
     const vw = window.innerWidth, vh = window.innerHeight;
-    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const cx = r.left + r.width/2, cy = r.top + realContentH/2;
     const tx = ipx((vw/2) - cx);
     const ty = ipx((vh/2) - cy);
     const fitW = (vw * 0.86) / r.width;
-    const fitH = (vh * 0.80) / r.height;
+    const fitH = (vh * 0.80) / realContentH;
     const scale = Math.min(fitW, fitH, 2.4);
     
     const targetW = ipx(r.width * scale);
-    const targetH = ipx(r.height * scale);
+    const targetH = ipx(realContentH * scale);
     el.style.setProperty('--open-w', `${targetW}px`);
     el.style.setProperty('--open-h', `${targetH}px`);
     
@@ -1740,13 +1873,14 @@ function initPaperFocusForSection(sectionId){
   }
 }
 
-// Cursor hover ring
+// Cursor hover ring — only runs when hovering a paper element
 function initPaperHoverRing(){
   const ring = document.getElementById('cursor-ring');
   if (!ring) return;
   let currentX = 0, currentY = 0;
   let targetX = 0, targetY = 0;
   let rafId = null;
+  let isHovering = false;
   
   const updatePosition = () => {
     currentX += (targetX - currentX) * 1.0;
@@ -1755,29 +1889,47 @@ function initPaperHoverRing(){
     ring.style.left = currentX + 'px';
     ring.style.top = currentY + 'px';
     
-    rafId = requestAnimationFrame(updatePosition);
+    if (isHovering) {
+      rafId = requestAnimationFrame(updatePosition);
+    } else {
+      rafId = null;
+    }
   };
-  updatePosition();
+  // Don't start the loop immediately — it starts on hover
   
   document.addEventListener('mousemove', (e) => {
     targetX = e.clientX;
     targetY = e.clientY;
   }, { passive: true });
   
+  const startRing = () => {
+    isHovering = true;
+    if (!rafId) rafId = requestAnimationFrame(updatePosition);
+  };
+  const stopRing = () => {
+    isHovering = false;
+    // rafId will self-clear on next frame
+  };
+  
   const about = document.getElementById('about');
-  if (!about) return;
-  
-  about.addEventListener('mouseenter', (e) => {
-    if (e.target.closest('.paper') && !document.body.classList.contains('has-paper-open-global')) {
-      document.body.classList.add('hovering-paper');
-    }
-  }, true);
-  
-  about.addEventListener('mouseleave', (e) => {
-    if (e.target.closest('.paper')) {
-      document.body.classList.remove('hovering-paper');
-    }
-  }, true);
+  const skills = document.getElementById('skills');
+
+  [about, skills].forEach(section => {
+    if (!section) return;
+    section.addEventListener('mouseenter', (e) => {
+      if (e.target.closest('.paper') && !document.body.classList.contains('has-paper-open-global')) {
+        document.body.classList.add('hovering-paper');
+        startRing();
+      }
+    }, true);
+    
+    section.addEventListener('mouseleave', (e) => {
+      if (e.target.closest('.paper')) {
+        document.body.classList.remove('hovering-paper');
+        stopRing();
+      }
+    }, true);
+  });
 }
 
 // Ritual background (disabled)

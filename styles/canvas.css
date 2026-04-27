@@ -32,6 +32,19 @@
 #spore-canvas{ z-index:3; }
 #reveal-canvas{ z-index:4; }
 
+/* WebGL2 fallback message (shown when context creation fails) */
+.webgl-fallback-visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--bone, #E6E3D8);
+  font-size: 14px;
+  text-align: center;
+  opacity: 0.7;
+  min-height: 200px;
+}
+
 .signals-canvas{
   position: fixed;
   top: 0;
@@ -117,8 +130,9 @@ body.has-paper-open-global .signals-canvas {
   content:'';
   position:absolute;
   inset:0;
-  background:url("../artifacts/fungi-02.png") center/cover no-repeat;
-  filter:saturate(.4) brightness(.22) contrast(1.15);
+  background:
+    radial-gradient(ellipse 70vw 70dvh at 65% 30%, rgba(45,212,175,.08), transparent 62%),
+    radial-gradient(ellipse 55vw 55dvh at 38% 68%, rgba(18,54,45,.12), transparent 68%);
   opacity:.35;
   mix-blend-mode:multiply;
 }

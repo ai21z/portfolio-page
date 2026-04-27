@@ -21,6 +21,13 @@
   pointer-events:auto;
 }
 
+/* CSS-only fallback: if JS fails to load, :target still reveals sections */
+.stage:target{
+  opacity:1;
+  pointer-events:auto;
+  z-index:50; /* above intro so section is visible even without JS toggling classes */
+}
+
 /* Custom scrollbar styling */
 .stage::-webkit-scrollbar{
   width:10px;
@@ -35,7 +42,7 @@
   border-radius:5px;
   border:2px solid transparent;
   background-clip:padding-box;
-  transition:background 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .stage::-webkit-scrollbar-thumb:hover{

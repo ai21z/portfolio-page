@@ -133,7 +133,7 @@
   cursor: default;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.92);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1000;
   transform-origin: center center;
 }
@@ -310,8 +310,9 @@
   color: rgba(232,232,234,0.7);
   font-size: 20px;
   line-height: 1;
-  transition: all 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   z-index: 1000;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -341,6 +342,7 @@
   padding: 16px;
   font-family: 'Space Mono', monospace;
   z-index: 10;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   pointer-events: none;
@@ -463,6 +465,7 @@
   border-radius: 4px;
   border: 1px solid rgba(63, 255, 159, 0.3);
   display: inline-block;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   white-space: pre-wrap;
@@ -619,7 +622,7 @@
   cursor: default;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.92);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1001; /* Above work-location-info */
   transform-origin: center center;
 }
@@ -732,7 +735,7 @@
   color: rgba(232,232,234,0.7);
   font-size: 20px;
   line-height: 1;
-  transition: all 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   z-index: 10;
   pointer-events: auto;
 }
@@ -832,7 +835,7 @@
   overflow: visible;
 
   margin-top: 0.6rem;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
 }
 
 /* Rough rectangle border - like the wrinkled paper edges (matches contact form) */

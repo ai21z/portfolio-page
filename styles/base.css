@@ -34,6 +34,7 @@
   font-family: 'Special Elite';
   src: local('Special Elite'),
        local('SpecialElite-Regular'),
+       url('../artifacts/fonts/SpecialElite-Regular.woff2') format('woff2'),
        url('../artifacts/fonts/SpecialElite-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -59,7 +60,7 @@ body{
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
     radial-gradient(ellipse at 20% 30%, rgba(63,255,159,.015) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 70%, rgba(122,174,138,.015) 0%, transparent 50%);
-  background-attachment:fixed;
+  background-attachment: scroll;
 }
 
 a, button {
@@ -85,6 +86,10 @@ a, button {
 @media (max-width: 900px) {
   :root {
     --breakpoint: 900px;
+  }
+  /* Keep texture scrolling with the page; fixed backgrounds cause full-page repaints. */
+  body {
+    background-attachment: scroll;
   }
 }
 

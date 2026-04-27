@@ -1,4 +1,6 @@
 // blog-network-webgl.js — Hand-painted mycelium network
+import { cappedDpr } from './utils.js';
+
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20251029-trunks6-branch1p2x-rough';
 if (!window.__BLOG_NETWORK_VERSION) {
   window.__BLOG_NETWORK_VERSION = BLOG_NETWORK_VERSION;
@@ -29,7 +31,7 @@ const PAL = {
 };
 
 function currentDPR() {
-  return Math.min(Math.max(1, window.devicePixelRatio || 1), 2); // cap at 2x for performance
+  return cappedDpr(1.5);
 }
 
 const VIEW = { W: 1920, H: 1080 };
@@ -439,7 +441,16 @@ async function initBlogNetwork(){
   const canvas = q('#blog-network-canvas');
   if (!canvas) return;
   const gl = canvas.getContext('webgl2', { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
-  if(!gl){ console.error('WebGL2 not available'); return; }
+  if(!gl){
+    console.error('WebGL2 not available');
+    // Show fallback message
+    canvas.style.display = 'none';
+    const fallback = document.createElement('div');
+    fallback.className = 'webgl-fallback-visible';
+    fallback.textContent = 'WebGL2 is not available in your browser. The blog network requires a modern browser with WebGL2 support.';
+    canvas.parentNode.insertBefore(fallback, canvas.nextSibling);
+    return;
+  }
 
   // Load network JSON
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
@@ -697,18 +708,44 @@ async function initBlogNetwork(){
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.disable(gl.DEPTH_TEST);
 
-  // uniforms helpers
-  function set2(p,name,x,y){ const l=gl.getUniformLocation(p,name); gl.uniform2f(l,x,y); }
-  function set3(p,name,[r,g,b]){ const l=gl.getUniformLocation(p,name); gl.uniform3f(l,r,g,b); }
+  // Cache all uniform locations at init time (avoids getUniformLocation every frame)
+  const _uCache = {};
+  function cacheUniformsFor(prog, key, names) {
+    _uCache[key] = {};
+    for (const n of names) {
+      _uCache[key][n] = gl.getUniformLocation(prog, n);
+    }
+  }
+  cacheUniformsFor(progPaper, 'paper', ['uRes','uTime','uAbyss','uVignette']);
+  cacheUniformsFor(progSeg, 'seg', [
+    'uScale','uOffset','uShift','uRes','uTime','uDpr',
+    'uBranch1','uBranch2','uBranch3','uBranch4',
+    'uFusion1','uFusion2','uEmber1','uEmber2','uEmber3','uEmberR',
+    'uHubPos[0]','uHubCount','uHighlight',
+    'uDishCenterPx','uDishRadiusPx'
+  ]);
+  cacheUniformsFor(progNode, 'node', [
+    'uScale','uOffset','uShift','uRes','uTime','uDpr',
+    'uMossDark','uMossLight','uDotBranch','uDotFusion',
+    'uDishCenterPx','uDishRadiusPx'
+  ]);
+  cacheUniformsFor(progCyst, 'cyst', [
+    'uScale','uOffset','uShift','uRes','uTime','uDpr',
+    'uGlow1','uGlow2','uGlow3','uBranch1',
+    'uDishCenterPx','uDishRadiusPx'
+  ]);
+
+  // Cached uniform setters (no getUniformLocation per call)
+  function set2(key,name,x,y){ gl.uniform2f(_uCache[key][name],x,y); }
+  function set3(key,name,[r,g,b]){ gl.uniform3f(_uCache[key][name],r,g,b); }
 
   // hubs → uniform array
   const hubPos = (data.hubs||[]).map(h=>[h.x, h.y]);
-  function setHubs(p){
-    const loc = gl.getUniformLocation(p, 'uHubPos[0]');
-    const flat = new Float32Array(16);
-    hubPos.forEach((h,i)=>{ flat[i*2]=h[0]; flat[i*2+1]=h[1]; });
-    gl.uniform2fv(loc, flat);
-    gl.uniform1i(gl.getUniformLocation(p,'uHubCount'), hubPos.length);
+  const _hubFlat = new Float32Array(16); // pre-allocated
+  hubPos.forEach((h,i)=>{ _hubFlat[i*2]=h[0]; _hubFlat[i*2+1]=h[1]; });
+  function setHubs(key){
+    gl.uniform2fv(_uCache[key]['uHubPos[0]'], _hubFlat);
+    gl.uniform1i(_uCache[key]['uHubCount'], hubPos.length);
   }
 
   // Build Petri dish SVG overlay (realistic top-down view)
@@ -831,12 +868,12 @@ async function initBlogNetwork(){
     const cyCss = dish.cy;  // CSS pixels, CSS top-left origin
     const rCss  = dish.r;   // CSS pixels
 
-    // Set uniforms for segment, cyst, AND node shaders
-    for (const prog of [progSeg, progCyst, progNode]) {
+    // Set uniforms for segment, cyst, AND node shaders (using cached locations)
+    for (const [prog, key] of [[progSeg, 'seg'], [progCyst, 'cyst'], [progNode, 'node']]) {
       gl.useProgram(prog);
-      gl.uniform2f(gl.getUniformLocation(prog,'uDishCenterPx'), cxCss, cyCss);
-      gl.uniform1f(gl.getUniformLocation(prog,'uDishRadiusPx'), rCss);
-      gl.uniform1f(gl.getUniformLocation(prog,'uDpr'), dpr);
+      gl.uniform2f(_uCache[key]['uDishCenterPx'], cxCss, cyCss);
+      gl.uniform1f(_uCache[key]['uDishRadiusPx'], rCss);
+      gl.uniform1f(_uCache[key]['uDpr'], dpr);
     }
     gl.useProgram(null);
   }
@@ -1107,15 +1144,15 @@ async function initBlogNetwork(){
     }, 100); // Wait 100ms after last resize event
   });
   
-  // Poll for DPR changes (e.g., moving window between displays with different zoom)
+  // Listen for DPR changes dispatched by app.js (event-driven, no polling)
   let lastDPR = currentDPR();
-  setInterval(() => {
+  window.addEventListener('dpr-changed', () => {
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
       fit = resize();
     }
-  }, 500);
+  });
 
   let hoveredHubId = null;
   let activeHub = null;
@@ -1281,46 +1318,51 @@ async function initBlogNetwork(){
   let last = performance.now();
   let frameCount = 0;
   function loop(now){
-    const dt = now-last; if(dt<1000/30){ requestAnimationFrame(loop); return; } // 30 FPS cap
+    if (!running || document.hidden) {
+      rafId = null;
+      return;
+    }
+
+    const dt = now-last; if(dt<1000/30){ rafId = requestAnimationFrame(loop); return; } // 30 FPS cap
     last = now;
     frameCount++;
 
     // PAPER (renders background)
     gl.useProgram(progPaper);
     gl.bindVertexArray(null);
-    gl.uniform2f(gl.getUniformLocation(progPaper,'uRes'), fit.cssW, fit.cssH);
-    gl.uniform1f(gl.getUniformLocation(progPaper,'uTime'), now*0.001);
-    set3(progPaper,'uAbyss', PAL.ABYSS);
-    gl.uniform1f(gl.getUniformLocation(progPaper,'uVignette'), 0.35);
+    gl.uniform2f(_uCache.paper['uRes'], fit.cssW, fit.cssH);
+    gl.uniform1f(_uCache.paper['uTime'], now*0.001);
+    set3('paper','uAbyss', PAL.ABYSS);
+    gl.uniform1f(_uCache.paper['uVignette'], 0.35);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // SEGMENTS
     gl.useProgram(progSeg);
-    set2(progSeg,'uScale', fit.scale, fit.scale);
-    set2(progSeg,'uOffset', fit.offX, fit.offY);
-    set2(progSeg,'uShift', shift[0], shift[1]);
-    set2(progSeg,'uRes', fit.cssW, fit.cssH);
-    gl.uniform1f(gl.getUniformLocation(progSeg,'uTime'), now*0.001);
-    gl.uniform1f(gl.getUniformLocation(progSeg,'uDpr'), currentDPR());
+    set2('seg','uScale', fit.scale, fit.scale);
+    set2('seg','uOffset', fit.offX, fit.offY);
+    set2('seg','uShift', shift[0], shift[1]);
+    set2('seg','uRes', fit.cssW, fit.cssH);
+    gl.uniform1f(_uCache.seg['uTime'], now*0.001);
+    gl.uniform1f(_uCache.seg['uDpr'], currentDPR());
     // Petri dish clipping handled by updateDishUniforms() (already set)
     // Set all branch colors
-    set3(progSeg,'uBranch1', PAL.BRANCH1);
-    set3(progSeg,'uBranch2', PAL.BRANCH2);
-    set3(progSeg,'uBranch3', PAL.BRANCH3);
-    set3(progSeg,'uBranch4', PAL.BRANCH4);
+    set3('seg','uBranch1', PAL.BRANCH1);
+    set3('seg','uBranch2', PAL.BRANCH2);
+    set3('seg','uBranch3', PAL.BRANCH3);
+    set3('seg','uBranch4', PAL.BRANCH4);
     // Set fusion colors
-    set3(progSeg,'uFusion1', PAL.FUSION1);
-    set3(progSeg,'uFusion2', PAL.FUSION2);
+    set3('seg','uFusion1', PAL.FUSION1);
+    set3('seg','uFusion2', PAL.FUSION2);
     // Set ember colors
-    set3(progSeg,'uEmber1', PAL.EMBER1);
-    set3(progSeg,'uEmber2', PAL.EMBER2);
-    set3(progSeg,'uEmber3', PAL.EMBER3);
-    gl.uniform1f(gl.getUniformLocation(progSeg,'uEmberR'), 86.0);
-    setHubs(progSeg);
+    set3('seg','uEmber1', PAL.EMBER1);
+    set3('seg','uEmber2', PAL.EMBER2);
+    set3('seg','uEmber3', PAL.EMBER3);
+    gl.uniform1f(_uCache.seg['uEmberR'], 86.0);
+    setHubs('seg');
 
     if (!activeHub) {
       // OVERVIEW MODE: Draw all segments with optional hover highlight
-      gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 1.0);
+      gl.uniform1f(_uCache.seg['uHighlight'], 1.0);
       gl.bindVertexArray(vaoSeg.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoSeg.count);
       gl.bindVertexArray(null);
@@ -1330,7 +1372,7 @@ async function initBlogNetwork(){
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE); // Additive
         
-        gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 1.15);
+        gl.uniform1f(_uCache.seg['uHighlight'], 1.15);
         gl.bindVertexArray(vaoByHub[hoveredHubId].vao);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoByHub[hoveredHubId].count);
         gl.bindVertexArray(null);
@@ -1341,7 +1383,7 @@ async function initBlogNetwork(){
     } else {
       // DEEP VIEW MODE: Dim all, then draw active hub at full brightness
       // Pass 1: Draw all dimmed
-      gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 0.25);
+      gl.uniform1f(_uCache.seg['uHighlight'], 0.25);
       gl.bindVertexArray(vaoSeg.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoSeg.count);
       gl.bindVertexArray(null);
@@ -1351,7 +1393,7 @@ async function initBlogNetwork(){
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         
-        gl.uniform1f(gl.getUniformLocation(progSeg,'uHighlight'), 1.2);
+        gl.uniform1f(_uCache.seg['uHighlight'], 1.2);
         gl.bindVertexArray(vaoByHub[activeHub].vao);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoByHub[activeHub].count);
         gl.bindVertexArray(null);
@@ -1361,16 +1403,16 @@ async function initBlogNetwork(){
     // NODE DOTS
     if(vaoNode.count){
       gl.useProgram(progNode);
-      set2(progNode,'uScale', fit.scale, fit.scale);
-      set2(progNode,'uOffset', fit.offX, fit.offY);
-      set2(progNode,'uShift', shift[0], shift[1]);
-      set2(progNode,'uRes', fit.cssW, fit.cssH);
-      gl.uniform1f(gl.getUniformLocation(progNode,'uTime'), now*0.001);
-      gl.uniform1f(gl.getUniformLocation(progNode,'uDpr'), currentDPR());
-      set3(progNode,'uMossDark', PAL.MOSS_DARK);
-      set3(progNode,'uMossLight', PAL.MOSS_LIGHT);
-      set3(progNode,'uDotBranch', PAL.NECROTIC);
-      set3(progNode,'uDotFusion', PAL.FUSION2);
+      set2('node','uScale', fit.scale, fit.scale);
+      set2('node','uOffset', fit.offX, fit.offY);
+      set2('node','uShift', shift[0], shift[1]);
+      set2('node','uRes', fit.cssW, fit.cssH);
+      gl.uniform1f(_uCache.node['uTime'], now*0.001);
+      gl.uniform1f(_uCache.node['uDpr'], currentDPR());
+      set3('node','uMossDark', PAL.MOSS_DARK);
+      set3('node','uMossLight', PAL.MOSS_LIGHT);
+      set3('node','uDotBranch', PAL.NECROTIC);
+      set3('node','uDotFusion', PAL.FUSION2);
       gl.bindVertexArray(vaoNode.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoNode.count);
       gl.bindVertexArray(null);
@@ -1378,16 +1420,16 @@ async function initBlogNetwork(){
 
     // CYSTS
     gl.useProgram(progCyst);
-    set2(progCyst,'uScale', fit.scale, fit.scale);
-    set2(progCyst,'uOffset', fit.offX, fit.offY);
-    set2(progCyst,'uShift', shift[0], shift[1]);
-    set2(progCyst,'uRes', fit.cssW, fit.cssH);
-    gl.uniform1f(gl.getUniformLocation(progCyst,'uTime'), now*0.001);
-    gl.uniform1f(gl.getUniformLocation(progCyst,'uDpr'), currentDPR());
-    set3(progCyst,'uGlow1', PAL.GLOW1);
-    set3(progCyst,'uGlow2', PAL.GLOW2);
-    set3(progCyst,'uGlow3', PAL.GLOW3);
-    set3(progCyst,'uBranch1', PAL.BRANCH1);
+    set2('cyst','uScale', fit.scale, fit.scale);
+    set2('cyst','uOffset', fit.offX, fit.offY);
+    set2('cyst','uShift', shift[0], shift[1]);
+    set2('cyst','uRes', fit.cssW, fit.cssH);
+    gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
+    gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
+    set3('cyst','uGlow1', PAL.GLOW1);
+    set3('cyst','uGlow2', PAL.GLOW2);
+    set3('cyst','uGlow3', PAL.GLOW3);
+    set3('cyst','uBranch1', PAL.BRANCH1);
     // Petri dish clipping handled by updateDishUniforms() (already set)
     gl.bindVertexArray(vaoCyst.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoCyst.count);
@@ -1402,18 +1444,11 @@ async function initBlogNetwork(){
       const pulse = 0.4 + 0.15 * Math.sin(phase); // subtle 0.25-0.55 range
       const size = 8 + 3 * Math.sin(phase * 0.7); // gentle size breathing
       
-      gl.useProgram(progCyst);
-      set2(progCyst,'uScale', fit.scale, fit.scale);
-      set2(progCyst,'uOffset', fit.offX, fit.offY);
-      set2(progCyst,'uShift', shift[0], shift[1]);
-      set2(progCyst,'uRes', fit.cssW, fit.cssH);
-      gl.uniform1f(gl.getUniformLocation(progCyst,'uTime'), now*0.001);
-      gl.uniform1f(gl.getUniformLocation(progCyst,'uDpr'), currentDPR());
       // Dim ember colors for subtle glow
-      set3(progCyst,'uGlow1', [PAL.EMBER1[0]*pulse, PAL.EMBER1[1]*pulse, PAL.EMBER1[2]*pulse]);
-      set3(progCyst,'uGlow2', [PAL.EMBER2[0]*pulse, PAL.EMBER2[1]*pulse, PAL.EMBER2[2]*pulse]);
-      set3(progCyst,'uGlow3', [PAL.EMBER3[0]*pulse, PAL.EMBER3[1]*pulse, PAL.EMBER3[2]*pulse]);
-      set3(progCyst,'uBranch1', PAL.BRANCH1);
+      set3('cyst','uGlow1', [PAL.EMBER1[0]*pulse, PAL.EMBER1[1]*pulse, PAL.EMBER1[2]*pulse]);
+      set3('cyst','uGlow2', [PAL.EMBER2[0]*pulse, PAL.EMBER2[1]*pulse, PAL.EMBER2[2]*pulse]);
+      set3('cyst','uGlow3', [PAL.EMBER3[0]*pulse, PAL.EMBER3[1]*pulse, PAL.EMBER3[2]*pulse]);
+      set3('cyst','uBranch1', PAL.BRANCH1);
       
       vaoCyst.data.set([hub.x, hub.y, size, i * 0.5], 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
@@ -1428,16 +1463,16 @@ async function initBlogNetwork(){
       const hub = data.hubs.find(h=>h.id===hoveredHubId);
       if(hub){
         gl.useProgram(progCyst);
-        set2(progCyst,'uScale', fit.scale, fit.scale);
-        set2(progCyst,'uOffset', fit.offX, fit.offY);
-        set2(progCyst,'uShift', shift[0], shift[1]);
-        gl.uniform1f(gl.getUniformLocation(progCyst,'uTime'), now*0.001);
-        gl.uniform1f(gl.getUniformLocation(progCyst,'uDpr'), currentDPR());
+        set2('cyst','uScale', fit.scale, fit.scale);
+        set2('cyst','uOffset', fit.offX, fit.offY);
+        set2('cyst','uShift', shift[0], shift[1]);
+        gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
+        gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
         // Petri dish clipping handled by updateDishUniforms() (already set)
-        set3(progCyst,'uGlow1', PAL.EMBER1);
-        set3(progCyst,'uGlow2', PAL.EMBER2);
-        set3(progCyst,'uGlow3', PAL.EMBER3);
-        set3(progCyst,'uBranch1', PAL.BRANCH1);
+        set3('cyst','uGlow1', PAL.EMBER1);
+        set3('cyst','uGlow2', PAL.EMBER2);
+        set3('cyst','uGlow3', PAL.EMBER3);
+        set3('cyst','uBranch1', PAL.BRANCH1);
         // draw one big pulse at hub
         const pulse = (Math.sin(now*0.0005)*0.2+0.8);
         const r = 20 + 44*pulse;
@@ -1452,8 +1487,10 @@ async function initBlogNetwork(){
       }
     }
 
-    if (running) {
-      requestAnimationFrame(loop);
+    if (running && !document.hidden) {
+      rafId = requestAnimationFrame(loop);
+    } else {
+      rafId = null;
     }
   }
   
@@ -1462,28 +1499,36 @@ async function initBlogNetwork(){
   // Pause/resume when blog section visibility changes
   let running = false;
   let rafId = null;
+  const startLoop = () => {
+    if (running && !document.hidden && !rafId) {
+      rafId = requestAnimationFrame(loop);
+    }
+  };
+  const stopLoop = () => {
+    rafId = null;
+  };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
     const obs = new MutationObserver(() => {
       const isActive = blogStage.classList.contains('active-section');
       running = isActive;
-      if (isActive && !rafId) {
-        rafId = requestAnimationFrame(loop);
-      } else if (!isActive) {
-        rafId = null;
-      }
+      if (isActive) startLoop();
+      else stopLoop();
     });
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
     
     // Initial check
     running = blogStage.classList.contains('active-section');
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopLoop();
+    else startLoop();
+  });
   
   // Start animation loop
   animationActive = true;
-  if (running) {
-    rafId = requestAnimationFrame(loop);
-  }
+  startLoop();
 }
 
 // Wait for DOM to be ready, then init when blog section becomes visible

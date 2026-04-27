@@ -1,4 +1,6 @@
 // blog-network-webgl.js — Hand-painted mycelium network
+import { cappedDpr } from './utils.js';
+
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20251029-trunks6-branch1p2x-rough';
 if (!window.__BLOG_NETWORK_VERSION) {
   window.__BLOG_NETWORK_VERSION = BLOG_NETWORK_VERSION;
@@ -29,7 +31,7 @@ const PAL = {
 };
 
 function currentDPR() {
-  return Math.min(Math.max(1, window.devicePixelRatio || 1), 2); // cap at 2x for performance
+  return cappedDpr(1.5);
 }
 
 const VIEW = { W: 1920, H: 1080 };
@@ -1316,7 +1318,12 @@ async function initBlogNetwork(){
   let last = performance.now();
   let frameCount = 0;
   function loop(now){
-    const dt = now-last; if(dt<1000/30){ requestAnimationFrame(loop); return; } // 30 FPS cap
+    if (!running || document.hidden) {
+      rafId = null;
+      return;
+    }
+
+    const dt = now-last; if(dt<1000/30){ rafId = requestAnimationFrame(loop); return; } // 30 FPS cap
     last = now;
     frameCount++;
 
@@ -1480,8 +1487,10 @@ async function initBlogNetwork(){
       }
     }
 
-    if (running) {
-      requestAnimationFrame(loop);
+    if (running && !document.hidden) {
+      rafId = requestAnimationFrame(loop);
+    } else {
+      rafId = null;
     }
   }
   
@@ -1490,28 +1499,36 @@ async function initBlogNetwork(){
   // Pause/resume when blog section visibility changes
   let running = false;
   let rafId = null;
+  const startLoop = () => {
+    if (running && !document.hidden && !rafId) {
+      rafId = requestAnimationFrame(loop);
+    }
+  };
+  const stopLoop = () => {
+    rafId = null;
+  };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
     const obs = new MutationObserver(() => {
       const isActive = blogStage.classList.contains('active-section');
       running = isActive;
-      if (isActive && !rafId) {
-        rafId = requestAnimationFrame(loop);
-      } else if (!isActive) {
-        rafId = null;
-      }
+      if (isActive) startLoop();
+      else stopLoop();
     });
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
     
     // Initial check
     running = blogStage.classList.contains('active-section');
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopLoop();
+    else startLoop();
+  });
   
   // Start animation loop
   animationActive = true;
-  if (running) {
-    rafId = requestAnimationFrame(loop);
-  }
+  startLoop();
 }
 
 // Wait for DOM to be ready, then init when blog section becomes visible

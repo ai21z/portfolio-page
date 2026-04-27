@@ -42,7 +42,7 @@
   border-radius:5px;
   border:2px solid transparent;
   background-clip:padding-box;
-  transition:background 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .stage::-webkit-scrollbar-thumb:hover{

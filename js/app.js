@@ -75,9 +75,57 @@ import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 
 // Mycelium geometry (exported from Python)
+let myceliumReadyPromise = null;
+let navStreamsWired = false;
+let blogNetworkModulePromise = null;
+let workGlobeModulePromise = null;
+let nowCardsModulePromise = null;
+
+function ensureSectionModule(sectionName) {
+  if (sectionName === 'blog' && !blogNetworkModulePromise) {
+    blogNetworkModulePromise = import('./blog-network-webgl.js').catch((err) => {
+      blogNetworkModulePromise = null;
+      console.warn('⚠️ blog network module unavailable:', err);
+    });
+  }
+
+  if (sectionName === 'work' && !workGlobeModulePromise) {
+    workGlobeModulePromise = import('./work-globe-webgl.js').catch((err) => {
+      workGlobeModulePromise = null;
+      console.warn('⚠️ work globe module unavailable:', err);
+    });
+  }
+
+  if (sectionName === 'now' && !nowCardsModulePromise) {
+    nowCardsModulePromise = import('./now-cards.js').catch((err) => {
+      nowCardsModulePromise = null;
+      console.warn('⚠️ now cards module unavailable:', err);
+    });
+  }
+}
+
 async function loadMycelium() {
-  const response = await fetch('artifacts/network.json');
-  setMycMap(await response.json());
+  if (MYC_MAP) return MYC_MAP;
+  const response = await fetch('artifacts/network-lite.json');
+  const data = await response.json();
+  setMycMap(data);
+  return data;
+}
+
+function ensureMyceliumReady() {
+  if (GRAPH) return Promise.resolve(true);
+  if (!myceliumReadyPromise) {
+    myceliumReadyPromise = (async () => {
+      await loadMycelium();
+      await initNetworkAndNav();
+      return true;
+    })().catch((err) => {
+      myceliumReadyPromise = null;
+      console.warn('⚠️ network-lite.json unavailable:', err);
+      return false;
+    });
+  }
+  return myceliumReadyPromise;
 }
 
 // HUD rendering
@@ -290,6 +338,7 @@ function initAfterImageLoad() {
   computeNavOffsets(); // Compute offsets with proper base dimensions
   
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
+  wireNavigationStreams();
 
   sizeCanvas(sparkCanvas);
   sizeCanvas(sporeCanvas);
@@ -321,6 +370,15 @@ window.addEventListener('orientationchange', resizeAllThrottled, { passive: true
 // Ritual toggle (sigil)
 function toggleRitualFromSigil(el){
   setRitualActive(!ritualActive);
+  if (!GRAPH) {
+    void ensureMyceliumReady().then((ready) => {
+      if (ready && ritualActive) {
+        startRitualMotion();
+        layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
+        ritualCatchUp();
+      }
+    });
+  }
   
   const img = el.querySelector('img#sigil');
   if (img) {
@@ -1130,6 +1188,7 @@ function setupArticleNavigation(container, hubId) {
 // Section visibility with effects
 function showSectionWithEffects(sectionName) {
   showSection(sectionName, startRitualBackground, stopRitualBackground);
+  ensureSectionModule(sectionName);
   
   const isBlogVisible = sectionName === 'blog';
   window.dispatchEvent(new CustomEvent('blog:visible', {
@@ -1143,67 +1202,77 @@ function showSectionWithEffects(sectionName) {
   }
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-  await loadMycelium().catch(err => console.warn('⚠️ network.json unavailable:', err));
-  await initNetworkAndNav();
-  
-  // ═══════════════════════════════════════════════════════════════════
-  // DUST STREAMING: Dust particles flow toward hovered nav elements
-  // ═══════════════════════════════════════════════════════════════════
-  
-  /**
-   * Start dust streaming toward target element.
-   */
-  function startStream(targetVpX, targetVpY) {
-    portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
-  }
-  
-  function stopStream() {
-    portraitParticles?.clearStream?.();
-  }
+function startStream(targetVpX, targetVpY) {
+  portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
+}
 
+function stopStream() {
+  portraitParticles?.clearStream?.();
+}
+
+function wireNavigationStreams() {
+  if (navStreamsWired) return;
   const nav = document.getElementById('network-nav');
-  if (nav) {
-    const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
-    console.log('[stream] Attaching to', navNodes.length, 'nav nodes');
-    navNodes.forEach(el => {
-      const id = el.dataset.node;
-      
-      el.addEventListener('pointerenter', () => {
-        console.log('[stream] pointerenter on', id);
+  if (!nav) return;
+
+  const navNodes = nav.querySelectorAll('.network-node-label, .network-sigil-node');
+  if (!navNodes.length) return;
+
+  navStreamsWired = true;
+  navNodes.forEach(el => {
+    const id = el.dataset.node;
+    const runNavEnter = () => {
+      if (!id) return;
+      if (GRAPH || prefersReducedMotion) {
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        
-        // Start streaming for all nav items including sigil
-        const rect = el.getBoundingClientRect();
-        const vpX = rect.left + rect.width / 2;
-        const vpY = rect.top + rect.height / 2;
-        startStream(vpX, vpY);
+        return;
+      }
+
+      void ensureMyceliumReady().then((ready) => {
+        if (!ready) return;
+        if (el.matches(':hover') || document.activeElement === el) {
+          handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        }
       });
-      
-      el.addEventListener('pointerleave', () => {
-        handleNavLeave(id, el);
-        stopStream();
-      });
-      
-      el.addEventListener('focus', () => {
-        handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        const rect = el.getBoundingClientRect();
-        const vpX = rect.left + rect.width / 2;
-        const vpY = rect.top + rect.height / 2;
-        startStream(vpX, vpY);
-      });
-      
-      el.addEventListener('blur', () => {
-        handleNavLeave(id, el);
-        stopStream();
-      });
+    };
+
+    const runStream = () => {
+      const rect = el.getBoundingClientRect();
+      const vpX = rect.left + rect.width / 2;
+      const vpY = rect.top + rect.height / 2;
+      startStream(vpX, vpY);
+    };
+
+    el.addEventListener('pointerenter', () => {
+      runNavEnter();
+      runStream();
     });
-  }
-  
+
+    el.addEventListener('pointerleave', () => {
+      handleNavLeave(id, el);
+      stopStream();
+    });
+
+    el.addEventListener('focus', () => {
+      runNavEnter();
+      runStream();
+    });
+
+    el.addEventListener('blur', () => {
+      handleNavLeave(id, el);
+      stopStream();
+    });
+  });
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  wireNavigationStreams();
+
   // Social icons: stream on hover
   const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
   socialIcons.forEach(icon => {
     icon.addEventListener('pointerenter', () => {
+      if (!GRAPH) void ensureMyceliumReady();
       const rect = icon.getBoundingClientRect();
       const vpX = rect.left + rect.width / 2;
       const vpY = rect.top + rect.height / 2;
@@ -1214,7 +1283,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       stopStream();
     });
   });
-  
+
+  if (location.hash && location.hash !== '#intro') {
+    void ensureMyceliumReady();
+  }
+
   const hash = window.location.hash.slice(1);
   
   if (hash.startsWith('blog/')) {

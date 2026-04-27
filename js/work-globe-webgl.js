@@ -11,6 +11,7 @@ import { SporeSystem } from './work-globe/systems/spore-system.js';
 import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
 import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
+import { cappedDpr, isFirefox } from './utils.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
 import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER } from './work-globe/shaders/atmosphere-fog-shaders.js';
@@ -52,9 +53,12 @@ const scaledModelLightning = new Float32Array(16);
 let boundResizeHandler = null;
 let boundTouchStartHandler = null;
 let boundTouchEndHandler = null;
+let boundDprHandler = null;
+let boundVisibilityHandler = null;
 let dprCheckIntervalId = null;
 
 let isMobile = false;
+const WORK_FRAME_INTERVAL_MS = isFirefox() ? 1000 / 30 : 0;
 
 function updateMobileState() {
   isMobile = window.innerWidth <= 900;
@@ -92,9 +96,10 @@ function initWorkGlobe() {
     return;
   }
   
+  const firefox = isFirefox();
   gl = canvas.getContext('webgl2', {
     alpha: true,
-    antialias: true,
+    antialias: !firefox,
     powerPreference: 'high-performance'
   });
 
@@ -324,20 +329,27 @@ function initWorkGlobe() {
       texturesReady = true;
     }
   };
-  
-  earthTexture = loadTexture(gl, './artifacts/work-page/ominus-earth.png', {
+
+  const textureOptions = {
     mipmap: true,
+    maxSize: firefox ? 1024 : 1536,
+    anisotropy: firefox ? 2 : 8,
     onLoad: onTextureLoad
+  };
+
+  earthTexture = loadTexture(gl, './artifacts/work-page/ominus-earth.webp', {
+    ...textureOptions,
+    fallbackUrl: './artifacts/work-page/ominus-earth.png'
   });
   
-  fogTexture = loadTexture(gl, './artifacts/work-page/ominus-fog-cloud.png', {
-    mipmap: true,
-    onLoad: onTextureLoad
+  fogTexture = loadTexture(gl, './artifacts/work-page/ominus-fog-cloud.webp', {
+    ...textureOptions,
+    fallbackUrl: './artifacts/work-page/ominus-fog-cloud.png'
   });
   
-  lightningTexture = loadTexture(gl, './artifacts/work-page/lightning.png', {
-    mipmap: true,
-    onLoad: onTextureLoad
+  lightningTexture = loadTexture(gl, './artifacts/work-page/lightning.webp', {
+    ...textureOptions,
+    fallbackUrl: './artifacts/work-page/lightning.png'
   });
 
   canvas.addEventListener('pointerdown', onPointerDown);
@@ -383,14 +395,22 @@ function initWorkGlobe() {
   
   // Listen for DPR changes dispatched by app.js (event-driven, no polling)
   let lastDPR = currentDPR();
-  const dprHandler = () => {
+  boundDprHandler = () => {
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
       resizeCanvas();
     }
   };
-  window.addEventListener('dpr-changed', dprHandler);
+  window.addEventListener('dpr-changed', boundDprHandler);
+
+  boundVisibilityHandler = () => {
+    if (!document.hidden && gl && !animationFrameId) {
+      lastFrameTime = 0;
+      animationFrameId = requestAnimationFrame(animate);
+    }
+  };
+  document.addEventListener('visibilitychange', boundVisibilityHandler);
 
   try {
     initAutoWriter();
@@ -398,7 +418,7 @@ function initWorkGlobe() {
     console.warn('[Work Globe] Auto-writer init failed:', e);
   }
 
-  animate();
+  animationFrameId = requestAnimationFrame(animate);
 
 }
 
@@ -706,11 +726,20 @@ function render(deltaTime) {
 }
 
 function animate(timestamp) {
-  animationFrameId = requestAnimationFrame(animate);
+  if (document.hidden || !canvas?.closest('.active-section')) {
+    animationFrameId = null;
+    return;
+  }
   
   if (lastFrameTime === 0) {
     lastFrameTime = timestamp;
     render(0.016); // First frame uses assumed 60fps
+    animationFrameId = requestAnimationFrame(animate);
+    return;
+  }
+
+  if (WORK_FRAME_INTERVAL_MS && timestamp - lastFrameTime < WORK_FRAME_INTERVAL_MS) {
+    animationFrameId = requestAnimationFrame(animate);
     return;
   }
 
@@ -718,6 +747,7 @@ function animate(timestamp) {
   lastFrameTime = timestamp;
   
   render(deltaTime);
+  animationFrameId = requestAnimationFrame(animate);
 }
 
 function onPointerDown(e) {
@@ -1260,7 +1290,7 @@ function onPointerUp(e) {
 
 // Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
-  return Math.min(Math.max(1, window.devicePixelRatio || 1), 2); // cap at 2x for performance
+  return cappedDpr(1.5);
 }
 
 function resizeCanvas() {
@@ -1347,6 +1377,12 @@ function cleanupWorkGlobe() {
   if (boundResizeHandler) {
     window.removeEventListener('resize', boundResizeHandler);
   }
+  if (boundDprHandler) {
+    window.removeEventListener('dpr-changed', boundDprHandler);
+  }
+  if (boundVisibilityHandler) {
+    document.removeEventListener('visibilitychange', boundVisibilityHandler);
+  }
   
   hideLocationInfo();
   hideProjectPanel();
@@ -1397,6 +1433,8 @@ function cleanupWorkGlobe() {
   boundResizeHandler = null;
   boundTouchStartHandler = null;
   boundTouchEndHandler = null;
+  boundDprHandler = null;
+  boundVisibilityHandler = null;
 }
 
 function autoInit() {

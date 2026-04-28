@@ -18,6 +18,8 @@ class NotebookContact {
     this.turnstileToken = '';
     this.turnstileRequired = true;
     this.turnstileAvailable = true;
+    this.turnstileFeedbackEnabled = false;
+    this.formDisabled = false;
     this.isSubmitting = false;
     this.submitListener = (event) => this.handleSubmit(event);
   }
@@ -50,11 +52,11 @@ class NotebookContact {
         .then(() => this.mountTurnstile())
         .catch(() => {
           this.turnstileAvailable = false;
-          this.showStatus('Verification widget failed to load. Please refresh and try again.', 'error');
           this.updateSubmitState();
         });
     } else {
       this.turnstileAvailable = false;
+      this.formDisabled = true;
       this.showStatus('Verification widget is not configured. Contact form is disabled.', 'error');
       this.updateSubmitState();
       if (this.submitBtn) {
@@ -162,6 +164,7 @@ class NotebookContact {
     }
 
     if (this.turnstileRequired && !this.turnstileToken) {
+      this.turnstileFeedbackEnabled = true;
       if (window.turnstile && this.turnstileWidgetId) {
         this.showStatus('Verifying you are human…', 'info');
         const maxWait = 5000;
@@ -257,7 +260,7 @@ class NotebookContact {
 
   updateSubmitState() {
     if (!this.submitBtn) return;
-    const disabled = this.isSubmitting || (this.turnstileRequired && (!this.turnstileToken || !this.turnstileAvailable));
+    const disabled = this.isSubmitting || this.formDisabled;
     this.submitBtn.disabled = disabled;
   }
 
@@ -313,18 +316,21 @@ class NotebookContact {
         'error-callback': () => {
           this.turnstileToken = '';
           this.updateSubmitState();
-          this.showStatus('Verification failed. Please retry the challenge.', 'error');
+          if (this.turnstileFeedbackEnabled || this.isSubmitting) {
+            this.showStatus('Verification failed. Please retry the challenge.', 'error');
+          }
         },
         'expired-callback': () => {
           this.turnstileToken = '';
           this.updateSubmitState();
-          this.showStatus('Verification expired. Complete the challenge again.', 'error');
+          if (this.turnstileFeedbackEnabled || this.isSubmitting) {
+            this.showStatus('Verification expired. Complete the challenge again.', 'error');
+          }
         }
       });
     } catch (error) {
       console.error('Turnstile render failed', error);
       this.turnstileAvailable = false;
-      this.showStatus('Verification widget is unavailable. Contact form is disabled.', 'error');
       this.updateSubmitState();
     }
   }
@@ -334,6 +340,7 @@ class NotebookContact {
       window.turnstile.reset(this.turnstileWidgetId);
     }
     this.turnstileToken = '';
+    this.turnstileFeedbackEnabled = false;
     this.updateSubmitState();
   }
 

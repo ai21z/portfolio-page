@@ -20,6 +20,9 @@ build/
 
 # Test outputs
 test-results/
+artifacts/audit-screenshots/
+artifacts/browser-use-manual/
+artifacts/manual-test/
 
 # Logs
 *.log

@@ -21,18 +21,39 @@ const turnstileStubScript = `
   }
 `;
 
-test.describe('Contact form', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route('https://challenges.cloudflare.com/**', (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/javascript',
-        body: turnstileStubScript
-      });
+const turnstileErrorStubScript = `
+  window.turnstile = {
+    render: function (container, options) {
+      setTimeout(function () {
+        if (options && typeof options['error-callback'] === 'function') {
+          options['error-callback']();
+        }
+      }, 10);
+      return 'stub-widget';
+    },
+    reset: function () {},
+    remove: function () {}
+  };
+  if (typeof window.__turnstileOnLoad === 'function') {
+    window.__turnstileOnLoad();
+  } else {
+    document.dispatchEvent(new CustomEvent('turnstile-loaded'));
+  }
+`;
+
+async function routeTurnstile(page, body = turnstileStubScript) {
+  await page.route('https://challenges.cloudflare.com/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body
     });
   });
+}
 
+test.describe('Contact form', () => {
   test('submits successfully when fields are valid', async ({ page }) => {
+    await routeTurnstile(page);
     await page.route('**/api/contact', (route) => {
       route.fulfill({
         status: 200,
@@ -62,6 +83,7 @@ test.describe('Contact form', () => {
   });
 
   test('shows backend error feedback when API responds with failure', async ({ page }) => {
+    await routeTurnstile(page);
     await page.route('**/api/contact', (route) => {
       route.fulfill({
         status: 500,
@@ -86,5 +108,21 @@ test.describe('Contact form', () => {
     await page.getByRole('button', { name: /send message/i }).click();
 
     await expect(page.locator('[data-status]')).toHaveText(/misconfigured/i);
+  });
+
+  test('does not show a verification error before the user submits', async ({ page }) => {
+    await routeTurnstile(page, turnstileErrorStubScript);
+
+    await page.goto('/index.html#contact');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForFunction(() => {
+      const contact = document.getElementById('contact');
+      return !!contact && contact.classList.contains('active-section');
+    });
+    await page.waitForSelector('#contact-form');
+    await page.waitForTimeout(100);
+
+    await expect(page.locator('[data-status]')).toHaveText('');
+    await expect(page.locator('[data-status]')).not.toHaveClass(/error/);
   });
 });

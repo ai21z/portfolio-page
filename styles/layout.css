@@ -16,6 +16,10 @@
   z-index:2; /* Above bg-fungi (z:0) and canvas (z:1), below nav labels (z:100) */
 }
 
+.stage:focus {
+  outline: none;
+}
+
 .stage.active-section{
   opacity:1;
   pointer-events:auto;

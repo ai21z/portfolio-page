@@ -232,6 +232,10 @@
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
+.blog-mobile {
+  display: none;
+}
+
 .blog-screen.in-category .blog-memorandum,
 .blog-screen.in-article .blog-memorandum {
   display: none;
@@ -944,6 +948,7 @@
   }
 
   .blog-mobile {
+    display: block;
     position: absolute;
     top: 0;
     left: 0;

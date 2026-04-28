@@ -231,26 +231,44 @@ export function pointAtRoute(route, s) {
 }
 
 export function imgPointAtRoute(route, s) {
-  if (s <= 0) return [route.imgPts[0].x, route.imgPts[0].y];
-  if (s >= route.len) {
-    const last = route.imgPts[route.imgPts.length - 1];
+  const imgPts = route?.imgPts;
+  if (!imgPts || imgPts.length === 0) return null;
+  if (imgPts.length === 1) return [imgPts[0].x, imgPts[0].y];
+
+  if (!route.imgCum || route.imgCum.length !== imgPts.length) {
+    route.imgCum = cumulativeLengths(imgPts.map((p) => [p.x, p.y]));
+  }
+
+  const imgCum = route.imgCum;
+  const imgLen = imgCum[imgCum.length - 1] || 0;
+  if (imgLen <= 0) {
+    const last = imgPts[imgPts.length - 1];
+    return [last.x, last.y];
+  }
+
+  const routeLen = route.len || imgLen;
+  const ratio = routeLen > 0 ? Math.max(0, Math.min(1, s / routeLen)) : 0;
+  const imgS = ratio * imgLen;
+  if (imgS <= 0) return [imgPts[0].x, imgPts[0].y];
+  if (imgS >= imgLen) {
+    const last = imgPts[imgPts.length - 1];
     return [last.x, last.y];
   }
   
-  let lo = 0, hi = route.cum.length - 1;
+  let lo = 0, hi = imgCum.length - 1;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
-    if (route.cum[mid] < s) lo = mid + 1;
+    if (imgCum[mid] < imgS) lo = mid + 1;
     else hi = mid;
   }
   
   const i = Math.max(1, lo);
-  const segStart = route.cum[i - 1];
-  const segLen = Math.max(1e-6, route.cum[i] - segStart);
-  const t = (s - segStart) / segLen;
+  const segStart = imgCum[i - 1];
+  const segLen = Math.max(1e-6, imgCum[i] - segStart);
+  const t = (imgS - segStart) / segLen;
   
-  const pt0 = route.imgPts[i - 1];
-  const pt1 = route.imgPts[i];
+  const pt0 = imgPts[i - 1];
+  const pt1 = imgPts[i];
   
   return [
     pt0.x + (pt1.x - pt0.x) * t,

@@ -2,7 +2,7 @@ import { createSphereGeometry } from '../core/geometry.js';
 import { mat4 } from '../core/math-utils.js';
 
 export class MoonOrbitSystem {
-  constructor(gl, projects) {
+  constructor(gl, projects, options = {}) {
     this.gl = gl;
     this.moons = [];
     this._uniformsCache = null;
@@ -35,7 +35,7 @@ export class MoonOrbitSystem {
       });
     });
     
-    const sphereDetail = 24;
+    const sphereDetail = options.sphereDetail || 24;
     this.geometry = createSphereGeometry(1.0, sphereDetail, sphereDetail);
     this.vertexCount = this.geometry.indices.length;
     

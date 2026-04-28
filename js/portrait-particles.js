@@ -1200,6 +1200,8 @@ class PortraitParticles {
   }
   
   setStreamTargetVp(vpX, vpY) {
+    if (!this.initialized || !this.wrapper) return;
+
     const rect = this.wrapper.getBoundingClientRect();
 
     // Convert viewport → wrapper-local, compensating for CSS transforms

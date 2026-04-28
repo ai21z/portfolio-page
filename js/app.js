@@ -691,7 +691,10 @@ function ritualCatchUp() {
     const route = LOCKED_ROUTES[id];
     if (!route) continue;
     
-    const [imgX, imgY] = imgPointAtRoute(route, route.s);
+    const imgPoint = imgPointAtRoute(route, route.s);
+    if (!imgPoint) continue;
+
+    const [imgX, imgY] = imgPoint;
     
     setTimeout(() => {
       startSparkToPoint('intro', imgX, imgY, 750);
@@ -897,6 +900,23 @@ function updateBlogNavActive(hubId) {
   });
 }
 
+let pendingBlogHashTimer = null;
+
+function clearPendingBlogHashAction() {
+  if (pendingBlogHashTimer) {
+    clearTimeout(pendingBlogHashTimer);
+    pendingBlogHashTimer = null;
+  }
+}
+
+function scheduleBlogHashAction(action) {
+  clearPendingBlogHashAction();
+  pendingBlogHashTimer = setTimeout(() => {
+    pendingBlogHashTimer = null;
+    action();
+  }, 100);
+}
+
 function enterHub(hubId) {
   if (!hubId || hubId === 'source') {
     return;
@@ -925,7 +945,9 @@ function enterHub(hubId) {
   history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
 }
 
-function exitToMap() {
+function resetBlogMapState({ updateHistory = false } = {}) {
+  clearPendingBlogHashAction();
+
   const blogSection = document.getElementById('blog');
   if (blogSection) {
     blogSection.dataset.mode = 'map';
@@ -944,7 +966,13 @@ function exitToMap() {
   if (categoryView) categoryView.setAttribute('hidden', '');
   if (articleView) articleView.setAttribute('hidden', '');
 
-  history.pushState({ view: 'map' }, '', '#blog');
+  if (updateHistory) {
+    history.pushState({ view: 'map' }, '', '#blog');
+  }
+}
+
+function exitToMap() {
+  resetBlogMapState({ updateHistory: true });
 }
 
 function enterBlogCategory(hubId) { return enterHub(hubId); }
@@ -1191,6 +1219,10 @@ function showSectionWithEffects(sectionName) {
   ensureSectionModule(sectionName);
   
   const isBlogVisible = sectionName === 'blog';
+  if (isBlogVisible) {
+    resetBlogMapState();
+  }
+
   window.dispatchEvent(new CustomEvent('blog:visible', {
     detail: { visible: isBlogVisible }
   }));
@@ -1298,12 +1330,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     showSectionWithEffects('blog');
     
     if (articleId) {
-      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId));
     } else if (hubId) {
-      setTimeout(() => enterHub(hubId), 100);
+      scheduleBlogHashAction(() => enterHub(hubId));
     }
   } else {
-    const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
+    const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
     showSectionWithEffects(initialSection);
   }
@@ -1486,17 +1518,19 @@ window.addEventListener('hashchange', () => {
     showSectionWithEffects('blog');
     
     if (articleId) {
-      setTimeout(() => enterBlogArticle(hubId, articleId), 100);
+      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId));
     } else if (hubId) {
-      setTimeout(() => enterHub(hubId), 100);
+      scheduleBlogHashAction(() => enterHub(hubId));
     }
     return;
   }
   
-  const validSections = ['intro', 'about', 'work', 'projects', 'contact', 'blog', 'resume', 'skills', 'now'];
+  const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash);
   } else if (!hash) {
+    showSectionWithEffects('intro');
+  } else {
     showSectionWithEffects('intro');
   }
 });

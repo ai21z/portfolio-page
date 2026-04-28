@@ -452,6 +452,23 @@ async function initBlogNetwork(){
     return;
   }
 
+  let running = false;
+  let rafId = null;
+  let clockRafId = null;
+
+  const releaseCanvasBuffer = () => {
+    canvas.width = 1;
+    canvas.height = 1;
+    gl.viewport(0, 0, 1, 1);
+  };
+
+  const stopClockLoop = () => {
+    if (clockRafId) {
+      cancelAnimationFrame(clockRafId);
+      clockRafId = null;
+    }
+  };
+
   // Load network JSON
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
   const data = await res.json();
@@ -881,6 +898,7 @@ async function initBlogNetwork(){
   // Build curved labels OUTSIDE dish rim
   function buildLabels(dish) {
     if (!dish) return;
+    stopClockLoop();
     
     const root = document.getElementById('dish-labels');
     if (!root) return;
@@ -1042,8 +1060,7 @@ async function initBlogNetwork(){
       return { h, m, s, ms };
     }
     
-    // Smooth clock animation using requestAnimationFrame
-    function animateClock() {
+    function renderClockFrame() {
       const { h, m, s, ms } = getTimeInZone();
       
       // Smooth fractional values for continuous motion
@@ -1074,12 +1091,23 @@ async function initBlogNetwork(){
           hubStatus.textContent = `Current time: ${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
         }
       }
-      
-      requestAnimationFrame(animateClock);
+    }
+
+    // Smooth clock animation using requestAnimationFrame while the blog map is visible.
+    function animateClock() {
+      if (!running || document.hidden) {
+        clockRafId = null;
+        return;
+      }
+
+      renderClockFrame();
+      clockRafId = requestAnimationFrame(animateClock);
     }
     
-    // Start smooth animation
-    animateClock();
+    renderClockFrame();
+    if (running && !document.hidden) {
+      clockRafId = requestAnimationFrame(animateClock);
+    }
   }
 
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
@@ -1140,7 +1168,7 @@ async function initBlogNetwork(){
   window.addEventListener('resize', ()=>{ 
     if (resizeTimeout) clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      fit = resize();
+      if (running) fit = resize();
     }, 100); // Wait 100ms after last resize event
   });
   
@@ -1150,7 +1178,7 @@ async function initBlogNetwork(){
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      fit = resize();
+      if (running) fit = resize();
     }
   });
 
@@ -1497,15 +1525,20 @@ async function initBlogNetwork(){
   initialized = true;
   
   // Pause/resume when blog section visibility changes
-  let running = false;
-  let rafId = null;
   const startLoop = () => {
     if (running && !document.hidden && !rafId) {
+      fit = resize();
+      last = performance.now();
       rafId = requestAnimationFrame(loop);
     }
   };
   const stopLoop = () => {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+    }
     rafId = null;
+    stopClockLoop();
+    releaseCanvasBuffer();
   };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
@@ -1519,6 +1552,9 @@ async function initBlogNetwork(){
     
     // Initial check
     running = blogStage.classList.contains('active-section');
+    if (!running) {
+      releaseCanvasBuffer();
+    }
   }
 
   document.addEventListener('visibilitychange', () => {

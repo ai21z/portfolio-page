@@ -56,6 +56,7 @@ let boundTouchEndHandler = null;
 let boundDprHandler = null;
 let boundVisibilityHandler = null;
 let dprCheckIntervalId = null;
+let autoWriterTimeoutId = null;
 
 let isMobile = false;
 const WORK_FRAME_INTERVAL_MS = isFirefox() ? 1000 / 30 : 0;
@@ -63,6 +64,54 @@ const WORK_FRAME_INTERVAL_MS = isFirefox() ? 1000 / 30 : 0;
 function updateMobileState() {
   isMobile = window.innerWidth <= 900;
   return isMobile;
+}
+
+function getWorkGlobeQuality() {
+  const firefox = isFirefox();
+  const mobile = window.innerWidth <= 900;
+
+  if (firefox) {
+    return {
+      sphereDetail: mobile ? 24 : 30,
+      randomMyceliumSeeds: mobile ? 2 : 3,
+      myceliumMinLength: 80,
+      myceliumMaxLength: 150,
+      myceliumBranchProb: 0.045,
+      myceliumTubeSegments: 4,
+      sporeParticles: mobile ? 900 : 1400,
+      dataParticles: mobile ? 120 : 180,
+      pinSegments: 5,
+      moonDetail: mobile ? 14 : 18
+    };
+  }
+
+  if (mobile) {
+    return {
+      sphereDetail: 32,
+      randomMyceliumSeeds: 4,
+      myceliumMinLength: 100,
+      myceliumMaxLength: 180,
+      myceliumBranchProb: 0.06,
+      myceliumTubeSegments: 5,
+      sporeParticles: 1800,
+      dataParticles: 260,
+      pinSegments: 5,
+      moonDetail: 20
+    };
+  }
+
+  return {
+    sphereDetail: 40,
+    randomMyceliumSeeds: 6,
+    myceliumMinLength: 120,
+    myceliumMaxLength: 220,
+    myceliumBranchProb: 0.08,
+    myceliumTubeSegments: 6,
+    sporeParticles: 4000,
+    dataParticles: 500,
+    pinSegments: 6,
+    moonDetail: 24
+  };
 }
 
 let earthTexture = null;
@@ -115,6 +164,7 @@ function initWorkGlobe() {
   }
 
   updateMobileState();
+  const quality = getWorkGlobeQuality();
 
   resizeCanvas();
 
@@ -199,7 +249,7 @@ function initWorkGlobe() {
   cacheUniforms(myceliumCoreProgram, 'myceliumCore', ['uProjection', 'uView', 'uModel', 'uTime', 'uCoreColor', 'uCoreGain', 'uGrowthTime']);
   cacheUniforms(sporeProgram, 'spore', ['uProjection', 'uView', 'uModel', 'uTime', 'uSporeColor', 'uEmberColor']);
 
-  const sphere = createSphereGeometry(1.0, 40, 40);
+  const sphere = createSphereGeometry(1.0, quality.sphereDetail, quality.sphereDetail);
   sphereVertexCount = sphere.indices.length;
   
   const imageToSpherical = (x, y) => {
@@ -216,7 +266,7 @@ function initWorkGlobe() {
   ];
   
   // Add fewer random land seeds for cleaner look
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < quality.randomMyceliumSeeds; i++) {
     myceliumSeeds.push({
       lat: (Math.random() - 0.5) * Math.PI * 0.6,  // ±54 degrees (avoid poles)
       lon: (Math.random() - 0.5) * Math.PI * 2     // ±180 degrees
@@ -225,14 +275,14 @@ function initWorkGlobe() {
   
   const mycelium = createMyceliumHyphae(1.0, myceliumSeeds, {
     stepSize: 0.008,
-    minLength: 120,
-    maxLength: 220,
-    branchProb: 0.08,
+    minLength: quality.myceliumMinLength,
+    maxLength: quality.myceliumMaxLength,
+    branchProb: quality.myceliumBranchProb,
     killRadius: 0.025,
     mergeRadius: 0.015,
     widthBase: 0.010,
     widthNode: 0.016,
-    tubeSegments: 6
+    tubeSegments: quality.myceliumTubeSegments
   });
   
   myceliumVertexCount = mycelium.indices.length;
@@ -297,14 +347,14 @@ function initWorkGlobe() {
   
   gl.bindVertexArray(null);
   
-  sporeSystem = new SporeSystem(gl, 4000);
+  sporeSystem = new SporeSystem(gl, quality.sporeParticles);
   
-  const pinGeometry = createPinGeometry(0.02, 1.0, 6);
+  const pinGeometry = createPinGeometry(0.02, 1.0, quality.pinSegments);
   workPinSystem = new WorkPinSystem(gl, WORK_LOCATIONS, pinGeometry);
   
-  dataStreamSystem = new DataStreamSystem(gl, 500);
+  dataStreamSystem = new DataStreamSystem(gl, quality.dataParticles);
   
-  moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS);
+  moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS, { sphereDetail: quality.moonDetail });
 
   const cameraDistance = isMobile ? 6 : 3.5;
   
@@ -1334,6 +1384,11 @@ function cleanupWorkGlobe() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
+
+  if (autoWriterTimeoutId) {
+    clearTimeout(autoWriterTimeoutId);
+    autoWriterTimeoutId = null;
+  }
   
   // Clear the DPR check interval
   if (dprCheckIntervalId) {
@@ -1373,6 +1428,10 @@ function cleanupWorkGlobe() {
     canvas.removeEventListener('pointerleave', onPointerUp);
     if (boundTouchStartHandler) canvas.removeEventListener('touchstart', boundTouchStartHandler);
     if (boundTouchEndHandler) canvas.removeEventListener('touchend', boundTouchEndHandler);
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.style.width = '';
+    canvas.style.height = '';
   }
   if (boundResizeHandler) {
     window.removeEventListener('resize', boundResizeHandler);
@@ -1435,6 +1494,7 @@ function cleanupWorkGlobe() {
   boundTouchEndHandler = null;
   boundDprHandler = null;
   boundVisibilityHandler = null;
+  autoWriterTimeoutId = null;
 }
 
 function autoInit() {
@@ -1479,6 +1539,10 @@ function initAutoWriter() {
   const writer = document.querySelector('.work-auto-writer .writer-line');
   const iconZone = document.querySelector('.work-auto-writer .writer-icon-zone');
   if (!writer) return;
+  if (autoWriterTimeoutId) {
+    clearTimeout(autoWriterTimeoutId);
+    autoWriterTimeoutId = null;
+  }
 
   const messages = [
     {
@@ -1530,7 +1594,7 @@ function initAutoWriter() {
       typeSpeed = 500; // Pause before next
     }
     
-    setTimeout(type, typeSpeed);
+    autoWriterTimeoutId = setTimeout(type, typeSpeed);
   }
   
   type();

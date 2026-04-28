@@ -1111,7 +1111,7 @@
             name="subject" 
             class="notebook-input" 
             required 
-            placeholder="What would you like to discuss?"
+            placeholder="Subject or topic"
             minlength="5"
             maxlength="60"
           />
@@ -1185,7 +1185,7 @@
     /* Navigation safety-net — runs in ALL browsers even if ES modules fail.
        If app.js loads normally, it sets window.__appBooted and this code is inert. */
     (function () {
-      var VALID = ['about','skills','work','blog','now','contact','resume'];
+      var VALID = ['about','skills','work','blog','now','contact'];
       var INTRO_ID = 'main';
 
       function activateFromHash() {
@@ -1201,6 +1201,7 @@
           }
         } else {
           // No valid hash → show intro
+          if (hash) history.replaceState(null, '', location.pathname);
           for (var j = 0; j < stages.length; j++) {
             var st = stages[j];
             if (st.id === INTRO_ID) st.classList.add('active-section');

@@ -89,3 +89,155 @@ test('defers compact mycelium network data until navigation effects need it', as
   await expect.poll(() => liteNetworkRequests).toBeGreaterThan(0);
   expect(originalNetworkRequests).toBe(0);
 });
+
+test('intro ritual toggle and work navigation do not throw route errors', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+
+  const sigil = page.locator('.network-sigil-node');
+  await expect(sigil).toBeVisible();
+  await sigil.click();
+
+  const workNode = page.locator('.network-node-label[data-node="work"]');
+  await expect(workNode).toBeVisible();
+  await workNode.click();
+
+  await expect(page.locator('#work.active-section')).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
+
+test('releases hidden visualization canvas buffers after leaving sections', async ({ page }) => {
+  const waitForActiveSection = async (sectionId: string) => {
+    await page.waitForFunction((id) => {
+      const section = document.getElementById(id);
+      return !!section && section.classList.contains('active-section');
+    }, sectionId);
+  };
+
+  await page.goto('/index.html#work');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection('work');
+  await expect.poll(
+    () => page.locator('#work-globe-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+  ).toBeGreaterThan(100);
+
+  await page.goto('/index.html#contact');
+  await waitForActiveSection('contact');
+  await expect.poll(
+    () => page.locator('#work-globe-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+  ).toBeLessThanOrEqual(1);
+
+  await page.goto('/index.html#blog');
+  await waitForActiveSection('blog');
+  await expect.poll(
+    () => page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+  ).toBeGreaterThan(100);
+
+  await page.goto('/index.html#contact');
+  await waitForActiveSection('contact');
+  await expect.poll(
+    () => page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+  ).toBeLessThanOrEqual(1);
+});
+
+test('does not horizontally overflow common responsive viewports', async ({ page }) => {
+  const viewports = [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1366, height: 768 }
+  ];
+  const hashes = ['', '#now', '#work', '#blog', '#contact'];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+
+    for (const hash of hashes) {
+      await page.goto(`/index.html${hash}`);
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page.locator('.stage.active-section')).toBeVisible();
+
+      const overflow = await page.evaluate(() => {
+        const doc = document.documentElement;
+        const body = document.body;
+        return Math.max(doc.scrollWidth, body.scrollWidth) - window.innerWidth;
+      });
+
+      expect(overflow, `${viewport.width}x${viewport.height} ${hash || '#intro'}`).toBeLessThanOrEqual(2);
+    }
+  }
+});
+
+test('uses the desktop blog map and mobile specimen grid at the correct breakpoints', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html#blog');
+  await page.waitForLoadState('domcontentloaded');
+
+  await expect(page.locator('#blog-map')).toBeVisible();
+  await expect(page.locator('.blog-mobile')).toBeHidden();
+  await expect(page.locator('.arc-btn[data-hub="craft"]')).toBeVisible();
+  await page.locator('.arc-btn[data-hub="craft"]').press('Enter');
+  await expect(page).toHaveURL(/#blog\/craft$/);
+  await expect(page.locator('#blog-category-view')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/index.html#blog');
+  await page.waitForLoadState('domcontentloaded');
+
+  await expect(page.locator('#blog-map')).toBeHidden();
+  await expect(page.locator('.blog-mobile')).toBeVisible();
+  await expect(page.locator('a.slide-craft')).toBeVisible();
+  await page.locator('a.slide-craft').click();
+  await expect(page).toHaveURL(/#blog\/craft$/);
+  await expect(page.locator('#blog-category-view')).toBeVisible();
+});
+
+test('disabled or unknown hash routes fall back to intro instead of a blank page', async ({ page }) => {
+  for (const hash of ['#resume', '#projects', '#not-a-section']) {
+    await page.goto(`/index.html${hash}`);
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page.locator('#main.active-section')).toBeVisible();
+    await expect(page.locator('.stage.active-section')).toHaveCount(1);
+    await expect.poll(() => new URL(page.url()).hash, {
+      message: `${hash} should be normalized back to the intro route`
+    }).toBe('');
+  }
+});
+
+test('coarse pointer social streams do not crash when portrait particles are disabled', async ({ browser, browserName, baseURL }) => {
+  test.skip(browserName !== 'chromium', 'Firefox Playwright does not support isMobile contexts.');
+
+  const context = await browser.newContext({
+    viewport: { width: 320, height: 568 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true
+  });
+
+  await context.route('https://challenges.cloudflare.com/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: turnstileStubScript
+    });
+  });
+
+  const page = await context.newPage();
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.goto(new URL('/index.html', baseURL || 'http://127.0.0.1:4173').toString());
+  await page.waitForLoadState('domcontentloaded');
+
+  await expect(page.locator('.living-sigils .sigil-vial').first()).toBeVisible();
+  await page.locator('.living-sigils .sigil-vial').first().hover();
+  await page.waitForTimeout(250);
+
+  expect(pageErrors).toEqual([]);
+  await context.close();
+});

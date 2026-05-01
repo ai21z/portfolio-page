@@ -442,6 +442,25 @@ async function collectGraphicsGovernorState(page: Page) {
   });
 }
 
+async function collectPortraitParticleStats(page: Page) {
+  return await page.evaluate(async () => {
+    const module = await import('/js/portrait-particles.js');
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const instance = module.portraitParticles;
+    const canvas = instance.canvas as HTMLCanvasElement | null;
+    return {
+      initialized: instance.initialized,
+      running: instance.running,
+      renderMode: instance.renderMode,
+      particleCount: instance.particles.length,
+      backingWidth: canvas?.width ?? 0,
+      backingHeight: canvas?.height ?? 0,
+      globalStats: window.__portraitParticleStats ?? null
+    };
+  });
+}
+
 async function runAuditPass(page: Page, baseURL: string | undefined, browserName: string, viewport: Viewport, kind: string) {
   await page.setViewportSize(viewport);
 
@@ -505,16 +524,24 @@ test.describe('browser audit', () => {
     test.setTimeout(60_000);
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-graphics-control]')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', /^(quiet|balanced|rich|full)$/);
+    await expect(page.locator('.graphics-control__toggle')).toContainText('Graphics:');
 
-    await page.locator('.graphics-control__toggle').click();
-    await page.locator('[data-graphics-profile="quiet"]').click();
+    await page.locator('.graphics-control__toggle').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#graphics-profile-menu')).toBeVisible();
+    await page.locator('[data-graphics-profile="quiet"]').focus();
+    await page.keyboard.press('Enter');
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
 
-    await page.locator('.graphics-control__toggle').click();
-    await page.locator('[data-graphics-profile="balanced"]').click();
+    await page.locator('.graphics-control__toggle').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#graphics-profile-menu')).toBeVisible();
+    await page.locator('[data-graphics-profile="balanced"]').focus();
+    await page.keyboard.press('Enter');
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
   });
 
@@ -585,6 +612,44 @@ test.describe('browser audit', () => {
       const state = await collectGraphicsGovernorState(page);
       return state.movementRegression;
     }, { timeout: 2_500 }).toBe(false);
+  });
+
+  test('portrait particles use adaptive renderer and release inactive buffers', async ({ page, baseURL, browserName }) => {
+    test.setTimeout(75_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
+
+    await expect.poll(async () => {
+      const stats = await collectPortraitParticleStats(page);
+      return stats.backingWidth * stats.backingHeight;
+    }, { timeout: 6_000 }).toBeGreaterThan(1);
+
+    const activeStats = await collectPortraitParticleStats(page);
+    expect(activeStats.initialized).toBe(true);
+    expect(activeStats.particleCount).toBeGreaterThan(0);
+    expect(activeStats.globalStats).not.toBeNull();
+
+    if (browserName === 'firefox' || browserName === 'webkit') {
+      expect(activeStats.renderMode).toBe('fillrect');
+    } else {
+      expect(activeStats.renderMode).toBe('imagedata');
+    }
+
+    const contact = sections.find((section) => section.name === 'contact')!;
+    await switchSection(page, contact);
+
+    await expect.poll(async () => {
+      const stats = await collectPortraitParticleStats(page);
+      return stats.backingWidth * stats.backingHeight;
+    }).toBeLessThanOrEqual(1);
+
+    const inactiveStats = await collectPortraitParticleStats(page);
+    expect(inactiveStats.running).toBe(false);
   });
 
   for (const viewport of viewports) {

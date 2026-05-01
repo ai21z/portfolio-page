@@ -71,6 +71,11 @@ function isFirefox() {
   return /\bFirefox\//.test(navigator.userAgent);
 }
 
+function isWebKit() {
+  return /AppleWebKit/i.test(navigator.userAgent)
+    && !/(Chrome|Chromium|Edg|OPR|Firefox)/i.test(navigator.userAgent);
+}
+
 function isMobileViewport() {
   return window.innerWidth <= 760 || window.matchMedia('(pointer: coarse)').matches;
 }
@@ -133,7 +138,7 @@ function computeEffectiveProfile() {
 
   let index = rank(selectedProfile);
 
-  if (isFirefox()) {
+  if (isFirefox() || isWebKit()) {
     index = Math.min(index, rank('balanced'));
   }
 
@@ -293,6 +298,7 @@ export function getGraphicsState() {
     reducedMotion: prefersReducedMotion(),
     saveData: saveDataEnabled(),
     firefox: isFirefox(),
+    webkit: isWebKit(),
     mobile: isMobileViewport(),
     recentLongFrames: recent.filter((sample) => sample.deltaMs > 100).length,
     budget: getGraphicsBudget('state')
@@ -309,7 +315,7 @@ export function getGraphicsBudget(systemName = 'default') {
 
   const budget = mergeBudget(profile, extras);
 
-  if (isFirefox()) {
+  if (isFirefox() || isWebKit()) {
     budget.dprCap = Math.min(budget.dprCap, profile === 'quiet' ? 1 : 1.25);
     budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 30);
     budget.antialias = false;

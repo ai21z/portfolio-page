@@ -5,6 +5,11 @@ export function isFirefox() {
   return /\bFirefox\//.test(navigator.userAgent);
 }
 
+export function isWebKit() {
+  return /AppleWebKit/i.test(navigator.userAgent)
+    && !/(Chrome|Chromium|Edg|OPR|Firefox)/i.test(navigator.userAgent);
+}
+
 export function cappedDpr(max = 1.5, options = {}) {
   const {
     systemName = 'canvas',
@@ -14,7 +19,7 @@ export function cappedDpr(max = 1.5, options = {}) {
   } = options;
   const budget = getGraphicsBudget(systemName);
   const dpr = window.devicePixelRatio || 1;
-  const browserMax = isFirefox() ? Math.min(max, 1.25) : max;
+  const browserMax = (isFirefox() || isWebKit()) ? Math.min(max, 1.25) : max;
   let target = Math.min(Math.max(1, dpr), browserMax, budget.dprCap);
 
   const cssPixels = Math.max(1, width * height);

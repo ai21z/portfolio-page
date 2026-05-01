@@ -1,8 +1,9 @@
 // Portrait Particle Effect - Desktop only
-import { cappedDpr, isFirefox } from './utils.js';
+import { cappedDpr, isFirefox, isWebKit } from './utils.js';
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 const FIREFOX = isFirefox();
+const WEBKIT = isWebKit();
 
 const BRIGHTNESS_MULT = 1.35;
 const ALPHA_BOOST = 0.0;
@@ -117,8 +118,13 @@ const CONFIG = {
   DEBUG_PERF: false,
   DEBUG_FLOW: false,
   DEBUG_SIGIL: false,
-  RENDER_MODE: 'imagedata',
+  RENDER_MODE: 'auto',
 };
+
+function renderModeForBudget() {
+  if (CONFIG.RENDER_MODE !== 'auto') return CONFIG.RENDER_MODE;
+  return (FIREFOX || WEBKIT) ? 'fillrect' : 'imagedata';
+}
 
 function portraitBudget() {
   return getGraphicsBudget('portrait-particles');
@@ -324,8 +330,11 @@ class PortraitParticles {
     this.buf32 = null;
     this.bufWidth = 0;
     this.bufHeight = 0;
+    this.renderMode = renderModeForBudget();
+    this.lastStats = null;
 
     this.animationId = null;
+    this.releaseTimer = 0;
     this.running = false;
     this.initialized = false;
     this.lastFrameTime = 0;
@@ -338,6 +347,7 @@ class PortraitParticles {
     this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
     this.boundHandleResize = this.handleResize.bind(this);
     this.boundHandleClick = this.handleClick.bind(this);
+    this.boundHandleGraphicsChange = this.handleGraphicsChange.bind(this);
     this.boundAnimate = this.animate.bind(this);
 
     this.perfBufferSize = 300;
@@ -427,10 +437,66 @@ class PortraitParticles {
     this.resize();
   }
 
+  selectRenderMode() {
+    this.renderMode = renderModeForBudget();
+    if (this.canvas) {
+      this.canvas.dataset.portraitRenderMode = this.renderMode;
+    }
+    return this.renderMode;
+  }
+
+  publishStats(extra = {}) {
+    const stats = {
+      renderMode: this.renderMode,
+      particleCount: this.particles.length,
+      backingWidth: this.canvas?.width ?? 0,
+      backingHeight: this.canvas?.height ?? 0,
+      bufferPixels: (this.canvas?.width ?? 0) * (this.canvas?.height ?? 0),
+      dpr: this.dpr,
+      running: this.running,
+      visible: this.isVisible,
+      initialized: this.initialized,
+      ...extra
+    };
+
+    this.lastStats = stats;
+    window.__portraitParticleStats = stats;
+  }
+
+  releaseBuffers() {
+    if (!this.canvas) return;
+    if (this.releaseTimer) {
+      clearTimeout(this.releaseTimer);
+      this.releaseTimer = 0;
+    }
+
+    this.canvas.width = 1;
+    this.canvas.height = 1;
+    this.imageData = null;
+    this.buf32 = null;
+    this.bufWidth = 1;
+    this.bufHeight = 1;
+    this.dirtyPrev = null;
+    this.dirtyCurr = null;
+    this.publishStats({ released: true });
+  }
+
+  ensureBuffers() {
+    if (!this.canvas || !this.ctx) return;
+    if (!this.buf32 && this.renderMode === 'imagedata') {
+      this.resize();
+      return;
+    }
+    if (this.canvas.width <= 1 || this.canvas.height <= 1) {
+      this.resize();
+    }
+  }
+
   resize() {
     this.width = this.img.clientWidth;
     this.height = this.img.clientHeight;
     const budget = portraitBudget();
+    this.selectRenderMode();
 
     // --- Asymmetric padding: cover full viewport from portrait position ---
     const rect = this.wrapper.getBoundingClientRect();
@@ -477,18 +543,28 @@ class PortraitParticles {
     this.canvas.style.width  = cssW + 'px';
     this.canvas.style.height = cssH + 'px';
 
-    this.imageData = this.ctx.createImageData(this.bufWidth, this.bufHeight);
-    this.buf32 = new Uint32Array(this.imageData.data.buffer);
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Dirty rects depend on buffer size
-    if (!this.dirtyPrev) {
-      this.dirtyPrev = new DirtyRect(this.bufWidth, this.bufHeight);
-      this.dirtyCurr = new DirtyRect(this.bufWidth, this.bufHeight);
+    if (this.renderMode === 'imagedata') {
+      this.imageData = this.ctx.createImageData(this.bufWidth, this.bufHeight);
+      this.buf32 = new Uint32Array(this.imageData.data.buffer);
+
+      // Dirty rects depend on buffer size
+      if (!this.dirtyPrev) {
+        this.dirtyPrev = new DirtyRect(this.bufWidth, this.bufHeight);
+        this.dirtyCurr = new DirtyRect(this.bufWidth, this.bufHeight);
+      } else {
+        this.dirtyPrev.resize(this.bufWidth, this.bufHeight);
+        this.dirtyCurr.resize(this.bufWidth, this.bufHeight);
+      }
     } else {
-      this.dirtyPrev.resize(this.bufWidth, this.bufHeight);
-      this.dirtyCurr.resize(this.bufWidth, this.bufHeight);
+      this.imageData = null;
+      this.buf32 = null;
+      this.dirtyPrev = null;
+      this.dirtyCurr = null;
     }
+
+    this.publishStats({ resized: true });
   }
 
   sampleImage() {
@@ -498,6 +574,7 @@ class PortraitParticles {
       this.particles = [];
       this.bins = new Array(PALETTE.length);
       for (let b = 0; b < PALETTE.length; b++) this.bins[b] = [];
+      this.publishStats({ sampled: true });
       return;
     }
 
@@ -567,6 +644,7 @@ class PortraitParticles {
     }
 
     console.log('[particles]', this.particles.length, 'sampled');
+    this.publishStats({ sampled: true });
   }
 
   sampleSigil() {
@@ -646,7 +724,7 @@ class PortraitParticles {
           if (mutation.attributeName === 'class') {
             const isActive = introSection.classList.contains('active-section');
             if (isActive && this.isVisible && !this.running) this.start();
-            else if (!isActive && this.running) this.stop();
+            else if (!isActive) this.stop({ release: true });
           }
         });
       });
@@ -658,6 +736,7 @@ class PortraitParticles {
     window.addEventListener('pointermove', this.boundHandlePointerMove);
     document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.addEventListener('resize', this.boundHandleResize);
+    window.addEventListener('graphics:profile-change', this.boundHandleGraphicsChange);
     this.wrapper.addEventListener('click', this.boundHandleClick);
   }
 
@@ -725,8 +804,19 @@ class PortraitParticles {
   }
 
   handleVisibilityChange() {
-    if (document.hidden) this.stop();
+    if (document.hidden) this.stop({ release: true });
     else if (this.shouldRun()) this.start();
+  }
+
+  handleGraphicsChange() {
+    const budget = portraitBudget();
+    if (budget.quiet) {
+      this.stop({ release: true, forceRelease: true });
+      return;
+    }
+
+    if (this.shouldRun()) this.start();
+    else this.stop({ release: true });
   }
 
   handleResize() {
@@ -745,17 +835,42 @@ class PortraitParticles {
 
   start() {
     if (this.running || !this.initialized || this.particles.length === 0) return;
+    if (this.releaseTimer) {
+      clearTimeout(this.releaseTimer);
+      this.releaseTimer = 0;
+    }
+    this.selectRenderMode();
+    this.ensureBuffers();
     this.running = true;
     this.lastFrameTime = performance.now();
     this.lastInteractionTime = performance.now();
+    this.publishStats({ started: true, released: false });
     this.animate();
   }
 
-  stop() {
+  stop(options = {}) {
     this.running = false;
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
+    }
+    if (options.release) {
+      if (options.forceRelease) {
+        this.releaseBuffers();
+        return;
+      }
+
+      if (this.releaseTimer) clearTimeout(this.releaseTimer);
+      this.releaseTimer = window.setTimeout(() => {
+        this.releaseTimer = 0;
+        if (this.shouldRun()) {
+          this.start();
+          return;
+        }
+        this.releaseBuffers();
+      }, 160);
+    } else {
+      this.publishStats({ stopped: true });
     }
   }
 
@@ -765,9 +880,11 @@ class PortraitParticles {
     const now = performance.now();
     const budget = portraitBudget();
     if (budget.quiet) {
-      this.stop();
+      this.stop({ release: true, forceRelease: true });
       return;
     }
+    this.selectRenderMode();
+    this.ensureBuffers();
     if (budget.frameIntervalMs && now - this.lastFrameTime < budget.frameIntervalMs) {
       this.animationId = requestAnimationFrame(this.boundAnimate);
       return;
@@ -1115,12 +1232,14 @@ class PortraitParticles {
   }
 
   render() {
-    if (CONFIG.RENDER_MODE === 'imagedata') this.renderImageData();
+    if (this.renderMode === 'imagedata') this.renderImageData();
     else this.renderFillRect();
   }
 
   renderImageData() {
     const buf32 = this.buf32;
+    if (!buf32 || !this.imageData || !this.dirtyPrev || !this.dirtyCurr) return;
+
     const bufWidth = this.bufWidth;
     const bufHeight = this.bufHeight;
     const dpr = this.dpr;
@@ -1327,6 +1446,7 @@ class PortraitParticles {
     window.removeEventListener('pointermove', this.boundHandlePointerMove);
     document.removeEventListener('visibilitychange', this.boundHandleVisibilityChange);
     window.removeEventListener('resize', this.boundHandleResize);
+    window.removeEventListener('graphics:profile-change', this.boundHandleGraphicsChange);
     if (this.wrapper) {
       this.wrapper.removeEventListener('click', this.boundHandleClick);
     }

@@ -41,8 +41,17 @@ export function createProgram(gl, vertexSource, fragmentSource, attribLocations 
   return program;
 }
 
+const textureLoadState = new WeakMap();
+
+export function cancelTextureLoad(texture) {
+  const state = textureLoadState.get(texture);
+  if (state) state.cancelled = true;
+}
+
 export function loadTexture(gl, url, options = {}) {
   const texture = gl.createTexture();
+  const state = { cancelled: false };
+  textureLoadState.set(texture, state);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   
   // Placeholder pixel while loading
@@ -70,6 +79,10 @@ export function loadTexture(gl, url, options = {}) {
   };
 
   image.onload = () => {
+    if (state.cancelled || gl.isContextLost?.() || !gl.isTexture(texture)) {
+      return;
+    }
+
     gl.bindTexture(gl.TEXTURE_2D, texture);
     
     // Don't flip Y - we handle orientation in UV generation

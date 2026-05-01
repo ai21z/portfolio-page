@@ -1,5 +1,6 @@
 // Portrait Particle Effect - Desktop only
 import { cappedDpr, isFirefox } from './utils.js';
+import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 const FIREFOX = isFirefox();
 
@@ -118,6 +119,14 @@ const CONFIG = {
   DEBUG_SIGIL: false,
   RENDER_MODE: 'imagedata',
 };
+
+function portraitBudget() {
+  return getGraphicsBudget('portrait-particles');
+}
+
+function particleScaleFromBudget(budget) {
+  return Math.max(0, Math.min(1, budget.particleScale ?? 1));
+}
 
 function hashNoise(seed, t) {
   const k = (seed * 0x9E3779B9 + (t * CONFIG.DRIFT_FREQUENCY * 1000) | 0) | 0;
@@ -372,6 +381,8 @@ class PortraitParticles {
     if (this.initialized) return;
     if (window.matchMedia('(pointer: coarse)').matches) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const budget = portraitBudget();
+    if (budget.quiet || particleScaleFromBudget(budget) <= 0) return;
 
     this.wrapper = document.querySelector(wrapperSelector);
     if (!this.wrapper) return;
@@ -419,7 +430,7 @@ class PortraitParticles {
   resize() {
     this.width = this.img.clientWidth;
     this.height = this.img.clientHeight;
-    this.dpr = cappedDpr(1.5);
+    const budget = portraitBudget();
 
     // --- Asymmetric padding: cover full viewport from portrait position ---
     const rect = this.wrapper.getBoundingClientRect();
@@ -442,9 +453,14 @@ class PortraitParticles {
 
     let cssW = this.width + this.padLeft + this.padRight;
     let cssH = this.height + this.padTop + this.padBottom;
+    this.dpr = cappedDpr(1.5, {
+      systemName: 'portrait-particles',
+      width: cssW,
+      height: cssH
+    });
 
     // Cap buffer size to limit memory; reduce DPR instead of CSS coverage
-    const maxBuf = CONFIG.CANVAS_MAX_BUF;
+    const maxBuf = Math.min(CONFIG.CANVAS_MAX_BUF, budget.maxCanvasPixels);
     const estBuf = Math.round(cssW * this.dpr) * Math.round(cssH * this.dpr);
     if (estBuf > maxBuf) {
       this.dpr = Math.max(0.5, Math.sqrt(maxBuf / (cssW * cssH)));
@@ -476,6 +492,15 @@ class PortraitParticles {
   }
 
   sampleImage() {
+    const budget = portraitBudget();
+    const particleScale = particleScaleFromBudget(budget);
+    if (budget.quiet || particleScale <= 0) {
+      this.particles = [];
+      this.bins = new Array(PALETTE.length);
+      for (let b = 0; b < PALETTE.length; b++) this.bins[b] = [];
+      return;
+    }
+
     const offscreen = document.createElement('canvas');
     const offCtx = offscreen.getContext('2d');
     const imgW = this.img.naturalWidth;
@@ -493,7 +518,9 @@ class PortraitParticles {
       return;
     }
     const data = imageData.data;
-    const spacing = CONFIG.SAMPLE_SPACING;
+    const spacing = Math.max(CONFIG.SAMPLE_SPACING, Math.round(CONFIG.SAMPLE_SPACING / Math.max(0.2, particleScale)));
+    const skipProbability = Math.min(0.92, CONFIG.PARTICLE_SKIP_PROBABILITY + (1 - particleScale) * 0.55);
+    const darkSkipProbability = Math.min(0.92, CONFIG.DARK_SKIP_PROBABILITY + (1 - particleScale) * 0.35);
     const scaleX = this.width / imgW;
     const scaleY = this.height / imgH;
 
@@ -509,10 +536,10 @@ class PortraitParticles {
         if (a < CONFIG.ALPHA_THRESHOLD) continue;
         const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
         if (brightness < CONFIG.BRIGHTNESS_THRESHOLD) continue;
-        if (Math.random() < CONFIG.PARTICLE_SKIP_PROBABILITY) continue;
+        if (Math.random() < skipProbability) continue;
 
         const binIndex = Math.min(PALETTE.length - 1, Math.floor((brightness / 255) * PALETTE.length));
-        if (binIndex <= 1 && Math.random() < CONFIG.DARK_SKIP_PROBABILITY) continue;
+        if (binIndex <= 1 && Math.random() < darkSkipProbability) continue;
 
         const homeX = x * scaleX;
         const homeY = y * scaleY;
@@ -736,6 +763,16 @@ class PortraitParticles {
     if (!this.running) return;
 
     const now = performance.now();
+    const budget = portraitBudget();
+    if (budget.quiet) {
+      this.stop();
+      return;
+    }
+    if (budget.frameIntervalMs && now - this.lastFrameTime < budget.frameIntervalMs) {
+      this.animationId = requestAnimationFrame(this.boundAnimate);
+      return;
+    }
+
     const frameMs = now - this.lastFrameTime;
     const rawDt = frameMs / 16.667;
     const dt = Math.max(0.5, Math.min(rawDt, 2));
@@ -1038,6 +1075,7 @@ class PortraitParticles {
     this.render();
     const renderEnd = performance.now();
     const renderMs = renderEnd - renderStart;
+    reportFrameSample('portrait-particles', frameMs);
 
     if (CONFIG.DEBUG_PERF) {
       this.perfFrameMs[this.perfIndex] = frameMs;

@@ -507,6 +507,44 @@ test.describe('browser audit', () => {
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
   });
 
+  test('quiet graphics profile applies low-cost budgets to visual systems', async ({ page, baseURL }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'quiet');
+      Object.defineProperty(window, 'devicePixelRatio', {
+        configurable: true,
+        get: () => 2
+      });
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+    await page.waitForTimeout(750);
+    await expect(page.locator('.portrait-particles-canvas')).toHaveCount(0);
+
+    const work = sections.find((section) => section.name === 'work')!;
+    await switchSection(page, work);
+
+    const workCanvas = await page.evaluate(() => {
+      const canvas = document.getElementById('work-globe-canvas') as HTMLCanvasElement | null;
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      return {
+        backingWidth: canvas.width,
+        backingHeight: canvas.height,
+        cssWidth: rect.width,
+        cssHeight: rect.height,
+        devicePixelRatio: window.devicePixelRatio
+      };
+    });
+
+    expect(workCanvas).not.toBeNull();
+    expect(workCanvas!.devicePixelRatio).toBe(2);
+    expect(workCanvas!.backingWidth).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssWidth * 1.05));
+    expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
+  });
+
   for (const viewport of viewports) {
     test(`performance and compatibility evidence at ${viewport.width}x${viewport.height}`, async ({ page, baseURL, browserName }) => {
       test.setTimeout(Math.max(150_000, sampleDurationMs * 8));

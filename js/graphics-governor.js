@@ -164,6 +164,7 @@ function updateDocumentState(reason = 'state') {
 function notifySubscribers(reason) {
   const state = getGraphicsState();
   window.dispatchEvent(new CustomEvent('graphics:profile-change', { detail: { ...state, reason } }));
+  window.dispatchEvent(new CustomEvent('dpr-changed', { detail: { ...state, reason } }));
   subscribers.forEach((callback) => {
     try {
       callback(state);
@@ -310,6 +311,22 @@ export function getGraphicsBudget(systemName = 'default') {
   if (isMobileViewport()) {
     budget.dprCap = Math.min(budget.dprCap, 1.25);
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, 2_400_000);
+  }
+
+  if (systemName === 'portrait-particles') {
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, budget.quiet ? 800_000 : 3_200_000);
+  }
+
+  if (systemName === 'blog-network') {
+    budget.frameIntervalMs = budget.quiet
+      ? Math.max(budget.frameIntervalMs, 1000 / 20)
+      : budget.frameIntervalMs;
+  }
+
+  if (systemName === 'work-globe') {
+    budget.frameIntervalMs = budget.quiet
+      ? Math.max(budget.frameIntervalMs, 1000 / 24)
+      : budget.frameIntervalMs;
   }
 
   return budget;

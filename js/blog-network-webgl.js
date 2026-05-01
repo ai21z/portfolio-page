@@ -1,5 +1,6 @@
 // blog-network-webgl.js — Hand-painted mycelium network
 import { cappedDpr } from './utils.js';
+import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20251029-trunks6-branch1p2x-rough';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -31,7 +32,12 @@ const PAL = {
 };
 
 function currentDPR() {
-  return cappedDpr(1.5);
+  const rect = q('#blog-network-canvas')?.getBoundingClientRect();
+  return cappedDpr(1.5, {
+    systemName: 'blog-network',
+    width: Math.max(1, rect?.width || window.innerWidth),
+    height: Math.max(1, rect?.height || window.innerHeight)
+  });
 }
 
 const VIEW = { W: 1920, H: 1080 };
@@ -877,7 +883,7 @@ async function initBlogNetwork(){
   function updateDishUniforms(dish) {
     if (!dish) return;
     
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = currentDPR();
 
     // Dish center/radius are already in CSS pixels (from buildDish)
     // Pass directly to shaders - they handle DPR conversion internally
@@ -1351,8 +1357,15 @@ async function initBlogNetwork(){
       return;
     }
 
-    const dt = now-last; if(dt<1000/30){ rafId = requestAnimationFrame(loop); return; } // 30 FPS cap
+    const budget = getGraphicsBudget('blog-network');
+    const frameIntervalMs = budget.frameIntervalMs || 0;
+    const dt = now - last;
+    if (frameIntervalMs && dt < frameIntervalMs) {
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
     last = now;
+    reportFrameSample('blog-network', dt);
     frameCount++;
 
     // PAPER (renders background)

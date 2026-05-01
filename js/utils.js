@@ -1,24 +1,47 @@
 // Utility functions
+import { getGraphicsBudget } from './graphics-governor.js';
 
 export function isFirefox() {
   return /\bFirefox\//.test(navigator.userAgent);
 }
 
-export function cappedDpr(max = 1.5) {
+export function cappedDpr(max = 1.5, options = {}) {
+  const {
+    systemName = 'canvas',
+    width = window.innerWidth,
+    height = window.innerHeight,
+    min = 0.5
+  } = options;
+  const budget = getGraphicsBudget(systemName);
   const dpr = window.devicePixelRatio || 1;
   const browserMax = isFirefox() ? Math.min(max, 1.25) : max;
-  return Math.min(Math.max(1, dpr), browserMax);
+  let target = Math.min(Math.max(1, dpr), browserMax, budget.dprCap);
+
+  const cssPixels = Math.max(1, width * height);
+  if (budget.maxCanvasPixels && cssPixels > 0) {
+    target = Math.min(target, Math.sqrt(budget.maxCanvasPixels / cssPixels));
+  }
+
+  return Math.max(min, target);
 }
 
-export function sizeCanvas(canvas) {
+export function sizeCanvas(canvas, options = {}) {
   if (!canvas) return;
-  const dpr = cappedDpr(1.5);
-  canvas.width = Math.floor(window.innerWidth * dpr);
-  canvas.height = Math.floor(window.innerHeight * dpr);
-  canvas.style.width = `${window.innerWidth}px`;
-  canvas.style.height = `${window.innerHeight}px`;
+  const width = options.width ?? window.innerWidth;
+  const height = options.height ?? window.innerHeight;
+  const dpr = cappedDpr(options.maxDpr ?? 1.5, {
+    systemName: options.systemName ?? 'canvas',
+    width,
+    height,
+    min: options.minDpr ?? 0.5
+  });
+  canvas.width = Math.max(1, Math.floor(width * dpr));
+  canvas.height = Math.max(1, Math.floor(height * dpr));
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
   const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return dpr;
 }
 
 // Cumulative arc lengths along polyline

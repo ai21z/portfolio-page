@@ -1,7 +1,7 @@
 // WebGL globe visualization
 
 import { mat4 } from './work-globe/core/math-utils.js';
-import { createProgram, loadTexture } from './work-globe/core/gl-utils.js';
+import { cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 
 import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';
@@ -12,6 +12,7 @@ import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
 import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
+import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
 import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER } from './work-globe/shaders/atmosphere-fog-shaders.js';
@@ -59,7 +60,6 @@ let dprCheckIntervalId = null;
 let autoWriterTimeoutId = null;
 
 let isMobile = false;
-const WORK_FRAME_INTERVAL_MS = isFirefox() ? 1000 / 30 : 0;
 
 function updateMobileState() {
   isMobile = window.innerWidth <= 900;
@@ -69,9 +69,15 @@ function updateMobileState() {
 function getWorkGlobeQuality() {
   const firefox = isFirefox();
   const mobile = window.innerWidth <= 900;
+  const budget = getGraphicsBudget('work-globe');
 
-  if (firefox) {
-    return {
+  const scaleInt = (value, scale, min) => Math.max(min, Math.round(value * scale));
+  const particleScale = budget.quiet ? 0.22 : Math.max(0.25, budget.particleScale);
+  const geometryScale = Math.max(0.45, budget.geometryScale);
+  const effectsScale = Math.max(0.35, budget.effectsScale);
+
+  const base = firefox
+    ? {
       sphereDetail: mobile ? 24 : 30,
       randomMyceliumSeeds: mobile ? 2 : 3,
       myceliumMinLength: 80,
@@ -82,11 +88,9 @@ function getWorkGlobeQuality() {
       dataParticles: mobile ? 120 : 180,
       pinSegments: 5,
       moonDetail: mobile ? 14 : 18
-    };
-  }
-
-  if (mobile) {
-    return {
+    }
+    : mobile
+      ? {
       sphereDetail: 32,
       randomMyceliumSeeds: 4,
       myceliumMinLength: 100,
@@ -97,10 +101,8 @@ function getWorkGlobeQuality() {
       dataParticles: 260,
       pinSegments: 5,
       moonDetail: 20
-    };
-  }
-
-  return {
+    }
+      : {
     sphereDetail: 40,
     randomMyceliumSeeds: 6,
     myceliumMinLength: 120,
@@ -111,6 +113,19 @@ function getWorkGlobeQuality() {
     dataParticles: 500,
     pinSegments: 6,
     moonDetail: 24
+  };
+
+  return {
+    sphereDetail: scaleInt(base.sphereDetail, geometryScale, budget.quiet ? 18 : 22),
+    randomMyceliumSeeds: scaleInt(base.randomMyceliumSeeds, geometryScale, budget.quiet ? 1 : 2),
+    myceliumMinLength: scaleInt(base.myceliumMinLength, geometryScale, budget.quiet ? 55 : 70),
+    myceliumMaxLength: scaleInt(base.myceliumMaxLength, geometryScale, budget.quiet ? 95 : 125),
+    myceliumBranchProb: base.myceliumBranchProb * effectsScale,
+    myceliumTubeSegments: scaleInt(base.myceliumTubeSegments, geometryScale, budget.quiet ? 3 : 4),
+    sporeParticles: scaleInt(base.sporeParticles, particleScale, budget.quiet ? 240 : 700),
+    dataParticles: scaleInt(base.dataParticles, particleScale, budget.quiet ? 45 : 110),
+    pinSegments: scaleInt(base.pinSegments, geometryScale, 4),
+    moonDetail: scaleInt(base.moonDetail, geometryScale, budget.quiet ? 10 : 14)
   };
 }
 
@@ -146,9 +161,10 @@ function initWorkGlobe() {
   }
   
   const firefox = isFirefox();
+  const budget = getGraphicsBudget('work-globe');
   gl = canvas.getContext('webgl2', {
     alpha: true,
-    antialias: !firefox,
+    antialias: Boolean(budget.antialias && !firefox),
     powerPreference: 'high-performance'
   });
 
@@ -382,8 +398,8 @@ function initWorkGlobe() {
 
   const textureOptions = {
     mipmap: true,
-    maxSize: firefox ? 1024 : 1536,
-    anisotropy: firefox ? 2 : 8,
+    maxSize: budget.textureMaxSize,
+    anisotropy: budget.effectsScale >= 0.85 && !firefox ? 8 : 2,
     onLoad: onTextureLoad
   };
 
@@ -788,12 +804,14 @@ function animate(timestamp) {
     return;
   }
 
-  if (WORK_FRAME_INTERVAL_MS && timestamp - lastFrameTime < WORK_FRAME_INTERVAL_MS) {
+  const budget = getGraphicsBudget('work-globe');
+  if (budget.frameIntervalMs && timestamp - lastFrameTime < budget.frameIntervalMs) {
     animationFrameId = requestAnimationFrame(animate);
     return;
   }
 
   const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
+  reportFrameSample('work-globe', timestamp - lastFrameTime);
   lastFrameTime = timestamp;
   
   render(deltaTime);
@@ -1340,7 +1358,12 @@ function onPointerUp(e) {
 
 // Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
-  return cappedDpr(1.5);
+  const container = canvas?.parentElement;
+  return cappedDpr(1.5, {
+    systemName: 'work-globe',
+    width: Math.max(1, container?.clientWidth || window.innerWidth),
+    height: Math.max(1, container?.clientHeight || window.innerHeight)
+  });
 }
 
 function resizeCanvas() {
@@ -1415,9 +1438,18 @@ function cleanupWorkGlobe() {
     if (myceliumVAO) gl.deleteVertexArray(myceliumVAO);
     
     // Delete textures
-    if (earthTexture) gl.deleteTexture(earthTexture);
-    if (fogTexture) gl.deleteTexture(fogTexture);
-    if (lightningTexture) gl.deleteTexture(lightningTexture);
+    if (earthTexture) {
+      cancelTextureLoad(earthTexture);
+      gl.deleteTexture(earthTexture);
+    }
+    if (fogTexture) {
+      cancelTextureLoad(fogTexture);
+      gl.deleteTexture(fogTexture);
+    }
+    if (lightningTexture) {
+      cancelTextureLoad(lightningTexture);
+      gl.deleteTexture(lightningTexture);
+    }
   }
 
   // Remove event listeners using stored references

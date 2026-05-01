@@ -73,7 +73,7 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
-import { initGraphicsGovernor } from './graphics-governor.js';
+import { getGraphicsBudget, initGraphicsGovernor } from './graphics-governor.js';
 
 initGraphicsGovernor();
 
@@ -286,8 +286,8 @@ const _introStage = document.querySelector('.stage[data-section="intro"]');
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
   computeCoverFromImage();
-  sizeCanvas(sparkCanvas);
-  sizeCanvas(sporeCanvas);
+  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
+  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
   if (hudEnabled && hudCanvas) {
     hudCanvas.width = window.innerWidth;
     hudCanvas.height = window.innerHeight;
@@ -343,8 +343,8 @@ function initAfterImageLoad() {
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
   wireNavigationStreams();
 
-  sizeCanvas(sparkCanvas);
-  sizeCanvas(sporeCanvas);
+  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
+  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
   if (sporeCtx) createSpores();
   
   ensureSparkLoop();
@@ -473,9 +473,16 @@ function stopRitualMotion(){
 
 function createSpores() {
   if (!sporeCanvas || !sporeCtx) return;
+  const budget = getGraphicsBudget('intro-spores');
+  if (budget.quiet || budget.particleScale <= 0) {
+    setSpores([]);
+    setLastSporeFrame(0);
+    sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+    return;
+  }
   const cssW = window.innerWidth;
   const cssH = window.innerHeight;
-  const count = cssW < 768 ? 30 : 50;
+  const count = Math.max(8, Math.round((cssW < 768 ? 30 : 50) * budget.particleScale));
   setSpores(new Array(count).fill(0).map(() => ({
     x: Math.random() * cssW,
     y: Math.random() * cssH,
@@ -491,7 +498,10 @@ function createSpores() {
 
 function drawSpores(ts) {
   if (!sporeCtx || !sporeCanvas) return;
-  if (ts - lastSporeFrame < 33) return;
+  const budget = getGraphicsBudget('intro-spores');
+  if (budget.quiet || spores.length === 0) return;
+  const frameInterval = Math.max(33, budget.frameIntervalMs || 33);
+  if (ts - lastSporeFrame < frameInterval) return;
   setLastSporeFrame(ts);
 
   const c = sporeCtx;
@@ -525,6 +535,8 @@ function drawSpores(ts) {
 
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
+  const budget = getGraphicsBudget('intro-spores');
+  if (budget.quiet || budget.particleScale <= 0) return;
   if (!sporeCtx) setSporeCtx(sporeCanvas.getContext('2d'));
   if (!sporeCtx) return;
   createSpores();

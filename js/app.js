@@ -73,6 +73,9 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
+import { initGraphicsGovernor } from './graphics-governor.js';
+
+initGraphicsGovernor();
 
 // Mycelium geometry (exported from Python)
 let myceliumReadyPromise = null;

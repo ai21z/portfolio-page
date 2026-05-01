@@ -28,6 +28,7 @@
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
   
   <link rel="stylesheet" href="./styles/main.css?v=20251109-1930" />
+  <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260501-graphics" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -1175,6 +1176,18 @@
     <a href="#contact" data-nav-open="contact">Contact</a>
   </nav>
 </dialog>
+
+  <div class="graphics-control" data-graphics-control>
+    <button class="graphics-control__toggle" type="button" aria-expanded="false" aria-controls="graphics-profile-menu">
+      Graphics
+    </button>
+    <div class="graphics-control__menu" id="graphics-profile-menu" hidden>
+      <button type="button" data-graphics-profile="quiet">Quiet</button>
+      <button type="button" data-graphics-profile="balanced">Balanced</button>
+      <button type="button" data-graphics-profile="rich">Rich</button>
+      <button type="button" data-graphics-profile="full">Full</button>
+    </div>
+  </div>
 
   <!-- Main JavaScript -->
   <script>

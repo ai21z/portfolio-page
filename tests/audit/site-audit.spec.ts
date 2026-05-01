@@ -490,6 +490,23 @@ async function runAuditPass(page: Page, baseURL: string | undefined, browserName
 }
 
 test.describe('browser audit', () => {
+  test('graphics profile setting persists and updates the document state', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('[data-graphics-control]')).toBeVisible();
+
+    await page.locator('.graphics-control__toggle').click();
+    await page.locator('[data-graphics-profile="quiet"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
+
+    await page.locator('.graphics-control__toggle').click();
+    await page.locator('[data-graphics-profile="balanced"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+  });
+
   for (const viewport of viewports) {
     test(`performance and compatibility evidence at ${viewport.width}x${viewport.height}`, async ({ page, baseURL, browserName }) => {
       test.setTimeout(Math.max(150_000, sampleDurationMs * 8));

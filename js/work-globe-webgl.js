@@ -80,9 +80,10 @@ function getWorkGlobeQuality() {
   const budget = getGraphicsBudget('work-globe');
 
   const scaleInt = (value, scale, min) => Math.max(min, Math.round(value * scale));
-  const particleScale = budget.quiet ? 0.22 : Math.max(0.25, budget.particleScale);
-  const geometryScale = Math.max(0.45, budget.geometryScale);
-  const effectsScale = Math.max(0.35, budget.effectsScale);
+  const lowCost = budget.quiet || budget.heavyConstrained;
+  const particleScale = budget.quiet ? 0.22 : Math.max(budget.heavyConstrained ? 0.16 : 0.25, budget.particleScale);
+  const geometryScale = Math.max(budget.heavyConstrained ? 0.3 : 0.45, budget.geometryScale);
+  const effectsScale = Math.max(budget.heavyConstrained ? 0.25 : 0.35, budget.effectsScale);
 
   const base = firefox
     ? {
@@ -124,16 +125,16 @@ function getWorkGlobeQuality() {
   };
 
   return {
-    sphereDetail: scaleInt(base.sphereDetail, geometryScale, budget.quiet ? 18 : 22),
-    randomMyceliumSeeds: scaleInt(base.randomMyceliumSeeds, geometryScale, budget.quiet ? 1 : 2),
-    myceliumMinLength: scaleInt(base.myceliumMinLength, geometryScale, budget.quiet ? 55 : 70),
-    myceliumMaxLength: scaleInt(base.myceliumMaxLength, geometryScale, budget.quiet ? 95 : 125),
+    sphereDetail: scaleInt(base.sphereDetail, geometryScale, lowCost ? 14 : 22),
+    randomMyceliumSeeds: scaleInt(base.randomMyceliumSeeds, geometryScale, lowCost ? 1 : 2),
+    myceliumMinLength: scaleInt(base.myceliumMinLength, geometryScale, lowCost ? 45 : 70),
+    myceliumMaxLength: scaleInt(base.myceliumMaxLength, geometryScale, lowCost ? 80 : 125),
     myceliumBranchProb: base.myceliumBranchProb * effectsScale,
-    myceliumTubeSegments: scaleInt(base.myceliumTubeSegments, geometryScale, budget.quiet ? 3 : 4),
-    sporeParticles: scaleInt(base.sporeParticles, particleScale, budget.quiet ? 240 : 700),
-    dataParticles: scaleInt(base.dataParticles, particleScale, budget.quiet ? 45 : 110),
+    myceliumTubeSegments: scaleInt(base.myceliumTubeSegments, geometryScale, lowCost ? 2 : 4),
+    sporeParticles: scaleInt(base.sporeParticles, particleScale, lowCost ? 240 : 700),
+    dataParticles: scaleInt(base.dataParticles, particleScale, lowCost ? 45 : 110),
     pinSegments: scaleInt(base.pinSegments, geometryScale, 4),
-    moonDetail: scaleInt(base.moonDetail, geometryScale, budget.quiet ? 10 : 14)
+    moonDetail: scaleInt(base.moonDetail, geometryScale, lowCost ? 8 : 14)
   };
 }
 

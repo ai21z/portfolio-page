@@ -652,6 +652,57 @@ test.describe('browser audit', () => {
     expect(inactiveStats.running).toBe(false);
   });
 
+  test('constrained engines apply stricter heavy-graphics budgets', async ({ page, baseURL, browserName }) => {
+    test.setTimeout(60_000);
+    test.skip(browserName === 'chromium', 'Chromium keeps the standard balanced budget.');
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+    });
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+    await expect.poll(async () => {
+      const state = await collectGraphicsGovernorState(page);
+      return state.movementRegression;
+    }).toBe(false);
+
+    const budgets = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      return {
+        portrait: governor.getGraphicsBudget('portrait-particles'),
+        spores: governor.getGraphicsBudget('intro-spores'),
+        work: governor.getGraphicsBudget('work-globe')
+      };
+    });
+
+    expect(budgets.portrait.dprCap).toBeLessThanOrEqual(1);
+    expect(budgets.portrait.maxCanvasPixels).toBeLessThanOrEqual(900_000);
+    expect(budgets.portrait.particleScale).toBeLessThanOrEqual(0.35);
+    expect(budgets.spores.particleScale).toBeLessThanOrEqual(0.35);
+    expect(budgets.work.dprCap).toBeLessThanOrEqual(1);
+    expect(budgets.work.maxCanvasPixels).toBeLessThanOrEqual(1_200_000);
+    expect(budgets.work.geometryScale).toBeLessThanOrEqual(0.55);
+    expect(budgets.work.effectsScale).toBeLessThanOrEqual(0.45);
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const largeViewportBudgets = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      return {
+        portrait: governor.getGraphicsBudget('portrait-particles'),
+        work: governor.getGraphicsBudget('work-globe')
+      };
+    });
+
+    expect(largeViewportBudgets.portrait.maxCanvasPixels).toBeLessThanOrEqual(500_000);
+    expect(largeViewportBudgets.portrait.particleScale).toBeLessThanOrEqual(0.25);
+    expect(largeViewportBudgets.work.maxCanvasPixels).toBeLessThanOrEqual(550_000);
+    expect(largeViewportBudgets.work.particleScale).toBeLessThanOrEqual(0.25);
+    expect(largeViewportBudgets.work.geometryScale).toBeLessThanOrEqual(0.45);
+    expect(largeViewportBudgets.work.effectsScale).toBeLessThanOrEqual(0.35);
+    expect(largeViewportBudgets.work.heavyConstrained).toBe(true);
+  });
+
   for (const viewport of viewports) {
     test(`performance and compatibility evidence at ${viewport.width}x${viewport.height}`, async ({ page, baseURL, browserName }) => {
       test.setTimeout(Math.max(150_000, sampleDurationMs * 8));

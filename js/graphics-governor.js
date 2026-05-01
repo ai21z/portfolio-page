@@ -307,6 +307,8 @@ export function getGraphicsState() {
 
 export function getGraphicsBudget(systemName = 'default') {
   const profile = computeEffectiveProfile();
+  const constrainedEngine = isFirefox() || isWebKit();
+  const largeViewport = window.innerWidth * window.innerHeight >= 1_800_000;
   const extras = {
     systemName,
     reducedMotion: prefersReducedMotion(),
@@ -315,7 +317,7 @@ export function getGraphicsBudget(systemName = 'default') {
 
   const budget = mergeBudget(profile, extras);
 
-  if (isFirefox() || isWebKit()) {
+  if (constrainedEngine) {
     budget.dprCap = Math.min(budget.dprCap, profile === 'quiet' ? 1 : 1.25);
     budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 30);
     budget.antialias = false;
@@ -324,6 +326,31 @@ export function getGraphicsBudget(systemName = 'default') {
   if (isMobileViewport()) {
     budget.dprCap = Math.min(budget.dprCap, 1.25);
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, 2_400_000);
+  }
+
+  if (constrainedEngine && (systemName === 'portrait-particles' || systemName === 'intro-spores')) {
+    const particleCap = largeViewport ? 0.25 : 0.35;
+    budget.dprCap = Math.min(budget.dprCap, 1);
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 500_000 : 900_000);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 24);
+    budget.particleScale = Math.min(budget.particleScale, particleCap);
+  }
+
+  if (constrainedEngine && systemName === 'intro-sparks') {
+    budget.dprCap = Math.min(budget.dprCap, 1);
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 550_000 : 900_000);
+  }
+
+  if (constrainedEngine && systemName === 'work-globe') {
+    const particleCap = largeViewport ? 0.25 : 0.35;
+    budget.heavyConstrained = largeViewport;
+    budget.dprCap = Math.min(budget.dprCap, 1);
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 550_000 : 1_200_000);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 24);
+    budget.particleScale = Math.min(budget.particleScale, particleCap);
+    budget.geometryScale = Math.min(budget.geometryScale, largeViewport ? 0.45 : 0.55);
+    budget.effectsScale = Math.min(budget.effectsScale, largeViewport ? 0.35 : 0.45);
+    budget.textureMaxSize = Math.min(budget.textureMaxSize, largeViewport ? 512 : 768);
   }
 
   const ownerSection = ownerSectionForSystem(systemName);

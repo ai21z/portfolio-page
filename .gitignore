@@ -23,6 +23,8 @@ test-results/
 artifacts/audit-screenshots/
 artifacts/browser-use-manual/
 artifacts/manual-test/
+artifacts/browser-audit-parts/
+artifacts/browser-audit-report.json
 
 # Logs
 *.log

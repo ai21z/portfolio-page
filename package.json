@@ -11,6 +11,9 @@
     "generate:perf-assets": "npm run generate:network-lite && npm run generate:webp-assets",
     "preview": "http-server . -p 4173 -a 127.0.0.1",
     "test:e2e": "playwright test",
+    "clean:audit": "node scripts/clean-browser-audit.mjs",
+    "test:audit": "node scripts/run-browser-audit.mjs",
+    "audit:merge": "node scripts/merge-browser-audit.mjs",
     "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {

@@ -442,6 +442,13 @@ async function collectGraphicsGovernorState(page: Page) {
   });
 }
 
+async function waitForGraphicsMovementStable(page: Page) {
+  await expect.poll(async () => {
+    const state = await collectGraphicsGovernorState(page);
+    return state.movementRegression;
+  }, { timeout: 4_000 }).toBe(false);
+}
+
 async function collectPortraitParticleStats(page: Page) {
   return await page.evaluate(async () => {
     const module = await import('/js/portrait-particles.js');
@@ -457,6 +464,28 @@ async function collectPortraitParticleStats(page: Page) {
       backingWidth: canvas?.width ?? 0,
       backingHeight: canvas?.height ?? 0,
       globalStats: window.__portraitParticleStats ?? null
+    };
+  });
+}
+
+async function triggerPortraitParticleStream(page: Page) {
+  return await page.evaluate(async () => {
+    const governor = await import('/js/graphics-governor.js');
+    const module = await import('/js/portrait-particles.js');
+
+    module.portraitParticles.setStreamTargetVp(window.innerWidth - 48, 48);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const target = module.portraitParticles.streamTarget;
+    const budget = governor.getGraphicsBudget('portrait-particles');
+    return {
+      profile: budget.profile,
+      effectiveProfile: budget.effectiveProfile,
+      allowPortraitStreaming: budget.allowPortraitStreaming,
+      streamTarget: target ? {
+        x: Math.round(target.x),
+        y: Math.round(target.y)
+      } : null
     };
   });
 }
@@ -581,6 +610,75 @@ test.describe('browser audit', () => {
     expect(workCanvas!.devicePixelRatio).toBe(2);
     expect(workCanvas!.backingWidth).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssWidth * 1.05));
     expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
+  });
+
+  test('portrait stream targets are reserved for rich and full graphics profiles', async ({ page, baseURL }) => {
+    test.setTimeout(75_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
+    await expect.poll(async () => {
+      const stats = await collectPortraitParticleStats(page);
+      return stats.backingWidth * stats.backingHeight;
+    }, { timeout: 6_000 }).toBeGreaterThan(1);
+
+    const balanced = await triggerPortraitParticleStream(page);
+    expect(balanced.profile).toBe('balanced');
+    expect(balanced.allowPortraitStreaming).toBe(false);
+    expect(balanced.streamTarget).toBeNull();
+
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      const module = await import('/js/portrait-particles.js');
+      module.portraitParticles.clearStream();
+      governor.setGraphicsProfile('rich', { persist: false });
+    });
+    await waitForGraphicsMovementStable(page);
+
+    const rich = await triggerPortraitParticleStream(page);
+    expect(rich.profile).toBe('rich');
+    expect(rich.allowPortraitStreaming).toBe(true);
+    expect(rich.streamTarget).not.toBeNull();
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
+    await expect.poll(async () => {
+      const stats = await collectPortraitParticleStats(page);
+      return stats.backingWidth * stats.backingHeight;
+    }, { timeout: 6_000 }).toBeGreaterThan(1);
+
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsProfile('full', { persist: false });
+    });
+    await waitForGraphicsMovementStable(page);
+
+    const full = await triggerPortraitParticleStream(page);
+    expect(full.profile).toBe('full');
+    expect(full.allowPortraitStreaming).toBe(true);
+    expect(full.streamTarget).not.toBeNull();
+
+    const reverted = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      const module = await import('/js/portrait-particles.js');
+      governor.setGraphicsProfile('balanced', { persist: false });
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const target = module.portraitParticles.streamTarget;
+      const budget = governor.getGraphicsBudget('portrait-particles');
+      return {
+        profile: budget.profile,
+        allowPortraitStreaming: budget.allowPortraitStreaming,
+        streamTarget: target ? { x: Math.round(target.x), y: Math.round(target.y) } : null
+      };
+    });
+
+    expect(reverted.profile).toBe('balanced');
+    expect(reverted.allowPortraitStreaming).toBe(false);
+    expect(reverted.streamTarget).toBeNull();
   });
 
   test('graphics governor tracks active section and temporary movement regression', async ({ page, baseURL }) => {

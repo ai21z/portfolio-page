@@ -815,6 +815,10 @@ class PortraitParticles {
       return;
     }
 
+    if (!budget.allowPortraitStreaming) {
+      this.clearStream();
+    }
+
     if (this.shouldRun()) this.start();
     else this.stop({ release: true });
   }
@@ -1311,6 +1315,11 @@ class PortraitParticles {
   // === STREAMING API ===
 
   setStreamTarget(localX, localY) {
+    if (!portraitBudget().allowPortraitStreaming) {
+      this.clearStream();
+      return;
+    }
+
     if (!this.streamTarget) {
       this.streamStartTime = performance.now();
       this.calculateLaunchDelays(localX, localY);
@@ -1358,6 +1367,10 @@ class PortraitParticles {
   
   setStreamTargetVp(vpX, vpY) {
     if (!this.initialized || !this.wrapper) return;
+    if (!portraitBudget().allowPortraitStreaming) {
+      this.clearStream();
+      return;
+    }
 
     const rect = this.wrapper.getBoundingClientRect();
 

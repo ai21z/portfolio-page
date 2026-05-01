@@ -1275,6 +1275,12 @@ function showSectionWithEffects(sectionName) {
 }
 
 function startStream(targetVpX, targetVpY) {
+  const budget = getGraphicsBudget('portrait-particles');
+  if (!budget.allowPortraitStreaming) {
+    portraitParticles?.clearStream?.();
+    return;
+  }
+
   portraitParticles?.setStreamTargetVp?.(targetVpX, targetVpY);
 }
 

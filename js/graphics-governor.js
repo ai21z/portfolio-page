@@ -117,6 +117,10 @@ function rank(profile) {
   return PROFILE_RANK.get(profile) ?? PROFILE_RANK.get('balanced');
 }
 
+function selectedProfileAllowsPortraitStreaming() {
+  return selectedProfile === 'rich' || selectedProfile === 'full';
+}
+
 function mergeBudget(profile, extras = {}) {
   return {
     profile: selectedProfile,
@@ -316,6 +320,7 @@ export function getGraphicsBudget(systemName = 'default') {
   };
 
   const budget = mergeBudget(profile, extras);
+  budget.allowPortraitStreaming = false;
 
   if (constrainedEngine) {
     budget.dprCap = Math.min(budget.dprCap, profile === 'quiet' ? 1 : 1.25);
@@ -364,6 +369,12 @@ export function getGraphicsBudget(systemName = 'default') {
 
   if (systemName === 'portrait-particles') {
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, budget.quiet ? 800_000 : 3_200_000);
+    budget.allowPortraitStreaming = selectedProfileAllowsPortraitStreaming()
+      && !budget.quiet
+      && !budget.reducedMotion
+      && !budget.movementRegression
+      && budget.particleScale > 0
+      && currentSection === 'intro';
   }
 
   if (systemName === 'blog-network') {

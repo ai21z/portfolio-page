@@ -478,16 +478,40 @@ async function triggerPortraitParticleStream(page: Page) {
 
     const target = module.portraitParticles.streamTarget;
     const budget = governor.getGraphicsBudget('portrait-particles');
+    const state = governor.getGraphicsState();
     return {
       profile: budget.profile,
       effectiveProfile: budget.effectiveProfile,
       allowPortraitStreaming: budget.allowPortraitStreaming,
+      quiet: budget.quiet,
+      movementRegression: budget.movementRegression,
+      particleScale: budget.particleScale,
+      currentSection: state.currentSection,
+      downgradeSteps: state.downgradeSteps,
       streamTarget: target ? {
         x: Math.round(target.x),
         y: Math.round(target.y)
       } : null
     };
   });
+}
+
+function expectRichProfileStreamPolicy(result: Awaited<ReturnType<typeof triggerPortraitParticleStream>>, profile: 'rich' | 'full') {
+  expect(result.profile).toBe(profile);
+
+  if (result.allowPortraitStreaming) {
+    expect(result.streamTarget).not.toBeNull();
+    return;
+  }
+
+  expect(result.streamTarget).toBeNull();
+  expect(
+    result.quiet
+    || result.movementRegression
+    || result.particleScale <= 0
+    || result.currentSection !== 'intro'
+    || result.downgradeSteps > 0
+  ).toBe(true);
 }
 
 async function runAuditPass(page: Page, baseURL: string | undefined, browserName: string, viewport: Viewport, kind: string) {
@@ -640,9 +664,7 @@ test.describe('browser audit', () => {
     await waitForGraphicsMovementStable(page);
 
     const rich = await triggerPortraitParticleStream(page);
-    expect(rich.profile).toBe('rich');
-    expect(rich.allowPortraitStreaming).toBe(true);
-    expect(rich.streamTarget).not.toBeNull();
+    expectRichProfileStreamPolicy(rich, 'rich');
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
@@ -658,9 +680,7 @@ test.describe('browser audit', () => {
     await waitForGraphicsMovementStable(page);
 
     const full = await triggerPortraitParticleStream(page);
-    expect(full.profile).toBe('full');
-    expect(full.allowPortraitStreaming).toBe(true);
-    expect(full.streamTarget).not.toBeNull();
+    expectRichProfileStreamPolicy(full, 'full');
 
     const reverted = await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');

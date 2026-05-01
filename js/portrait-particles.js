@@ -811,6 +811,7 @@ class PortraitParticles {
   handleGraphicsChange() {
     const budget = portraitBudget();
     if (budget.quiet) {
+      this.clearStream();
       this.stop({ release: true, forceRelease: true });
       return;
     }
@@ -884,8 +885,12 @@ class PortraitParticles {
     const now = performance.now();
     const budget = portraitBudget();
     if (budget.quiet) {
+      this.clearStream();
       this.stop({ release: true, forceRelease: true });
       return;
+    }
+    if (!budget.allowPortraitStreaming) {
+      this.clearStream();
     }
     this.selectRenderMode();
     this.ensureBuffers();

@@ -121,6 +121,13 @@ function mergeBudget(profile, extras = {}) {
   };
 }
 
+function ownerSectionForSystem(systemName) {
+  if (systemName === 'intro-spores' || systemName === 'intro-sparks' || systemName === 'portrait-particles') return 'intro';
+  if (systemName === 'blog-network') return 'blog';
+  if (systemName === 'work-globe') return 'work';
+  return null;
+}
+
 function computeEffectiveProfile() {
   if (prefersReducedMotion() || saveDataEnabled()) return 'quiet';
 
@@ -156,7 +163,7 @@ function updateDocumentState(reason = 'state') {
   syncControl();
   updateDebugOverlay();
 
-  if (changed || reason === 'profile') {
+  if (changed || reason === 'profile' || reason === 'section') {
     notifySubscribers(reason);
   }
 }
@@ -311,6 +318,15 @@ export function getGraphicsBudget(systemName = 'default') {
   if (isMobileViewport()) {
     budget.dprCap = Math.min(budget.dprCap, 1.25);
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, 2_400_000);
+  }
+
+  const ownerSection = ownerSectionForSystem(systemName);
+  if (ownerSection && ownerSection !== currentSection) {
+    budget.dprCap = Math.min(budget.dprCap, 1);
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, 1_000_000);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 20);
+    budget.particleScale = 0;
+    budget.effectsScale = Math.min(budget.effectsScale, 0.25);
   }
 
   if (systemName === 'portrait-particles') {

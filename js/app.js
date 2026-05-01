@@ -73,9 +73,32 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
-import { getGraphicsBudget, initGraphicsGovernor } from './graphics-governor.js';
+import {
+  getGraphicsBudget,
+  initGraphicsGovernor,
+  markGraphicsActivity,
+  setGraphicsSection
+} from './graphics-governor.js';
 
 initGraphicsGovernor();
+
+const markUserGraphicsActivity = throttle((reason) => {
+  markGraphicsActivity(reason, 700);
+}, 120);
+
+function initGraphicsActivityListeners() {
+  const passive = { passive: true };
+
+  window.addEventListener('wheel', () => markUserGraphicsActivity('wheel'), passive);
+  window.addEventListener('scroll', () => markUserGraphicsActivity('scroll'), passive);
+  window.addEventListener('touchmove', () => markUserGraphicsActivity('touchmove'), passive);
+  window.addEventListener('pointerdown', () => markGraphicsActivity('pointerdown', 500), passive);
+  window.addEventListener('pointermove', (event) => {
+    if (event.buttons) markUserGraphicsActivity('pointerdrag');
+  }, passive);
+}
+
+initGraphicsActivityListeners();
 
 // Mycelium geometry (exported from Python)
 let myceliumReadyPromise = null;
@@ -1230,6 +1253,8 @@ function setupArticleNavigation(container, hubId) {
 
 // Section visibility with effects
 function showSectionWithEffects(sectionName) {
+  setGraphicsSection(sectionName);
+  markGraphicsActivity('section-transition', 900);
   showSection(sectionName, startRitualBackground, stopRitualBackground);
   ensureSectionModule(sectionName);
   

@@ -56,6 +56,10 @@ function relativeArtifactPath(fullPath: string): string {
   return path.relative(repoRoot, fullPath).replace(/\\/g, '/');
 }
 
+function profileRank(profile: string): number {
+  return ['quiet', 'balanced', 'rich', 'full'].indexOf(profile);
+}
+
 function ensureArtifactDirs() {
   fs.mkdirSync(screenshotDir, { recursive: true });
   fs.mkdirSync(partsDir, { recursive: true });
@@ -431,6 +435,13 @@ async function collectOffscreenBehavior(page: Page, baseURL: string | undefined)
   };
 }
 
+async function collectGraphicsGovernorState(page: Page) {
+  return await page.evaluate(async () => {
+    const governor = await import('/js/graphics-governor.js');
+    return governor.getGraphicsState();
+  });
+}
+
 async function runAuditPass(page: Page, baseURL: string | undefined, browserName: string, viewport: Viewport, kind: string) {
   await page.setViewportSize(viewport);
 
@@ -543,6 +554,37 @@ test.describe('browser audit', () => {
     expect(workCanvas!.devicePixelRatio).toBe(2);
     expect(workCanvas!.backingWidth).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssWidth * 1.05));
     expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
+  });
+
+  test('graphics governor tracks active section and temporary movement regression', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'rich');
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-section', 'intro');
+
+    const work = sections.find((section) => section.name === 'work')!;
+    await switchSection(page, work);
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-section', 'work');
+
+    const before = await collectGraphicsGovernorState(page);
+    await page.mouse.move(480, 320);
+    await page.mouse.wheel(0, 420);
+
+    await expect.poll(async () => {
+      const state = await collectGraphicsGovernorState(page);
+      return state.movementRegression;
+    }).toBe(true);
+
+    const during = await collectGraphicsGovernorState(page);
+    expect(profileRank(during.effectiveProfile)).toBeLessThanOrEqual(profileRank(before.effectiveProfile));
+
+    await expect.poll(async () => {
+      const state = await collectGraphicsGovernorState(page);
+      return state.movementRegression;
+    }, { timeout: 2_500 }).toBe(false);
   });
 
   for (const viewport of viewports) {

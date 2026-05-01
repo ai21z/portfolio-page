@@ -12,7 +12,7 @@ import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
 import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
 import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER } from './work-globe/shaders/atmosphere-fog-shaders.js';
@@ -60,6 +60,14 @@ let dprCheckIntervalId = null;
 let autoWriterTimeoutId = null;
 
 let isMobile = false;
+let lastWorkActivityAt = 0;
+
+function markWorkGlobeActivity() {
+  const now = performance.now();
+  if (now - lastWorkActivityAt < 120) return;
+  lastWorkActivityAt = now;
+  markGraphicsActivity('work-globe-drag', 900);
+}
 
 function updateMobileState() {
   isMobile = window.innerWidth <= 900;
@@ -819,6 +827,7 @@ function animate(timestamp) {
 }
 
 function onPointerDown(e) {
+  markWorkGlobeActivity();
   isDragging = true;
   autoRotate = false;
   lastPointerPos = { x: e.clientX, y: e.clientY };
@@ -865,6 +874,7 @@ function onPointerMove(e) {
   }
   
   if (!isDragging) return;
+  markWorkGlobeActivity();
 
   const deltaX = e.clientX - lastPointerPos.x;
   const deltaY = e.clientY - lastPointerPos.y;
@@ -1527,6 +1537,7 @@ function cleanupWorkGlobe() {
   boundDprHandler = null;
   boundVisibilityHandler = null;
   autoWriterTimeoutId = null;
+  lastWorkActivityAt = 0;
 }
 
 function autoInit() {

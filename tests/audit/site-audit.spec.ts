@@ -14,7 +14,16 @@ type SectionTarget = {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const screenshotDir = path.join(repoRoot, 'artifacts', 'audit-screenshots');
 const partsDir = path.join(repoRoot, 'artifacts', 'browser-audit-parts');
+const constrainedReportDir = path.join(repoRoot, 'artifacts', 'constrained-audit');
+const constrainedScreenshotDir = path.join(repoRoot, 'artifacts', 'constrained-audit-screenshots');
 const sampleDurationMs = Number(process.env.AUDIT_SAMPLE_MS || 5_000);
+
+const constrainedLaptopViewports: Viewport[] = [
+  { width: 1366, height: 768 },
+  { width: 1366, height: 650 },
+  { width: 1280, height: 650 },
+  { width: 1024, height: 600 }
+];
 
 const viewports: Viewport[] = [
   { width: 320, height: 568 },
@@ -22,12 +31,12 @@ const viewports: Viewport[] = [
   { width: 390, height: 844 },
   { width: 430, height: 932 },
   { width: 768, height: 1024 },
-  { width: 1024, height: 600 },
+  constrainedLaptopViewports[3],
   { width: 1024, height: 768 },
-  { width: 1280, height: 650 },
+  constrainedLaptopViewports[2],
   { width: 1280, height: 720 },
-  { width: 1366, height: 650 },
-  { width: 1366, height: 768 },
+  constrainedLaptopViewports[1],
+  constrainedLaptopViewports[0],
   { width: 1440, height: 900 },
   { width: 1920, height: 1080 }
 ];
@@ -67,6 +76,8 @@ function profileRank(profile: string): number {
 function ensureArtifactDirs() {
   fs.mkdirSync(screenshotDir, { recursive: true });
   fs.mkdirSync(partsDir, { recursive: true });
+  fs.mkdirSync(constrainedReportDir, { recursive: true });
+  fs.mkdirSync(constrainedScreenshotDir, { recursive: true });
 }
 
 function writePart(result: unknown, label: string) {
@@ -231,7 +242,7 @@ async function collectSectionHealth(page: Page, section: SectionTarget) {
     });
 
     const fallbackRoot = active || document;
-    const fallbackMessages = Array.from(fallbackRoot.querySelectorAll('.webgl-fallback, [data-webgl-fallback], .fallback-message'))
+    const fallbackMessages = Array.from(fallbackRoot.querySelectorAll('.webgl-fallback, .webgl-fallback-visible, [data-webgl-fallback], .fallback-message'))
       .filter((element) => !element.closest('canvas'))
       .filter(isVisible)
       .map((element) => ({
@@ -567,6 +578,64 @@ function expectRichProfileStreamPolicy(result: Awaited<ReturnType<typeof trigger
   ).toBe(true);
 }
 
+function profilesForConstrainedMatrix(browserName: string): Array<'quiet' | 'balanced' | 'rich' | 'full'> {
+  if (browserName === 'chromium') return ['quiet', 'balanced', 'rich', 'full'];
+  if (browserName === 'firefox') return ['quiet', 'balanced', 'full'];
+  return ['balanced'];
+}
+
+async function setGraphicsProfileForAudit(page: Page, profile: 'quiet' | 'balanced' | 'rich' | 'full') {
+  await page.evaluate(async (nextProfile) => {
+    const governor = await import('/js/graphics-governor.js');
+    governor.setGraphicsProfile(nextProfile, { persist: false });
+  }, profile);
+
+  await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', profile);
+  await waitForGraphicsMovementStable(page);
+}
+
+async function elementSnapshot(page: Page, selector: string) {
+  return await page.locator(selector).first().evaluate((element, snapshotSelector) => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const visible = rect.width > 0
+      && rect.height > 0
+      && style.display !== 'none'
+      && style.visibility !== 'hidden';
+
+    return {
+      selector: snapshotSelector,
+      visible,
+      top: Number(rect.top.toFixed(1)),
+      left: Number(rect.left.toFixed(1)),
+      right: Number(rect.right.toFixed(1)),
+      bottom: Number(rect.bottom.toFixed(1)),
+      width: Number(rect.width.toFixed(1)),
+      height: Number(rect.height.toFixed(1))
+    };
+  }, selector);
+}
+
+function expectRectInsideViewport(
+  rect: Awaited<ReturnType<typeof elementSnapshot>>,
+  viewport: Viewport,
+  label: string,
+  allowance = 2
+) {
+  expect(rect.visible, `${label} visible`).toBe(true);
+  expect(rect.left, `${label} left edge`).toBeGreaterThanOrEqual(-allowance);
+  expect(rect.top, `${label} top edge`).toBeGreaterThanOrEqual(-allowance);
+  expect(rect.right, `${label} right edge`).toBeLessThanOrEqual(viewport.width + allowance);
+  expect(rect.bottom, `${label} bottom edge`).toBeLessThanOrEqual(viewport.height + allowance);
+}
+
+function visibleAreaRatio(rect: Awaited<ReturnType<typeof elementSnapshot>>, viewport: Viewport) {
+  const visibleWidth = Math.max(0, Math.min(rect.right, viewport.width) - Math.max(rect.left, 0));
+  const visibleHeight = Math.max(0, Math.min(rect.bottom, viewport.height) - Math.max(rect.top, 0));
+  const area = Math.max(1, rect.width * rect.height);
+  return (visibleWidth * visibleHeight) / area;
+}
+
 async function runAuditPass(page: Page, baseURL: string | undefined, browserName: string, viewport: Viewport, kind: string) {
   await page.setViewportSize(viewport);
 
@@ -701,6 +770,88 @@ test.describe('browser audit', () => {
       await page.locator('#graphics-profile-menu [data-graphics-profile="quiet"]').click();
       await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
     }
+  });
+
+  test('constrained laptop profile matrix keeps hero and graphics controls usable', async ({ page, baseURL, browserName }) => {
+    test.setTimeout(browserName === 'chromium' ? 210_000 : 150_000);
+    ensureArtifactDirs();
+
+    const profileModes = profilesForConstrainedMatrix(browserName);
+    const matrixResults: unknown[] = [];
+    const hero = sections[0];
+
+    for (const viewport of constrainedLaptopViewports) {
+      for (const profile of profileModes) {
+        await page.setViewportSize(viewport);
+        await page.goto(urlFor(baseURL, hero), { waitUntil: 'domcontentloaded' });
+        await waitForActiveSection(page, hero);
+        await setGraphicsProfileForAudit(page, profile);
+        await page.waitForTimeout(250);
+
+        const sectionHealth = await collectSectionHealth(page, hero);
+        const title = await elementSnapshot(page, '.name.glitch-text');
+        const portrait = await elementSnapshot(page, '.portrait-wrap');
+        const graphicsControl = await elementSnapshot(page, '[data-graphics-control]');
+
+        await page.locator('.graphics-control__toggle').click();
+        await expect(page.locator('#graphics-profile-menu')).toBeVisible();
+        const menu = await elementSnapshot(page, '#graphics-profile-menu');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#graphics-profile-menu')).toBeHidden();
+
+        await page.getByRole('button', { name: /graphics performance help/i }).click();
+        await expect(page.locator('#graphics-help-panel')).toBeVisible();
+        const help = await elementSnapshot(page, '#graphics-help-panel');
+        await page.keyboard.press('Escape');
+
+        const state = await collectGraphicsGovernorState(page);
+        const screenshotPath = path.join(
+          constrainedScreenshotDir,
+          `${sanitize(browserName)}-${viewport.width}x${viewport.height}-${profile}.png`
+        );
+        await page.screenshot({ path: screenshotPath, fullPage: false });
+
+        const result = {
+          browser: browserName,
+          viewport,
+          selectedProfile: state.profile,
+          effectiveProfile: state.effectiveProfile,
+          recommendedProfile: state.capability?.recommendedProfile,
+          hardwareClass: state.capability?.hardwareClass,
+          capabilityReasons: state.capability?.reasons || [],
+          title,
+          portrait,
+          graphicsControl,
+          menu,
+          help,
+          horizontalOverflow: sectionHealth.horizontalOverflow,
+          screenshotPath: relativeArtifactPath(screenshotPath)
+        };
+        matrixResults.push(result);
+
+        expect(sectionHealth.horizontalOverflow.overflowX, `${browserName} ${viewport.width}x${viewport.height} ${profile} horizontal overflow`).toBeLessThanOrEqual(2);
+        expectRectInsideViewport(title, viewport, `${browserName} ${viewport.width}x${viewport.height} ${profile} title`, 4);
+        expect(portrait.visible, `${browserName} ${viewport.width}x${viewport.height} ${profile} portrait visible`).toBe(true);
+        expect(visibleAreaRatio(portrait, viewport), `${browserName} ${viewport.width}x${viewport.height} ${profile} portrait visible area`).toBeGreaterThanOrEqual(0.55);
+        expectRectInsideViewport(graphicsControl, viewport, `${browserName} ${viewport.width}x${viewport.height} ${profile} graphics control`, 4);
+        expectRectInsideViewport(menu, viewport, `${browserName} ${viewport.width}x${viewport.height} ${profile} graphics menu`, 4);
+        expectRectInsideViewport(help, viewport, `${browserName} ${viewport.width}x${viewport.height} ${profile} graphics help`, 4);
+
+        if (browserName === 'firefox' && profile === 'full') {
+          expect(state.profile).toBe('full');
+          expect(profileRank(state.effectiveProfile)).toBeLessThanOrEqual(profileRank('balanced'));
+          expect(state.capability.reasons).toContain('firefox-conservative');
+        }
+      }
+    }
+
+    const reportPath = path.join(constrainedReportDir, `${sanitize(browserName)}-constrained-profile-matrix.json`);
+    fs.writeFileSync(reportPath, JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      browser: browserName,
+      baseURL: normalizeBaseURL(baseURL),
+      results: matrixResults
+    }, null, 2));
   });
 
   test('graphics governor recommends Quiet for save-data or reduced-motion users', async ({ page, baseURL }) => {

@@ -338,29 +338,32 @@
 
 .now-card-close {
   position: absolute;
-  top: 14px;
+  top: 12px;
   right: 14px;
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(25, 203, 179, 0.35);
-  border-radius: 50%;
-  background: rgba(8, 11, 12, 0.72);
-  color: rgba(230, 227, 216, 0.9);
-  font-size: 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+  font-size: 24px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+  opacity: 0.86;
+  transition: color 150ms ease, opacity 150ms ease, transform 150ms ease;
   z-index: 3;
 }
 
 .now-card-close:hover,
 .now-card-close:focus {
-  background: rgba(25, 203, 179, 0.16);
-  border-color: var(--now-slab-glow);
-  color: #E6E3D8;
+  background: transparent;
+  color: currentColor;
+  opacity: 1;
+  transform: scale(1.08);
 }
 
 .now-card-close:focus-visible {
@@ -571,9 +574,9 @@
 
   .now-card-close {
     top: 10px;
-    right: 10px;
-    width: 44px;
-    height: 44px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
   }
   
   .now-card-title {

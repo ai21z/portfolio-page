@@ -1335,6 +1335,11 @@ function hideProjectPanel() {
 // Make hideProjectPanel available globally for the close button
 window.hideProjectPanel = hideProjectPanel;
 
+window.addEventListener('ui:close-overlays', () => {
+  hideLocationInfo();
+  hideProjectPanel();
+});
+
 function onPointerUp(e) {
   const wasDragging = isDragging;
   isDragging = false;

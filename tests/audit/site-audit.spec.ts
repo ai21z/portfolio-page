@@ -621,7 +621,7 @@ function expectRichProfileStreamPolicy(result: Awaited<ReturnType<typeof trigger
 
 function profilesForConstrainedMatrix(browserName: string): Array<'quiet' | 'balanced' | 'rich' | 'full'> {
   if (browserName === 'chromium') return ['quiet', 'balanced', 'rich', 'full'];
-  if (browserName === 'firefox') return ['quiet', 'balanced', 'full'];
+  if (browserName === 'firefox') return ['quiet', 'balanced'];
   return ['balanced'];
 }
 
@@ -782,7 +782,7 @@ test.describe('browser audit', () => {
       await expect(infoButton, `${viewport.width}x${viewport.height} info button`).toBeVisible();
       await infoButton.click();
       await expect(helpPanel, `${viewport.width}x${viewport.height} help panel`).toBeVisible();
-      await expect(helpPanel).toContainText(/Chrome or Edge/i);
+      await expect(helpPanel).toContainText(/Chrome, Edge, or Brave/i);
       await expect(helpPanel).toContainText(/Quiet or Balanced/i);
       await expect(helpPanel).toContainText(/Rich and Full/i);
       await expect(page.locator('[data-graphics-help-status]')).toContainText(/Current recommendation:/i);
@@ -882,7 +882,7 @@ test.describe('browser audit', () => {
         expectRectInsideViewport(help, viewport, `${browserName} ${viewport.width}x${viewport.height} ${profile} graphics help`, 4);
 
         if (browserName === 'firefox' && profile === 'full') {
-          expect(state.profile).toBe('full');
+          expect(state.profile).toBe('balanced');
           expect(profileRank(state.effectiveProfile)).toBeLessThanOrEqual(profileRank('balanced'));
           expect(state.capability.reasons).toContain('firefox-conservative');
         }
@@ -923,7 +923,7 @@ test.describe('browser audit', () => {
     await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
   });
 
-  test('graphics governor caps weak WebGL capability while preserving explicit Full selection', async ({ page, baseURL }) => {
+  test('graphics governor caps weak WebGL capability while rejecting unavailable Firefox Full selection', async ({ page, baseURL, browserName }) => {
     test.setTimeout(60_000);
     await page.addInitScript(() => {
       window.localStorage.setItem('vissarion.graphicsProfile', 'full');
@@ -954,7 +954,11 @@ test.describe('browser audit', () => {
     await waitForGraphicsMovementStable(page);
     const state = await collectGraphicsGovernorState(page);
 
-    expect(state.profile).toBe('full');
+    if (browserName === 'firefox') {
+      expect(state.profile).toBe('balanced');
+    } else {
+      expect(state.profile).toBe('full');
+    }
     expect(state.capability.recommendedProfile).toBe('quiet');
     expect(state.capability.reasons).toEqual(expect.arrayContaining([
       'major-performance-caveat',
@@ -962,8 +966,43 @@ test.describe('browser audit', () => {
       'low-device-memory',
       'software-renderer'
     ]));
-    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'full');
+    if (browserName === 'firefox') {
+      await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+    } else {
+      await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'full');
+    }
     await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  });
+
+  test('Firefox disables hero portrait particles and Rich or Full profile controls', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'firefox', 'Firefox-specific graphics safety policy.');
+    test.setTimeout(75_000);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'full');
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+    await expect(page.locator('.portrait-particles-canvas')).toHaveCount(0);
+    await expect(page.locator('.portrait')).toBeVisible();
+
+    await page.locator('.graphics-control__toggle').click();
+    await expect(page.locator('[data-graphics-profile="rich"]')).toBeDisabled();
+    await expect(page.locator('[data-graphics-profile="full"]')).toBeDisabled();
+
+    await page.locator('.graphics-control__info').click();
+    await expect(page.locator('#graphics-help-panel')).toContainText(/Chrome/i);
+    await expect(page.locator('#graphics-help-panel')).toContainText(/Edge/i);
+    await expect(page.locator('#graphics-help-panel')).toContainText(/Brave/i);
+    await expect(page.locator('#graphics-help-panel')).toContainText(/Firefox/i);
+
+    const state = await collectGraphicsGovernorState(page);
+    expect(state.profile).toBe('balanced');
+    expect(profileRank(state.effectiveProfile)).toBeLessThanOrEqual(profileRank('balanced'));
+    expect(state.capability.reasons).toContain('firefox-conservative');
   });
 
   test('graphics governor gives strong Chromium capability a rich recommendation without forcing Quiet', async ({ page, baseURL, browserName }) => {
@@ -1088,6 +1127,11 @@ test.describe('browser audit', () => {
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    if (browserName === 'firefox') {
+      await expect(page.locator('.portrait-particles-canvas')).toHaveCount(0);
+      return;
+    }
+
     await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
     await expect.poll(async () => {
       const stats = await collectPortraitParticleStats(page);
@@ -1187,6 +1231,13 @@ test.describe('browser audit', () => {
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    if (browserName === 'firefox') {
+      await expect(page.locator('.portrait-particles-canvas')).toHaveCount(0);
+      const stats = await collectPortraitParticleStats(page);
+      expect(stats.initialized).toBe(false);
+      return;
+    }
+
     await expect(page.locator('.portrait-particles-canvas')).toHaveCount(1);
 
     await expect.poll(async () => {

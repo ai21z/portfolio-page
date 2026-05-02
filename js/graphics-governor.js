@@ -57,7 +57,7 @@ const subscribers = new Set();
 const frameSamples = [];
 
 let initialized = false;
-let selectedProfile = readStoredProfile() || 'balanced';
+let selectedProfile = normalizeSelectableProfile(readStoredProfile() || 'balanced');
 let effectiveProfile = selectedProfile;
 let downgradeSteps = 0;
 let movementRegressionUntil = 0;
@@ -259,6 +259,15 @@ function validProfile(profile) {
   return PROFILE_RANK.has(profile);
 }
 
+function isFirefoxUnavailableProfile(profile) {
+  return isFirefox() && (profile === 'rich' || profile === 'full');
+}
+
+function normalizeSelectableProfile(profile) {
+  if (!validProfile(profile)) return 'balanced';
+  return isFirefoxUnavailableProfile(profile) ? 'balanced' : profile;
+}
+
 function readStoredProfile() {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -291,7 +300,7 @@ function formatProfile(profile) {
 function recommendationReason(state) {
   const capabilityReasons = state.capability?.reasons || [];
   if (capabilityReasons.length > 0) {
-    return capabilityReasons.map((reason) => reason.replaceAll('-', ' ')).join(', ');
+    return capabilityReasons.map(formatCapabilityReason).join(', ');
   }
   if (state.reducedMotion) return 'reduced motion is enabled';
   if (state.saveData) return 'save-data is enabled';
@@ -302,6 +311,15 @@ function recommendationReason(state) {
   if (state.downgradeSteps > 0) return 'recent long frames';
   if (state.profile !== state.effectiveProfile) return 'runtime capability budget';
   return 'standard browser settings';
+}
+
+function formatCapabilityReason(reason) {
+  const labels = {
+    'strong-chromium-webgl': 'strong Chrome/Edge/Brave WebGL',
+    'firefox-conservative': 'Firefox conservative mode',
+    'webkit-conservative': 'Safari/WebKit conservative mode'
+  };
+  return labels[reason] || reason.replaceAll('-', ' ');
 }
 
 function selectedProfileAllowsPortraitStreaming() {
@@ -395,8 +413,17 @@ function syncControl() {
   }
 
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
-    const active = button.getAttribute('data-graphics-profile') === selectedProfile;
+    const profile = button.getAttribute('data-graphics-profile');
+    const unavailable = isFirefoxUnavailableProfile(profile);
+    const active = profile === selectedProfile;
     button.setAttribute('aria-pressed', String(active));
+    button.toggleAttribute('disabled', unavailable);
+    button.setAttribute('aria-disabled', String(unavailable));
+    if (unavailable) {
+      button.title = 'Rich and Full graphics are available in Chrome, Edge, or Brave.';
+    } else {
+      button.removeAttribute('title');
+    }
   });
 
   const state = getGraphicsState();
@@ -607,6 +634,15 @@ export function getGraphicsBudget(systemName = 'default') {
     budget.particleScale = Math.min(budget.particleScale, particleCap);
   }
 
+  if (isFirefox() && systemName === 'portrait-particles') {
+    budget.dprCap = 1;
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, 1);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 24);
+    budget.particleScale = 0;
+    budget.effectsScale = 0;
+    budget.quiet = true;
+  }
+
   if (constrainedEngine && systemName === 'intro-sparks') {
     budget.dprCap = Math.min(budget.dprCap, 1);
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 550_000 : 900_000);
@@ -661,9 +697,10 @@ export function getGraphicsBudget(systemName = 'default') {
 
 export function setGraphicsProfile(profile, options = {}) {
   if (!validProfile(profile)) return;
-  selectedProfile = profile;
+  const nextProfile = normalizeSelectableProfile(profile);
+  selectedProfile = nextProfile;
   downgradeSteps = 0;
-  if (options.persist !== false) writeStoredProfile(profile);
+  if (options.persist !== false) writeStoredProfile(nextProfile);
   updateDocumentState('profile');
 }
 

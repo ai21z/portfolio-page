@@ -599,6 +599,44 @@ button.ghost:hover {
   box-shadow: 0 calc(25px * var(--k)) calc(70px * var(--k)) rgba(0, 0, 0, 0.8);
 }
 
+.paper-card-close {
+  position: absolute;
+  top: clamp(6px, 1vw, 10px);
+  right: clamp(8px, 1.2vw, 12px);
+  width: 10px;
+  height: 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+  font: 700 18px/1 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  cursor: pointer;
+  opacity: 0.76;
+  z-index: 4;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.paper.paper-open .paper-card-close {
+  display: inline-flex;
+}
+
+.paper-card-close:hover,
+.paper-card-close:focus {
+  background: transparent;
+  color: currentColor;
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.paper-card-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .cursor-ring{
   position: fixed;
   width: 20px;

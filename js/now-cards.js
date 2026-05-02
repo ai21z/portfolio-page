@@ -97,7 +97,7 @@ export function initNowCards() {
 
 export function destroyNowCards() {
   if (activeCard) {
-    closeCard(activeCard, false);
+    closeCard(activeCard, false, { immediate: true });
   }
   document.removeEventListener('keydown', handleEscKey);
   cards = [];
@@ -107,6 +107,16 @@ export function destroyNowCards() {
   const grid = document.getElementById('now-card-grid');
   if (grid) grid.innerHTML = '';
 }
+
+export function closeActiveNowCard(options = {}) {
+  if (activeCard) {
+    closeCard(activeCard, false, options);
+  }
+}
+
+document.addEventListener('ui:close-overlays', (event) => {
+  closeActiveNowCard(event.detail || { immediate: true });
+});
 
 function renderCards() {
   const grid = document.getElementById('now-card-grid');
@@ -411,7 +421,7 @@ function openCard(card, stream) {
   wireFocusTrap(back);
 }
 
-function closeCard(card, restoreFocus = true) {
+function closeCard(card, restoreFocus = true, options = {}) {
   if (!card) return;
   
   const front = card.querySelector('.now-card-front');
@@ -440,7 +450,24 @@ function closeCard(card, restoreFocus = true) {
   const row = Math.floor(index / cardsPerRow);
   const col = index % cardsPerRow;
   
-  if (!prefersReducedMotion && card._originalRect) {
+  const finishClose = () => {
+    card.classList.remove('active');
+    card.style.position = '';
+    card.style.left = '';
+    card.style.top = '';
+    card.style.width = '';
+    card.style.height = '';
+    card.style.zIndex = '';
+    card.style.opacity = '';
+    card.style.transition = '';
+    card.style.transform = '';
+    inner.style.transform = '';
+    inner.style.transition = '';
+
+    delete card._originalRect;
+  };
+
+  if (!options.immediate && !prefersReducedMotion && card._originalRect) {
     const orig = card._originalRect;
     const { w: viewportWidth, h: viewportHeight } = viewportSize();
     
@@ -466,22 +493,11 @@ function closeCard(card, restoreFocus = true) {
     }, 320);
   }
   
-  setTimeout(() => {
-    card.classList.remove('active');
-    card.style.position = '';
-    card.style.left = '';
-    card.style.top = '';
-    card.style.width = '';
-    card.style.height = '';
-    card.style.zIndex = '';
-    card.style.opacity = '';
-    card.style.transition = '';
-    card.style.transform = '';
-    inner.style.transform = '';
-    inner.style.transition = '';
-    
-    delete card._originalRect;
-  }, prefersReducedMotion ? 300 : 620);
+  if (options.immediate) {
+    finishClose();
+  } else {
+    setTimeout(finishClose, prefersReducedMotion ? 300 : 620);
+  }
   
   if (restoreFocus && focusBeforeOpen) {
     focusBeforeOpen.focus();

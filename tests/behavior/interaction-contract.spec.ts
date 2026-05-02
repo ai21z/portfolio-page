@@ -85,6 +85,22 @@ async function controlsOverlap(page: Page, firstSelector: string, secondSelector
   }, { firstSelector, secondSelector });
 }
 
+async function textOnlyCloseStyle(page: Page, selector: string) {
+  return page.locator(selector).evaluate((button) => {
+    const style = getComputedStyle(button);
+    const rect = button.getBoundingClientRect();
+    return {
+      backgroundColor: style.backgroundColor,
+      borderTopStyle: style.borderTopStyle,
+      borderTopWidth: style.borderTopWidth,
+      borderRadius: style.borderRadius,
+      color: style.color,
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    };
+  });
+}
+
 async function openBlogHub(page: Page, hubId: string) {
   const rimButton = page.locator(`.arc-btn[data-hub="${hubId}"]`);
   if (await rimButton.count()) {
@@ -157,6 +173,13 @@ test('Now card dialogs expose an X button while preserving re-click close', asyn
   await firstFront.click();
   await expect(firstCard).toHaveClass(/active/);
   await expect(firstCard.locator('.now-card-close')).toBeVisible();
+  const closeStyle = await textOnlyCloseStyle(page, '#now-card-grid .now-card.active .now-card-close');
+  expect(closeStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+  expect(closeStyle.borderTopStyle).toBe('none');
+  expect(closeStyle.borderTopWidth).toBe('0px');
+  expect(closeStyle.borderRadius).toBe('0px');
+  expect(closeStyle.width).toBeLessThanOrEqual(30);
+  expect(closeStyle.height).toBeLessThanOrEqual(30);
 
   await firstCard.locator('.now-card-close').click();
   await expect(firstCard).not.toHaveClass(/active/);
@@ -165,6 +188,72 @@ test('Now card dialogs expose an X button while preserving re-click close', asyn
   await expect(firstCard).toHaveClass(/active/);
   await firstFront.click({ force: true });
   await expect(firstCard).not.toHaveClass(/active/);
+});
+
+test('paper cards expose text-only X buttons and keep re-click close', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/index.html#about');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'about');
+
+  const firstPaper = page.locator('#about .paper').first();
+  await expect(firstPaper).toBeVisible();
+  await firstPaper.click();
+  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
+  await expect(page.locator('body > .paper.paper-open .paper-card-close')).toBeVisible();
+
+  const closeStyle = await textOnlyCloseStyle(page, 'body > .paper.paper-open .paper-card-close');
+  expect(closeStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+  expect(closeStyle.borderTopStyle).toBe('none');
+  expect(closeStyle.borderTopWidth).toBe('0px');
+  expect(closeStyle.borderRadius).toBe('0px');
+  expect(closeStyle.width).toBeLessThanOrEqual(30);
+  expect(closeStyle.height).toBeLessThanOrEqual(30);
+
+  await page.locator('body > .paper.paper-open .paper-card-close').click();
+  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+
+  await page.locator('#about .paper').first().click();
+  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
+  await page.locator('body > .paper.paper-open').click({ force: true });
+  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+});
+
+test('page close and section navigation close child overlays', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/index.html#now');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'now');
+
+  const firstNowCard = page.locator('#now-card-grid .now-card').first();
+  await firstNowCard.locator('.now-card-front').click();
+  await expect(firstNowCard).toHaveClass(/active/);
+  await page.locator('#now [data-action="go-intro"]').click();
+  await waitForActiveSection(page, 'main');
+  await expect(firstNowCard).not.toHaveClass(/active/);
+
+  await page.locator('.network-node-label[data-node="about"]').click();
+  await waitForActiveSection(page, 'about');
+  await page.locator('#about .paper').first().click();
+  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
+  await page.locator('#about .section-nav-link[data-section="skills"]').click();
+  await waitForActiveSection(page, 'skills');
+  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+  await expect(page.locator('body')).not.toHaveClass(/has-paper-open-global/);
+
+  await page.evaluate(() => {
+    const locationInfo = document.createElement('div');
+    locationInfo.className = 'work-location-info visible';
+    document.body.appendChild(locationInfo);
+    const projectPanel = document.createElement('div');
+    projectPanel.className = 'project-panel visible';
+    document.body.appendChild(projectPanel);
+  });
+
+  await page.locator('#skills .section-nav-link[data-section="contact"]').click();
+  await waitForActiveSection(page, 'contact');
+  await expect(page.locator('.work-location-info.visible')).toHaveCount(0);
+  await expect(page.locator('.project-panel.visible')).toHaveCount(0);
 });
 
 test('visible Now card actions are not placeholder hash links', async ({ page }) => {

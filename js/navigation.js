@@ -1,6 +1,6 @@
 // Navigation and label management
 
-import { NAV_COORDS, NAV_ORDER, LABEL_OFFSET_PX, NAV_SPEED_WHEN_ACTIVE } from './config.js';
+import { NAV_COORDS, NAV_ORDER, LABEL_OFFSET_PX, NAV_SPEED_WHEN_ACTIVE, RITUAL_LABEL_NUDGE_PX } from './config.js';
 import {
   prefersReducedMotion,
   COVER,
@@ -213,7 +213,8 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
     
     const labelText = el.querySelector('.node-label');
     if (labelText) {
-      labelText.style.transform = `translateX(-50%) translate(${tx}px, ${ty}px)`;
+      const nudge = RITUAL_LABEL_NUDGE_PX[id] || { x: 0, y: 0 };
+      labelText.style.transform = `translateX(-50%) translate(${tx + nudge.x}px, ${ty + nudge.y}px)`;
     }
 
     if (ritualActive && id === 'blog') {
@@ -348,7 +349,8 @@ export function updateMovingLabels(dt, pointAtRoute) {
     
     const labelText = el.querySelector('.node-label');
     if (labelText) {
-      labelText.style.transform = `translateX(-50%) translate(${dx}px, ${dy}px)`;
+      const nudge = RITUAL_LABEL_NUDGE_PX[id] || { x: 0, y: 0 };
+      labelText.style.transform = `translateX(-50%) translate(${dx + nudge.x}px, ${dy + nudge.y}px)`;
     }
   }
 }

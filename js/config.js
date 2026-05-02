@@ -20,6 +20,10 @@ export const LABEL_OFFSET_PX = {
   blog: 26, contact: 20, skills: 24
 };
 
+export const RITUAL_LABEL_NUDGE_PX = {
+  work: { x: 16, y: 0 }
+};
+
 export const LABEL_SPEEDS = { 
   about: 65, work: 70, now: 75, blog: 72, 
   contact: 66, skills: 74

@@ -1345,8 +1345,45 @@ function setupArticleNavigation(container, hubId) {
   }
 }
 
+function restorePaperElement(openEl) {
+  openEl.classList.remove('paper-open', 'paper-open--settled');
+  openEl.removeAttribute('role');
+  openEl.removeAttribute('aria-modal');
+  openEl.style.position = '';
+  openEl.style.left = '';
+  openEl.style.top = '';
+  openEl.style.width = '';
+  openEl.style.height = '';
+  openEl.style.willChange = '';
+  openEl.style.removeProperty('--open-tx');
+  openEl.style.removeProperty('--open-ty');
+  openEl.style.removeProperty('--open-scale');
+  openEl.style.removeProperty('--open-w');
+  openEl.style.removeProperty('--open-h');
+
+  if (openEl.__portal) {
+    openEl.__portal.parent.insertBefore(openEl, openEl.__portal.placeholder);
+    openEl.__portal.placeholder.remove();
+    openEl.__portal = null;
+  }
+}
+
+function closeTransientUi() {
+  const detail = { immediate: true };
+  document.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
+  window.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
+
+  document.querySelectorAll('.altar.has-front')
+    .forEach(el => el.classList.remove('has-front'));
+  document.querySelectorAll('.slab.paper.is-front')
+    .forEach(el => el.classList.remove('is-front'));
+  document.querySelectorAll('.work-location-info.visible, .project-panel.visible')
+    .forEach(el => el.classList.remove('visible'));
+}
+
 // Section visibility with effects
 function showSectionWithEffects(sectionName, options = {}) {
+  closeTransientUi();
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
   showSection(sectionName, startRitualBackground, stopRitualBackground, options);
@@ -1930,9 +1967,11 @@ function initPaperFocusForSection(sectionId){
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
     if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
+    ensurePaperCloseButton(p, closePaper);
     
-    p.addEventListener('click', () => {
+    p.addEventListener('click', (event) => {
       if (window.innerWidth <= 900) return;
+      if (event.target.closest('.paper-card-close')) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
       } else {
@@ -1954,8 +1993,24 @@ function initPaperFocusForSection(sectionId){
   });
   
   backdrop.addEventListener('click', closePaper);
+  document.addEventListener('ui:close-overlays', (event) => closePaper(event.detail || { immediate: true }));
   
   function onEsc(e){ if (e.key === 'Escape') closePaper(); }
+
+  function ensurePaperCloseButton(el, close) {
+    if (el.querySelector('.paper-card-close')) return;
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'paper-card-close';
+    closeButton.setAttribute('aria-label', 'Close card');
+    closeButton.textContent = '×';
+    closeButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    });
+    el.appendChild(closeButton);
+  }
   
   function openPaper(el){
     if (document.body.classList.contains('has-paper-open-global')) return;
@@ -2037,7 +2092,7 @@ function initPaperFocusForSection(sectionId){
     document.body.classList.remove('hovering-paper');
   }
 
-  function closePaper(){
+  function closePaper(options = {}){
     const openEl = document.querySelector('.paper-open');
     if (openEl){
       openEl.classList.remove('paper-open--settled');
@@ -2046,26 +2101,15 @@ function initPaperFocusForSection(sectionId){
       openEl.style.setProperty('--open-ty','0px');
       openEl.style.setProperty('--open-scale','1');
       const cleanup = () => {
-        openEl.classList.remove('paper-open');
-        openEl.removeAttribute('role');
-        openEl.removeAttribute('aria-modal');
-        openEl.style.position = '';
-        openEl.style.left = '';
-        openEl.style.top = '';
-        openEl.style.width = '';
-        openEl.style.height = '';
-        openEl.style.willChange = '';
-        openEl.style.removeProperty('--open-tx');
-        openEl.style.removeProperty('--open-ty');
-        openEl.style.removeProperty('--open-scale');
-        if (openEl.__portal){
-          openEl.__portal.parent.insertBefore(openEl, openEl.__portal.placeholder);
-          openEl.__portal.placeholder.remove();
-          openEl.__portal = null;
-        }
+        restorePaperElement(openEl);
         openEl.removeEventListener('transitionend', cleanup);
       };
-      openEl.addEventListener('transitionend', cleanup);
+      if (options.immediate) {
+        cleanup();
+      } else {
+        openEl.addEventListener('transitionend', cleanup);
+        setTimeout(cleanup, 360);
+      }
     }
     document.body.classList.remove('has-paper-open-global');
     document.removeEventListener('keydown', onEsc);

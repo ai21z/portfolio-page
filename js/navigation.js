@@ -53,7 +53,7 @@ export function computeNavOffsets(){
   }
 }
 
-export function showSection(sectionName, startRitualBackground, stopRitualBackground) {
+export function showSection(sectionName, startRitualBackground, stopRitualBackground, options = {}) {
   const sections = document.querySelectorAll('.stage');
   sections.forEach(s => {
     const shouldBeActive = s.dataset.section === sectionName;
@@ -74,7 +74,17 @@ export function showSection(sectionName, startRitualBackground, stopRitualBackgr
   
   const hashId = sectionName === 'intro' ? '' : sectionName;
   const newUrl = hashId ? `${window.location.pathname}#${hashId}` : window.location.pathname;
-  history.replaceState(null, '', newUrl);
+  if (options.historyMode !== 'none') {
+    const currentUrl = `${window.location.pathname}${window.location.hash}`;
+    if (currentUrl !== newUrl) {
+      const state = { view: sectionName };
+      if (options.historyMode === 'push') {
+        history.pushState(state, '', newUrl);
+      } else {
+        history.replaceState(state, '', newUrl);
+      }
+    }
+  }
   
   const activeSection = document.querySelector(`.stage[data-section="${sectionName}"]`);
   const isPanel = activeSection?.classList.contains('panel-screen') || 
@@ -169,7 +179,7 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
           const targetStage = document.querySelector(`.stage[data-section="${id}"]`);
           if (targetStage) {
             event.preventDefault();
-            showSectionCallback(id);
+            showSectionCallback(id, { historyMode: 'push' });
             targetStage.focus?.({ preventScroll: false });
           }
         });

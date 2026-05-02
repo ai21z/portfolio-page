@@ -172,6 +172,94 @@ test('does not horizontally overflow common responsive viewports', async ({ page
   }
 });
 
+test('keeps the intro composed on short desktop and old-laptop viewports', async ({ page }) => {
+  const viewports = [
+    { width: 1366, height: 768 },
+    { width: 1366, height: 650 },
+    { width: 1280, height: 650 },
+    { width: 1024, height: 600 }
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await page.goto('/index.html');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('.stage.active-section')).toBeVisible();
+
+    const result = await page.evaluate(() => {
+      const rectFor = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return {
+          selector,
+          visible: rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0.05,
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height
+        };
+      };
+
+      const overlaps = (a: ReturnType<typeof rectFor>, b: ReturnType<typeof rectFor>) => {
+        if (!a || !b || !a.visible || !b.visible) return false;
+        return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+      };
+
+      const essentialSelectors = ['.name', '.portrait-wrap', '.text-column', '.graphics-control'];
+      const essentialRects = essentialSelectors.map(rectFor);
+      const optionalRects = ['.living-sigils'].map(rectFor);
+      const visibleLabelRects = Array.from(document.querySelectorAll('.network-node-label .node-label'))
+        .map((element) => {
+          const parent = element.closest('.network-node-label');
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return {
+            selector: `.network-node-label[data-node="${parent?.getAttribute('data-node') || ''}"] .node-label`,
+            visible: rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0.05,
+            top: rect.top,
+            left: rect.left,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height
+          };
+        })
+        .filter((rect) => rect.visible);
+
+      const viewportInset = 8;
+      const outsideViewport = [...essentialRects, ...optionalRects]
+        .filter((rect): rect is NonNullable<typeof rect> => !!rect && rect.visible)
+        .filter((rect) => (
+          rect.top < -2 ||
+          rect.left < -2 ||
+          rect.right > window.innerWidth + 2 ||
+          rect.bottom > window.innerHeight - viewportInset
+        ));
+
+      const labelOverlaps = visibleLabelRects
+        .filter((label) => essentialRects.some((rect) => overlaps(label, rect)))
+        .map((label) => label.selector);
+
+      const scrollWidth = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+
+      return {
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        overflowX: scrollWidth - window.innerWidth,
+        outsideViewport,
+        labelOverlaps
+      };
+    });
+
+    expect(result.overflowX, `${viewport.width}x${viewport.height} overflow`).toBeLessThanOrEqual(2);
+    expect(result.outsideViewport, `${viewport.width}x${viewport.height} clipped intro elements`).toEqual([]);
+    expect(result.labelOverlaps, `${viewport.width}x${viewport.height} labels overlap hero`).toEqual([]);
+  }
+});
+
 test('uses the desktop blog map and mobile specimen grid at the correct breakpoints', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#blog');

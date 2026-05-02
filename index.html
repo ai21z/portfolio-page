@@ -1178,9 +1178,20 @@
 </dialog>
 
   <div class="graphics-control" data-graphics-control>
-    <button class="graphics-control__toggle" type="button" aria-expanded="false" aria-controls="graphics-profile-menu">
-      Graphics
-    </button>
+    <div class="graphics-control__bar">
+      <button class="graphics-control__info" type="button" aria-expanded="false" aria-controls="graphics-help-panel" aria-label="Graphics performance help">
+        i
+      </button>
+      <button class="graphics-control__toggle" type="button" aria-expanded="false" aria-controls="graphics-profile-menu">
+        Graphics
+      </button>
+    </div>
+    <div class="graphics-control__help" id="graphics-help-panel" role="region" aria-label="Graphics performance guidance" hidden>
+      <p>For the smoothest graphics, use Chrome or Edge with hardware acceleration.</p>
+      <p>On older laptops or Firefox, choose Quiet or Balanced. Rich and Full are for stronger GPUs.</p>
+      <p class="graphics-control__status" data-graphics-help-status>Current recommendation: Balanced</p>
+      <p class="graphics-control__reason" data-graphics-help-reason>Reason: standard browser settings</p>
+    </div>
     <div class="graphics-control__menu" id="graphics-profile-menu" hidden>
       <button type="button" data-graphics-profile="quiet">Quiet</button>
       <button type="button" data-graphics-profile="balanced">Balanced</button>

@@ -4,6 +4,7 @@
 
 // Signal to inline bootstrap that the ES-module loaded successfully
 window.__appBooted = true;
+document.documentElement.classList.add('js-ready');
 
 import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
@@ -293,7 +294,7 @@ function sparkLoopWrapper(ts) {
     _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
   } else {
     // Clear canvases and stop the loop
-    if (sparkCtx && sparkCanvas) sparkCtx.clearRect(0, 0, sparkCanvas.width, sparkCanvas.height);
+    releaseCanvasBacking(sparkCanvas, sparkCtx);
     _sparkRafId = null;
   }
 }
@@ -306,11 +307,52 @@ function ensureSparkLoop() {
 // Cache the intro stage element to avoid DOM queries every frame
 const _introStage = document.querySelector('.stage[data-section="intro"]');
 
+function isIntroSectionActive() {
+  return _introStage?.classList.contains('active-section');
+}
+
+function releaseCanvasBacking(canvas, ctx) {
+  if (!canvas) return;
+  if (ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  if (canvas.width !== 1 || canvas.height !== 1) {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function releaseIntroCanvasBuffers() {
+  releaseCanvasBacking(sparkCanvas, sparkCtx);
+  releaseCanvasBacking(sporeCanvas, sporeCtx);
+  setSpores([]);
+  setLastSporeFrame(0);
+}
+
+function releaseInactiveFeatureCanvasBuffers(activeSectionName) {
+  if (activeSectionName !== 'work') {
+    releaseCanvasBacking(document.getElementById('work-globe-canvas'), null);
+  }
+  if (activeSectionName !== 'blog') {
+    releaseCanvasBacking(document.getElementById('blog-network-canvas'), null);
+  }
+}
+
+function restoreIntroCanvasBuffers() {
+  if (!COVER.ready) return;
+  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
+  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
+  if (sporeCtx) createSpores();
+}
+
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
   computeCoverFromImage();
-  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
-  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
+  if (isIntroSectionActive()) {
+    restoreIntroCanvasBuffers();
+  } else {
+    releaseIntroCanvasBuffers();
+  }
   if (hudEnabled && hudCanvas) {
     hudCanvas.width = window.innerWidth;
     hudCanvas.height = window.innerHeight;
@@ -345,7 +387,6 @@ function resizeAll() {
     route.sHome = Math.max(route.sMin, Math.min(route.sMax, sHomeRatio * len));
   }
 
-  if (sporeCtx) createSpores();
 }
 
 // Init after background loads
@@ -366,12 +407,13 @@ function initAfterImageLoad() {
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
   wireNavigationStreams();
 
-  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
-  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
-  if (sporeCtx) createSpores();
-  
-  ensureSparkLoop();
-  startSpores();
+  if (isIntroSectionActive()) {
+    restoreIntroCanvasBuffers();
+    ensureSparkLoop();
+    startSpores();
+  } else {
+    releaseIntroCanvasBuffers();
+  }
 }
 
 // Gate init on image load
@@ -568,7 +610,7 @@ function startSpores() {
     const introActive = _introStage?.classList.contains('active-section');
     if (!introActive || document.hidden) {
       // Clear and stop loop — will restart when section becomes active
-      if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+      releaseCanvasBacking(sporeCanvas, sporeCtx);
       _sporeRafId = null;
       return;
     }
@@ -583,7 +625,7 @@ function ensureSporeLoop() {
     _sporeRafId = requestAnimationFrame(function loop(ts) {
       const introActive = _introStage?.classList.contains('active-section');
       if (!introActive || document.hidden) {
-        if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
+        releaseCanvasBacking(sporeCanvas, sporeCtx);
         _sporeRafId = null;
         return;
       }
@@ -1252,10 +1294,11 @@ function setupArticleNavigation(container, hubId) {
 }
 
 // Section visibility with effects
-function showSectionWithEffects(sectionName) {
+function showSectionWithEffects(sectionName, options = {}) {
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
-  showSection(sectionName, startRitualBackground, stopRitualBackground);
+  showSection(sectionName, startRitualBackground, stopRitualBackground, options);
+  releaseInactiveFeatureCanvasBuffers(sectionName);
   ensureSectionModule(sectionName);
   
   const isBlogVisible = sectionName === 'blog';
@@ -1269,8 +1312,11 @@ function showSectionWithEffects(sectionName) {
 
   // Restart intro-only loops when navigating back to intro
   if (sectionName === 'intro') {
+    restoreIntroCanvasBuffers();
     ensureSparkLoop();
     ensureSporeLoop();
+  } else {
+    releaseIntroCanvasBuffers();
   }
 }
 
@@ -1416,7 +1462,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (contactSection) {
     contactSection.addEventListener('click', (e) => {
       if (e.target === contactSection) {
-        showSectionWithEffects('intro');
+        showSectionWithEffects('intro', { historyMode: 'push' });
       }
     });
   }
@@ -1573,9 +1619,9 @@ window.addEventListener('hashchange', () => {
   
   const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
   if (validSections.includes(hash)) {
-    showSectionWithEffects(hash);
+    showSectionWithEffects(hash, { historyMode: 'none' });
   } else if (!hash) {
-    showSectionWithEffects('intro');
+    showSectionWithEffects('intro', { historyMode: 'none' });
   } else {
     showSectionWithEffects('intro');
   }
@@ -1586,7 +1632,7 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="go-intro"]');
   if (!btn) return;
   e.preventDefault();
-  showSectionWithEffects('intro');
+  showSectionWithEffects('intro', { historyMode: 'push' });
 });
 
 // Section navigation
@@ -1596,7 +1642,7 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   const targetSection = link.dataset.section;
   if (targetSection) {
-    showSectionWithEffects(targetSection);
+    showSectionWithEffects(targetSection, { historyMode: 'push' });
   }
 });
 
@@ -1783,6 +1829,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     const introActive = _introStage?.classList.contains('active-section');
     if (introActive) {
+      restoreIntroCanvasBuffers();
       ensureSparkLoop();
       ensureSporeLoop();
     }
@@ -1800,6 +1847,7 @@ function initSkillsPaperFocus(){
 function initPaperFocusForSection(sectionId){
   const section = document.getElementById(sectionId);
   if (!section) return;
+  if (section.__paperFocusBound) return;
   section.querySelectorAll('.paper-overlay')?.forEach(n=>n.remove());
 
   const backdrop = document.getElementById('paper-backdrop');
@@ -1807,6 +1855,7 @@ function initPaperFocusForSection(sectionId){
     console.warn('⚠️ paper-backdrop not found');
     return;
   }
+  section.__paperFocusBound = true;
   
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {

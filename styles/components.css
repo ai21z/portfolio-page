@@ -219,6 +219,67 @@
   pointer-events: all;
 }
 
+@media (min-width: 901px) and (max-height: 800px) {
+  .name {
+    font-size: clamp(36px, 4.2vw, 48px);
+    line-height: 1.04;
+  }
+
+  .portrait {
+    width: clamp(260px, 22vw, 320px);
+  }
+
+  .portrait-wrap {
+    opacity: 0.86 !important;
+  }
+
+  .text-column {
+    max-width: min(52ch, 52vw);
+    gap: var(--gap-small);
+  }
+
+  .tape {
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.5;
+  }
+
+  .living-sigils {
+    left: 0;
+    top: 24%;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 680px) {
+  .name {
+    font-size: clamp(34px, 4vw, 44px);
+  }
+
+  .portrait {
+    width: clamp(230px, 20vw, 280px);
+  }
+
+  .text-column {
+    max-width: min(48ch, 54vw);
+  }
+
+  .tape {
+    font-size: 15px;
+    line-height: 1.42;
+  }
+
+  .living-sigils {
+    top: 25%;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1100px) and (max-height: 680px) {
+  .living-sigils {
+    display: none;
+  }
+}
+
 @media (min-width: 1440px) {
   .living-sigils {
     left: -100px;

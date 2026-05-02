@@ -9,7 +9,22 @@
   font: 12px/1.2 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
 }
 
+@media (min-width: 901px) and (max-height: 800px) {
+  .graphics-control {
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+}
+
+.graphics-control__bar {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  gap: 6px;
+}
+
 .graphics-control__toggle,
+.graphics-control__info,
 .graphics-control__menu button {
   border: 1px solid rgba(133, 214, 164, 0.46);
   color: rgba(220, 244, 225, 0.95);
@@ -18,9 +33,52 @@
   cursor: pointer;
 }
 
+.graphics-control__info {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 700;
+  font-family: ui-serif, Georgia, serif;
+  font-style: italic;
+  line-height: 1;
+}
+
 .graphics-control__toggle {
   min-height: 32px;
   padding: 0 10px;
+}
+
+.graphics-control__help {
+  width: min(290px, calc(100vw - 24px));
+  max-height: min(52vh, 260px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid rgba(133, 214, 164, 0.34);
+  color: rgba(226, 241, 229, 0.95);
+  background: rgba(5, 8, 7, 0.93);
+  box-shadow: 0 0 28px rgba(0, 0, 0, 0.48), 0 0 18px rgba(54, 170, 112, 0.12);
+}
+
+.graphics-control__help[hidden] {
+  display: none;
+}
+
+.graphics-control__help p {
+  margin: 0;
+}
+
+.graphics-control__help p + p {
+  margin-top: 7px;
+}
+
+.graphics-control__status,
+.graphics-control__reason {
+  color: rgba(133, 214, 164, 0.96);
+}
+
+.graphics-control__reason {
+  color: rgba(220, 244, 225, 0.78);
 }
 
 .graphics-control__menu {
@@ -49,6 +107,7 @@
 }
 
 .graphics-control__toggle:focus-visible,
+.graphics-control__info:focus-visible,
 .graphics-control__menu button:focus-visible {
   outline: 2px solid rgba(190, 255, 210, 0.9);
   outline-offset: 2px;
@@ -80,7 +139,28 @@
     padding: 0 8px;
   }
 
+  .graphics-control__info {
+    width: 30px;
+    min-height: 30px;
+  }
+
+  .graphics-control__help {
+    width: min(260px, calc(100vw - 20px));
+    max-height: min(58vh, 240px);
+    padding: 9px 10px;
+  }
+
   .graphics-control__menu {
     width: 118px;
+  }
+}
+
+@media (max-width: 360px) {
+  .graphics-control {
+    max-width: calc(100vw - 20px);
+  }
+
+  .graphics-control__help {
+    width: calc(100vw - 20px);
   }
 }

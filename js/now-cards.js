@@ -30,7 +30,7 @@ const NOW_STREAMS = [
       'Lucene 10 vectors + BM25 hybrid',
       'Local LLM, reproducible workflows'
     ],
-    links: [{ label: 'Documentation', href: '#' }],
+    links: [{ label: 'Documentation soon', unavailable: true }],
     category: 'engineering'
   },
   {
@@ -44,7 +44,7 @@ const NOW_STREAMS = [
       'Signed receipts, instant verification',
       'ChaCha20 RNG with replay proofs'
     ],
-    links: [{ label: 'Try demo', href: '#' }],
+    links: [{ label: 'Demo soon', unavailable: true }],
     category: 'engineering'
   },
   {
@@ -58,7 +58,7 @@ const NOW_STREAMS = [
       'Two songs: horror/synthmetal',
       'Composing, performing, producing'
     ],
-    links: [{ label: 'Listen soon', href: '#' }],
+    links: [{ label: 'Listen soon', unavailable: true }],
     category: 'art',
     hidden: true
   }
@@ -183,6 +183,17 @@ function createCard(stream, index) {
     if (e.target.tagName === 'A') return;
     closeCard(card);
   });
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'now-card-close';
+  closeButton.setAttribute('aria-label', 'Close now card');
+  closeButton.textContent = '×';
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeCard(card);
+  });
+  back.appendChild(closeButton);
   
   const header = document.createElement('div');
   header.className = 'now-card-header';
@@ -232,6 +243,15 @@ function createCard(stream, index) {
     const links = document.createElement('div');
     links.className = 'now-card-links';
     stream.links.forEach(link => {
+      if (link.unavailable || !link.href || link.href === '#') {
+        const unavailable = document.createElement('span');
+        unavailable.className = 'now-card-link now-card-link-disabled';
+        unavailable.setAttribute('aria-disabled', 'true');
+        unavailable.textContent = link.label;
+        links.appendChild(unavailable);
+        return;
+      }
+
       const a = document.createElement('a');
       a.className = 'now-card-link';
       a.href = link.href;
@@ -570,6 +590,9 @@ function wireKeyboardNav() {
 }
 
 function wireFocusTrap(dialog) {
+  if (dialog.__nowFocusTrapBound) return;
+  dialog.__nowFocusTrapBound = true;
+
   const focusableSelectors = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
   const focusableElements = dialog.querySelectorAll(focusableSelectors);
   const firstFocusable = focusableElements[0];

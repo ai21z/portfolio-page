@@ -22,8 +22,12 @@ const viewports: Viewport[] = [
   { width: 390, height: 844 },
   { width: 430, height: 932 },
   { width: 768, height: 1024 },
+  { width: 1024, height: 600 },
   { width: 1024, height: 768 },
+  { width: 1280, height: 650 },
   { width: 1280, height: 720 },
+  { width: 1366, height: 650 },
+  { width: 1366, height: 768 },
   { width: 1440, height: 900 },
   { width: 1920, height: 1080 }
 ];
@@ -596,6 +600,58 @@ test.describe('browser audit', () => {
     await page.locator('[data-graphics-profile="balanced"]').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+  });
+
+  test('graphics help explains profiles and stays inside constrained viewports', async ({ page, baseURL }) => {
+    test.setTimeout(90_000);
+    const constrainedViewports = [
+      { width: 1366, height: 650 },
+      { width: 390, height: 844 },
+      { width: 320, height: 568 }
+    ];
+
+    for (const viewport of constrainedViewports) {
+      await page.setViewportSize(viewport);
+      await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+
+      const infoButton = page.getByRole('button', { name: /graphics performance help/i });
+      const helpPanel = page.locator('#graphics-help-panel');
+
+      await expect(infoButton, `${viewport.width}x${viewport.height} info button`).toBeVisible();
+      await infoButton.click();
+      await expect(helpPanel, `${viewport.width}x${viewport.height} help panel`).toBeVisible();
+      await expect(helpPanel).toContainText(/Chrome or Edge/i);
+      await expect(helpPanel).toContainText(/Quiet or Balanced/i);
+      await expect(helpPanel).toContainText(/Rich and Full/i);
+      await expect(page.locator('[data-graphics-help-status]')).toContainText(/Current recommendation:/i);
+
+      const helpRect = await helpPanel.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight
+        };
+      });
+
+      expect(helpRect.left, `${viewport.width}x${viewport.height} help left`).toBeGreaterThanOrEqual(0);
+      expect(helpRect.top, `${viewport.width}x${viewport.height} help top`).toBeGreaterThanOrEqual(0);
+      expect(helpRect.right, `${viewport.width}x${viewport.height} help right`).toBeLessThanOrEqual(helpRect.viewportWidth);
+      expect(helpRect.bottom, `${viewport.width}x${viewport.height} help bottom`).toBeLessThanOrEqual(helpRect.viewportHeight);
+
+      await page.keyboard.press('Escape');
+      await expect(helpPanel).toBeHidden();
+
+      await page.locator('.graphics-control__toggle').click();
+      await expect(page.locator('#graphics-profile-menu')).toBeVisible();
+      await page.locator('#graphics-profile-menu [data-graphics-profile="quiet"]').click();
+      await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'quiet');
+    }
   });
 
   test('quiet graphics profile applies low-cost budgets to visual systems', async ({ page, baseURL }) => {

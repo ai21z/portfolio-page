@@ -117,6 +117,22 @@ function rank(profile) {
   return PROFILE_RANK.get(profile) ?? PROFILE_RANK.get('balanced');
 }
 
+function formatProfile(profile) {
+  return profile ? `${profile[0].toUpperCase()}${profile.slice(1)}` : 'Balanced';
+}
+
+function recommendationReason(state) {
+  if (state.reducedMotion) return 'reduced motion is enabled';
+  if (state.saveData) return 'save-data is enabled';
+  if (state.firefox) return 'Firefox receives a safer WebGL budget';
+  if (state.webkit) return 'WebKit receives a safer WebGL budget';
+  if (state.mobile) return 'small or touch viewport';
+  if (state.movementRegression) return 'recent movement or long frames';
+  if (state.downgradeSteps > 0) return 'recent long frames';
+  if (state.profile !== state.effectiveProfile) return 'runtime capability budget';
+  return 'standard browser settings';
+}
+
 function selectedProfileAllowsPortraitStreaming() {
   return selectedProfile === 'rich' || selectedProfile === 'full';
 }
@@ -196,13 +212,27 @@ function syncControl() {
 
   const toggle = root.querySelector('.graphics-control__toggle');
   if (toggle) {
-    toggle.textContent = `Graphics: ${selectedProfile[0].toUpperCase()}${selectedProfile.slice(1)}`;
+    toggle.textContent = `Graphics: ${formatProfile(selectedProfile)}`;
   }
 
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
     const active = button.getAttribute('data-graphics-profile') === selectedProfile;
     button.setAttribute('aria-pressed', String(active));
   });
+
+  const state = getGraphicsState();
+  const status = root.querySelector('[data-graphics-help-status]');
+  if (status) {
+    const selectedSuffix = state.profile === state.effectiveProfile
+      ? ''
+      : ` (${formatProfile(state.profile)} selected)`;
+    status.textContent = `Current recommendation: ${formatProfile(state.effectiveProfile)}${selectedSuffix}`;
+  }
+
+  const reason = root.querySelector('[data-graphics-help-reason]');
+  if (reason) {
+    reason.textContent = `Reason: ${recommendationReason(state)}`;
+  }
 }
 
 function wireControl() {
@@ -211,26 +241,79 @@ function wireControl() {
   root.__graphicsControlBound = true;
 
   const toggle = root.querySelector('.graphics-control__toggle');
+  const info = root.querySelector('.graphics-control__info');
   const menu = root.querySelector('.graphics-control__menu');
+  const help = root.querySelector('.graphics-control__help');
+  let lastTogglePointerActivation = 0;
+  let lastInfoPointerActivation = 0;
 
-  toggle?.addEventListener('click', () => {
-    const open = menu?.hasAttribute('hidden');
+  const isPrimaryPointer = (event) => !('button' in event) || event.button === 0;
+  const isRecentPointerActivation = (timestamp) => timestamp && performance.now() - timestamp < 500;
+
+  const setMenuOpen = (open) => {
     if (open) {
       menu?.removeAttribute('hidden');
-      toggle.setAttribute('aria-expanded', 'true');
+      toggle?.setAttribute('aria-expanded', 'true');
+      help?.setAttribute('hidden', '');
+      info?.setAttribute('aria-expanded', 'false');
     } else {
       menu?.setAttribute('hidden', '');
-      toggle.setAttribute('aria-expanded', 'false');
+      toggle?.setAttribute('aria-expanded', 'false');
     }
+  };
+
+  const setHelpOpen = (open) => {
+    if (open) {
+      syncControl();
+      help?.removeAttribute('hidden');
+      info?.setAttribute('aria-expanded', 'true');
+      menu?.setAttribute('hidden', '');
+      toggle?.setAttribute('aria-expanded', 'false');
+    } else {
+      help?.setAttribute('hidden', '');
+      info?.setAttribute('aria-expanded', 'false');
+    }
+  };
+
+  toggle?.addEventListener('pointerdown', (event) => {
+    if (!isPrimaryPointer(event)) return;
+    lastTogglePointerActivation = performance.now();
+    setMenuOpen(menu?.hasAttribute('hidden'));
+  });
+
+  toggle?.addEventListener('click', () => {
+    if (isRecentPointerActivation(lastTogglePointerActivation)) return;
+    setMenuOpen(menu?.hasAttribute('hidden'));
+  });
+
+  info?.addEventListener('pointerdown', (event) => {
+    if (!isPrimaryPointer(event)) return;
+    lastInfoPointerActivation = performance.now();
+    setHelpOpen(help?.hasAttribute('hidden'));
+  });
+
+  info?.addEventListener('click', () => {
+    if (isRecentPointerActivation(lastInfoPointerActivation)) return;
+    setHelpOpen(help?.hasAttribute('hidden'));
   });
 
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
     button.addEventListener('click', () => {
       const profile = button.getAttribute('data-graphics-profile');
       if (profile) setGraphicsProfile(profile, { persist: true });
-      menu?.setAttribute('hidden', '');
-      toggle?.setAttribute('aria-expanded', 'false');
+      setMenuOpen(false);
     });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    setHelpOpen(false);
+    setMenuOpen(false);
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (root.contains(event.target)) return;
+    setHelpOpen(false);
   });
 }
 

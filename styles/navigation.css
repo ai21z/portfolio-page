@@ -235,6 +235,52 @@
   transform-origin: 50% 50%;
 }
 
+@media (min-width: 901px) and (max-height: 800px) {
+  .network-node-label {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  .network-node-label::before {
+    width: 56px;
+    height: 36px;
+  }
+
+  .network-node-label .node-label {
+    top: -16px;
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+
+  .network-node-label:hover .node-label,
+  .network-node-label:focus-visible .node-label,
+  .network-node-label.motion-highlight .node-label {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+
+  .network-sigil-node img {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 680px) {
+  .network-node-label {
+    padding: 3px 5px;
+  }
+
+  .network-node-label::before {
+    width: 48px;
+    height: 34px;
+  }
+
+  .network-sigil-node img {
+    width: 48px;
+    height: 48px;
+  }
+}
+
 /* Suppressed state */
 .nav-suppressed .network-node-label,
 .nav-suppressed [data-nav] {

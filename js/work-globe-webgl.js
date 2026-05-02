@@ -56,6 +56,8 @@ let boundTouchStartHandler = null;
 let boundTouchEndHandler = null;
 let boundDprHandler = null;
 let boundVisibilityHandler = null;
+let boundLocationOutsideClickHandler = null;
+let boundProjectOutsideClickHandler = null;
 let dprCheckIntervalId = null;
 let autoWriterTimeoutId = null;
 
@@ -1119,7 +1121,7 @@ function showLocationInfo(pin) {
     
     // Add click handler to close when clicking outside (desktop only)
     if (!isMobile) {
-      document.addEventListener('click', (e) => {
+      boundLocationOutsideClickHandler = (e) => {
         const bubble = document.querySelector('.work-location-info');
         if (bubble && bubble.classList.contains('visible')) {
           // Check if click is outside the bubble
@@ -1127,7 +1129,8 @@ function showLocationInfo(pin) {
             hideLocationInfo();
           }
         }
-      });
+      };
+      document.addEventListener('click', boundLocationOutsideClickHandler);
     }
   }
 
@@ -1233,14 +1236,15 @@ function showProjectPanel(moon) {
     
     // Add click handler to close when clicking outside (desktop only)
     if (!isMobile) {
-      document.addEventListener('click', (e) => {
+      boundProjectOutsideClickHandler = (e) => {
         const panel = document.querySelector('.project-panel');
         if (panel && panel.classList.contains('visible')) {
           if (!panel.contains(e.target)) {
             hideProjectPanel();
           }
         }
-      });
+      };
+      document.addEventListener('click', boundProjectOutsideClickHandler);
     }
   }
   
@@ -1485,6 +1489,12 @@ function cleanupWorkGlobe() {
   if (boundVisibilityHandler) {
     document.removeEventListener('visibilitychange', boundVisibilityHandler);
   }
+  if (boundLocationOutsideClickHandler) {
+    document.removeEventListener('click', boundLocationOutsideClickHandler);
+  }
+  if (boundProjectOutsideClickHandler) {
+    document.removeEventListener('click', boundProjectOutsideClickHandler);
+  }
   
   hideLocationInfo();
   hideProjectPanel();
@@ -1537,6 +1547,8 @@ function cleanupWorkGlobe() {
   boundTouchEndHandler = null;
   boundDprHandler = null;
   boundVisibilityHandler = null;
+  boundLocationOutsideClickHandler = null;
+  boundProjectOutsideClickHandler = null;
   autoWriterTimeoutId = null;
   lastWorkActivityAt = 0;
 }

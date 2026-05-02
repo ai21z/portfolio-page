@@ -110,7 +110,7 @@ test.describe('Contact form', () => {
     await expect(page.locator('[data-status]')).toHaveText(/misconfigured/i);
   });
 
-  test('does not show a verification error before the user submits', async ({ page }) => {
+  test('shows actionable verification feedback when Turnstile fails before submit', async ({ page }) => {
     await routeTurnstile(page, turnstileErrorStubScript);
 
     await page.goto('/index.html#contact');
@@ -122,7 +122,8 @@ test.describe('Contact form', () => {
     await page.waitForSelector('#contact-form');
     await page.waitForTimeout(100);
 
-    await expect(page.locator('[data-status]')).toHaveText('');
-    await expect(page.locator('[data-status]')).not.toHaveClass(/error/);
+    await expect(page.locator('[data-status]')).toHaveText(/verification could not complete/i);
+    await expect(page.locator('[data-status]')).toHaveClass(/error/);
+    await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
   });
 });

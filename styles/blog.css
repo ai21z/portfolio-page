@@ -464,10 +464,6 @@
   transform: rotate(90deg);
 }
 
-.blog-screen.in-category .blog-close {
-  display: none;
-}
-
 .blog-hub-tooltip {
   position: fixed;
   top: 80px; /* Below the close button */
@@ -558,6 +554,10 @@
     min-height: 40px;
     top: 16px;
     right: 16px;
+  }
+
+  .blog-screen.in-category .blog-map-btn {
+    right: 104px;
   }
 }
 
@@ -786,6 +786,10 @@
   top: 24px;
   right: 24px;
   z-index: 101;
+}
+
+.blog-screen.in-category .blog-map-btn {
+  right: 116px;
 }
 
 .blog-map-btn:hover,
@@ -1305,6 +1309,10 @@
     min-height: 36px;
     top: 12px;
     right: 12px;
+  }
+
+  .blog-screen.in-category .blog-map-btn {
+    right: 96px;
   }
 }
 

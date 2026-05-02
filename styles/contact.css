@@ -292,7 +292,10 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 }
 
 .turnstile-field {
-  display: none;
+  display: flex;
+  justify-content: center;
+  min-height: 42px;
+  width: 100%;
 }
 
 .turnstile-placeholder {

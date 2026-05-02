@@ -32,6 +32,17 @@
   z-index:50; /* above intro so section is visible even without JS toggling classes */
 }
 
+.js-ready .stage:target:not(.active-section) {
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.js-ready .stage:not(.active-section),
+.js-ready .stage:not(.active-section) * {
+  pointer-events: none !important;
+}
+
 /* Custom scrollbar styling */
 .stage::-webkit-scrollbar{
   width:10px;
@@ -67,6 +78,24 @@
   padding: calc(var(--gap) * 2) var(--gap-large);
   padding-top: max(calc(var(--gap) * 2), env(safe-area-inset-top, 0)); /* iOS notch/status bar safe area */
   align-items: start;
+}
+
+@media (min-width: 901px) and (max-height: 800px) {
+  .grid {
+    grid-template-rows: minmax(18px, 0.35fr) auto auto auto minmax(8px, 0.3fr) auto;
+    row-gap: clamp(14px, 2vh, 22px);
+    max-width: min(1120px, calc(100vw - 128px));
+    padding-block: max(18px, env(safe-area-inset-top, 0px)) 56px;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 680px) {
+  .grid {
+    grid-template-rows: 16px auto auto auto minmax(8px, 1fr) auto;
+    row-gap: 12px;
+    max-width: min(1080px, calc(100vw - 96px));
+    padding-block: max(14px, env(safe-area-inset-top, 0px)) 52px;
+  }
 }
 
 /* Mobile: add subtle backdrop for readability over network */

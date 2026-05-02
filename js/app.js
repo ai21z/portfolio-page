@@ -858,6 +858,27 @@ function initBlogControls() {
       }
     });
   });
+
+  document.querySelectorAll('.blog-memo-item[data-hub]').forEach(item => {
+    if (item.__blogMemoBound) return;
+    item.__blogMemoBound = true;
+    const hubId = item.dataset.hub;
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
+    item.setAttribute('aria-label', `Open ${hubId} blog category`);
+
+    const activateMemoHub = () => {
+      if (hubId) enterHub(hubId);
+    };
+
+    item.addEventListener('click', activateMemoHub);
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activateMemoHub();
+      }
+    });
+  });
   
   window.addEventListener('blog:navigate', (e) => {
     const { hubId } = e.detail;

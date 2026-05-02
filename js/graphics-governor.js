@@ -556,6 +556,7 @@ function updateDebugOverlay() {
 export function getGraphicsState() {
   const now = performance.now();
   const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
+  effectiveProfile = computeEffectiveProfile();
   return {
     profile: selectedProfile,
     effectiveProfile,

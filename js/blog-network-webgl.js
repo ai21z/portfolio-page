@@ -1,6 +1,7 @@
 // blog-network-webgl.js — Hand-painted mycelium network
 import { cappedDpr } from './utils.js';
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20251029-trunks6-branch1p2x-rough';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -446,15 +447,10 @@ async function initBlogNetwork(){
   
   const canvas = q('#blog-network-canvas');
   if (!canvas) return;
-  const gl = canvas.getContext('webgl2', { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
+  const context = requestProtectedWebGL2Context(canvas, { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
+  const gl = context.gl;
   if(!gl){
-    console.error('WebGL2 not available');
-    // Show fallback message
-    canvas.style.display = 'none';
-    const fallback = document.createElement('div');
-    fallback.className = 'webgl-fallback-visible';
-    fallback.textContent = 'WebGL2 is not available in your browser. The blog network requires a modern browser with WebGL2 support.';
-    canvas.parentNode.insertBefore(fallback, canvas.nextSibling);
+    showWebGLFallback(canvas, context.reason);
     return;
   }
 
@@ -474,6 +470,23 @@ async function initBlogNetwork(){
       clockRafId = null;
     }
   };
+
+  installWebGLContextHealth(canvas, {
+    onLost: () => {
+      stopClockLoop();
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      running = false;
+    },
+    onRestored: () => {
+      initialized = false;
+      if (document.getElementById('blog')?.classList.contains('active-section')) {
+        void initBlogNetwork();
+      }
+    }
+  });
 
   // Load network JSON
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);

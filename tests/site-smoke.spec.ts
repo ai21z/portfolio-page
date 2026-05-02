@@ -133,9 +133,23 @@ test('releases hidden visualization canvas buffers after leaving sections', asyn
 
   await page.goto('/index.html#blog');
   await waitForActiveSection('blog');
-  await expect.poll(
-    () => page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
-  ).toBeGreaterThan(100);
+  await expect.poll(async () => {
+    const fallbackVisible = await page.locator('#blog .webgl-fallback-visible').isVisible().catch(() => false);
+    if (fallbackVisible) return 'fallback';
+    const width = await page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width);
+    return width > 100 ? 'canvas' : 'pending';
+  }).not.toBe('pending');
+  const blogFallbackVisible = await page.locator('#blog .webgl-fallback-visible').isVisible().catch(() => false);
+  if (blogFallbackVisible) {
+    await expect(page.locator('#blog .webgl-fallback-visible')).toContainText(/Graphics are reduced/i);
+    await expect.poll(
+      () => page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+    ).toBeLessThanOrEqual(1);
+  } else {
+    await expect.poll(
+      () => page.locator('#blog-network-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)
+    ).toBeGreaterThan(100);
+  }
 
   await page.goto('/index.html#contact');
   await waitForActiveSection('contact');
@@ -267,8 +281,19 @@ test('uses the desktop blog map and mobile specimen grid at the correct breakpoi
 
   await expect(page.locator('#blog-map')).toBeVisible();
   await expect(page.locator('.blog-mobile')).toBeHidden();
-  await expect(page.locator('.arc-btn[data-hub="craft"]')).toBeVisible();
-  await page.locator('.arc-btn[data-hub="craft"]').press('Enter');
+  await expect.poll(async () => {
+    if (await page.locator('.arc-btn[data-hub="craft"]').count()) return 'arc';
+    if (await page.locator('#blog .webgl-fallback-visible').isVisible().catch(() => false)) return 'fallback';
+    return 'pending';
+  }).not.toBe('pending');
+
+  if (await page.locator('.arc-btn[data-hub="craft"]').count()) {
+    await expect(page.locator('.arc-btn[data-hub="craft"]')).toBeVisible();
+    await page.locator('.arc-btn[data-hub="craft"]').press('Enter');
+  } else {
+    await expect(page.locator('#blog .webgl-fallback-visible')).toContainText(/Graphics are reduced/i);
+    await page.locator('.blog-memo-item[data-hub="craft"]').press('Enter');
+  }
   await expect(page).toHaveURL(/#blog\/craft$/);
   await expect(page.locator('#blog-category-view')).toBeVisible();
 

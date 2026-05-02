@@ -13,6 +13,7 @@ import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
 import { getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
+import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
 import { ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER } from './work-globe/shaders/atmosphere-fog-shaders.js';
@@ -56,6 +57,7 @@ let boundTouchStartHandler = null;
 let boundTouchEndHandler = null;
 let boundDprHandler = null;
 let boundVisibilityHandler = null;
+let boundContextHealthCleanup = null;
 let boundLocationOutsideClickHandler = null;
 let boundProjectOutsideClickHandler = null;
 let dprCheckIntervalId = null;
@@ -173,22 +175,32 @@ function initWorkGlobe() {
   
   const firefox = isFirefox();
   const budget = getGraphicsBudget('work-globe');
-  gl = canvas.getContext('webgl2', {
+  const context = requestProtectedWebGL2Context(canvas, {
     alpha: true,
     antialias: Boolean(budget.antialias && !firefox),
     powerPreference: 'high-performance'
   });
+  gl = context.gl;
 
   if (!gl) {
-    console.error('WebGL2 not supported');
-    // Show fallback message
-    canvas.style.display = 'none';
-    const fallback = document.createElement('div');
-    fallback.className = 'webgl-fallback-visible';
-    fallback.textContent = 'WebGL2 is not available in your browser. The globe visualization requires a modern browser with WebGL2 support.';
-    canvas.parentNode.insertBefore(fallback, canvas.nextSibling);
+    showWebGLFallback(canvas, context.reason);
     return;
   }
+
+  boundContextHealthCleanup = installWebGLContextHealth(canvas, {
+    onLost: () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    },
+    onRestored: () => {
+      cleanupWorkGlobe();
+      if (document.getElementById('work')?.classList.contains('active-section')) {
+        initWorkGlobe();
+      }
+    }
+  });
 
   updateMobileState();
   const quality = getWorkGlobeQuality();
@@ -1489,6 +1501,9 @@ function cleanupWorkGlobe() {
   if (boundVisibilityHandler) {
     document.removeEventListener('visibilitychange', boundVisibilityHandler);
   }
+  if (boundContextHealthCleanup) {
+    boundContextHealthCleanup();
+  }
   if (boundLocationOutsideClickHandler) {
     document.removeEventListener('click', boundLocationOutsideClickHandler);
   }
@@ -1547,6 +1562,7 @@ function cleanupWorkGlobe() {
   boundTouchEndHandler = null;
   boundDprHandler = null;
   boundVisibilityHandler = null;
+  boundContextHealthCleanup = null;
   boundLocationOutsideClickHandler = null;
   boundProjectOutsideClickHandler = null;
   autoWriterTimeoutId = null;

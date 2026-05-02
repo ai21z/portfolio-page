@@ -85,6 +85,15 @@ async function controlsOverlap(page: Page, firstSelector: string, secondSelector
   }, { firstSelector, secondSelector });
 }
 
+async function openBlogHub(page: Page, hubId: string) {
+  const rimButton = page.locator(`.arc-btn[data-hub="${hubId}"]`);
+  if (await rimButton.count()) {
+    await rimButton.press('Enter');
+  } else {
+    await page.locator(`.blog-memo-item[data-hub="${hubId}"]`).press('Enter');
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await routeTurnstile(page);
 });
@@ -95,7 +104,7 @@ test('Blog category and article modes keep a visible top-level close button', as
   await page.waitForLoadState('domcontentloaded');
   await waitForActiveSection(page, 'blog');
 
-  await page.locator('.arc-btn[data-hub="cosmos"]').press('Enter');
+  await openBlogHub(page, 'cosmos');
   await expect(page).toHaveURL(/#blog\/cosmos$/);
   await expect(page.locator('#blog-category-view')).toBeVisible();
   await expect(page.locator('#blog .blog-close')).toBeVisible();

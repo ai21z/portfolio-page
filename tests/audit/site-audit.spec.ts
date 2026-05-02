@@ -469,6 +469,32 @@ async function mockStrongWebGLCapability(page: Page) {
   });
 }
 
+async function mockUnavailableWebGL2(page: Page) {
+  await page.addInitScript(() => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+      if (contextId === 'webgl2') return null;
+      return originalGetContext.call(this, contextId, options);
+    };
+  });
+}
+
+async function recordWebGLContextRequests(page: Page) {
+  await page.addInitScript(() => {
+    window.__webglContextRequests = [];
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+      if (contextId === 'webgl2') {
+        window.__webglContextRequests.push({
+          canvasId: this.id || '',
+          failIfMajorPerformanceCaveat: Boolean((options as { failIfMajorPerformanceCaveat?: boolean } | undefined)?.failIfMajorPerformanceCaveat)
+        });
+      }
+      return originalGetContext.call(this, contextId, options);
+    };
+  });
+}
+
 async function waitForGraphicsMovementStable(page: Page) {
   await expect.poll(async () => {
     const state = await collectGraphicsGovernorState(page);
@@ -763,6 +789,53 @@ test.describe('browser audit', () => {
     expect(profileRank(state.effectiveProfile)).toBeGreaterThanOrEqual(profileRank('balanced'));
   });
 
+  test('WebGL-heavy sections request protected contexts before starting scenes', async ({ page, baseURL }) => {
+    test.setTimeout(75_000);
+    await recordWebGLContextRequests(page);
+
+    await page.goto(urlFor(baseURL, sections.find((section) => section.name === 'blog')!), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#blog')).toHaveClass(/active-section/);
+
+    const work = sections.find((section) => section.name === 'work')!;
+    await switchSection(page, work);
+
+    const requests = await page.evaluate(() => window.__webglContextRequests);
+    expect(requests).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        canvasId: 'blog-network-canvas',
+        failIfMajorPerformanceCaveat: true
+      }),
+      expect.objectContaining({
+        canvasId: 'work-globe-canvas',
+        failIfMajorPerformanceCaveat: true
+      })
+    ]));
+  });
+
+  test('WebGL-heavy sections show intentional reduced-graphics fallback when WebGL2 is unavailable', async ({ page, baseURL }) => {
+    test.setTimeout(75_000);
+    const consoleErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        consoleErrors.push(message.text());
+      }
+    });
+    await mockUnavailableWebGL2(page);
+
+    await page.goto(urlFor(baseURL, sections.find((section) => section.name === 'blog')!), { waitUntil: 'domcontentloaded' });
+    const blogFallback = page.locator('#blog .webgl-fallback-visible').first();
+    await expect(blogFallback).toBeVisible();
+    await expect(blogFallback).toContainText(/Graphics are reduced/i);
+
+    const work = sections.find((section) => section.name === 'work')!;
+    await switchSection(page, work);
+    const workFallback = page.locator('#work .webgl-fallback-visible').first();
+    await expect(workFallback).toBeVisible();
+    await expect(workFallback).toContainText(/Graphics are reduced/i);
+
+    expect(consoleErrors.filter((error) => /WebGL2|webgl/i.test(error))).toEqual([]);
+  });
+
   test('quiet graphics profile applies low-cost budgets to visual systems', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -786,19 +859,27 @@ test.describe('browser audit', () => {
       const canvas = document.getElementById('work-globe-canvas') as HTMLCanvasElement | null;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
+      const fallback = document.querySelector('#work .webgl-fallback-visible');
       return {
         backingWidth: canvas.width,
         backingHeight: canvas.height,
         cssWidth: rect.width,
         cssHeight: rect.height,
-        devicePixelRatio: window.devicePixelRatio
+        devicePixelRatio: window.devicePixelRatio,
+        fallbackVisible: Boolean(fallback && getComputedStyle(fallback).display !== 'none')
       };
     });
 
     expect(workCanvas).not.toBeNull();
     expect(workCanvas!.devicePixelRatio).toBe(2);
-    expect(workCanvas!.backingWidth).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssWidth * 1.05));
-    expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
+    if (workCanvas!.fallbackVisible) {
+      expect(workCanvas!.backingWidth).toBeLessThanOrEqual(1);
+      expect(workCanvas!.backingHeight).toBeLessThanOrEqual(1);
+      await expect(page.locator('#work .webgl-fallback-visible')).toContainText(/Graphics are reduced/i);
+    } else {
+      expect(workCanvas!.backingWidth).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssWidth * 1.05));
+      expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
+    }
   });
 
   test('portrait stream targets are reserved for rich and full graphics profiles', async ({ page, baseURL, browserName }) => {

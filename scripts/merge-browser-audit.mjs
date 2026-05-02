@@ -52,6 +52,7 @@ function buildSummary(results) {
   const dangerousCanvases = [];
   const missingWebGL2 = [];
   const slowTimings = [];
+  const longTaskHotspots = [];
 
   for (const result of results) {
     const label = `${result.browser} ${result.viewport?.width}x${result.viewport?.height} ${result.kind || 'standard'}`;
@@ -111,12 +112,29 @@ function buildSummary(results) {
         });
       }
     }
+
+    if ((result.longTasks?.count || 0) > 0) {
+      longTaskHotspots.push({
+        label,
+        count: result.longTasks.count,
+        totalDurationMs: result.longTasks.totalDurationMs,
+        maxDurationMs: result.longTasks.maxDurationMs,
+        over100ms: result.longTasks.over100ms,
+        top: result.longTasks.top
+      });
+    }
   }
 
   slowTimings.sort((a, b) => {
     const byLongFrames = (b.framesOver100ms || 0) - (a.framesOver100ms || 0);
     if (byLongFrames !== 0) return byLongFrames;
     return (b.maxFrameDeltaMs || 0) - (a.maxFrameDeltaMs || 0);
+  });
+
+  longTaskHotspots.sort((a, b) => {
+    const byTotal = (b.totalDurationMs || 0) - (a.totalDurationMs || 0);
+    if (byTotal !== 0) return byTotal;
+    return (b.maxDurationMs || 0) - (a.maxDurationMs || 0);
   });
 
   return {
@@ -130,6 +148,7 @@ function buildSummary(results) {
     dangerousCanvasCount: dangerousCanvases.length,
     missingWebGL2Count: missingWebGL2.length,
     slowTimingCount: slowTimings.length,
+    longTaskHotspotCount: longTaskHotspots.length,
     pageErrors,
     knownExternalPageErrors,
     reportablePageErrors,
@@ -137,7 +156,8 @@ function buildSummary(results) {
     horizontalOverflow,
     dangerousCanvases,
     missingWebGL2,
-    slowTimings: slowTimings.slice(0, 40)
+    slowTimings: slowTimings.slice(0, 40),
+    longTaskHotspots: longTaskHotspots.slice(0, 40)
   };
 }
 

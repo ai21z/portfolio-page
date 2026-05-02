@@ -501,8 +501,9 @@ function maybeAdjustFromFrames(now) {
   frameSamples.length = 0;
   frameSamples.push(...recent);
 
+  const slowFrames = recent.filter((sample) => sample.deltaMs > 50).length;
   const longFrames = recent.filter((sample) => sample.deltaMs > 100).length;
-  if (longFrames >= 5 && downgradeSteps < 3) {
+  if ((longFrames >= 5 || slowFrames >= 18) && downgradeSteps < 3) {
     downgradeSteps++;
     updateDocumentState('runtime-downgrade');
     return;
@@ -609,6 +610,7 @@ export function getGraphicsBudget(systemName = 'default') {
   if (constrainedEngine && systemName === 'intro-sparks') {
     budget.dprCap = Math.min(budget.dprCap, 1);
     budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 550_000 : 900_000);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 20);
   }
 
   if (constrainedEngine && systemName === 'work-globe') {

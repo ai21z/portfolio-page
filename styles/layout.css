@@ -43,6 +43,15 @@
   pointer-events: none !important;
 }
 
+.js-ready .stage:not(.active-section) {
+  content-visibility: hidden;
+  contain: layout paint style;
+}
+
+.stage.active-section {
+  content-visibility: visible;
+}
+
 /* Custom scrollbar styling */
 .stage::-webkit-scrollbar{
   width:10px;

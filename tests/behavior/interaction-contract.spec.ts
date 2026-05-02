@@ -248,6 +248,33 @@ test('inactive intro canvas buffers are released outside the intro section and r
   await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(100);
 });
 
+test('quiet graphics profile releases intro spore buffers and balanced restores them', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'main');
+
+  await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(100);
+
+  await page.evaluate(async () => {
+    const governor = await import('/js/graphics-governor.js');
+    governor.setGraphicsProfile('quiet', { persist: false });
+  });
+  await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeLessThanOrEqual(1);
+
+  await page.evaluate(async () => {
+    const governor = await import('/js/graphics-governor.js');
+    governor.setGraphicsProfile('balanced', { persist: false });
+  });
+  await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');
+  const effectiveProfile = await page.locator('html').getAttribute('data-graphics-effective-profile');
+  if (effectiveProfile === 'quiet') {
+    await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeLessThanOrEqual(1);
+  } else {
+    await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(100);
+  }
+});
+
 test('section navigation creates browser history entries for back and forward traversal', async ({ page }) => {
   await page.goto('/index.html#about');
   await page.waitForLoadState('domcontentloaded');

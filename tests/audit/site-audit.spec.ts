@@ -410,6 +410,47 @@ async function sampleScrollJank(page: Page, durationMs = sampleDurationMs) {
   }, durationMs);
 }
 
+async function installLongTaskObserver(page: Page) {
+  await page.addInitScript(() => {
+    window.__auditLongTasks = [];
+    window.__auditLongTaskUnsupported = false;
+
+    try {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          window.__auditLongTasks.push({
+            name: entry.name,
+            duration: Number(entry.duration.toFixed(2)),
+            startTime: Number(entry.startTime.toFixed(2))
+          });
+        }
+      });
+      observer.observe({ entryTypes: ['longtask'] });
+      window.__auditLongTaskObserver = observer;
+    } catch {
+      window.__auditLongTaskUnsupported = true;
+    }
+  });
+}
+
+async function collectLongTaskSummary(page: Page) {
+  return await page.evaluate(() => {
+    const tasks = window.__auditLongTasks || [];
+    const durations = tasks.map((task: { duration: number }) => task.duration);
+    const totalDurationMs = durations.reduce((sum: number, duration: number) => sum + duration, 0);
+    const sorted = [...tasks].sort((a: { duration: number }, b: { duration: number }) => b.duration - a.duration);
+
+    return {
+      supported: !window.__auditLongTaskUnsupported,
+      count: tasks.length,
+      totalDurationMs: Number(totalDurationMs.toFixed(2)),
+      maxDurationMs: Number(Math.max(0, ...durations).toFixed(2)),
+      over100ms: durations.filter((duration: number) => duration > 100).length,
+      top: sorted.slice(0, 10)
+    };
+  });
+}
+
 async function collectCanvasSnapshot(page: Page) {
   return await page.evaluate(() => {
     return Array.from(document.querySelectorAll('canvas')).map((canvas) => {
@@ -638,6 +679,7 @@ function visibleAreaRatio(rect: Awaited<ReturnType<typeof elementSnapshot>>, vie
 
 async function runAuditPass(page: Page, baseURL: string | undefined, browserName: string, viewport: Viewport, kind: string) {
   await page.setViewportSize(viewport);
+  await installLongTaskObserver(page);
 
   const origin = new URL(normalizeBaseURL(baseURL)).origin;
   const health = attachHealthListeners(page, origin);
@@ -655,6 +697,7 @@ async function runAuditPass(page: Page, baseURL: string | undefined, browserName
     sections: [],
     frameTimings: {},
     scrollJank: null,
+    longTasks: null,
     offscreenAnimation: null
   };
 
@@ -680,6 +723,7 @@ async function runAuditPass(page: Page, baseURL: string | undefined, browserName
   await gotoSection(page, baseURL, sections[0]);
   result.scrollJank = await sampleScrollJank(page);
   result.offscreenAnimation = await collectOffscreenBehavior(page, baseURL);
+  result.longTasks = await collectLongTaskSummary(page);
   result.reportablePageErrors = health.pageErrors.filter((message) => !isKnownExternalPageError(message));
 
   writePart(result, `${browserName}-${viewport.width}x${viewport.height}-${kind}`);

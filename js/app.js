@@ -282,24 +282,45 @@ _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 // Spark animation loop — only runs when intro is active
 let _sparkRafId = null;
 let _sporeRafId = null;
-function sparkLoopWrapper(ts) {
-  const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
-  setLastSparkTs(ts);
 
+function sparkLoopHasWork() {
+  const budget = getGraphicsBudget('intro-sparks');
+  return !prefersReducedMotion
+    && !budget.quiet
+    && (ritualActive || ACTIVE_ANIMS.length > 0);
+}
+
+function sparkLoopWrapper(ts) {
   // Only run sparks/labels when intro section is active
   const introActive = _introStage?.classList.contains('active-section');
-  if (introActive && !document.hidden) {
-    updateMovingLabels(dt, pointAtRoute);
-    drawSparks(dt, pointAtRoute);
-    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
-  } else {
+  if (!introActive || document.hidden) {
     // Clear canvases and stop the loop
     releaseCanvasBacking(sparkCanvas, sparkCtx);
     _sparkRafId = null;
+    return;
   }
+
+  if (!sparkLoopHasWork()) {
+    sparkCtx?.clearRect(0, 0, sparkCanvas?.width || 0, sparkCanvas?.height || 0);
+    _sparkRafId = null;
+    return;
+  }
+
+  const budget = getGraphicsBudget('intro-sparks');
+  if (budget.frameIntervalMs && ts - lastSparkTs < budget.frameIntervalMs) {
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+    return;
+  }
+
+  const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
+  setLastSparkTs(ts);
+
+  updateMovingLabels(dt, pointAtRoute);
+  drawSparks(dt, pointAtRoute);
+  _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
 }
 function ensureSparkLoop() {
-  if (_sparkRafId == null) {
+  if (_sparkRafId == null && isIntroSectionActive() && sparkLoopHasWork()) {
     setLastSparkTs(performance.now());
     _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
   }
@@ -462,6 +483,7 @@ function toggleRitualFromSigil(el){
   if (ritualActive){
     startRitualMotion();
     attachFollowerSparks();
+    ensureSparkLoop();
   } else {
     stopRitualMotion();
     detachFollowerSparks();
@@ -509,6 +531,7 @@ function sendLightningHome(){
     if (id === 'intro') continue;
     startSpark('intro', id, 900); // quick home ping
   }
+  ensureSparkLoop();
 }
 
 function startRitualMotion(){
@@ -598,6 +621,13 @@ function drawSpores(ts) {
   }
 }
 
+function sporeLoopHasWork() {
+  const budget = getGraphicsBudget('intro-spores');
+  return !prefersReducedMotion
+    && !budget.quiet
+    && budget.particleScale > 0;
+}
+
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
   const budget = getGraphicsBudget('intro-spores');
@@ -608,7 +638,7 @@ function startSpores() {
 
   function loop(ts) {
     const introActive = _introStage?.classList.contains('active-section');
-    if (!introActive || document.hidden) {
+    if (!introActive || document.hidden || !sporeLoopHasWork()) {
       // Clear and stop loop — will restart when section becomes active
       releaseCanvasBacking(sporeCanvas, sporeCtx);
       _sporeRafId = null;
@@ -621,10 +651,10 @@ function startSpores() {
   _sporeRafId = requestAnimationFrame(loop);
 }
 function ensureSporeLoop() {
-  if (_sporeRafId == null && !prefersReducedMotion && sporeCanvas) {
+  if (_sporeRafId == null && sporeCanvas && isIntroSectionActive() && sporeLoopHasWork()) {
     _sporeRafId = requestAnimationFrame(function loop(ts) {
       const introActive = _introStage?.classList.contains('active-section');
-      if (!introActive || document.hidden) {
+      if (!introActive || document.hidden || !sporeLoopHasWork()) {
         releaseCanvasBacking(sporeCanvas, sporeCtx);
         _sporeRafId = null;
         return;
@@ -778,6 +808,7 @@ function ritualCatchUp() {
     
     setTimeout(() => {
       startSparkToPoint('intro', imgX, imgY, 750);
+      ensureSparkLoop();
     }, delay);
     
     delay += 60 + Math.random() * 40;
@@ -1370,6 +1401,7 @@ function wireNavigationStreams() {
       if (!id) return;
       if (GRAPH || prefersReducedMotion) {
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        ensureSparkLoop();
         return;
       }
 
@@ -1377,6 +1409,7 @@ function wireNavigationStreams() {
         if (!ready) return;
         if (el.matches(':hover') || document.activeElement === el) {
           handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+          ensureSparkLoop();
         }
       });
     };
@@ -1855,6 +1888,22 @@ document.addEventListener('visibilitychange', () => {
       ensureSporeLoop();
     }
   }
+});
+
+window.addEventListener('graphics:profile-change', () => {
+  if (!isIntroSectionActive()) return;
+
+  const sporeBudget = getGraphicsBudget('intro-spores');
+  const sparkBudget = getGraphicsBudget('intro-sparks');
+  if ((sporeBudget.quiet || sporeBudget.particleScale <= 0)
+    && (sparkBudget.quiet || !sparkLoopHasWork())) {
+    releaseIntroCanvasBuffers();
+    return;
+  }
+
+  restoreIntroCanvasBuffers();
+  ensureSparkLoop();
+  ensureSporeLoop();
 });
 
 function initAboutPaperFocus(){

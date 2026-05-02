@@ -160,6 +160,79 @@ test('Blog mobile deep-view controls do not overlap', async ({ page }) => {
   await expect(await controlsOverlap(page, '#blog .blog-close', '#btn-map-article')).toBe(false);
 });
 
+test('Blog mobile article typography uses a compact reading scale', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/index.html#blog');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'blog');
+
+  await page.locator('.slide-cosmos').click();
+  await expect(page).toHaveURL(/#blog\/cosmos$/);
+  await page.locator('#blog-category-view .blog-article-item').first().click();
+  await expect(page).toHaveURL(/#blog\/cosmos\/.+/);
+  await expect(page.locator('#blog-article-view')).toBeVisible();
+
+  const titleMetrics = await page.locator('#blog-article-content h1').evaluate((title) => {
+    const style = getComputedStyle(title);
+    const rect = title.getBoundingClientRect();
+    return {
+      fontSize: parseFloat(style.fontSize),
+      lineHeight: parseFloat(style.lineHeight),
+      height: Math.round(rect.height)
+    };
+  });
+
+  const paragraphLineHeight = await page.locator('#blog-article-content p').first().evaluate((paragraph) => {
+    return parseFloat(getComputedStyle(paragraph).lineHeight);
+  });
+
+  expect(titleMetrics.fontSize).toBeLessThanOrEqual(34);
+  expect(titleMetrics.lineHeight).toBeLessThanOrEqual(42);
+  expect(titleMetrics.height).toBeLessThanOrEqual(230);
+  expect(paragraphLineHeight).toBeLessThanOrEqual(28);
+  await expect(await controlsOverlap(page, '.graphics-control', '#blog-article-content p')).toBe(false);
+});
+
+test('mobile intro sigil has a visible menu affordance and clean accessible name', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'main');
+
+  const sigil = page.locator('#myco-sigil-btn');
+  await expect(sigil).toBeVisible();
+  await expect(sigil).toHaveAttribute('aria-label', 'Open menu');
+  await expect(sigil.locator('img')).toHaveAttribute('alt', '');
+  await expect(sigil.locator('.myco-sigil-label')).toHaveText('MENU');
+  await expect(sigil.locator('.myco-sigil-label')).toBeVisible();
+  await expect(await controlsOverlap(page, '.graphics-control', '.foot')).toBe(false);
+
+  await sigil.click();
+  await expect(sigil).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#necro-menu')).toBeVisible();
+  await page.locator('#necro-menu [data-close]').click();
+  await expect(sigil).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('tablet section navigation stays fully inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto('/index.html#about');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'about');
+
+  const navRect = await page.locator('#about .section-nav').evaluate((nav) => {
+    const rect = nav.getBoundingClientRect();
+    return {
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      height: Math.round(rect.height)
+    };
+  });
+
+  expect(navRect.top).toBeGreaterThanOrEqual(16);
+  expect(navRect.bottom).toBeLessThanOrEqual(768 - 16);
+});
+
 test('Now card dialogs expose an X button while preserving re-click close', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/index.html#now');

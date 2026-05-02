@@ -1585,13 +1585,17 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   sigilBtn.addEventListener('click', () => {
     menuDlg.showModal();
     sigilBtn.setAttribute('aria-expanded', 'true');
+    sigilBtn.setAttribute('aria-label', 'Close menu');
   });
 
   menuDlg.addEventListener('click', (e) => {
     if (e.target === menuDlg) menuDlg.close();
   });
   menuDlg.querySelector('[data-close]')?.addEventListener('click', () => menuDlg.close());
-  menuDlg.addEventListener('close', () => sigilBtn.setAttribute('aria-expanded','false'));
+  menuDlg.addEventListener('close', () => {
+    sigilBtn.setAttribute('aria-expanded','false');
+    sigilBtn.setAttribute('aria-label', 'Open menu');
+  });
 
   menuDlg.querySelectorAll('[data-nav-open]').forEach(a => {
     a.addEventListener('click', (e) => {

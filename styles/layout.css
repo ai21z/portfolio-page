@@ -398,7 +398,7 @@
     justify-content: center;
     font-size: 12.5px !important;
     gap: var(--unit) !important;
-    padding: var(--gap) var(--gap-small) var(--gap-small) !important;
+    padding: var(--gap) var(--gap-small) max(var(--gap-small), calc(54px + env(safe-area-inset-bottom, 0px))) !important;
     text-align: center !important;
   }
   .foot small{ font-size: 0.85rem !important; line-height: 1.5; }

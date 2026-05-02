@@ -142,6 +142,22 @@
     font-size: 11px;
   }
 
+  body:has(#main.stage.active-section) .graphics-control {
+    bottom: max(96px, calc(84px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  body:has(#blog.blog-screen.active-section.in-category) .graphics-control {
+    top: max(12px, env(safe-area-inset-top));
+    right: auto;
+    bottom: auto;
+    left: max(12px, env(safe-area-inset-left));
+    justify-items: start;
+  }
+
+  body:has(#blog.blog-screen.active-section.in-category) .graphics-control__bar {
+    justify-content: start;
+  }
+
   .graphics-control__toggle {
     min-height: 30px;
     padding: 0 8px;

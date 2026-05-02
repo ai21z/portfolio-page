@@ -64,6 +64,7 @@ let movementRegressionUntil = 0;
 let lastPromotionCheck = 0;
 let currentSection = 'intro';
 let debugOverlay = null;
+let webglCapabilityProbe = null;
 
 export const GRAPHICS_PROFILES = PROFILES;
 
@@ -86,6 +87,172 @@ function prefersReducedMotion() {
 
 function saveDataEnabled() {
   return Boolean(navigator.connection?.saveData);
+}
+
+function browserEngine() {
+  if (isFirefox()) return 'firefox';
+  if (isWebKit()) return 'webkit';
+  if (/(Chrome|Chromium|Edg|OPR|CriOS)/i.test(navigator.userAgent)) return 'chromium';
+  return 'unknown';
+}
+
+function viewportClass() {
+  if (isMobileViewport()) return 'mobile';
+  if (window.innerWidth <= 1100) return 'tablet';
+  if (window.innerHeight <= 700) return 'short-desktop';
+  return 'desktop';
+}
+
+function readCoarseNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function classifyRenderer(renderer) {
+  const value = String(renderer || '').toLowerCase();
+  if (!value) return 'unknown';
+  if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
+  if (/(geforce|nvidia|rtx|gtx|radeon rx|radeon pro|quadro|arc\W|discrete)/i.test(value)) return 'discrete';
+  if (/(intel|uhd|iris|apple m|apple gpu|radeon graphics|integrated)/i.test(value)) return 'integrated';
+  return 'unknown';
+}
+
+function createProbeContext(options) {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  try {
+    return canvas.getContext('webgl2', options) || null;
+  } catch {
+    return null;
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function readRendererCategory(gl) {
+  if (!gl) return 'unknown';
+  try {
+    const debugInfo = gl.getExtension?.('WEBGL_debug_renderer_info');
+    const renderer = debugInfo
+      ? gl.getParameter?.(debugInfo.UNMASKED_RENDERER_WEBGL)
+      : gl.getParameter?.(gl.RENDERER);
+    return classifyRenderer(renderer);
+  } catch {
+    return 'unknown';
+  }
+}
+
+function probeWebGL2Capability() {
+  if (webglCapabilityProbe) return webglCapabilityProbe;
+
+  const normalContext = createProbeContext({
+    antialias: false,
+    powerPreference: 'high-performance'
+  });
+  const caveatContext = createProbeContext({
+    failIfMajorPerformanceCaveat: true,
+    antialias: false,
+    powerPreference: 'high-performance'
+  });
+  const webgl2 = Boolean(normalContext);
+  const webgl2PerformanceOk = Boolean(caveatContext);
+
+  webglCapabilityProbe = {
+    webgl2,
+    webgl2PerformanceOk,
+    majorPerformanceCaveat: webgl2 && !webgl2PerformanceOk,
+    rendererCategory: readRendererCategory(normalContext || caveatContext)
+  };
+  return webglCapabilityProbe;
+}
+
+function hardwareClass({ hardwareConcurrency, deviceMemory, rendererCategory }) {
+  if (rendererCategory === 'software') return 'weak';
+  if ((hardwareConcurrency !== null && hardwareConcurrency <= 2)
+    || (deviceMemory !== null && deviceMemory <= 2)) {
+    return 'weak';
+  }
+  if ((hardwareConcurrency !== null && hardwareConcurrency <= 4)
+    || (deviceMemory !== null && deviceMemory <= 4)
+    || rendererCategory === 'integrated') {
+    return 'modest';
+  }
+  if ((hardwareConcurrency === null || hardwareConcurrency >= 8)
+    && (deviceMemory === null || deviceMemory >= 8)
+    && rendererCategory === 'discrete') {
+    return 'strong';
+  }
+  return 'capable';
+}
+
+function getGraphicsCapability() {
+  const hardwareConcurrency = readCoarseNumber(navigator.hardwareConcurrency);
+  const deviceMemory = readCoarseNumber(navigator.deviceMemory);
+  const engine = browserEngine();
+  const viewport = viewportClass();
+  const webgl = probeWebGL2Capability();
+  const reducedMotion = prefersReducedMotion();
+  const saveData = saveDataEnabled();
+  const reasons = [];
+
+  if (reducedMotion) reasons.push('reduced-motion');
+  if (saveData) reasons.push('save-data');
+  if (!webgl.webgl2) reasons.push('no-webgl2');
+  if (webgl.majorPerformanceCaveat) reasons.push('major-performance-caveat');
+  if (hardwareConcurrency !== null && hardwareConcurrency <= 2) reasons.push('low-hardware-concurrency');
+  if (deviceMemory !== null && deviceMemory <= 2) reasons.push('low-device-memory');
+  if (webgl.rendererCategory === 'software') reasons.push('software-renderer');
+
+  const classification = hardwareClass({
+    hardwareConcurrency,
+    deviceMemory,
+    rendererCategory: webgl.rendererCategory
+  });
+
+  let recommendedProfile = 'balanced';
+  const quietReasons = new Set([
+    'reduced-motion',
+    'save-data',
+    'no-webgl2',
+    'major-performance-caveat',
+    'software-renderer'
+  ]);
+
+  if (reasons.some((reason) => quietReasons.has(reason))) {
+    recommendedProfile = 'quiet';
+  } else if (engine === 'firefox' || engine === 'webkit') {
+    recommendedProfile = 'balanced';
+    reasons.push(`${engine}-conservative`);
+  } else if (classification === 'weak') {
+    recommendedProfile = 'balanced';
+    reasons.push('weak-hardware');
+  } else if (classification === 'modest' || viewport === 'mobile' || viewport === 'tablet' || viewport === 'short-desktop') {
+    recommendedProfile = 'balanced';
+    if (classification === 'modest') reasons.push('modest-hardware');
+    if (viewport !== 'desktop') reasons.push(viewport);
+  } else if (engine === 'chromium' && classification === 'strong' && webgl.webgl2PerformanceOk) {
+    recommendedProfile = 'rich';
+    reasons.push('strong-chromium-webgl');
+  } else {
+    reasons.push('standard-capability');
+  }
+
+  return {
+    recommendedProfile,
+    reasons: Array.from(new Set(reasons)),
+    engine,
+    viewportClass: viewport,
+    reducedMotion,
+    saveData,
+    hardwareConcurrency,
+    deviceMemory,
+    webgl2: webgl.webgl2,
+    webgl2PerformanceOk: webgl.webgl2PerformanceOk,
+    majorPerformanceCaveat: webgl.majorPerformanceCaveat,
+    rendererCategory: webgl.rendererCategory,
+    hardwareClass: classification
+  };
 }
 
 function validProfile(profile) {
@@ -122,6 +289,10 @@ function formatProfile(profile) {
 }
 
 function recommendationReason(state) {
+  const capabilityReasons = state.capability?.reasons || [];
+  if (capabilityReasons.length > 0) {
+    return capabilityReasons.map((reason) => reason.replaceAll('-', ' ')).join(', ');
+  }
   if (state.reducedMotion) return 'reduced motion is enabled';
   if (state.saveData) return 'save-data is enabled';
   if (state.firefox) return 'Firefox receives a safer WebGL budget';
@@ -154,9 +325,14 @@ function ownerSectionForSystem(systemName) {
 }
 
 function computeEffectiveProfile() {
-  if (prefersReducedMotion() || saveDataEnabled()) return 'quiet';
+  const capability = getGraphicsCapability();
+
+  if (capability.recommendedProfile === 'quiet') return 'quiet';
 
   let index = rank(selectedProfile);
+  if (rank(capability.recommendedProfile) <= rank('balanced')) {
+    index = Math.min(index, rank(capability.recommendedProfile));
+  }
 
   if (isFirefox() || isWebKit()) {
     index = Math.min(index, rank('balanced'));
@@ -184,6 +360,9 @@ function updateDocumentState(reason = 'state') {
   document.documentElement.dataset.graphicsEffectiveProfile = effectiveProfile;
   document.documentElement.dataset.graphicsSection = currentSection;
   document.documentElement.dataset.graphicsReducedMotion = String(prefersReducedMotion());
+  const capability = getGraphicsCapability();
+  document.documentElement.dataset.graphicsRecommendedProfile = capability.recommendedProfile;
+  document.documentElement.dataset.graphicsHardwareClass = capability.hardwareClass;
 
   syncControl();
   updateDebugOverlay();
@@ -223,10 +402,10 @@ function syncControl() {
   const state = getGraphicsState();
   const status = root.querySelector('[data-graphics-help-status]');
   if (status) {
-    const selectedSuffix = state.profile === state.effectiveProfile
+    const selectedSuffix = state.profile === state.capability.recommendedProfile
       ? ''
       : ` (${formatProfile(state.profile)} selected)`;
-    status.textContent = `Current recommendation: ${formatProfile(state.effectiveProfile)}${selectedSuffix}`;
+    status.textContent = `Current recommendation: ${formatProfile(state.capability.recommendedProfile)}${selectedSuffix}`;
   }
 
   const reason = root.querySelector('[data-graphics-help-reason]');
@@ -366,6 +545,7 @@ function updateDebugOverlay() {
   debugOverlay.textContent = [
     `profile ${state.profile}`,
     `effective ${state.effectiveProfile}`,
+    `recommended ${state.capability.recommendedProfile}`,
     `section ${state.currentSection}`,
     `dpr ${state.budget.dprCap}`,
     `long ${state.recentLongFrames}`,
@@ -379,6 +559,7 @@ export function getGraphicsState() {
   return {
     profile: selectedProfile,
     effectiveProfile,
+    capability: getGraphicsCapability(),
     currentSection,
     downgradeSteps,
     movementRegression: now < movementRegressionUntil,

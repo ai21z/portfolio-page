@@ -446,6 +446,29 @@ async function collectGraphicsGovernorState(page: Page) {
   });
 }
 
+async function mockStrongWebGLCapability(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', {
+      configurable: true,
+      get: () => 8
+    });
+    Object.defineProperty(Navigator.prototype, 'deviceMemory', {
+      configurable: true,
+      get: () => 8
+    });
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+      if (contextId === 'webgl2') {
+        return {
+          getExtension: () => null,
+          getParameter: () => 'NVIDIA GeForce RTX'
+        } as unknown as WebGL2RenderingContext;
+      }
+      return originalGetContext.call(this, contextId, options);
+    };
+  });
+}
+
 async function waitForGraphicsMovementStable(page: Page) {
   await expect.poll(async () => {
     const state = await collectGraphicsGovernorState(page);
@@ -654,6 +677,92 @@ test.describe('browser audit', () => {
     }
   });
 
+  test('graphics governor recommends Quiet for save-data or reduced-motion users', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await page.addInitScript(() => {
+      window.localStorage.removeItem('vissarion.graphicsProfile');
+      Object.defineProperty(Navigator.prototype, 'connection', {
+        configurable: true,
+        get: () => ({ saveData: true })
+      });
+      const originalMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) => ({
+        ...originalMatchMedia(query),
+        matches: query.includes('prefers-reduced-motion') ? true : originalMatchMedia(query).matches
+      });
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await collectGraphicsGovernorState(page);
+
+    expect(state.capability.recommendedProfile).toBe('quiet');
+    expect(state.capability.reasons).toEqual(expect.arrayContaining(['reduced-motion', 'save-data']));
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-recommended-profile', 'quiet');
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  });
+
+  test('graphics governor caps weak WebGL capability while preserving explicit Full selection', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('vissarion.graphicsProfile', 'full');
+      Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', {
+        configurable: true,
+        get: () => 2
+      });
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', {
+        configurable: true,
+        get: () => 2
+      });
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+        if (contextId === 'webgl2') {
+          if ((options as { failIfMajorPerformanceCaveat?: boolean } | undefined)?.failIfMajorPerformanceCaveat) {
+            return null;
+          }
+          return {
+            getExtension: () => null,
+            getParameter: () => 'SwiftShader'
+          } as unknown as WebGL2RenderingContext;
+        }
+        return originalGetContext.call(this, contextId, options);
+      };
+    });
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await collectGraphicsGovernorState(page);
+
+    expect(state.profile).toBe('full');
+    expect(state.capability.recommendedProfile).toBe('quiet');
+    expect(state.capability.reasons).toEqual(expect.arrayContaining([
+      'major-performance-caveat',
+      'low-hardware-concurrency',
+      'low-device-memory',
+      'software-renderer'
+    ]));
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'full');
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  });
+
+  test('graphics governor gives strong Chromium capability a rich recommendation without forcing Quiet', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'chromium', 'The strong capability expectation is Chromium-specific.');
+    test.setTimeout(60_000);
+    await page.addInitScript(() => {
+      window.localStorage.removeItem('vissarion.graphicsProfile');
+    });
+    await mockStrongWebGLCapability(page);
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await collectGraphicsGovernorState(page);
+
+    expect(state.profile).toBe('balanced');
+    expect(state.capability.recommendedProfile).toBe('rich');
+    expect(state.capability.hardwareClass).toBe('strong');
+    expect(profileRank(state.effectiveProfile)).toBeGreaterThanOrEqual(profileRank('balanced'));
+  });
+
   test('quiet graphics profile applies low-cost budgets to visual systems', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -692,9 +801,12 @@ test.describe('browser audit', () => {
     expect(workCanvas!.backingHeight).toBeLessThanOrEqual(Math.ceil(workCanvas!.cssHeight * 1.05));
   });
 
-  test('portrait stream targets are reserved for rich and full graphics profiles', async ({ page, baseURL }) => {
+  test('portrait stream targets are reserved for rich and full graphics profiles', async ({ page, baseURL, browserName }) => {
     test.setTimeout(75_000);
     await page.setViewportSize({ width: 1440, height: 900 });
+    if (browserName === 'chromium') {
+      await mockStrongWebGLCapability(page);
+    }
     await page.addInitScript(() => {
       window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
     });
@@ -791,6 +903,9 @@ test.describe('browser audit', () => {
   test('portrait particles use adaptive renderer and release inactive buffers', async ({ page, baseURL, browserName }) => {
     test.setTimeout(75_000);
     await page.setViewportSize({ width: 1440, height: 900 });
+    if (browserName === 'chromium') {
+      await mockStrongWebGLCapability(page);
+    }
     await page.addInitScript(() => {
       window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
     });

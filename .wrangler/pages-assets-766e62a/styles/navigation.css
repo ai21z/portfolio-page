@@ -235,52 +235,6 @@
   transform-origin: 50% 50%;
 }
 
-@media (min-width: 901px) and (max-height: 800px) {
-  .network-node-label {
-    font-size: 12px;
-    padding: 4px 6px;
-  }
-
-  .network-node-label::before {
-    width: 56px;
-    height: 36px;
-  }
-
-  .network-node-label .node-label {
-    top: -16px;
-    opacity: 0;
-    transform: translateX(-50%) translateY(4px);
-  }
-
-  .network-node-label:hover .node-label,
-  .network-node-label:focus-visible .node-label,
-  .network-node-label.motion-highlight .node-label {
-    opacity: 1;
-    transform: translateX(-50%);
-  }
-
-  .network-sigil-node img {
-    width: 52px;
-    height: 52px;
-  }
-}
-
-@media (min-width: 901px) and (max-height: 680px) {
-  .network-node-label {
-    padding: 3px 5px;
-  }
-
-  .network-node-label::before {
-    width: 48px;
-    height: 34px;
-  }
-
-  .network-sigil-node img {
-    width: 48px;
-    height: 48px;
-  }
-}
-
 /* Suppressed state */
 .nav-suppressed .network-node-label,
 .nav-suppressed [data-nav] {
@@ -921,64 +875,6 @@ body.has-paper-open-global #network-nav {
   filter: drop-shadow(0 0 10px rgba(122,174,138,.25));
   z-index: 1; /* sits above the rail */
 }
-
-.myco-sigil-label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 86px;
-  height: 86px;
-  overflow: visible;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  opacity: 0.8;
-  mix-blend-mode: screen;
-}
-
-.myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 0.34);
-  font: 400 10px/1 var(--font-display, "Special Elite", monospace);
-  text-anchor: middle;
-  dominant-baseline: central;
-  letter-spacing: 0;
-  filter:
-    drop-shadow(0 0 5px rgba(63, 255, 159, 0.14))
-    drop-shadow(0 0 12px rgba(143, 180, 255, 0.08));
-}
-
-.myco-sigil-label .menu-arc-dot,
-.myco-sigil-label .menu-arc-burger {
-  fill: none;
-  color: rgba(63, 255, 159, 0.34);
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  filter:
-    drop-shadow(0 0 5px rgba(63, 255, 159, 0.12))
-    drop-shadow(0 0 10px rgba(63, 255, 159, 0.07));
-}
-
-.myco-sigil-label .menu-arc-dot {
-  fill: currentColor;
-  stroke: none;
-  font-size: 10px;
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label {
-  filter:
-    drop-shadow(0 0 5px rgba(230, 227, 216, 0.42))
-    drop-shadow(0 0 10px rgba(184, 114, 66, 0.38));
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 0.42);
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-dot,
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-burger {
-  color: rgba(63, 255, 159, 0.42);
-}
-
 .myco-sigil picture{
   display: block;
   width: 100%;
@@ -1143,7 +1039,6 @@ body.has-paper-open-global #network-nav {
   .section-nav {
     right: 16px;
     top: 64px;
-    transform: none;
     gap: 20px;
   }
   

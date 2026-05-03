@@ -1,0 +1,823 @@
+#contact {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 64px) clamp(16px, 4vw, 32px);
+  position: relative;
+  background: rgba(8,9,10,0.85); /* Semi-transparent dark overlay like altar screens */
+  z-index: 9; /* Same as altar-screen to allow base background through */
+}
+
+body:has(#contact.stage.active-section) .network-node-label {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+body:has(#contact.stage.active-section) #hud-canvas {
+  display: none;
+}
+
+body:has(#contact.stage.active-section) .dish-labels,
+body:has(#contact.stage.active-section) .blog-hud-cluster {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.contact-close {
+  position: fixed;
+  top: max(24px, env(safe-area-inset-top, 24px));
+  right: max(24px, env(safe-area-inset-right, 24px));
+  width: 44px;
+  height: 44px;
+  background: rgba(15,16,20,0.7);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: var(--cursor-spore), pointer;
+  color: rgba(232,232,234,0.7);
+  font-size: 20px;
+  line-height: 1;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  z-index: 11;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 0;
+}
+
+.close-icon {
+  display: block;
+}
+
+.contact-close:hover {
+  background: rgba(15,16,20,0.9);
+  border-color: rgba(45,212,175,0.45);
+  color: var(--decay-green);
+  transform: rotate(90deg);
+}
+
+.contact-close:focus-visible {
+  outline: 2px solid var(--decay-green);
+  outline-offset: 4px;
+}
+
+.wax-seal {
+  position: absolute;
+  top: clamp(8px, 2vw, 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(64px, 12vw, 100px);
+  height: clamp(64px, 12vw, 100px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.wax-seal picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.seal-sigil {
+  width: clamp(64px, 12vw, 100px);
+  height: clamp(64px, 12vw, 100px);
+  transform: rotate(180deg);
+  position: relative;
+  z-index: 1;
+}
+
+.notebook-page {
+  position: relative;
+  max-width: 720px;
+  width: min(100%, 720px);
+  padding: clamp(16px, 4vw, 40px);
+  padding-top: clamp(48px, 8vw, 88px); /* Extra top padding for seal */
+  padding-left: clamp(32px, 6vw, 72px); /* Extra left for spiral holes */
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    inset 0 0 120px rgba(101, 67, 33, 0.3),
+    inset -20px 0 40px rgba(101, 67, 33, 0.2);
+  /* Wrinkled, worn edges */
+  border-radius: 
+    8px 3px 12px 5px / 5px 10px 7px 15px;
+  clip-path: polygon(
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
+    100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+    75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+    35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+  );
+  transform: rotate(-0.5deg);
+  animation: notebookReveal 0.3s ease-out;
+
+  /* Aged paper texture - richer, darker tones */
+  background: 
+    /* Subtle horizontal lines */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 31px,
+      rgba(139, 125, 107, 0.15) 31px,
+      rgba(139, 125, 107, 0.15) 32px
+    ),
+    /* Heavy coffee stain top - darker */
+    radial-gradient(
+      ellipse 800px 400px at 50% -10%,
+      rgba(101, 67, 33, 0.45) 0%,
+      rgba(139, 125, 107, 0.32) 30%,
+      transparent 60%
+    ),
+    /* Coffee stain bottom right - darker */
+    radial-gradient(
+      ellipse 600px 500px at 90% 110%,
+      rgba(101, 67, 33, 0.5) 0%,
+      rgba(139, 125, 107, 0.28) 35%,
+      transparent 65%
+    ),
+    /* Coffee stain bottom left - darker */
+    radial-gradient(
+      ellipse 500px 450px at -5% 95%,
+      rgba(101, 67, 33, 0.38) 0%,
+      rgba(120, 100, 70, 0.2) 40%,
+      transparent 70%
+    ),
+    /* Vertical center stain - darker */
+    radial-gradient(
+      ellipse 200px 800px at 45% 50%,
+      rgba(139, 125, 107, 0.2) 0%,
+      transparent 60%
+    ),
+    /* Base aged paper color - slightly darker */
+    linear-gradient(
+      to bottom,
+      #E8E0C8 0%,
+      #E0D7BD 20%,
+      #DDD3B5 50%,
+      #D7CDAD 80%,
+      #CCC3A8 100%
+    );
+}
+
+.notebook-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: clamp(12px, 3.5vw, 30px);
+  width: clamp(12px, 3vw, 20px);
+  height: 100%;
+  background-image: 
+    /* Individual holes - circular with inner shadow */
+    radial-gradient(circle at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 45%, transparent 50%),
+    radial-gradient(circle at center, #0B0B0C 0%, #0B0B0C 40%, transparent 41%);
+  background-size: clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px);
+  background-position: 0 40px;
+  background-repeat: repeat-y;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.notebook-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    /* Large irregular coffee stains with spills - darker */
+    radial-gradient(ellipse 80px 95px at 82% 18%, rgba(101, 67, 33, 0.42) 0%, rgba(101, 67, 33, 0.25) 35%, transparent 60%),
+    radial-gradient(ellipse 45px 60px at 85% 16%, rgba(101, 67, 33, 0.35) 0%, transparent 55%),
+    radial-gradient(circle 25px at 79% 21%, rgba(101, 67, 33, 0.32) 0%, transparent 70%),
+    
+    /* Medium irregular stains - darker */
+    radial-gradient(ellipse 65px 48px at 22% 28%, rgba(101, 67, 33, 0.37) 0%, rgba(101, 67, 33, 0.2) 40%, transparent 65%),
+    radial-gradient(ellipse 35px 45px at 19% 32%, rgba(101, 67, 33, 0.28) 0%, transparent 60%),
+    
+    /* Coffee drip/spill effect - darker */
+    radial-gradient(ellipse 38px 72px at 73% 38%, rgba(101, 67, 33, 0.32) 0%, rgba(101, 67, 33, 0.18) 45%, transparent 70%),
+    radial-gradient(ellipse 25px 55px at 76% 44%, rgba(101, 67, 33, 0.24) 0%, transparent 65%),
+    
+    /* Bottom left cluster - darker */
+    radial-gradient(ellipse 90px 75px at 18% 62%, rgba(101, 67, 33, 0.4) 0%, rgba(101, 67, 33, 0.24) 38%, transparent 62%),
+    radial-gradient(ellipse 55px 45px at 14% 58%, rgba(101, 67, 33, 0.35) 0%, transparent 58%),
+    radial-gradient(circle 30px at 22% 65%, rgba(101, 67, 33, 0.3) 0%, transparent 68%),
+    
+    /* Bottom right stain cluster - darker */
+    radial-gradient(ellipse 110px 85px at 88% 78%, rgba(101, 67, 33, 0.45) 0%, rgba(101, 67, 33, 0.28) 35%, transparent 65%),
+    radial-gradient(ellipse 65px 50px at 92% 82%, rgba(101, 67, 33, 0.38) 0%, transparent 60%),
+    radial-gradient(circle 35px at 85% 75%, rgba(101, 67, 33, 0.32) 0%, transparent 70%),
+    
+    /* Small random spatter marks - darker */
+    radial-gradient(ellipse 28px 35px at 42% 15%, rgba(101, 67, 33, 0.28) 0%, transparent 65%),
+    radial-gradient(circle 18px at 58% 25%, rgba(101, 67, 33, 0.24) 0%, transparent 70%),
+    radial-gradient(ellipse 32px 24px at 35% 48%, rgba(101, 67, 33, 0.26) 0%, transparent 68%),
+    radial-gradient(circle 22px at 68% 55%, rgba(101, 67, 33, 0.25) 0%, transparent 72%),
+    radial-gradient(ellipse 26px 38px at 45% 72%, rgba(101, 67, 33, 0.3) 0%, transparent 66%),
+    radial-gradient(circle 16px at 52% 88%, rgba(101, 67, 33, 0.27) 0%, transparent 75%),
+    radial-gradient(ellipse 20px 28px at 30% 92%, rgba(101, 67, 33, 0.29) 0%, transparent 68%),
+    
+    /* Tiny speckles for authenticity - darker */
+    radial-gradient(circle 8px at 25% 18%, rgba(101, 67, 33, 0.32) 0%, transparent 80%),
+    radial-gradient(circle 6px at 55% 38%, rgba(101, 67, 33, 0.28) 0%, transparent 85%),
+    radial-gradient(circle 10px at 65% 68%, rgba(101, 67, 33, 0.26) 0%, transparent 80%),
+    radial-gradient(circle 7px at 12% 45%, rgba(101, 67, 33, 0.3) 0%, transparent 82%),
+    radial-gradient(circle 9px at 92% 52%, rgba(101, 67, 33, 0.27) 0%, transparent 78%),
+    
+    /* Edge wear and tear - darker, more pronounced worn edges */
+    linear-gradient(to right, rgba(101, 67, 33, 0.32) 0%, rgba(101, 67, 33, 0.12) 6%, transparent 12%),
+    linear-gradient(to left, rgba(101, 67, 33, 0.28) 0%, rgba(101, 67, 33, 0.1) 4%, transparent 8%),
+    linear-gradient(to bottom, rgba(101, 67, 33, 0.22) 0%, rgba(101, 67, 33, 0.05) 5%, transparent 10%),
+    linear-gradient(to top, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%);
+  pointer-events: none;
+  border-radius: 
+    8px 3px 12px 5px / 5px 10px 7px 15px;
+  clip-path: polygon(
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
+    100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+    75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+    35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+  );
+}
+
+.notebook-mycelium {
+  display: none; /* Disabled - using static CSS coffee stains only */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.notebook-form {
+  position: relative;
+  z-index: 2;
+}
+
+.form-status {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.85rem;
+  color: #5A5040;
+  min-height: 1.2rem;
+  margin-bottom: 1.1rem;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+.form-status.success {
+  color: #14532d;
+}
+
+.form-status.error {
+  color: #8B0000;
+}
+
+.form-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.turnstile-field {
+  display: none;
+}
+
+.turnstile-placeholder {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.8rem;
+  color: rgba(58, 53, 48, 0.7);
+}
+
+.honeypot-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.notebook-header {
+  font-family: 'Special Elite', monospace;
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: #2A251F;
+  margin-bottom: 0.4rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.notebook-subheader {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.85rem;
+  color: #5A5040;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  line-height: 32px; /* Align with notebook lines */
+}
+
+.notebook-lines {
+  font-family: 'Special Elite', monospace;
+  font-size: 1rem;
+  color: #3A3530;
+  line-height: 32px; /* Matches background line spacing */
+  margin: 0;
+}
+
+.notebook-field {
+  margin-bottom: 1.2rem;
+  position: relative;
+}
+
+.notebook-label {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.85rem;
+  color: #5A5040;
+  display: block;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.notebook-input,
+.notebook-textarea {
+  font-family: 'Special Elite', monospace;
+  font-size: 1rem;
+  color: #2A251F;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-bottom: none; /* Remove the border, text will sit on notebook lines */
+  line-height: 32px; /* Match notebook line spacing exactly */
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  outline: none;
+  /* Ensure text sits exactly on the ruled lines */
+  position: relative;
+  top: -1px; /* Fine-tune alignment */
+}
+
+.notebook-input:focus,
+.notebook-textarea:focus {
+  color: #1A1510; /* Slightly darker on focus */
+}
+
+.notebook-input.error,
+.notebook-textarea.error {
+  color: rgba(139, 0, 0, 0.8);
+  animation: inputShake 0.4s ease;
+}
+
+.notebook-textarea {
+  resize: none;
+  min-height: 128px; /* 4 lines × 32px */
+  padding-top: 0;
+}
+
+.char-counter {
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.char-count {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.75rem;
+  color: #8B7D6B;
+}
+
+.validation-msg {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.75rem;
+  color: #8B0000;
+  margin-top: 0.25rem;
+  min-height: 1rem;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.validation-msg:not(:empty) {
+  opacity: 1;
+  transform: translateY(0);
+  animation: fadeInShake 0.4s ease;
+}
+
+.notebook-submit {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #2A251F;
+  background: transparent;
+  border: none;
+  padding: 0.6rem 2rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  position: relative;
+  overflow: visible;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notebook-submit::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -6px;
+  right: -6px;
+  bottom: -4px;
+  border: 2px solid rgba(58, 53, 48, 0.6);
+  /* Rough, wrinkled rectangle edges - matching paper clip-path style */
+  border-radius: 4px;
+  clip-path: polygon(
+    2% 1%, 5% 0.5%, 10% 1%, 15% 0.8%, 20% 1.2%, 25% 0.5%, 30% 1%, 
+    35% 0.8%, 40% 1.2%, 45% 0.5%, 50% 1%, 55% 0.8%, 60% 1.2%, 
+    65% 0.5%, 70% 1%, 75% 0.8%, 80% 1.2%, 85% 0.5%, 90% 1%, 
+    95% 0.8%, 98% 1%, 100% 2%,
+    100% 98%, 99% 99.5%, 96% 99%, 92% 99.5%, 88% 99%, 84% 99.5%, 
+    80% 99%, 76% 99.5%, 72% 99%, 68% 99.5%, 64% 99%, 60% 99.5%, 
+    56% 99%, 52% 99.5%, 48% 99%, 44% 99.5%, 40% 99%, 36% 99.5%, 
+    32% 99%, 28% 99.5%, 24% 99%, 20% 99.5%, 16% 99%, 12% 99.5%, 
+    8% 99%, 4% 99.5%, 1% 99%, 0% 98%
+  );
+  pointer-events: none;
+  /* Faded ink texture with grain */
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(58, 53, 48, 0.04) 2px,
+      rgba(58, 53, 48, 0.04) 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(58, 53, 48, 0.04) 2px,
+      rgba(58, 53, 48, 0.04) 3px
+    );
+  /* Rough, aged ink edges */
+  box-shadow: 
+    inset 0 0 2px rgba(58, 53, 48, 0.15),
+    1px 0 0 rgba(58, 53, 48, 0.12),
+    -1px 0 0 rgba(58, 53, 48, 0.12),
+    0 1px 0 rgba(58, 53, 48, 0.12),
+    0 -1px 0 rgba(58, 53, 48, 0.12);
+  opacity: 0.75;
+}
+
+.notebook-submit::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -7px;
+  right: -7px;
+  bottom: -5px;
+  border: 1.5px solid rgba(58, 53, 48, 0.35);
+  border-radius: 4px;
+  /* Slightly different rough edges */
+  clip-path: polygon(
+    1% 0.8%, 6% 1.2%, 12% 0.5%, 18% 1%, 24% 0.8%, 30% 1.2%, 36% 0.5%, 
+    42% 1%, 48% 0.8%, 54% 1.2%, 60% 0.5%, 66% 1%, 72% 0.8%, 78% 1.2%, 
+    84% 0.5%, 90% 1%, 96% 0.8%, 99% 1%, 100% 1.5%,
+    100% 98.5%, 98% 99%, 94% 99.5%, 90% 99%, 86% 99.5%, 82% 99%, 
+    78% 99.5%, 74% 99%, 70% 99.5%, 66% 99%, 62% 99.5%, 58% 99%, 
+    54% 99.5%, 50% 99%, 46% 99.5%, 42% 99%, 38% 99.5%, 34% 99%, 
+    30% 99.5%, 26% 99%, 22% 99.5%, 18% 99%, 14% 99.5%, 10% 99%, 
+    6% 99.5%, 2% 99%, 0% 98.5%
+  );
+  pointer-events: none;
+  opacity: 0.45;
+  /* Slight blur for aged, faded effect */
+  filter: blur(0.3px);
+}
+
+.notebook-submit:hover {
+  color: #1A1510;
+  transform: translateY(-1px);
+}
+
+.notebook-submit:hover::before {
+  border-color: rgba(58, 53, 48, 0.8);
+  opacity: 0.9;
+  animation: submit-wobble-inner 280ms ease-in-out infinite alternate;
+}
+
+.notebook-submit:hover::after {
+  animation: submit-wobble-outer 320ms ease-in-out infinite alternate-reverse;
+}
+
+@keyframes submit-wobble-inner {
+  0%   { 
+    transform: translate(0px, 0px); 
+    border-width: 2px;
+  }
+  33%  { 
+    transform: translate(0.6px, -0.4px); 
+    border-width: 1.8px;
+  }
+  66%  { 
+    transform: translate(-0.4px, 0.5px); 
+    border-width: 2.1px;
+  }
+  100% { 
+    transform: translate(0.3px, 0.3px); 
+    border-width: 1.9px;
+  }
+}
+
+@keyframes submit-wobble-outer {
+  0%   { 
+    transform: translate(0px, 0px); 
+    opacity: 0.45;
+  }
+  33%  { 
+    transform: translate(-0.5px, 0.3px); 
+    opacity: 0.5;
+  }
+  66%  { 
+    transform: translate(0.4px, -0.4px); 
+    opacity: 0.4;
+  }
+  100% { 
+    transform: translate(-0.2px, 0.5px); 
+    opacity: 0.48;
+  }
+}
+
+.notebook-submit:active {
+  transform: translateY(0);
+}
+
+.notebook-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notebook-submit span {
+  position: relative;
+  z-index: 1;
+}
+
+.notebook-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(58, 53, 48, 0.35);
+  border-top-color: rgba(58, 53, 48, 0.85);
+  margin-left: 0.75rem;
+  animation: notebookSpin 0.8s linear infinite;
+}
+
+.notebook-submit.is-loading .notebook-spinner {
+  display: inline-block;
+}
+
+.notebook-submit.is-loading .submit-label {
+  opacity: 0.6;
+}
+
+.notebook-success {
+  text-align: center;
+  padding: 2rem 0;
+  animation: fadeInShake 0.6s ease;
+}
+
+.notebook-success p {
+  font-size: 1.1rem;
+  color: #2A251F;
+}
+
+@keyframes notebookReveal {
+  from {
+    opacity: 0;
+    transform: rotate(-0.5deg) translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-0.5deg) translateY(0) scale(1);
+  }
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes fadeInShake {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes notebookSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  #contact {
+    padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
+    /* Ensure section is scrollable on mobile */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    /* Fix keyboard trap: align to top so content doesn't get pushed off-screen */
+    align-items: flex-start; 
+  }
+
+  .contact-close {
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+    width: 44px; /* Maintain 44px minimum touch target */
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .wax-seal {
+    top: 6px;
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
+  }
+
+  .seal-sigil {
+    width: clamp(60px, 15vw, 85px);
+    height: clamp(60px, 15vw, 85px);
+  }
+
+  .notebook-page {
+    max-width: 100%;
+    width: 100%;
+    /* Mobile-optimized padding: more top space for seal, comfortable sides, left space for spiral */
+    padding: clamp(4rem, 12vw, 5rem) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
+    /* Slightly reduce rotation on mobile for better alignment */
+    transform: rotate(-0.3deg);
+  }
+
+  .notebook-page::before {
+    left: clamp(16px, 5vw, 24px); /* Adjust spiral holes position */
+    width: clamp(10px, 3vw, 16px);
+    background-size: clamp(10px, 3vw, 16px) clamp(10px, 3vw, 16px);
+    background-position: 0 clamp(32px, 8vw, 40px);
+  }
+
+  .notebook-header {
+    font-size: clamp(1.4rem, 5vw, 1.7rem);
+    margin-top: 0;
+    margin-bottom: 0.3rem;
+  }
+
+  .notebook-subheader {
+    font-size: clamp(0.8rem, 3.5vw, 0.9rem);
+    margin-bottom: 1.2rem;
+    line-height: 1.4;
+  }
+
+  .notebook-label {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 0.35rem;
+  }
+
+  .notebook-input,
+  .notebook-textarea {
+    font-size: clamp(0.95rem, 4vw, 1.05rem);
+    line-height: clamp(28px, 8vw, 32px); /* Slightly tighter line height for mobile */
+    /* Ensure minimum touch-friendly input height */
+    min-height: 44px;
+    padding: 0.5rem 0;
+  }
+
+  .notebook-input::placeholder,
+  .notebook-textarea::placeholder {
+    color: rgba(58, 53, 48, 0.85);
+    opacity: 1;
+  }
+
+  .notebook-textarea {
+    min-height: clamp(120px, 30vw, 160px); /* Responsive textarea height */
+    line-height: clamp(28px, 8vw, 32px);
+  }
+
+  .char-counter {
+    margin-top: 0.5rem;
+  }
+
+  .char-count {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+  }
+
+  .validation-msg {
+    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+    margin-top: 0.35rem;
+  }
+
+  .form-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.2rem;
+    margin-top: 1.2rem;
+  }
+
+  .turnstile-field {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .notebook-submit {
+    /* Ensure minimum 44px touch target height */
+    min-height: 44px;
+    padding: 0.7rem 1.8rem;
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    letter-spacing: clamp(1px, 0.3vw, 1.5px);
+    width: 100%; /* Full width button on mobile */
+    /* Larger touch area for mobile */
+    touch-action: manipulation;
+  }
+
+  .notebook-submit::before {
+    top: -3px;
+    left: -4px;
+    right: -4px;
+    bottom: -3px;
+  }
+
+  .notebook-submit::after {
+    top: -4px;
+    left: -5px;
+    right: -5px;
+    bottom: -4px;
+  }
+
+  .notebook-spinner {
+    width: 14px;
+    height: 14px;
+    margin-left: 0.6rem;
+  }
+
+  .form-status {
+    font-size: clamp(0.75rem, 3vw, 0.85rem);
+    margin-bottom: 1rem;
+    min-height: 1rem;
+  }
+
+  @media (max-height: 600px) {
+    .wax-seal {
+      left: auto;
+      right: 20px;
+      top: 10px;
+      width: 40px;
+      height: 40px;
+      transform: none;
+    }
+    
+    .seal-sigil {
+      width: 40px;
+      height: 40px;
+    }
+
+    .notebook-page {
+      padding-top: 2rem; /* Reduce top padding since seal is moved */
+    }
+  }
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) {
+  .contact-close:hover {
+    transform: none;
+  }
+}

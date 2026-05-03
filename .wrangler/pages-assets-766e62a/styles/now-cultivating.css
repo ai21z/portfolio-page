@@ -1,0 +1,210 @@
+/**
+ * Now — Cultivating
+ * Styling for the living "Now" page
+ * 
+ * Step 1: Header + minimal structure
+ * Step 2: Flippable cards (deferred)
+ */
+
+/* Stage container */
+.now-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 9; /* Same as altar-screen - below canvases (z:3,4) so spores/lightning visible */
+  background:
+    radial-gradient(ellipse 120% 120% at 85% 10%, rgba(45,212,175,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 120% 120% at 10% 90%, rgba(255,122,51,0.03) 0%, transparent 50%),
+    rgba(8,9,10,0.95); /* Increased opacity to prevent bleed-through */
+  overflow-y: auto;
+  overflow-x: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+.now-stage.active-section {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Close button */
+.now-close {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  background: rgba(15, 16, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: rgba(232, 232, 234, 0.7);
+  font-size: 20px;
+  line-height: 1;
+  cursor: var(--cursor-spore, pointer);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.now-close:hover {
+  background: rgba(15, 16, 20, 0.9);
+  border-color: rgba(45, 212, 175, 0.45);
+  color: var(--decay-green);
+  transform: rotate(90deg);
+}
+
+.now-close:focus-visible {
+  outline: 2px solid var(--decay-green);
+  outline-offset: 4px;
+}
+
+/* Hero header */
+.now-header {
+  text-align: center;
+  margin-bottom: 20px;
+  z-index: 20;
+  animation: fade-in-up 600ms ease-out 200ms both;
+  width: 100%;
+  max-width: clamp(1200px, 75vw, 1600px);
+  padding: 0 20px;
+}
+
+.now-title {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 300;
+  color: #E6E3D8;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.now-subtitle {
+  font-size: clamp(16px, 2.5vw, 22px);
+  font-weight: 400;
+  color: #2FE0C9;
+  margin: 0 0 16px 0;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+
+.now-subtitle a {
+  color: #2FE0C9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 180ms ease;
+}
+
+.now-subtitle a:hover {
+  color: #7AF2E4;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Atmospheric fog */
+.now-fog-layers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.6;
+}
+
+.now-fog-lower,
+.now-fog-upper {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    rgba(11, 11, 12, 0) 0%,
+    rgba(11, 11, 12, 0.3) 60%,
+    rgba(11, 11, 12, 0.7) 100%
+  );
+}
+
+.now-fog-upper {
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 30%,
+    rgba(45, 212, 175, 0.03) 0%,
+    transparent 70%
+  );
+  animation: fog-drift 20s ease-in-out infinite;
+}
+
+@keyframes fog-drift {
+  0%, 100% { transform: translateX(-2%) translateY(0); }
+  50% { transform: translateX(2%) translateY(-3%); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .now-header {
+    animation: none;
+    opacity: 1;
+  }
+  
+  .now-fog-upper {
+    animation: none;
+  }
+  
+  .now-close:hover {
+    transform: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .now-stage {
+    padding-top: clamp(70px, 15vw, 90px);
+    /* Enable smooth scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .now-header {
+    margin-bottom: clamp(24px, 6vw, 36px);
+    padding: 0 clamp(16px, 4vw, 20px);
+  }
+  
+  .now-title {
+    font-size: clamp(26px, 7vw, 36px);
+    margin-bottom: clamp(8px, 2vw, 12px);
+  }
+  
+  .now-subtitle {
+    font-size: clamp(14px, 3.5vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 16px);
+  }
+  
+  .now-close {
+    /* Ensure it doesn't overlap with status bar */
+    top: max(12px, env(safe-area-inset-top, 12px));
+    right: max(12px, env(safe-area-inset-right, 12px));
+    /* Maintain 44px minimum touch target */
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+}
+
+@media (hover: none) {
+  .now-close:hover {
+    transform: none;
+  }
+}

@@ -203,9 +203,10 @@ test('mobile intro sigil has a visible menu affordance and clean accessible name
   await expect(sigil).toBeVisible();
   await expect(sigil).toHaveAttribute('aria-label', 'Open menu');
   await expect(sigil.locator('img')).toHaveAttribute('alt', '');
-  await expect(sigil.locator('.myco-sigil-label')).toHaveText('MENU');
   await expect(sigil.locator('.myco-sigil-label')).toBeVisible();
-  await expect(sigil.locator('.myco-sigil-label textPath')).toHaveText('MENU');
+  await expect(sigil.locator('.myco-sigil-label .menu-arc-letter')).toHaveText(['•', 'M', 'E', 'N', 'U', '•']);
+  await expect(sigil.locator('.myco-sigil-label .menu-arc-burger line')).toHaveCount(3);
+  await expect(sigil.locator('.myco-sigil-label textPath')).toHaveCount(0);
   await expect(await controlsOverlap(page, '.graphics-control', '.foot')).toBe(false);
 
   await sigil.click();

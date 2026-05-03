@@ -1,0 +1,30 @@
+{
+  "name": "Vissarion Zounarakis",
+  "short_name": "VZ",
+  "description": "Barcelona-based software engineer from Greece",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icons/android-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/android-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

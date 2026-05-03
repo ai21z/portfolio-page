@@ -338,22 +338,13 @@
         <div class="myco-sigil-wrapper">
           <button id="myco-sigil-btn"
                   class="myco-sigil"
-                  aria-label="Open menu"
                   aria-haspopup="dialog"
                   aria-controls="necro-menu"
                   aria-expanded="false">
             <picture>
               <source srcset="./artifacts/sigil/no-bg-seal-sigil.webp" type="image/webp" />
-              <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" width="1024" height="1024" decoding="async" />
+              <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="Open menu" width="1024" height="1024" decoding="async" />
             </picture>
-            <svg class="myco-sigil-label" viewBox="0 0 96 42" aria-hidden="true" focusable="false">
-              <defs>
-                <path id="myco-sigil-menu-arc" d="M 15 36 A 33 33 0 0 1 81 36" />
-              </defs>
-              <text>
-                <textPath href="#myco-sigil-menu-arc" startOffset="50%" text-anchor="middle">MENU</textPath>
-              </text>
-            </svg>
             <span class="sr-only">Open menu</span>
           </button>
         </div>
@@ -561,7 +552,7 @@
         <div class="core-plate">
           <picture>
             <source srcset="./myOminousGreenPortrait.webp" type="image/webp" />
-            <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" decoding="async" data-hide-on-error />
+            <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" decoding="async" onerror="this.style.display='none'"/>
           </picture>
           <div class="sigil-fallback" aria-hidden="true"></div>
         </div>
@@ -663,7 +654,7 @@
         <div class="core-plate">
           <picture>
             <source srcset="./myOminousGreenPortrait.webp" type="image/webp" />
-            <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" decoding="async" data-hide-on-error />
+            <img src="./myOminousGreenPortrait.png" alt="Vissarion portrait" loading="lazy" decoding="async" onerror="this.style.display='none'"/>
           </picture>
           <div class="sigil-fallback" aria-hidden="true"></div>
         </div>
@@ -1187,20 +1178,9 @@
 </dialog>
 
   <div class="graphics-control" data-graphics-control>
-    <div class="graphics-control__bar">
-      <button class="graphics-control__info" type="button" aria-expanded="false" aria-controls="graphics-help-panel" aria-label="Graphics performance help">
-        i
-      </button>
-      <button class="graphics-control__toggle" type="button" aria-expanded="false" aria-controls="graphics-profile-menu">
-        Graphics
-      </button>
-    </div>
-    <div class="graphics-control__help" id="graphics-help-panel" role="region" aria-label="Graphics performance guidance" hidden>
-      <p>For the smoothest graphics, use Chrome, Edge, or Brave with hardware acceleration.</p>
-      <p>On older laptops or Firefox, choose Quiet or Balanced. In Firefox, Rich and Full are disabled and the hero photo stays still for readability.</p>
-      <p class="graphics-control__status" data-graphics-help-status>Current recommendation: Balanced</p>
-      <p class="graphics-control__reason" data-graphics-help-reason>Reason: standard browser settings</p>
-    </div>
+    <button class="graphics-control__toggle" type="button" aria-expanded="false" aria-controls="graphics-profile-menu">
+      Graphics
+    </button>
     <div class="graphics-control__menu" id="graphics-profile-menu" hidden>
       <button type="button" data-graphics-profile="quiet">Quiet</button>
       <button type="button" data-graphics-profile="balanced">Balanced</button>

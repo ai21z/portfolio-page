@@ -215,6 +215,85 @@ test('mobile intro sigil has a visible menu affordance and clean accessible name
   await expect(sigil).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('narrow mobile intro keeps visible hero elements inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'main');
+
+  const overflow = await page.evaluate(() => {
+    const selectors = ['.living-sigils', '.myco-strip', '.name', '.portrait-wrap'];
+    return selectors
+      .map((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const visible = rect.width > 0
+          && rect.height > 0
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number(style.opacity || '1') > 0.05;
+        return {
+          selector,
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          visible
+        };
+      })
+      .filter((rect): rect is NonNullable<typeof rect> => Boolean(rect?.visible))
+      .filter((rect) => rect.left < -1 || rect.right > window.innerWidth + 1);
+  });
+
+  expect(overflow).toEqual([]);
+});
+
+test('mobile touch controls expose comfortable hit targets', async ({ browser, browserName }) => {
+  test.skip(browserName === 'firefox', 'Firefox Playwright does not support isMobile contexts.');
+
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true
+  });
+  const page = await context.newPage();
+  await routeTurnstile(page);
+
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'main');
+
+  const undersizedTargets = await page.evaluate(() => {
+    const selectors = [
+      '.graphics-control__info',
+      '.graphics-control__toggle',
+      '.foot a[href^="mailto:"]'
+    ];
+    return selectors
+      .map((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          selector,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          visible: rect.width > 0
+            && rect.height > 0
+            && style.display !== 'none'
+            && style.visibility !== 'hidden'
+        };
+      })
+      .filter((target): target is NonNullable<typeof target> => Boolean(target?.visible))
+      .filter((target) => target.width < 44 || target.height < 44);
+  });
+
+  expect(undersizedTargets).toEqual([]);
+  await context.close();
+});
+
 test('tablet section navigation stays fully inside the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.goto('/index.html#about');

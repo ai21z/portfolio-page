@@ -4,7 +4,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUBJECT_LIMIT = { min: 5, max: 60 };
 const MESSAGE_LIMIT = { min: 10, max: 350 };
 const NAME_LIMIT = { min: 2, max: 80 };
-const DIRECT_EMAIL = 'ariszoun@gmail.com';
 
 class NotebookContact {
   constructor() {
@@ -20,7 +19,6 @@ class NotebookContact {
     this.turnstileRequired = true;
     this.turnstileAvailable = true;
     this.turnstileFeedbackEnabled = false;
-    this.turnstileReady = false;
     this.formDisabled = false;
     this.isSubmitting = false;
     this.submitListener = (event) => this.handleSubmit(event);
@@ -54,8 +52,6 @@ class NotebookContact {
         .then(() => this.mountTurnstile())
         .catch(() => {
           this.turnstileAvailable = false;
-          this.formDisabled = true;
-          this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
           this.updateSubmitState();
         });
     } else {
@@ -171,9 +167,6 @@ class NotebookContact {
       this.turnstileFeedbackEnabled = true;
       if (window.turnstile && this.turnstileWidgetId) {
         this.showStatus('Verifying you are human…', 'info');
-        if (typeof window.turnstile.execute === 'function') {
-          window.turnstile.execute(this.turnstileWidgetId);
-        }
         const maxWait = 5000;
         const startTime = Date.now();
         while (!this.turnstileToken && (Date.now() - startTime) < maxWait) {
@@ -265,23 +258,9 @@ class NotebookContact {
     }
   }
 
-  showDirectEmailStatus(message, level = 'error') {
-    if (!this.statusEl) return;
-
-    this.showStatus('', level);
-    this.statusEl.append(document.createTextNode(`${message} `));
-
-    const link = document.createElement('a');
-    link.href = `mailto:${DIRECT_EMAIL}`;
-    link.textContent = 'email me directly';
-    this.statusEl.append(link);
-    this.statusEl.append(document.createTextNode('.'));
-  }
-
   updateSubmitState() {
     if (!this.submitBtn) return;
-    const waitingForVerification = this.turnstileRequired && !this.turnstileToken;
-    const disabled = this.isSubmitting || this.formDisabled || waitingForVerification;
+    const disabled = this.isSubmitting || this.formDisabled;
     this.submitBtn.disabled = disabled;
   }
 
@@ -322,7 +301,6 @@ class NotebookContact {
 
     this.turnstileContainer.innerHTML = '';
     this.turnstileAvailable = true;
-    this.turnstileReady = false;
     this.updateSubmitState();
 
     try {
@@ -330,28 +308,22 @@ class NotebookContact {
         sitekey: this.turnstileContainer.dataset.sitekey || '',
         action: 'contact_form',
         theme: 'light',
-        appearance: 'interaction-only',
+        appearance: 'execute',
         callback: (token) => {
           this.turnstileToken = token;
-          this.turnstileReady = true;
-          this.formDisabled = false;
-          if (this.statusEl?.classList.contains('error')) {
-            this.showStatus('', 'info');
-          }
           this.updateSubmitState();
         },
         'error-callback': () => {
           this.turnstileToken = '';
-          this.turnstileReady = false;
-          this.formDisabled = true;
-          this.showDirectEmailStatus('Verification could not complete. Please refresh the page or', 'error');
           this.updateSubmitState();
+          if (this.turnstileFeedbackEnabled || this.isSubmitting) {
+            this.showStatus('Verification failed. Please retry the challenge.', 'error');
+          }
         },
         'expired-callback': () => {
           this.turnstileToken = '';
-          this.turnstileReady = false;
           this.updateSubmitState();
-          if (this.turnstileFeedbackEnabled || this.isSubmitting || !this.turnstileToken) {
+          if (this.turnstileFeedbackEnabled || this.isSubmitting) {
             this.showStatus('Verification expired. Complete the challenge again.', 'error');
           }
         }
@@ -359,8 +331,6 @@ class NotebookContact {
     } catch (error) {
       console.error('Turnstile render failed', error);
       this.turnstileAvailable = false;
-      this.formDisabled = true;
-      this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
       this.updateSubmitState();
     }
   }
@@ -370,7 +340,6 @@ class NotebookContact {
       window.turnstile.reset(this.turnstileWidgetId);
     }
     this.turnstileToken = '';
-    this.turnstileReady = false;
     this.turnstileFeedbackEnabled = false;
     this.updateSubmitState();
   }

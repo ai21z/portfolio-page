@@ -1,0 +1,86 @@
+.graphics-control {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 9000;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  font: 12px/1.2 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+}
+
+.graphics-control__toggle,
+.graphics-control__menu button {
+  border: 1px solid rgba(133, 214, 164, 0.46);
+  color: rgba(220, 244, 225, 0.95);
+  background: rgba(8, 12, 10, 0.78);
+  box-shadow: 0 0 18px rgba(54, 170, 112, 0.16);
+  cursor: pointer;
+}
+
+.graphics-control__toggle {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.graphics-control__menu {
+  display: grid;
+  gap: 4px;
+  width: 132px;
+  padding: 6px;
+  border: 1px solid rgba(133, 214, 164, 0.28);
+  background: rgba(5, 8, 7, 0.9);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.42);
+}
+
+.graphics-control__menu[hidden] {
+  display: none;
+}
+
+.graphics-control__menu button {
+  min-height: 30px;
+  text-align: left;
+  padding: 0 8px;
+}
+
+.graphics-control__menu button[aria-pressed="true"] {
+  color: #07100b;
+  background: rgba(133, 214, 164, 0.92);
+}
+
+.graphics-control__toggle:focus-visible,
+.graphics-control__menu button:focus-visible {
+  outline: 2px solid rgba(190, 255, 210, 0.9);
+  outline-offset: 2px;
+}
+
+.graphics-debug {
+  position: fixed;
+  left: 10px;
+  bottom: 10px;
+  z-index: 9100;
+  max-width: calc(100vw - 20px);
+  padding: 5px 7px;
+  color: #dcf4e1;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(133, 214, 164, 0.35);
+  font: 11px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace;
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .graphics-control {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    font-size: 11px;
+  }
+
+  .graphics-control__toggle {
+    min-height: 30px;
+    padding: 0 8px;
+  }
+
+  .graphics-control__menu {
+    width: 118px;
+  }
+}

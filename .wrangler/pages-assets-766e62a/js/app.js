@@ -4,7 +4,6 @@
 
 // Signal to inline bootstrap that the ES-module loaded successfully
 window.__appBooted = true;
-document.documentElement.classList.add('js-ready');
 
 import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
@@ -82,18 +81,6 @@ import {
 } from './graphics-governor.js';
 
 initGraphicsGovernor();
-
-function initImageErrorFallbacks() {
-  document.querySelectorAll('img[data-hide-on-error]').forEach((image) => {
-    if (image.__hideOnErrorBound) return;
-    image.__hideOnErrorBound = true;
-    image.addEventListener('error', () => {
-      image.style.display = 'none';
-    }, { once: true });
-  });
-}
-
-initImageErrorFallbacks();
 
 const markUserGraphicsActivity = throttle((reason) => {
   markGraphicsActivity(reason, 700);
@@ -294,45 +281,24 @@ _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 // Spark animation loop — only runs when intro is active
 let _sparkRafId = null;
 let _sporeRafId = null;
-
-function sparkLoopHasWork() {
-  const budget = getGraphicsBudget('intro-sparks');
-  return !prefersReducedMotion
-    && !budget.quiet
-    && (ritualActive || ACTIVE_ANIMS.length > 0);
-}
-
 function sparkLoopWrapper(ts) {
-  // Only run sparks/labels when intro section is active
-  const introActive = _introStage?.classList.contains('active-section');
-  if (!introActive || document.hidden) {
-    // Clear canvases and stop the loop
-    releaseCanvasBacking(sparkCanvas, sparkCtx);
-    _sparkRafId = null;
-    return;
-  }
-
-  if (!sparkLoopHasWork()) {
-    sparkCtx?.clearRect(0, 0, sparkCanvas?.width || 0, sparkCanvas?.height || 0);
-    _sparkRafId = null;
-    return;
-  }
-
-  const budget = getGraphicsBudget('intro-sparks');
-  if (budget.frameIntervalMs && ts - lastSparkTs < budget.frameIntervalMs) {
-    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
-    return;
-  }
-
   const dt = Math.min(0.05, (ts - lastSparkTs) / 1000);
   setLastSparkTs(ts);
 
-  updateMovingLabels(dt, pointAtRoute);
-  drawSparks(dt, pointAtRoute);
-  _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  // Only run sparks/labels when intro section is active
+  const introActive = _introStage?.classList.contains('active-section');
+  if (introActive && !document.hidden) {
+    updateMovingLabels(dt, pointAtRoute);
+    drawSparks(dt, pointAtRoute);
+    _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
+  } else {
+    // Clear canvases and stop the loop
+    if (sparkCtx && sparkCanvas) sparkCtx.clearRect(0, 0, sparkCanvas.width, sparkCanvas.height);
+    _sparkRafId = null;
+  }
 }
 function ensureSparkLoop() {
-  if (_sparkRafId == null && isIntroSectionActive() && sparkLoopHasWork()) {
+  if (_sparkRafId == null) {
     setLastSparkTs(performance.now());
     _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
   }
@@ -340,52 +306,11 @@ function ensureSparkLoop() {
 // Cache the intro stage element to avoid DOM queries every frame
 const _introStage = document.querySelector('.stage[data-section="intro"]');
 
-function isIntroSectionActive() {
-  return _introStage?.classList.contains('active-section');
-}
-
-function releaseCanvasBacking(canvas, ctx) {
-  if (!canvas) return;
-  if (ctx) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  if (canvas.width !== 1 || canvas.height !== 1) {
-    canvas.width = 1;
-    canvas.height = 1;
-  }
-}
-
-function releaseIntroCanvasBuffers() {
-  releaseCanvasBacking(sparkCanvas, sparkCtx);
-  releaseCanvasBacking(sporeCanvas, sporeCtx);
-  setSpores([]);
-  setLastSporeFrame(0);
-}
-
-function releaseInactiveFeatureCanvasBuffers(activeSectionName) {
-  if (activeSectionName !== 'work') {
-    releaseCanvasBacking(document.getElementById('work-globe-canvas'), null);
-  }
-  if (activeSectionName !== 'blog') {
-    releaseCanvasBacking(document.getElementById('blog-network-canvas'), null);
-  }
-}
-
-function restoreIntroCanvasBuffers() {
-  if (!COVER.ready) return;
-  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
-  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
-  if (sporeCtx) createSpores();
-}
-
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
   computeCoverFromImage();
-  if (isIntroSectionActive()) {
-    restoreIntroCanvasBuffers();
-  } else {
-    releaseIntroCanvasBuffers();
-  }
+  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
+  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
   if (hudEnabled && hudCanvas) {
     hudCanvas.width = window.innerWidth;
     hudCanvas.height = window.innerHeight;
@@ -420,6 +345,7 @@ function resizeAll() {
     route.sHome = Math.max(route.sMin, Math.min(route.sMax, sHomeRatio * len));
   }
 
+  if (sporeCtx) createSpores();
 }
 
 // Init after background loads
@@ -440,13 +366,12 @@ function initAfterImageLoad() {
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
   wireNavigationStreams();
 
-  if (isIntroSectionActive()) {
-    restoreIntroCanvasBuffers();
-    ensureSparkLoop();
-    startSpores();
-  } else {
-    releaseIntroCanvasBuffers();
-  }
+  sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
+  sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });
+  if (sporeCtx) createSpores();
+  
+  ensureSparkLoop();
+  startSpores();
 }
 
 // Gate init on image load
@@ -495,7 +420,6 @@ function toggleRitualFromSigil(el){
   if (ritualActive){
     startRitualMotion();
     attachFollowerSparks();
-    ensureSparkLoop();
   } else {
     stopRitualMotion();
     detachFollowerSparks();
@@ -543,7 +467,6 @@ function sendLightningHome(){
     if (id === 'intro') continue;
     startSpark('intro', id, 900); // quick home ping
   }
-  ensureSparkLoop();
 }
 
 function startRitualMotion(){
@@ -633,13 +556,6 @@ function drawSpores(ts) {
   }
 }
 
-function sporeLoopHasWork() {
-  const budget = getGraphicsBudget('intro-spores');
-  return !prefersReducedMotion
-    && !budget.quiet
-    && budget.particleScale > 0;
-}
-
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
   const budget = getGraphicsBudget('intro-spores');
@@ -650,9 +566,9 @@ function startSpores() {
 
   function loop(ts) {
     const introActive = _introStage?.classList.contains('active-section');
-    if (!introActive || document.hidden || !sporeLoopHasWork()) {
+    if (!introActive || document.hidden) {
       // Clear and stop loop — will restart when section becomes active
-      releaseCanvasBacking(sporeCanvas, sporeCtx);
+      if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
       _sporeRafId = null;
       return;
     }
@@ -663,11 +579,11 @@ function startSpores() {
   _sporeRafId = requestAnimationFrame(loop);
 }
 function ensureSporeLoop() {
-  if (_sporeRafId == null && sporeCanvas && isIntroSectionActive() && sporeLoopHasWork()) {
+  if (_sporeRafId == null && !prefersReducedMotion && sporeCanvas) {
     _sporeRafId = requestAnimationFrame(function loop(ts) {
       const introActive = _introStage?.classList.contains('active-section');
-      if (!introActive || document.hidden || !sporeLoopHasWork()) {
-        releaseCanvasBacking(sporeCanvas, sporeCtx);
+      if (!introActive || document.hidden) {
+        if (sporeCtx && sporeCanvas) sporeCtx.clearRect(0, 0, sporeCanvas.width, sporeCanvas.height);
         _sporeRafId = null;
         return;
       }
@@ -820,7 +736,6 @@ function ritualCatchUp() {
     
     setTimeout(() => {
       startSparkToPoint('intro', imgX, imgY, 750);
-      ensureSparkLoop();
     }, delay);
     
     delay += 60 + Math.random() * 40;
@@ -898,27 +813,6 @@ function initBlogControls() {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         activateHub();
-      }
-    });
-  });
-
-  document.querySelectorAll('.blog-memo-item[data-hub]').forEach(item => {
-    if (item.__blogMemoBound) return;
-    item.__blogMemoBound = true;
-    const hubId = item.dataset.hub;
-    item.tabIndex = 0;
-    item.setAttribute('role', 'button');
-    item.setAttribute('aria-label', `Open ${hubId} blog category`);
-
-    const activateMemoHub = () => {
-      if (hubId) enterHub(hubId);
-    };
-
-    item.addEventListener('click', activateMemoHub);
-    item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        activateMemoHub();
       }
     });
   });
@@ -1357,49 +1251,11 @@ function setupArticleNavigation(container, hubId) {
   }
 }
 
-function restorePaperElement(openEl) {
-  openEl.classList.remove('paper-open', 'paper-open--settled');
-  openEl.removeAttribute('role');
-  openEl.removeAttribute('aria-modal');
-  openEl.style.position = '';
-  openEl.style.left = '';
-  openEl.style.top = '';
-  openEl.style.width = '';
-  openEl.style.height = '';
-  openEl.style.willChange = '';
-  openEl.style.removeProperty('--open-tx');
-  openEl.style.removeProperty('--open-ty');
-  openEl.style.removeProperty('--open-scale');
-  openEl.style.removeProperty('--open-w');
-  openEl.style.removeProperty('--open-h');
-
-  if (openEl.__portal) {
-    openEl.__portal.parent.insertBefore(openEl, openEl.__portal.placeholder);
-    openEl.__portal.placeholder.remove();
-    openEl.__portal = null;
-  }
-}
-
-function closeTransientUi() {
-  const detail = { immediate: true };
-  document.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
-  window.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
-
-  document.querySelectorAll('.altar.has-front')
-    .forEach(el => el.classList.remove('has-front'));
-  document.querySelectorAll('.slab.paper.is-front')
-    .forEach(el => el.classList.remove('is-front'));
-  document.querySelectorAll('.work-location-info.visible, .project-panel.visible')
-    .forEach(el => el.classList.remove('visible'));
-}
-
 // Section visibility with effects
-function showSectionWithEffects(sectionName, options = {}) {
-  closeTransientUi();
+function showSectionWithEffects(sectionName) {
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
-  showSection(sectionName, startRitualBackground, stopRitualBackground, options);
-  releaseInactiveFeatureCanvasBuffers(sectionName);
+  showSection(sectionName, startRitualBackground, stopRitualBackground);
   ensureSectionModule(sectionName);
   
   const isBlogVisible = sectionName === 'blog';
@@ -1413,11 +1269,8 @@ function showSectionWithEffects(sectionName, options = {}) {
 
   // Restart intro-only loops when navigating back to intro
   if (sectionName === 'intro') {
-    restoreIntroCanvasBuffers();
     ensureSparkLoop();
     ensureSporeLoop();
-  } else {
-    releaseIntroCanvasBuffers();
   }
 }
 
@@ -1450,7 +1303,6 @@ function wireNavigationStreams() {
       if (!id) return;
       if (GRAPH || prefersReducedMotion) {
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-        ensureSparkLoop();
         return;
       }
 
@@ -1458,7 +1310,6 @@ function wireNavigationStreams() {
         if (!ready) return;
         if (el.matches(':hover') || document.activeElement === el) {
           handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
-          ensureSparkLoop();
         }
       });
     };
@@ -1565,7 +1416,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (contactSection) {
     contactSection.addEventListener('click', (e) => {
       if (e.target === contactSection) {
-        showSectionWithEffects('intro', { historyMode: 'push' });
+        showSectionWithEffects('intro');
       }
     });
   }
@@ -1597,17 +1448,13 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   sigilBtn.addEventListener('click', () => {
     menuDlg.showModal();
     sigilBtn.setAttribute('aria-expanded', 'true');
-    sigilBtn.setAttribute('aria-label', 'Close menu');
   });
 
   menuDlg.addEventListener('click', (e) => {
     if (e.target === menuDlg) menuDlg.close();
   });
   menuDlg.querySelector('[data-close]')?.addEventListener('click', () => menuDlg.close());
-  menuDlg.addEventListener('close', () => {
-    sigilBtn.setAttribute('aria-expanded','false');
-    sigilBtn.setAttribute('aria-label', 'Open menu');
-  });
+  menuDlg.addEventListener('close', () => sigilBtn.setAttribute('aria-expanded','false'));
 
   menuDlg.querySelectorAll('[data-nav-open]').forEach(a => {
     a.addEventListener('click', (e) => {
@@ -1726,9 +1573,9 @@ window.addEventListener('hashchange', () => {
   
   const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
   if (validSections.includes(hash)) {
-    showSectionWithEffects(hash, { historyMode: 'none' });
+    showSectionWithEffects(hash);
   } else if (!hash) {
-    showSectionWithEffects('intro', { historyMode: 'none' });
+    showSectionWithEffects('intro');
   } else {
     showSectionWithEffects('intro');
   }
@@ -1739,7 +1586,7 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="go-intro"]');
   if (!btn) return;
   e.preventDefault();
-  showSectionWithEffects('intro', { historyMode: 'push' });
+  showSectionWithEffects('intro');
 });
 
 // Section navigation
@@ -1749,7 +1596,7 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   const targetSection = link.dataset.section;
   if (targetSection) {
-    showSectionWithEffects(targetSection, { historyMode: 'push' });
+    showSectionWithEffects(targetSection);
   }
 });
 
@@ -1936,27 +1783,10 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     const introActive = _introStage?.classList.contains('active-section');
     if (introActive) {
-      restoreIntroCanvasBuffers();
       ensureSparkLoop();
       ensureSporeLoop();
     }
   }
-});
-
-window.addEventListener('graphics:profile-change', () => {
-  if (!isIntroSectionActive()) return;
-
-  const sporeBudget = getGraphicsBudget('intro-spores');
-  const sparkBudget = getGraphicsBudget('intro-sparks');
-  if ((sporeBudget.quiet || sporeBudget.particleScale <= 0)
-    && (sparkBudget.quiet || !sparkLoopHasWork())) {
-    releaseIntroCanvasBuffers();
-    return;
-  }
-
-  restoreIntroCanvasBuffers();
-  ensureSparkLoop();
-  ensureSporeLoop();
 });
 
 function initAboutPaperFocus(){
@@ -1970,7 +1800,6 @@ function initSkillsPaperFocus(){
 function initPaperFocusForSection(sectionId){
   const section = document.getElementById(sectionId);
   if (!section) return;
-  if (section.__paperFocusBound) return;
   section.querySelectorAll('.paper-overlay')?.forEach(n=>n.remove());
 
   const backdrop = document.getElementById('paper-backdrop');
@@ -1978,16 +1807,13 @@ function initPaperFocusForSection(sectionId){
     console.warn('⚠️ paper-backdrop not found');
     return;
   }
-  section.__paperFocusBound = true;
   
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
     if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
-    ensurePaperCloseButton(p, closePaper);
     
-    p.addEventListener('click', (event) => {
+    p.addEventListener('click', () => {
       if (window.innerWidth <= 900) return;
-      if (event.target.closest('.paper-card-close')) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
       } else {
@@ -2009,24 +1835,8 @@ function initPaperFocusForSection(sectionId){
   });
   
   backdrop.addEventListener('click', closePaper);
-  document.addEventListener('ui:close-overlays', (event) => closePaper(event.detail || { immediate: true }));
   
   function onEsc(e){ if (e.key === 'Escape') closePaper(); }
-
-  function ensurePaperCloseButton(el, close) {
-    if (el.querySelector('.paper-card-close')) return;
-    const closeButton = document.createElement('button');
-    closeButton.type = 'button';
-    closeButton.className = 'paper-card-close';
-    closeButton.setAttribute('aria-label', 'Close card');
-    closeButton.textContent = '×';
-    closeButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      close();
-    });
-    el.appendChild(closeButton);
-  }
   
   function openPaper(el){
     if (document.body.classList.contains('has-paper-open-global')) return;
@@ -2108,7 +1918,7 @@ function initPaperFocusForSection(sectionId){
     document.body.classList.remove('hovering-paper');
   }
 
-  function closePaper(options = {}){
+  function closePaper(){
     const openEl = document.querySelector('.paper-open');
     if (openEl){
       openEl.classList.remove('paper-open--settled');
@@ -2117,15 +1927,26 @@ function initPaperFocusForSection(sectionId){
       openEl.style.setProperty('--open-ty','0px');
       openEl.style.setProperty('--open-scale','1');
       const cleanup = () => {
-        restorePaperElement(openEl);
+        openEl.classList.remove('paper-open');
+        openEl.removeAttribute('role');
+        openEl.removeAttribute('aria-modal');
+        openEl.style.position = '';
+        openEl.style.left = '';
+        openEl.style.top = '';
+        openEl.style.width = '';
+        openEl.style.height = '';
+        openEl.style.willChange = '';
+        openEl.style.removeProperty('--open-tx');
+        openEl.style.removeProperty('--open-ty');
+        openEl.style.removeProperty('--open-scale');
+        if (openEl.__portal){
+          openEl.__portal.parent.insertBefore(openEl, openEl.__portal.placeholder);
+          openEl.__portal.placeholder.remove();
+          openEl.__portal = null;
+        }
         openEl.removeEventListener('transitionend', cleanup);
       };
-      if (options.immediate) {
-        cleanup();
-      } else {
-        openEl.addEventListener('transitionend', cleanup);
-        setTimeout(cleanup, 360);
-      }
+      openEl.addEventListener('transitionend', cleanup);
     }
     document.body.classList.remove('has-paper-open-global');
     document.removeEventListener('keydown', onEsc);

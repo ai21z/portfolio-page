@@ -34,8 +34,8 @@
 }
 
 .graphics-control__info {
-  width: 32px;
-  min-height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border-radius: 50%;
   font-weight: 700;
@@ -45,8 +45,8 @@
 }
 
 .graphics-control__toggle {
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 0 12px;
 }
 
 .graphics-control__help {
@@ -159,13 +159,13 @@
   }
 
   .graphics-control__toggle {
-    min-height: 30px;
-    padding: 0 8px;
+    min-height: 44px;
+    padding: 0 10px;
   }
 
   .graphics-control__info {
-    width: 30px;
-    min-height: 30px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .graphics-control__help {

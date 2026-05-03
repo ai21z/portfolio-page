@@ -123,6 +123,7 @@ test.describe('Contact form', () => {
     await page.waitForTimeout(100);
 
     await expect(page.locator('[data-status]')).toHaveText(/verification could not complete/i);
+    await expect(page.locator('[data-status] a[href^="mailto:"]')).toHaveText(/email me directly/i);
     await expect(page.locator('[data-status]')).toHaveClass(/error/);
     await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
   });

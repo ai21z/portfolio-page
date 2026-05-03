@@ -186,6 +186,14 @@ test('does not horizontally overflow common responsive viewports', async ({ page
   }
 });
 
+test('portrait fallback handling does not rely on inline event handlers', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.waitForLoadState('domcontentloaded');
+
+  const inlineHandlers = await page.locator('.core-plate img[onerror]').count();
+  expect(inlineHandlers).toBe(0);
+});
+
 test('keeps the intro composed on short desktop and old-laptop viewports', async ({ page }) => {
   const viewports = [
     { width: 1366, height: 768 },

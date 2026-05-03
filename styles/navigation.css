@@ -925,22 +925,31 @@ body.has-paper-open-global #network-nav {
 .myco-sigil-label {
   position: absolute;
   left: 50%;
-  top: -15px;
-  transform: translateX(-50%) rotate(-7deg);
-  color: rgba(230, 227, 216, 0.76);
-  font: 700 10px/1 var(--font-display, "Special Elite", monospace);
-  letter-spacing: 0.22em;
-  text-shadow:
-    0 0 8px rgba(63, 255, 159, 0.38),
-    0 0 14px rgba(184, 114, 66, 0.28);
+  top: -23px;
+  width: 78px;
+  height: 36px;
+  overflow: visible;
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
+.myco-sigil-label text {
+  fill: rgba(230, 227, 216, 0.78);
+  font: 700 10px/1 var(--font-display, "Special Elite", monospace);
+  letter-spacing: 0.3em;
+  filter:
+    drop-shadow(0 0 4px rgba(63, 255, 159, 0.38))
+    drop-shadow(0 0 8px rgba(184, 114, 66, 0.28));
+}
+
 .myco-sigil[aria-expanded="true"] .myco-sigil-label {
-  color: rgba(230, 227, 216, 0.95);
-  text-shadow:
-    0 0 10px rgba(230, 227, 216, 0.42),
-    0 0 18px rgba(184, 114, 66, 0.38);
+  filter:
+    drop-shadow(0 0 5px rgba(230, 227, 216, 0.42))
+    drop-shadow(0 0 10px rgba(184, 114, 66, 0.38));
+}
+
+.myco-sigil[aria-expanded="true"] .myco-sigil-label text {
+  fill: rgba(230, 227, 216, 0.95);
 }
 
 .myco-sigil picture{

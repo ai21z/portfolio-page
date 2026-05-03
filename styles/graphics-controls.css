@@ -137,6 +137,7 @@
 
 @media (max-width: 700px) {
   .graphics-control {
+    display: none;
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
     font-size: 11px;

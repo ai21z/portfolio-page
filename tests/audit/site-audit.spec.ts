@@ -779,6 +779,13 @@ test.describe('browser audit', () => {
       const infoButton = page.getByRole('button', { name: /graphics performance help/i });
       const helpPanel = page.locator('#graphics-help-panel');
 
+      if (viewport.width <= 700) {
+        await expect(page.locator('[data-graphics-control]')).toBeHidden();
+        await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', /^(quiet|balanced|rich|full)$/);
+        await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', /^(quiet|balanced|rich|full)$/);
+        continue;
+      }
+
       await expect(infoButton, `${viewport.width}x${viewport.height} info button`).toBeVisible();
       await infoButton.click();
       await expect(helpPanel, `${viewport.width}x${viewport.height} help panel`).toBeVisible();

@@ -1155,6 +1155,17 @@ async function populateBlogCounts() {
   });
 }
 
+// Escape user-facing strings before interpolation into innerHTML / attributes.
+// Covers text content and double-quoted attribute values (e.g. aria-label).
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function loadCategoryContent(hubId) {
   const content = document.getElementById('blog-category-content');
   const titleEl = document.getElementById('blog-category-title');
@@ -1170,10 +1181,10 @@ async function loadCategoryContent(hubId) {
     ${articles.length === 0 ? '<p class="blog-empty-state">No articles yet. Check back soon!</p>' : ''}
     <div class="blog-article-list">
       ${articles.map(a => `
-        <div class="blog-article-item" data-article="${a.id}" tabindex="0" role="button" aria-label="Read ${a.title}">
-          <h3>${a.title}</h3>
-          <div class="meta">${a.date}</div>
-          <div class="excerpt">${a.excerpt}</div>
+        <div class="blog-article-item" data-article="${escapeHtml(a.id)}" tabindex="0" role="button" aria-label="Read ${escapeHtml(a.title)}">
+          <h3>${escapeHtml(a.title)}</h3>
+          <div class="meta">${escapeHtml(a.date)}</div>
+          <div class="excerpt">${escapeHtml(a.excerpt)}</div>
         </div>
       `).join('')}
     </div>

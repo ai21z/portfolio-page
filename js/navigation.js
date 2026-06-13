@@ -53,7 +53,7 @@ export function computeNavOffsets(){
   }
 }
 
-export function showSection(sectionName, startRitualBackground, stopRitualBackground, options = {}) {
+export function showSection(sectionName, options = {}) {
   const sections = document.querySelectorAll('.stage');
   sections.forEach(s => {
     const shouldBeActive = s.dataset.section === sectionName;
@@ -94,12 +94,7 @@ export function showSection(sectionName, startRitualBackground, stopRitualBackgr
   
   const shouldSuppressNav = isPanel;
   document.body.classList.toggle('nav-suppressed', shouldSuppressNav);
-  if (isPanel) {
-    startRitualBackground();
-  } else {
-    stopRitualBackground();
-  }
-  
+
   if (activeSection && activeSection.getAttribute('tabindex') === '-1') {
     setTimeout(() => {
       activeSection.focus({ preventScroll: true });

@@ -451,18 +451,7 @@ function closeCard(card, restoreFocus = true, options = {}) {
   cards.forEach(c => c.classList.remove('dimmed'));
   
   card.classList.remove('flipped');
-  
-  const index = parseInt(card.dataset.index);
-  const grid = document.getElementById('now-card-grid');
-  const gridRect = grid.getBoundingClientRect();
-  const gridStyle = window.getComputedStyle(grid);
-  const gap = parseInt(gridStyle.gap) || 32;
-  
-  const { w } = viewportSize();
-  const cardsPerRow = w > 768 ? 2 : 1;
-  const row = Math.floor(index / cardsPerRow);
-  const col = index % cardsPerRow;
-  
+
   const finishClose = () => {
     card.classList.remove('active');
     card.style.position = '';

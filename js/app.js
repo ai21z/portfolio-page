@@ -677,133 +677,6 @@ function ensureSporeLoop() {
   }
 }
 
-function nearestNodeId(pt) {
-  if (!GRAPH) return -1;
-  return GRAPH.nearestId(pt.x, pt.y, 96, 24);
-}
-
-// Label motion along locked routes
-
-// Resample polyline to uniform spacing
-function resamplePolyline(pts, step = 10) {
-  if (!pts || pts.length < 2) return pts;
-  
-  const resampled = [pts[0]];
-  let accumulated = 0;
-  
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const segLen = Math.hypot(x1 - x0, y1 - y0);
-    
-    let localDist = 0;
-    while (accumulated + localDist + step <= segLen) {
-      localDist += step;
-      const t = localDist / segLen;
-      resampled.push([
-        x0 + (x1 - x0) * t,
-        y0 + (y1 - y0) * t
-      ]);
-    }
-    accumulated = segLen - localDist;
-  }
-  
-  const last = pts[pts.length - 1];
-  if (resampled[resampled.length - 1] !== last) {
-    resampled.push(last);
-  }
-  
-  return resampled;
-}
-
-// Project point onto polyline and return arc length
-function projectOntoPolyline(px, py, polyline) {
-  let bestDist = Infinity;
-  let bestS = 0;
-  let cumS = 0;
-  
-  for (let i = 1; i < polyline.length; i++) {
-    const [x0, y0] = polyline[i - 1];
-    const [x1, y1] = polyline[i];
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    const segLen = Math.hypot(dx, dy);
-    
-    if (segLen < 1e-6) {
-      const d = Math.hypot(px - x0, py - y0);
-      if (d < bestDist) {
-        bestDist = d;
-        bestS = cumS;
-      }
-      continue;
-    }
-    
-    const t = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / (segLen * segLen)));
-    const closestX = x0 + t * dx;
-    const closestY = y0 + t * dy;
-    const d = Math.hypot(px - closestX, py - closestY);
-    
-    if (d < bestDist) {
-      bestDist = d;
-      bestS = cumS + t * segLen;
-    }
-    
-    cumS += segLen;
-  }
-  
-  return { dist: bestDist, s: bestS };
-}
-
-// Slice polyline by arc length window
-function slicePolylineByS(poly, sStart, sEnd) {
-  if (!poly || poly.length < 2) return poly;
-  
-  const result = [];
-  let cumS = 0;
-  
-  for (let i = 0; i < poly.length; i++) {
-    const [x0, y0] = poly[i];
-    
-    if (i === 0) {
-      // Check if start point is within window
-      if (cumS >= sStart) result.push([x0, y0]);
-      continue;
-    }
-    
-    const [x1, y1] = poly[i - 1];
-    const segLen = Math.hypot(x0 - x1, y0 - y1);
-    const segEnd = cumS + segLen;
-    
-    if (segEnd >= sStart && cumS <= sEnd) {
-      if (result.length === 0 && cumS < sStart) {
-        const t = (sStart - cumS) / segLen;
-        result.push([
-          x1 + (x0 - x1) * t,
-          y1 + (y0 - y1) * t
-        ]);
-      }
-      
-      if (cumS >= sStart && cumS <= sEnd) {
-        result.push([x0, y0]);
-      }
-      
-      if (segEnd > sEnd && cumS < sEnd) {
-        const t = (sEnd - cumS) / segLen;
-        result.push([
-          x1 + (x0 - x1) * t,
-          y1 + (y0 - y1) * t
-        ]);
-        break;
-      }
-    }
-    
-    cumS = segEnd;
-    if (cumS > sEnd) break;
-  }
-  
-  return result.length >= 2 ? result : poly;
-}
-
 // Send sparks to current label positions
 function ritualCatchUp() {
   if (prefersReducedMotion) return;
@@ -1323,7 +1196,6 @@ function loadArticleContent(hubId, articleId) {
         setupArticleNavigation(content, hubId);
       } else {
         content.innerHTML = '<p>Article not found.</p>';
-        if (titleEl) titleEl.textContent = 'Article Not Found';
       }
     })
     .catch(err => {
@@ -1340,7 +1212,6 @@ function loadArticleContent(hubId, articleId) {
           </p>
         </div>
       `;
-      if (titleEl) titleEl.textContent = 'Error Loading Article';
     });
 }
 
@@ -1409,7 +1280,7 @@ function showSectionWithEffects(sectionName, options = {}) {
   closeTransientUi();
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
-  showSection(sectionName, startRitualBackground, stopRitualBackground, options);
+  showSection(sectionName, options);
   releaseInactiveFeatureCanvasBuffers(sectionName);
   ensureSectionModule(sectionName);
   
@@ -1565,8 +1436,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
-
-  initRitualBackground();
 
   notebookContact.init();
 
@@ -2143,238 +2012,5 @@ function initPaperFocusForSection(sectionId){
   }
 }
 
-// Cursor hover ring — only runs when hovering a paper element
-function initPaperHoverRing(){
-  const ring = document.getElementById('cursor-ring');
-  if (!ring) return;
-  let currentX = 0, currentY = 0;
-  let targetX = 0, targetY = 0;
-  let rafId = null;
-  let isHovering = false;
-  
-  const updatePosition = () => {
-    currentX += (targetX - currentX) * 1.0;
-    currentY += (targetY - currentY) * 1.0;
-    
-    ring.style.left = currentX + 'px';
-    ring.style.top = currentY + 'px';
-    
-    if (isHovering) {
-      rafId = requestAnimationFrame(updatePosition);
-    } else {
-      rafId = null;
-    }
-  };
-  // Don't start the loop immediately — it starts on hover
-  
-  document.addEventListener('mousemove', (e) => {
-    targetX = e.clientX;
-    targetY = e.clientY;
-  }, { passive: true });
-  
-  const startRing = () => {
-    isHovering = true;
-    if (!rafId) rafId = requestAnimationFrame(updatePosition);
-  };
-  const stopRing = () => {
-    isHovering = false;
-    // rafId will self-clear on next frame
-  };
-  
-  const about = document.getElementById('about');
-  const skills = document.getElementById('skills');
-
-  [about, skills].forEach(section => {
-    if (!section) return;
-    section.addEventListener('mouseenter', (e) => {
-      if (e.target.closest('.paper') && !document.body.classList.contains('has-paper-open-global')) {
-        document.body.classList.add('hovering-paper');
-        startRing();
-      }
-    }, true);
-    
-    section.addEventListener('mouseleave', (e) => {
-      if (e.target.closest('.paper')) {
-        document.body.classList.remove('hovering-paper');
-        stopRing();
-      }
-    }, true);
-  });
-}
-
-// Ritual background (disabled)
-var SIGNALS = {
-  canvas: null,
-  ctx: null,
-  raf: 0,
-  interval: 0,
-  pulses: [],
-  spores: [],
-  lastTs: 0
-};
-
-function initRitualBackground(){
-  return;
-}
-function createSignalsCanvas(){
-  const c = document.createElement('canvas');
-  c.id = 'signals-canvas';
-  c.className = 'signals-canvas';
-  c.setAttribute('aria-hidden','true');
-  document.body.appendChild(c);
-  return c;
-}
-
-function getSigilEl(){
-  return document.querySelector('.network-sigil-node, .sigil, #sigil, [data-sigil]') || null;
-}
-function getSigilCenter(){
-  const el = getSigilEl();
-  if (!el) return { x: window.innerWidth/2, y: window.innerHeight/2 };
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width/2, y: r.top + r.height/2 };
-}
-
-function startRitualBackground(){
-  return;
-}
-
-function stopRitualBackground(){
-  if (typeof SIGNALS === 'undefined') return;
-  const sigil = getSigilEl();
-  if (sigil) sigil.classList.remove('sigil-spin', 'sigil-kick');
-  if (SIGNALS.interval) { clearInterval(SIGNALS.interval); SIGNALS.interval = 0; }
-  if (SIGNALS.raf) { cancelAnimationFrame(SIGNALS.raf); SIGNALS.raf = 0; }
-  SIGNALS.pulses.length = 0;
-  SIGNALS.spores.length = 0;
-  if (SIGNALS.ctx) SIGNALS.ctx.clearRect(0,0,SIGNALS.canvas.width, SIGNALS.canvas.height);
-}
-
-function collectEdges(){
-  const candidates = [
-    window.MYCELIUM?.links, window.MYCELIUM?.edges,
-    window.graph?.links, window.__network?.links, window.NETWORK?.links
-  ].find(Boolean);
-  const nodes = (window.MYCELIUM?.nodes || window.graph?.nodes || window.__network?.nodes || window.NETWORK?.nodes) || [];
-  if (!candidates || !nodes.length) return null;
-  const byId = new Map(nodes.map(n => [n.id ?? n.name ?? n.i, n]));
-  return candidates
-    .map(e => {
-      const a = byId.get(e.source?.id ?? e.source ?? e.a ?? e.from);
-      const b = byId.get(e.target?.id ?? e.target ?? e.b ?? e.to);
-      if (!a || !b) return null;
-      const ax = a.screenX ?? a.x ?? a.cx ?? a.fx ?? 0;
-      const ay = a.screenY ?? a.y ?? a.cy ?? a.fy ?? 0;
-      const bx = b.screenX ?? b.x ?? b.cx ?? b.fx ?? 0;
-      const by = b.screenY ?? b.y ?? b.cy ?? b.fy ?? 0;
-      return { ax, ay, bx, by };
-    })
-    .filter(Boolean);
-}
-
-function triggerLightningBurst(){
-  const sigil = getSigilEl();
-  if (sigil) {
-    sigil.classList.remove('sigil-kick');
-    void sigil.offsetWidth;
-    sigil.classList.add('sigil-kick');
-  }
-  const center = getSigilCenter();
-  const edges = collectEdges();
-  if (edges) {
-    const ranked = edges.map(e => {
-      const mx = (e.ax + e.bx)*0.5, my = (e.ay + e.by)*0.5;
-      const d = Math.hypot(mx - center.x, my - center.y);
-      return { ...e, d };
-    }).sort((a,b)=>a.d-b.d);
-    const t0 = performance.now()/1000;
-    ranked.forEach((e, i) => {
-      SIGNALS.pulses.push({
-        type: 'edge',
-        ax: e.ax, ay: e.ay, bx: e.bx, by: e.by,
-        start: t0 + i*0.006,
-        speed: 2200,
-        life: 0.35
-      });
-    });
-  } else {
-    const t0 = performance.now()/1000;
-    for (let i=0;i<180;i++){
-      const a = (i/180)*Math.PI*2;
-      const r = Math.max(window.innerWidth, window.innerHeight) * 0.66;
-      SIGNALS.pulses.push({
-        type: 'ray',
-        x: center.x, y: center.y,
-        tx: center.x + Math.cos(a)*r,
-        ty: center.y + Math.sin(a)*r,
-        start: t0 + i*0.0025,
-        speed: 2600,
-        life: 0.28
-      });
-    }
-  }
-  for (let i=0;i<24;i++){
-    const ang = Math.random()*Math.PI*2;
-    const v = 30 + Math.random()*90; // px/s
-    SIGNALS.spores.push({
-      x: center.x, y: center.y,
-      vx: Math.cos(ang)*v, vy: Math.sin(ang)*v,
-      t: 0, life: 1.4 + Math.random()*0.6
-    });
-  }
-}
-
-function renderSignals(dt){
-  const ctx = SIGNALS.ctx; if (!ctx) return;
-  const w = SIGNALS.canvas.clientWidth, h = SIGNALS.canvas.clientHeight;
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = 'rgba(0,0,0,0.20)';
-  ctx.fillRect(0,0,w,h);
-  ctx.globalCompositeOperation = 'lighter';
-  const now = performance.now()/1000;
-  const pulses = SIGNALS.pulses;
-  for (let i=pulses.length-1; i>=0; i--){
-    const p = pulses[i];
-    const age = now - p.start;
-    if (age < 0) continue;
-    if (age > p.life + 0.6) { pulses.splice(i,1); continue; }
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (p.type === 'edge'){
-      const segLen = Math.hypot(p.bx - p.ax, p.by - p.ay);
-      const prog = Math.min(1, (age * p.speed) / segLen);
-      const bx = p.ax + (p.bx - p.ax)*prog;
-      const by = p.ay + (p.by - p.ay)*prog;
-      const glow = Math.max(0, 1 - (age / (p.life+0.0001)));
-      ctx.strokeStyle = `rgba(45,212,175,${0.75*glow})`;
-      ctx.lineWidth = 2.0;
-      ctx.beginPath(); ctx.moveTo(p.ax, p.ay); ctx.lineTo(bx, by); ctx.stroke();
-      ctx.strokeStyle = `rgba(255,255,255,${0.25*glow})`; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(p.ax, p.ay); ctx.lineTo(bx, by); ctx.stroke();
-    } else { // ray
-      const segLen = Math.hypot(p.tx - p.x, p.ty - p.y);
-      const prog = Math.min(1, (age * p.speed) / segLen);
-      const bx = p.x + (p.tx - p.x)*prog;
-      const by = p.y + (p.ty - p.y)*prog;
-      const glow = Math.max(0, 1 - (age / (p.life+0.0001)));
-      ctx.strokeStyle = `rgba(45,212,175,${0.7*glow})`;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(bx, by); ctx.stroke();
-      ctx.strokeStyle = `rgba(255,255,255,${0.22*glow})`; ctx.lineWidth = 0.9;
-      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(bx, by); ctx.stroke();
-    }
-  }
-  const spores = SIGNALS.spores;
-  for (let i=spores.length-1; i>=0; i--){
-    const s = spores[i];
-    s.t += dt; if (s.t > s.life) { spores.splice(i,1); continue; }
-    s.x += s.vx*dt; s.y += s.vy*dt;
-    const fade = 1 - (s.t / s.life);
-    ctx.fillStyle = `rgba(45,212,175,${0.9*fade})`;
-    ctx.beginPath(); ctx.arc(s.x, s.y, 1.2 + (1.6*fade), 0, Math.PI*2); ctx.fill();
-    if (Math.random() < 0.03){
-      ctx.fillStyle = `rgba(255,122,51,${0.6*fade})`;
-      ctx.beginPath(); ctx.arc(s.x, s.y, 1.0, 0, Math.PI*2); ctx.fill();
-    }
-  }
-}
+// (Removed the disabled "ritual background" subsystem: SIGNALS canvas,
+// lightning/spore pulse engine and sigil helpers — all functionally dead.)

@@ -15,6 +15,10 @@ import { cumulativeLengths, pointAt } from './utils.js';
 
 const LOCKED = new Map();
 
+// Route-layout diagnostics are noisy on normal loads (short routes fall back
+// gracefully). Gate them behind the same ?hud debug flag as the HUD overlay.
+const ROUTE_DEBUG = new URLSearchParams(window.location.search).has('hud');
+
 const deg = (id) => (GRAPH.neighbors(id) || []).length;
 
 const hyp = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -117,7 +121,7 @@ function computeLockedRouteFor(id, anchor) {
   let start = GRAPH.nearestId(anchor.x, anchor.y, 160, 12);
   
   if (start < 0) {
-    console.warn(`⚠️ [LOCKED-ROUTE] ${id}: nearestId failed at r=160, retrying with r=240`);
+    if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: nearestId failed at r=160, retrying with r=240`);
     start = GRAPH.nearestId(anchor.x, anchor.y, 240, 12);
   }
   
@@ -151,7 +155,7 @@ function computeLockedRouteFor(id, anchor) {
   }
 
   if (sampled.len < MIN_ROUTE_LEN_PX) {
-    console.warn(`⚠️ [LOCKED-ROUTE] ${id}: route too short (${sampled.len.toFixed(1)}px < ${MIN_ROUTE_LEN_PX}px)`);
+    if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: route too short (${sampled.len.toFixed(1)}px < ${MIN_ROUTE_LEN_PX}px)`);
     return { ...sampled, imgPts: trimmed.imgPts, len: sampled.len, tooShort: true };
   }
   
@@ -166,7 +170,7 @@ export function buildLockedRoutes() {
     
     const route = computeLockedRouteFor(id, anchor);
     if (!route) {
-      console.warn(`❌ [LOCKED-ROUTE] ${id}: failed; fallback to static anchor`);
+      if (ROUTE_DEBUG) console.warn(`❌ [LOCKED-ROUTE] ${id}: failed; fallback to static anchor`);
       LOCKED.set(id, null);
       continue;
     }
@@ -174,7 +178,7 @@ export function buildLockedRoutes() {
     const pointsCount = route.projPts?.length || 0;
     
     if (route.tooShort || route.len < 140 || pointsCount < 3) {
-      console.warn(`⚠️ [LOCKED-ROUTE] ${id}: len=${route.len.toFixed(1)}px, points=${pointsCount} (BELOW TARGET: want 140-240px, ≥3 points)`);
+      if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: len=${route.len.toFixed(1)}px, points=${pointsCount} (BELOW TARGET: want 140-240px, ≥3 points)`);
     }
     
     const [anchorX, anchorY] = coverMap(anchor.x, anchor.y);

@@ -643,7 +643,7 @@ class PortraitParticles {
       this.img.style.transition = 'opacity 0.15s ease-out';
     }
 
-    console.log('[particles]', this.particles.length, 'sampled');
+    if (CONFIG.DEBUG_FLOW) console.log('[particles]', this.particles.length, 'sampled');
     this.publishStats({ sampled: true });
   }
 
@@ -690,7 +690,7 @@ class PortraitParticles {
         }
       }
       
-      console.log('[particles] Sigil constellation:', sigilCount, 'particles marked');
+      if (CONFIG.DEBUG_SIGIL) console.log('[particles] Sigil constellation:', sigilCount, 'particles marked');
     };
     
     sigil.onerror = () => {

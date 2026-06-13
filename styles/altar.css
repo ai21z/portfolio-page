@@ -340,7 +340,7 @@
   color: #2A251F;
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
   /* cqi = % of container (card) inline-size — immune to browser zoom changes */
-  font-size: clamp(12px, 5cqi, 20px);
+  font-size: clamp(13.5px, 5cqi, 21px);
   position: relative;
   z-index: 1;
 }
@@ -348,8 +348,8 @@
 .slab p,
 .slab li {
   /* cqi: proportional to card width, not viewport */
-  font-size: clamp(10.5px, 4.2cqi, 15px);
-  line-height: 1.35;
+  font-size: clamp(12px, 4.3cqi, 16px);
+  line-height: 1.42;
   color: #3A3530;
   position: relative;
   z-index: 1;
@@ -360,6 +360,16 @@
   padding-left: 1.1em;
   position: relative;
   z-index: 1;
+}
+
+/* The "What I value / Recent work" card carries the most text; with the
+   raised readability floors it needs a little more height than the default
+   45% so its last line isn't clipped (.slab is overflow:hidden). Desktop
+   only — the <=900px blocks make every card scroll/auto-height anyway. */
+@media (min-width: 901px) {
+  .slab-expertise {
+    max-height: 56%;
+  }
 }
 
 .kv {
@@ -378,7 +388,7 @@
   justify-content: space-between;
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
-  font-size: clamp(9.5px, 3.8cqi, 14px);
+  font-size: clamp(11px, 3.9cqi, 15px);
   color: #3A3530;
 }
 
@@ -455,8 +465,8 @@
   --tech-gap: 6px;
   gap: calc(var(--tech-gap) * var(--k));
   /* cqi: scales with card width, not viewport */
-  font-size: clamp(9.5px, 3.8cqi, 15px);
-  line-height: 1.3;
+  font-size: clamp(11px, 4cqi, 15px);
+  line-height: 1.35;
   position: relative;
   z-index: 1;
 }

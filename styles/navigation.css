@@ -246,17 +246,23 @@
     height: 36px;
   }
 
+  /* Short-viewport laptops (<=800px tall): labels rest visible but dim,
+     brightening on hover/focus. Previously opacity:0 (hover-only), which
+     left the landing with no discoverable navigation on common laptops. */
   .network-node-label .node-label {
     top: -16px;
-    opacity: 0;
-    transform: translateX(-50%) translateY(4px);
+    opacity: 0.82;
+    transform: translateX(-50%);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .network-node-label:hover .node-label,
   .network-node-label:focus-visible .node-label,
+  .network-node-label.active .node-label,
   .network-node-label.motion-highlight .node-label {
     opacity: 1;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(-1px);
   }
 
   .network-sigil-node img {

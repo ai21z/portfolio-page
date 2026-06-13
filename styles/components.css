@@ -223,6 +223,12 @@
   .name {
     font-size: clamp(36px, 4.2vw, 48px);
     line-height: 1.04;
+    /* Shrink the title box to its text so the now-visible nav labels
+       (rest opacity raised in navigation.css) don't register as overlapping
+       the title's empty trailing space on short, wide laptops. */
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .portrait {

@@ -6,6 +6,20 @@ const LOGO = (name) => `/artifacts/projects/logos/${name}`;
 
 const NOW_STREAMS = [
   {
+    id: 'talos',
+    logoText: 'T',
+    title: 'Talos — Local Workspace Operator',
+    line: 'Governed CLI for local developer tasks',
+    status: 'high',
+    tags: ['Java', 'Local LLMs', 'Approval Gates', 'Traceability'],
+    bullets: [
+      'Bounded tools with explicit approval gates',
+      'Local inspect-edit-verify loops with traceable runs'
+    ],
+    links: [{ label: 'View on GitHub', href: 'https://github.com/ai21z/talos-cli', external: true }],
+    category: 'engineering'
+  },
+  {
     id: 'adp',
     logo: LOGO('ADP-noBG.png'),
     title: 'ADP - Software Engineer',
@@ -17,20 +31,6 @@ const NOW_STREAMS = [
       'Implementation of new features and bug fixes, testing, code reviews, documentation'
     ],
     links: [{ label: 'Work history', href: '#work' }],
-    category: 'engineering'
-  },
-  {
-    id: 'loqj',
-    logo: LOGO('LOQJ-noBG.png'),
-    title: 'LOQ-J — Local-First RAG',
-    line: 'Semantic search, zero cloud, pure Java',
-    status: 'brewing',
-    tags: ['Java', 'Lucene', 'Local LLMs'],
-    bullets: [
-      'Lucene 10 vectors + BM25 hybrid',
-      'Local LLM, reproducible workflows'
-    ],
-    links: [{ label: 'Documentation soon', unavailable: true }],
     category: 'engineering'
   },
   {
@@ -165,6 +165,15 @@ function createCard(stream, index) {
     front.style.backgroundSize = '75%';
     front.style.backgroundPosition = 'center';
     front.style.backgroundRepeat = 'no-repeat';
+  } else if (stream.logoText) {
+    const logo = document.createElement('span');
+    logo.className = 'now-card-logo-text';
+    logo.setAttribute('aria-hidden', 'true');
+    const glyph = document.createElement('span');
+    glyph.className = 'now-card-logo-glyph';
+    glyph.textContent = stream.logoText;
+    logo.appendChild(glyph);
+    front.appendChild(logo);
   } else {
     const logo = document.createElement('img');
     logo.src = stream.logo;
@@ -266,12 +275,16 @@ function createCard(stream, index) {
       a.className = 'now-card-link';
       a.href = link.href;
       a.textContent = link.label;
+      if (link.external || /^https?:\/\//i.test(link.href)) {
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+      }
       links.appendChild(a);
     });
     back.appendChild(links);
   }
   
-  if (stream.id === 'loqj' || stream.id === 'truerolls') {
+  if (stream.id === 'talos' || stream.id === 'truerolls') {
     const seal = document.createElement('div');
     seal.className = 'now-card-seal';
     seal.setAttribute('aria-hidden', 'true');

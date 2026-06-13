@@ -226,10 +226,59 @@
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
 }
 
+.now-card[data-id="talos"] .now-card-front {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.now-card-logo-text {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(150px, 34%, 320px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(133, 214, 164, 0.42);
+  border-radius: 50%;
+  color: rgba(220, 244, 225, 0.92);
+  font: 700 clamp(50px, 8vw, 104px)/1 var(--font-display, "Special Elite", monospace);
+  text-shadow: 0 0 12px rgba(63, 255, 159, 0.24), 0 0 26px rgba(143, 180, 255, 0.14);
+  box-shadow:
+    inset 0 0 24px rgba(63, 255, 159, 0.1),
+    0 0 28px rgba(0, 0, 0, 0.34),
+    0 0 18px rgba(63, 255, 159, 0.08);
+}
+
+.now-card-logo-text::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border: 1px solid rgba(143, 180, 255, 0.24);
+  transform: rotate(45deg);
+}
+
+.now-card-logo-text::after {
+  content: "TALOS";
+  position: absolute;
+  bottom: 20%;
+  color: rgba(133, 214, 164, 0.8);
+  font: 600 clamp(11px, 1.3vw, 15px)/1 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  text-shadow: 0 0 8px rgba(63, 255, 159, 0.18);
+}
+
+.now-card-logo-glyph {
+  position: relative;
+  transform: translateY(-6%);
+}
+
 @media (max-width: 900px) {
   .now-card-logo {
     width: 85%;
     max-width: 140px;
+  }
+
+  .now-card-logo-text {
+    width: min(48vw, 160px);
   }
 }
 

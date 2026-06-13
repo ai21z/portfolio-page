@@ -404,6 +404,31 @@ test('visible Now card actions are not placeholder hash links', async ({ page })
   }
 });
 
+test('Now section presents Talos first with a GitHub CTA', async ({ page }) => {
+  await page.goto('/index.html#now');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForActiveSection(page, 'now');
+
+  const firstCard = page.locator('#now-card-grid .now-card').first();
+  await expect(firstCard).toHaveAttribute('data-id', 'talos');
+  await expect(firstCard.locator('.now-card-logo-text')).toBeVisible();
+
+  await firstCard.locator('.now-card-front').click();
+  await expect(firstCard.locator('.now-card-title')).toHaveText('Talos — Local Workspace Operator');
+  await expect(firstCard.locator('.now-card-line')).toHaveText('Governed CLI for local developer tasks');
+  await expect(firstCard.locator('.now-card-tag')).toContainText([
+    'Java',
+    'Local LLMs',
+    'Approval Gates',
+    'Traceability'
+  ]);
+
+  const cta = firstCard.locator('.now-card-link', { hasText: 'View on GitHub' });
+  await expect(cta).toHaveAttribute('href', 'https://github.com/ai21z/talos-cli');
+  await expect(cta).toHaveAttribute('target', '_blank');
+  await expect(cta).toHaveAttribute('rel', /noopener/);
+});
+
 test('Contact disables submit until required verification is ready', async ({ page }) => {
   await routeTurnstile(page, pendingTurnstileStub);
 

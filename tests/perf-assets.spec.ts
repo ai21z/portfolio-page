@@ -69,6 +69,28 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
   expect(app).toContain("import('./now-cards.js')");
 });
 
+test('portfolio content presents Talos instead of legacy project or retrieval acronym copy', () => {
+  const contentFiles = [
+    'index.html',
+    'js/now-cards.js',
+    'js/work-globe/data/projects.js',
+    'js/work-globe/data/work-locations.js'
+  ];
+  const combined = contentFiles.map((file) => readText(file)).join('\n');
+  const legacyTerms = ['LOQ' + '-J', 'LOQ' + 'J', 'lo' + 'qj', 'R' + 'AG'];
+  const legacyPattern = new RegExp(`\\b(?:${legacyTerms.join('|')})\\b`, 'g');
+  const legacyMatches = contentFiles.flatMap((file) => {
+    return Array.from(readText(file).matchAll(legacyPattern))
+      .map((match) => `${file}:${match[0]}`);
+  });
+
+  expect(combined).toContain('Talos');
+  expect(combined).toContain('Workspace Operators');
+  expect(combined).toContain('Approval Gates');
+  expect(combined).toContain('https://github.com/ai21z/talos-cli');
+  expect(legacyMatches).toEqual([]);
+});
+
 test('CSS avoids broad expensive transition and fixed-background patterns', () => {
   const styleDir = path.join(repoRoot, 'styles');
   const cssFiles = fs.readdirSync(styleDir).filter((file) => file.endsWith('.css'));

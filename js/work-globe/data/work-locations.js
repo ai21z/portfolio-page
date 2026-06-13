@@ -50,8 +50,8 @@ export const WORK_LOCATIONS = {
         responsibilities: [
           'AI model evaluation for code generation, reasoning and content quality',
           'Prompt, rubric and acceptance-test design for coding, refactoring & debugging tasks',
-          'Design and development of local-first tools & prototypes (e.g. LOQ-J, True-Rolls)',
-          'Experiments with local LLM workflows, retrieval (RAG) and developer productivity tooling'
+          'Design and development of local-first tools & prototypes (e.g. Talos, True-Rolls)',
+          'Experiments with governed local AI workflows, workspace context and developer productivity tooling'
         ]
       }
     ]

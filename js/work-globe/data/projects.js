@@ -17,11 +17,11 @@ export const PROJECTS = [
     pulseSpeed: 0.5
   },
   {
-    id: 'loqj-cli',
-    name: 'LOQ-J — Local-Only RAG CLI',
-    description: 'Local-only Java CLI for RAG over your projects. Indexes your code and docs with Lucene and bge-m3 via Ollama, then answers questions with citation-backed, offline responses. No data ever leaves your machine.',
-    tech: ['Java', 'CLI', 'RAG', 'Lucene', 'Ollama', 'Local LLMs'],
-    github: 'https://github.com/ai21z/loqj-cli',
+    id: 'talos-cli',
+    name: 'Talos — Local Workspace Operator',
+    description: 'Local-first Java CLI workspace operator for governed developer tasks. Talos uses bounded tools, explicit approval gates, local inspect-edit-verify loops and traceable runs so changes stay private, reviewable and reproducible.',
+    tech: ['Java', 'CLI', 'Workspace Operator', 'Approval Gates', 'Lucene', 'Local LLMs'],
+    github: 'https://github.com/ai21z/talos-cli',
     
     initialAngle: 180,
     orbitRadius: 1.15,

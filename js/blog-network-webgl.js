@@ -1255,25 +1255,68 @@ async function initBlogNetwork(){
   let lastClickTime = 0;
   const CLICK_DEBOUNCE = 300; // ms
   
+  let lastTouchNav = 0;
   canvas.addEventListener('click', ()=>{
+    if (performance.now() - lastTouchNav < 500) return; // ignore the ghost click after a touch tap
     if (!hoveredHubId) return;
-    
+
     const now = performance.now();
     if (now - lastClickTime < CLICK_DEBOUNCE) {
       return;
     }
     lastClickTime = now;
-    
+
     // Brief spotlight effect (150ms) - non-blocking
     activeHub = hoveredHubId;
     setTimeout(() => { activeHub = null; }, 150);
-    
+
     // Navigate immediately (app.js will handle the transition)
     window.dispatchEvent(new CustomEvent('blog:navigate', {
       detail: { hubId: hoveredHubId }
     }));
   });
-  
+
+  // Touch: tap a hub to navigate. Mobile fires no mousemove, so hoveredHubId
+  // is null when the synthetic click arrives — without this, tapping a hub
+  // (the most prominent interactive object on the page) does nothing.
+  let touchStartT = 0, touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartT = performance.now();
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', (e) => {
+    const t = e.changedTouches && e.changedTouches[0];
+    if (!t) return;
+    // Only a quick, stationary tap counts as a select (not a pan/scroll)
+    if (performance.now() - touchStartT > 250) return;
+    if (Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY) > 12) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mx = (t.clientX - rect.left - fit.offX) / fit.scale - shift[0];
+    const my = (t.clientY - rect.top  - fit.offY) / fit.scale - shift[1];
+    let minD = 99999, idx = -1;
+    const TAP_RADIUS = 44; // larger than hover — fingers are coarse
+    for (let i = 0; i < hubPos.length; i++) {
+      const dx = mx - hubPos[i][0], dy = my - hubPos[i][1];
+      const d = Math.hypot(dx, dy);
+      if (d < TAP_RADIUS && d < minD) { minD = d; idx = i; }
+    }
+    if (idx < 0) return;
+
+    const now = performance.now();
+    if (now - lastClickTime < CLICK_DEBOUNCE) return;
+    lastClickTime = now;
+    lastTouchNav = now;
+
+    const hubId = data.hubs[idx].id;
+    activeHub = hubId;
+    setTimeout(() => { activeHub = null; }, 150);
+    window.dispatchEvent(new CustomEvent('blog:navigate', { detail: { hubId } }));
+  }, { passive: true });
+
   // ESC to exit deep view
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape' && activeHub){

@@ -173,6 +173,7 @@
   backface-visibility: hidden;
   border-radius: var(--now-slab-radius);
   background: #0B0D0E;
+  overflow: hidden; /* keep logos/art inside the rounded card */
   box-shadow: var(--now-slab-shadow),
               0 0 0 1px rgba(25, 203, 179, 0.1);
 }
@@ -296,9 +297,9 @@
 
 @media (max-width: 900px) {
   .now-card[data-id="truerolls"] .now-card-logo {
-    width: 100%;
+    width: clamp(170px, 88%, 260px);
     max-width: none;
-    transform: scale(2.2);
+    transform: none; /* was scale(2.2) — bled ~150px past the card on each side */
   }
 }
 
@@ -654,11 +655,6 @@
     touch-action: manipulation;
   }
   
-  /* Ensure dialog fits on small screens with comfortable margins */
-  .now-card.active {
-    max-height: 85dvh !important;
-    max-width: 95vw !important;
-  }
 }
 
 /* Focus trap helper */

@@ -348,14 +348,26 @@ function openCard(card, stream) {
   
   const { w: viewportWidth, h: viewportHeight } = viewportSize();
   const isMobile = viewportWidth <= 900;
-  const maxWidth = isMobile ? Math.min(viewportWidth * 0.88, 320) : 450;
-  const maxHeight = isMobile ? Math.min(viewportHeight * 0.65, 380) : Math.min(420, viewportHeight * 0.75);
-  
+
   const navFilters = document.querySelector('.now-filters');
   const navRect = navFilters ? navFilters.getBoundingClientRect() : null;
   const navMargin = 30;
   const navBottom = navRect ? navRect.bottom + navMargin : 150;
-  
+
+  // Canonical flipped card: a portrait "paper slab" (height = width * 1.25).
+  // Derive height from width against one aspect, then shrink to fit the
+  // available space — so the opened card keeps the SAME proportion on every
+  // screen and only its scale changes (previously width/height were capped
+  // against different axes, so the aspect drifted from ~1.07 to ~0.84).
+  const SLAB_ASPECT = 1.25;
+  let maxWidth = isMobile ? Math.min(viewportWidth * 0.9, 340) : 400;
+  let maxHeight = maxWidth * SLAB_ASPECT;
+  const availHeight = viewportHeight - navBottom - 24;
+  if (maxHeight > availHeight) {
+    maxHeight = Math.max(availHeight, 260);
+    maxWidth = maxHeight / SLAB_ASPECT;
+  }
+
   const targetLeft = (viewportWidth - maxWidth) / 2;
   const centeredTop = (viewportHeight - maxHeight) / 2;
   const targetTop = Math.max(navBottom, centeredTop);

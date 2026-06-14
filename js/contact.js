@@ -131,13 +131,23 @@ class NotebookContact {
     const value = input.value ?? '';
     const isValid = rules.test(value);
     const errorNode = this.getErrorNode(input);
+    if (errorNode) {
+      if (!errorNode.id) errorNode.id = `${key}-error`;
+      if (!errorNode.getAttribute('role')) errorNode.setAttribute('role', 'alert');
+    }
 
     if (isValid) {
       input.classList.remove('error');
+      input.removeAttribute('aria-invalid');
+      input.removeAttribute('aria-describedby');
       if (errorNode) errorNode.textContent = '';
     } else if (!options.silent) {
       input.classList.add('error');
-      if (errorNode) errorNode.textContent = rules.message;
+      input.setAttribute('aria-invalid', 'true');
+      if (errorNode) {
+        errorNode.textContent = rules.message;
+        input.setAttribute('aria-describedby', errorNode.id);
+      }
     }
 
     return isValid;
@@ -153,7 +163,8 @@ class NotebookContact {
     if (!this.charCountEl || !this.inputs.message) return;
     const length = this.inputs.message.value.length;
     this.charCountEl.textContent = `${length}/${MESSAGE_LIMIT.max}`;
-    const color = length > MESSAGE_LIMIT.max ? '#8B0000' : length < MESSAGE_LIMIT.min ? '#8B7D6B' : '#5A5040';
+    // #5A5040 (label sepia) meets AA on the aged paper; red only when over the limit
+    const color = length > MESSAGE_LIMIT.max ? '#8B0000' : '#5A5040';
     this.charCountEl.style.color = color;
   }
 

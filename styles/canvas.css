@@ -174,3 +174,11 @@ body.has-paper-open-global .signals-canvas {
   80%{ clip:rect(23px, 9999px, 37px, 0); }
   100%{ clip:rect(49px, 9999px, 79px, 0); }
 }
+
+/* Respect reduced-motion for the two infinite loops that live in this file
+   (the rest of the site already gates motion elsewhere). */
+@media (prefers-reduced-motion: reduce){
+  .hovering-paper .cursor-ring{ animation: none; }
+  .glitch-text:hover::before,
+  .glitch-text:hover::after{ animation: none; }
+}

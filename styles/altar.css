@@ -121,6 +121,17 @@
   pointer-events: none;
 }
 
+/* Living-culture scrying canvas — injected by altar-culture.js as the first
+   child so the colony renders UNDER the glass/reticle/glint spans. */
+.lens-scry {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
 /* Faint convex sheen sweeping across the glass */
 .lens-glass {
   background:

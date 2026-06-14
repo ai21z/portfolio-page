@@ -209,7 +209,12 @@
 
 .living-sigils {
   position: absolute;
-  left: -90px;
+  /* Hug the grid's left edge, but never cross the viewport edge (body is
+     overflow-x:hidden). The old fixed -90px pushed the rail off-screen
+     between ~1201-1439px — including 1366px, the most common laptop width.
+     This keeps -90px whenever there's room and clamps to ~16px from the
+     edge when the side margin gets tight. */
+  left: max(-90px, calc(16px - (100vw - clamp(1200px, 72vw, 1600px)) / 2));
   top: 20%;
   transform: translateY(0);
   display: flex;

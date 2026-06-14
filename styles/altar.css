@@ -132,8 +132,9 @@
   pointer-events: none;
 }
 
-/* Oracle's Eye bloom canvas (About) — injected by altar-eye.js, fades in on
-   hover of the "Art's paramour" card. Also sits under the glass spans. */
+/* Oracle's Eye canvas (About) — injected by altar-eye.js under the glass
+   spans. The live eye is always visible while About is active (a faint
+   idle iris); it eases its own state in-canvas, so no CSS opacity gate. */
 .lens-eye {
   position: absolute;
   inset: 0;
@@ -141,14 +142,6 @@
   height: 100%;
   border-radius: 50%;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 480ms ease;
-}
-.lens-eye.eye-lit {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .lens-eye { transition: none; }
 }
 
 /* Faint convex sheen sweeping across the glass */
@@ -161,8 +154,14 @@
   mix-blend-mode: screen;
 }
 
-/* Microscope graticule: crosshair + inner ring, kept inside the field */
-.lens-reticle {
+/* Microscope graticule: crosshair (::before) + inner limbal ring (::after).
+   The crosshair lives on its own pseudo so a scrying screen can fade just the
+   cross (it fights an iris/pupil) while keeping the ring as loupe framing. */
+.lens-reticle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
   background:
     linear-gradient(rgba(45,212,175,0) calc(50% - 0.5px),
       rgba(45,212,175,0.26) calc(50% - 0.5px), rgba(45,212,175,0.26) calc(50% + 0.5px),
@@ -172,6 +171,12 @@
       rgba(45,212,175,0) calc(50% + 0.5px));
   -webkit-mask: radial-gradient(circle at 50% 50%, #000 0 60%, transparent 61%);
           mask: radial-gradient(circle at 50% 50%, #000 0 60%, transparent 61%);
+  transition: opacity 460ms ease;
+}
+
+/* When a scrying screen opens under the glass, dissolve the crosshair only */
+.altar-lens.lens-open .lens-reticle::before {
+  opacity: 0;
 }
 
 .lens-reticle::after {

@@ -1059,6 +1059,11 @@
         </div>
       </div>
     </div>
+
+    <!-- Accessible text equivalent of the globe (populated from the same data
+         by js/work-globe/work-index.js): screen-reader/keyboard access always,
+         and the real visible fallback when WebGL2 is unavailable. -->
+    <div id="work-index" class="work-index" aria-label="Work history and projects (text)"></div>
   </section>
 
   <!-- SECTION: CONTACT -->
@@ -1270,5 +1275,7 @@
   </script>
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=__turnstileOnLoad"></script>
   <script type="module" src="./js/app.js"></script>
+  <!-- Accessible text equivalent of the Work globe (renders into #work-index) -->
+  <script type="module" src="./js/work-globe/work-index.js"></script>
 </body>
 </html>

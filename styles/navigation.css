@@ -1190,15 +1190,16 @@ body.has-paper-open-global #network-nav {
     0 0 20px rgba(122, 174, 138, 0.3);
 }
 
-/* Hide on mobile - too cramped */
-@media (max-width: 768px) {
+/* Hide on mobile - too cramped. Aligned to the 900px layout breakpoint so the
+   desktop rail never floats over the mobile single-column panels (769-900px). */
+@media (max-width: 900px) {
   .section-nav {
     display: none;
   }
 }
 
 /* Adjust position for smaller screens */
-@media (max-width: 1024px) and (min-width: 769px) {
+@media (max-width: 1024px) and (min-width: 901px) {
   .section-nav {
     right: 16px;
     top: 64px;

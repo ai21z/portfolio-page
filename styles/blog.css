@@ -464,6 +464,12 @@
   transform: rotate(90deg);
 }
 
+/* Keyboard focus ring — the only section close that was missing one */
+.blog-close:focus-visible {
+  outline: 2px solid var(--decay-green);
+  outline-offset: 4px;
+}
+
 .blog-hub-tooltip {
   position: fixed;
   top: 80px; /* Below the close button */
@@ -790,6 +796,17 @@
 
 .blog-screen.in-category .blog-map-btn {
   right: 116px;
+}
+
+/* The article "Back" button is shown in the article view (where the section is
+   not .in-category), so it must clear the × close button on its own. */
+#btn-map-article {
+  right: 116px;
+}
+@media (max-width: 768px) {
+  #btn-map-article {
+    right: 64px;
+  }
 }
 
 .blog-map-btn:hover,

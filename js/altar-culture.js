@@ -47,15 +47,6 @@ const CONSTELLATION = {
   edges: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]],
 };
 
-// Specimen notation etched on the dish rim — updates as you examine each card.
-const DISH_IDLE = '· LIVING CULTURE ·';
-const DISH_LABELS = {
-  'slab-systems': '02 · SYSTEMS',
-  'slab-interface': '03 · INTERFACE',
-  'slab-scientific': '04 · RIGOR',
-  'slab-restoflife': '05 · VITA',
-};
-
 function initAltarCulture(sectionId) {
   const section = document.getElementById(sectionId);
   if (!section) return;
@@ -276,15 +267,11 @@ function initAltarCulture(sectionId) {
     const d = Math.hypot(vx, vy) || 1;
     return { x: clamp(vx / d, -1, 1), y: clamp(vy / d, -1, 1) };
   }
-  const labelNode = lens.querySelector('#dish-label-text');
-  function setLabel(text) { if (labelNode) labelNode.textContent = text; }
-
   function onHover(card) {
     hoveredCard = card;
     const dir = dirToCard(card);
     reachTX = dir.x; reachTY = dir.y;
     mode = 'crystallise';
-    setLabel(DISH_LABELS[[...card.classList].find((c) => DISH_LABELS[c])] || DISH_IDLE);
     ensureLoop();
   }
   function onUnhover(card) {
@@ -292,7 +279,6 @@ function initAltarCulture(sectionId) {
     hoveredCard = null;
     mode = 'idle';
     reachTX = 0; reachTY = 0;
-    setLabel(DISH_IDLE);
   }
 
   section.querySelectorAll('.slab.paper').forEach((card) => {

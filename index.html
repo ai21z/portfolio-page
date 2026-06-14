@@ -732,39 +732,12 @@
         </circle>
       </svg>
 
-      <!-- Examining lens as a catalogued petri dish (the colony cultures on the agar) -->
+      <!-- Examining lens — the altar centerpiece (specimens are read under it) -->
       <div class="core" aria-hidden="true">
-        <div class="altar-lens dish">
+        <div class="altar-lens">
           <span class="lens-glass"></span>
           <span class="lens-reticle"></span>
           <span class="lens-glint"></span>
-          <svg class="dish-marks" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-            <defs>
-              <path id="dish-rim-arc" d="M 17,59 A 40,40 0 0 0 83,59"/>
-              <filter id="dish-grime" x="-20%" y="-20%" width="140%" height="140%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="1" seed="4" result="n"/>
-                <feDisplacementMap in="SourceGraphic" in2="n" scale="0.7"/>
-              </filter>
-            </defs>
-            <!-- condensation beaded on the lid, near the rim, asymmetric -->
-            <g class="dish-cond">
-              <circle cx="31" cy="21" r="1.7"/>
-              <circle cx="69" cy="17" r="1.1"/>
-              <circle cx="79" cy="35" r="2.0"/>
-              <circle cx="23" cy="41" r="0.9"/>
-              <circle cx="64" cy="74" r="1.3"/>
-            </g>
-            <!-- curved specimen notation along the lower rim (updated per card) -->
-            <text class="dish-label" filter="url(#dish-grime)">
-              <textPath href="#dish-rim-arc" startOffset="50%" text-anchor="middle" id="dish-label-text">· LIVING CULTURE ·</textPath>
-            </text>
-            <!-- aged provenance tape, off-axis, with a 'culture alive' ember -->
-            <g class="dish-tape" transform="rotate(-9 25 70)">
-              <rect x="11" y="65" width="28" height="10" rx="0.4"/>
-              <circle class="dish-alive" cx="16" cy="70" r="1.4"/>
-              <text class="dish-tape-text" x="29" y="71.6" text-anchor="middle">vi·26</text>
-            </g>
-          </svg>
         </div>
       </div>
 

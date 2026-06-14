@@ -71,10 +71,6 @@ function initAltarCulture(sectionId) {
   const lensVisible = () =>
     window.innerWidth > 900 && lens.offsetParent !== null && lens.clientWidth > 1;
   const paperOpen = () => document.body.classList.contains('has-paper-open-global');
-  const hasWork = () => {
-    const b = getGraphicsBudget('altar-culture');
-    return !prefersReducedMotion && !b.quiet && b.particleScale > 0;
-  };
 
   function ensureCanvas() {
     if (canvas) return;
@@ -90,6 +86,7 @@ function initAltarCulture(sectionId) {
     const h = Math.max(1, Math.round(lens.clientHeight));
     cssW = w; cssH = h; cx = w / 2; cy = h / 2; R = Math.min(w, h) / 2;
     sizeCanvas(canvas, { width: w, height: h, systemName: 'altar-culture', maxDpr: 2, minDpr: 1 });
+    makePoints(); // (re)seed the colony for the current size
   }
 
   function makePoints() {
@@ -206,26 +203,31 @@ function initAltarCulture(sectionId) {
   function renderStaticFrame() {
     ensureCanvas();
     layout();
-    if (!points.length) makePoints();
     const fake = performance.now();
     for (let i = 0; i < 30; i++) step(fake);
     draw(fake);
   }
 
   function loop(ts) {
-    if (!sectionActive() || document.hidden || paperOpen() || !lensVisible() || !hasWork()) {
-      release();
-      rafId = null;
+    // Hard stop ONLY when the section is left (the observer restarts us on
+    // re-activation). Everything else is a transient pause: keep the loop alive
+    // (don't release) so it auto-resumes the moment it can draw again.
+    if (!sectionActive()) { release(); rafId = null; return; }
+    if (document.hidden || paperOpen() || !lensVisible()) {
+      lastTs = ts;
+      rafId = requestAnimationFrame(loop);
       return;
     }
+    if (Math.round(lens.clientWidth) !== cssW || !points.length) layout();
     const b = getGraphicsBudget('altar-culture');
     const interval = Math.max(33, b.frameIntervalMs || 33);
-    if (ts - lastTs < interval) { rafId = requestAnimationFrame(loop); return; }
-    const dt = ts - lastTs;
-    lastTs = ts;
-    step(ts);
-    draw(ts);
-    reportFrameSample('altar-culture', dt);
+    if (ts - lastTs >= interval) {
+      const dt = ts - lastTs;
+      lastTs = ts;
+      step(ts);
+      draw(ts);
+      reportFrameSample('altar-culture', dt);
+    }
     rafId = requestAnimationFrame(loop);
   }
 
@@ -234,15 +236,20 @@ function initAltarCulture(sectionId) {
     if (canvas && (canvas.width !== 1 || canvas.height !== 1)) {
       canvas.width = 1; canvas.height = 1;
     }
+    cssW = 0; // force a fresh layout when the section is shown again
   }
 
   function ensureLoop() {
+    // Start as soon as the section is active — NOT gated on lensVisible(), which
+    // can be transiently false right after activation (content-visibility). The
+    // loop waits for the lens to become measurable, then sizes + draws.
+    if (!sectionActive()) return;
+    if (prefersReducedMotion) {
+      requestAnimationFrame(() => { if (sectionActive() && lensVisible()) renderStaticFrame(); });
+      return;
+    }
     if (rafId != null) return;
-    if (!sectionActive() || !lensVisible()) return;
-    if (prefersReducedMotion || !hasWork()) { renderStaticFrame(); return; }
     ensureCanvas();
-    layout();
-    if (!points.length) makePoints();
     lastTs = performance.now();
     rafId = requestAnimationFrame(loop);
   }
@@ -282,8 +289,8 @@ function initAltarCulture(sectionId) {
   });
 
   const mo = new MutationObserver(() => {
-    if (sectionActive() && lensVisible()) ensureLoop();
-    else if (!sectionActive()) stop();
+    if (sectionActive()) ensureLoop();
+    else stop();
   });
   mo.observe(section, { attributes: true, attributeFilter: ['class'] });
 
@@ -291,21 +298,17 @@ function initAltarCulture(sectionId) {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (!canvas) return;
-      if (!lensVisible()) { stop(); return; }
-      layout();
-      makePoints();
-      ensureLoop();
+      if (!sectionActive()) return;
+      if (!lensVisible()) { stop(); return; } // e.g. shrunk to <=900px (lens hidden)
+      ensureLoop();                            // the loop re-sizes itself
     }, 180);
   });
 
   window.addEventListener('graphics:profile-change', () => {
-    if (!sectionActive() || !lensVisible()) return;
-    if (prefersReducedMotion || !hasWork()) { stop(); renderStaticFrame(); return; }
-    ensureLoop();
+    if (sectionActive()) ensureLoop();
   });
 
-  if (sectionActive() && lensVisible()) ensureLoop();
+  if (sectionActive()) ensureLoop();
 }
 
 function boot() { initAltarCulture('skills'); }

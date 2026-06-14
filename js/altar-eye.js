@@ -60,7 +60,6 @@ function initAltarEye(sectionId) {
   const lensVisible = () =>
     window.innerWidth > 900 && lens.offsetParent !== null && lens.clientWidth > 1;
   const paperOpen = () => document.body.classList.contains('has-paper-open-global');
-  const hasWork = () => !getGraphicsBudget('altar-eye').quiet;
 
   function ensureCanvas() {
     if (canvas) return;
@@ -95,6 +94,7 @@ function initAltarEye(sectionId) {
   function release() {
     if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (canvas && (canvas.width !== 1 || canvas.height !== 1)) { canvas.width = 1; canvas.height = 1; }
+    cssW = 0; // force a fresh layout when the section is shown again
   }
 
   // ---- drawing ----
@@ -223,24 +223,38 @@ function initAltarEye(sectionId) {
   }
 
   function loop(ts) {
-    if (!sectionActive() || document.hidden || paperOpen() || !lensVisible() || !hasWork()) {
-      release(); rafId = null; return;
+    // Hard stop ONLY when the section is left — the observer restarts us on
+    // re-activation. Everything else is a transient pause: keep the loop alive
+    // (don't release the canvas) so it auto-resumes the moment it can draw.
+    if (!sectionActive()) { release(); rafId = null; return; }
+    if (document.hidden || paperOpen() || !lensVisible()) {
+      lastTs = ts; // don't accumulate a huge dt across the pause
+      rafId = requestAnimationFrame(loop);
+      return;
     }
+    if (Math.round(lens.clientWidth) !== cssW || !motes.length) layout();
     const b = getGraphicsBudget('altar-eye');
     const interval = Math.max(33, b.frameIntervalMs || 33);
-    if (ts - lastTs < interval) { rafId = requestAnimationFrame(loop); return; }
-    const dt = ts - lastTs; lastTs = ts;
-    step(); draw(ts);
-    reportFrameSample('altar-eye', dt);
+    if (ts - lastTs >= interval) {
+      const dt = ts - lastTs; lastTs = ts;
+      step(); draw(ts);
+      reportFrameSample('altar-eye', dt);
+    }
     rafId = requestAnimationFrame(loop);
   }
 
   function ensureLoop() {
+    // Start as soon as the section is active — NOT gated on lensVisible(), which
+    // can be transiently false right after activation (the section subtree is
+    // content-visibility:hidden until it reflows). The loop waits for the lens
+    // to become measurable, then sizes + draws.
+    if (!sectionActive()) return;
+    if (prefersReducedMotion) {
+      requestAnimationFrame(() => { if (sectionActive() && lensVisible()) renderStaticFrame(); });
+      return;
+    }
     if (rafId != null) return;
-    if (!sectionActive() || !lensVisible()) return;
-    if (prefersReducedMotion || !hasWork()) { renderStaticFrame(); return; }
     ensureCanvas();
-    if (Math.round(lens.clientWidth) !== cssW || !motes.length) layout();
     lastTs = performance.now();
     rafId = requestAnimationFrame(loop);
   }
@@ -282,8 +296,8 @@ function initAltarEye(sectionId) {
   });
 
   const mo = new MutationObserver(() => {
-    if (sectionActive() && lensVisible()) ensureLoop();
-    else if (!sectionActive()) stop();
+    if (sectionActive()) ensureLoop();
+    else stop();
   });
   mo.observe(section, { attributes: true, attributeFilter: ['class'] });
 
@@ -291,19 +305,17 @@ function initAltarEye(sectionId) {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (!canvas) return;
-      if (!lensVisible()) { stop(); return; }
-      layout(); ensureLoop();
+      if (!sectionActive()) return;
+      if (!lensVisible()) { stop(); return; } // e.g. shrunk to <=900px (lens hidden)
+      ensureLoop();                            // the loop re-sizes itself
     }, 180);
   });
 
   window.addEventListener('graphics:profile-change', () => {
-    if (!sectionActive() || !lensVisible()) return;
-    if (prefersReducedMotion || !hasWork()) { stop(); renderStaticFrame(); return; }
-    ensureLoop();
+    if (sectionActive()) ensureLoop();
   });
 
-  if (sectionActive() && lensVisible()) ensureLoop();
+  if (sectionActive()) ensureLoop();
 }
 
 function boot() { initAltarEye('about'); }

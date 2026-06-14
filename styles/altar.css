@@ -132,6 +132,25 @@
   pointer-events: none;
 }
 
+/* Oracle's Eye bloom canvas (About) — injected by altar-eye.js, fades in on
+   hover of the "Art's paramour" card. Also sits under the glass spans. */
+.lens-eye {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 480ms ease;
+}
+.lens-eye.eye-lit {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lens-eye { transition: none; }
+}
+
 /* Faint convex sheen sweeping across the glass */
 .lens-glass {
   background:

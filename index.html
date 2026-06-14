@@ -26,12 +26,83 @@
   <!-- Preload critical resources -->
   <link rel="preload" href="./styles/main.css?v=20251109-1930" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
-  
+  <link rel="preload" as="image" href="./artifacts/sigil/no-bg-seal-sigil.webp" />
+
   <link rel="stylesheet" href="./styles/main.css?v=20251109-1930" />
   <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260501-graphics" />
+
+  <!-- Threshold (opening gateway + graphics-reload cover). Critical + inline so
+       the veil paints before anything else; lifted by the inline script below. -->
+  <style>
+    .threshold{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;pointer-events:none;
+      background:radial-gradient(120% 90% at 50% 44%,rgba(22,40,36,0.42),transparent 58%),
+        radial-gradient(150% 130% at 50% 122%,rgba(8,12,12,0.94),transparent 70%),#07090a;
+      opacity:1;transition:opacity 700ms cubic-bezier(0.16,1,0.3,1)}
+    .threshold--lifted{opacity:0;pointer-events:none}
+    .threshold--done{display:none}
+    .threshold::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0.05;mix-blend-mode:soft-light;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+    .threshold__plate{position:relative;width:min(46vmin,260px);aspect-ratio:1;transform:translateY(-5%)}
+    .threshold__svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+    .thr-fil{stroke:#7aae8a;fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0.55;
+      animation:thr-grow 640ms cubic-bezier(0.16,1,0.3,1) forwards;animation-delay:var(--d,0ms)}
+    @keyframes thr-grow{to{stroke-dashoffset:0}}
+    .threshold__seal{position:absolute;inset:17%;background:center/contain no-repeat;
+      background-image:url("./artifacts/sigil/no-bg-seal-sigil.png");
+      background-image:image-set(url("./artifacts/sigil/no-bg-seal-sigil.webp") type("image/webp"),url("./artifacts/sigil/no-bg-seal-sigil.png") type("image/png"));
+      opacity:0;filter:contrast(1.08) brightness(0.96);animation:thr-etch 900ms ease forwards 150ms}
+    @keyframes thr-etch{to{opacity:0.92}}
+    @media (prefers-reduced-motion:reduce){
+      .threshold{transition:opacity 200ms linear}
+      .thr-fil{animation:none;stroke-dashoffset:0;opacity:0.45}
+      .threshold__seal{animation:none;opacity:0.9}}
+  </style>
+  <noscript><style>.threshold{display:none!important}</style></noscript>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Threshold: a brief opening on load; also covers the graphics-profile reload.
+       The "loading" is the culture waking: mycelial filaments grow inward and
+       anastomose onto the seal (which etches in), then the veil lifts. -->
+  <div class="threshold" id="threshold" aria-hidden="true">
+    <div class="threshold__plate">
+      <svg class="threshold__svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="thr-rough" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="7" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="1.3"/>
+          </filter>
+        </defs>
+        <g filter="url(#thr-rough)" stroke-width="0.5">
+          <path class="thr-fil" style="--d:0ms"   pathLength="1" d="M6,92 C24,78 33,66 50,47"/>
+          <path class="thr-fil" style="--d:90ms"  pathLength="1" d="M95,90 C80,74 64,58 50,47"/>
+          <path class="thr-fil" style="--d:160ms" pathLength="1" d="M50,47 C51,31 53,17 57,6"/>
+          <path class="thr-fil" style="--d:120ms" pathLength="1" d="M31,67 C24,60 22,50 28,43 C37,46 44,46 50,47"/>
+          <path class="thr-fil" style="--d:210ms" pathLength="1" d="M7,41 C23,43 36,45 50,47"/>
+          <path class="thr-fil" style="--d:260ms" pathLength="1" d="M71,15 C62,28 56,38 50,47"/>
+        </g>
+      </svg>
+      <div class="threshold__seal"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById('threshold');
+      if (!el) return;
+      var MIN = 650, CAP = 1200, lifted = false;
+      function done() { el.classList.add('threshold--done'); el.removeEventListener('transitionend', done); }
+      function lift() { if (lifted) return; lifted = true; el.classList.add('threshold--lifted'); el.addEventListener('transitionend', done); setTimeout(done, 900); }
+      // Lift shortly after the DOM is ready (not window.load, which waits on all
+      // images) so the opening is brief; the veil is pointer-events:none so it
+      // never blocks interaction. CAP is an absolute backstop.
+      function schedule() { setTimeout(lift, MIN); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule); else schedule();
+      setTimeout(lift, CAP);
+      // Re-veil before a graphics-profile reload (called from the governor).
+      window.__showThreshold = function () { lifted = false; el.classList.remove('threshold--lifted', 'threshold--done'); };
+    })();
+  </script>
 
   <!-- Static background (front-only) -->
   <div id="bg" aria-hidden="true">

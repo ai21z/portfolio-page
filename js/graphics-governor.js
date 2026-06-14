@@ -506,8 +506,14 @@ function wireControl() {
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
     button.addEventListener('click', () => {
       const profile = button.getAttribute('data-graphics-profile');
-      if (profile) setGraphicsProfile(profile, { persist: true });
       setMenuOpen(false);
+      // A deliberate profile change does a FULL RELOAD behind the threshold veil,
+      // so every scene re-initialises cleanly from the new budget. (Automatic
+      // runtime downgrades stay live — they must not reload mid-experience.)
+      if (!profile || profile === selectedProfile) return;
+      writeStoredProfile(profile);
+      if (typeof window.__showThreshold === 'function') window.__showThreshold();
+      window.location.reload();
     });
   });
 

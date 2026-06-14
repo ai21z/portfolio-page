@@ -4,7 +4,16 @@
   --abyss:#0B0B0C; --charcoal:#131417; --ash:#1E2024; --void:#08090A;
   --bone:#E6E3D8; --spectral:#8FB4FF; --necrotic:#7AAE8A; --ember:#C24A2E;
   --decay-green: #3FFF9F; --blood-red: #FF3B3B; --fungal: #4A5C52;
-  
+
+  /* Font + dim tokens. These are referenced (often bare, no fallback) across
+     blog.css and others; defining them here gives the site one vocabulary and
+     fixes the silent color regression where `color: var(--bone-dim)` resolved
+     to an invalid declaration. --bone-dim is --bone at 60%. */
+  --font-display: "Special Elite", monospace;
+  --font-body: "Special Elite", monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --bone-dim: rgba(230, 227, 216, 0.6);
+
   /* Swiss Grid System - 8px base unit (Precise rhythm) */
   --unit: 8px;
   --gap: calc(var(--unit) * 3);        /* 24px */

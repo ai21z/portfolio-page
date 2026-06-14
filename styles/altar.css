@@ -761,7 +761,7 @@ button.ghost:hover {
   }
 
   #about .altar {
-    --gutter: min(0, 16px);
+    --gutter: clamp(12px, 4vw, 16px);
     padding-inline: var(--gutter);
     padding-left: var(--gutter);
     padding-right: var(--gutter);
@@ -833,7 +833,7 @@ button.ghost:hover {
   }
 
   #skills .altar {
-    --gutter: min(0, 16px);
+    --gutter: clamp(12px, 4vw, 16px);
     padding-inline: var(--gutter);
     padding-left: var(--gutter);
     padding-right: var(--gutter);

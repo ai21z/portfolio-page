@@ -340,7 +340,7 @@
   border: 1px solid rgba(63, 255, 159, 0.3);
   border-radius: 4px;
   padding: 16px;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Special Elite', monospace;
   z-index: 10;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
@@ -456,7 +456,7 @@
 }
 
 .writer-line {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Special Elite', monospace;
   font-size: 0.9rem;
   color: rgba(63, 255, 159, 0.9);
   text-shadow: 0 0 10px rgba(63, 255, 159, 0.5);

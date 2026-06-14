@@ -66,11 +66,11 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 
 .wax-seal {
   position: absolute;
-  top: clamp(8px, 2vw, 16px);
+  top: var(--seal-top);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(64px, 12vw, 100px);
-  height: clamp(64px, 12vw, 100px);
+  width: var(--seal-size);
+  height: var(--seal-size);
   z-index: 4;
   display: flex;
   align-items: center;
@@ -85,8 +85,8 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 }
 
 .seal-sigil {
-  width: clamp(64px, 12vw, 100px);
-  height: clamp(64px, 12vw, 100px);
+  width: var(--seal-size);
+  height: var(--seal-size);
   transform: rotate(180deg);
   position: relative;
   z-index: 1;
@@ -94,10 +94,16 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
 
 .notebook-page {
   position: relative;
+  /* Seal geometry as tokens so the header's top padding always clears the
+     seal (with a real gap) and can't silently regress when the seal is
+     retuned. --seal-gap is the breathing room below the seal. */
+  --seal-top: clamp(8px, 2vw, 16px);
+  --seal-size: clamp(64px, 12vw, 100px);
+  --seal-gap: clamp(18px, 3vw, 24px);
   max-width: 720px;
   width: min(100%, 720px);
   padding: clamp(16px, 4vw, 40px);
-  padding-top: clamp(48px, 8vw, 88px); /* Extra top padding for seal */
+  padding-top: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)); /* clear the seal + gap */
   padding-left: clamp(32px, 6vw, 72px); /* Extra left for spiral holes */
   box-shadow: 
     0 10px 40px rgba(0, 0, 0, 0.5),
@@ -670,22 +676,14 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     font-size: 18px;
   }
 
-  .wax-seal {
-    top: 6px;
-    width: clamp(60px, 15vw, 85px);
-    height: clamp(60px, 15vw, 85px);
-  }
-
-  .seal-sigil {
-    width: clamp(60px, 15vw, 85px);
-    height: clamp(60px, 15vw, 85px);
-  }
-
   .notebook-page {
+    /* Mobile seal geometry — the header's top padding tracks these tokens */
+    --seal-top: 6px;
+    --seal-size: clamp(60px, 15vw, 85px);
+    --seal-gap: clamp(16px, 5vw, 22px);
     max-width: 100%;
     width: 100%;
-    /* Mobile-optimized padding: more top space for seal, comfortable sides, left space for spiral */
-    padding: clamp(4rem, 12vw, 5rem) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
+    padding: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
     /* Slightly reduce rotation on mobile for better alignment */
     transform: rotate(-0.3deg);
   }

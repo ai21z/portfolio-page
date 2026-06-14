@@ -1598,9 +1598,26 @@ function autoInit() {
   });
 
   observer.observe(workSection, { attributes: true });
-  
+
+  // Rebuild the scene in place when the user picks a new graphics profile while
+  // Work is active. The globe bakes particle/geometry budgets at init, so
+  // without this a profile switch had no visible effect until a full reload.
+  // Only react to explicit profile switches (reason 'profile'); ignore the
+  // runtime auto-downgrade/promote events (which would thrash the rebuild).
+  let profileReinitTimer = null;
+  window.addEventListener('graphics:profile-change', (e) => {
+    if (e.detail?.reason !== 'profile') return;
+    if (!gl || !workSection.classList.contains('active-section')) return;
+    clearTimeout(profileReinitTimer);
+    profileReinitTimer = setTimeout(() => {
+      if (!workSection.classList.contains('active-section') || !gl) return;
+      cleanupWorkGlobe();
+      initWorkGlobe();
+    }, 160);
+  });
+
   const initiallyActive = workSection.classList.contains('active-section');
-  
+
   if (initiallyActive) {
     initWorkGlobe();
   }

@@ -154,30 +154,8 @@
   mix-blend-mode: screen;
 }
 
-/* Microscope graticule: crosshair (::before) + inner limbal ring (::after).
-   The crosshair lives on its own pseudo so a scrying screen can fade just the
-   cross (it fights an iris/pupil) while keeping the ring as loupe framing. */
-.lens-reticle::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    linear-gradient(rgba(45,212,175,0) calc(50% - 0.5px),
-      rgba(45,212,175,0.26) calc(50% - 0.5px), rgba(45,212,175,0.26) calc(50% + 0.5px),
-      rgba(45,212,175,0) calc(50% + 0.5px)),
-    linear-gradient(90deg, rgba(45,212,175,0) calc(50% - 0.5px),
-      rgba(45,212,175,0.26) calc(50% - 0.5px), rgba(45,212,175,0.26) calc(50% + 0.5px),
-      rgba(45,212,175,0) calc(50% + 0.5px));
-  -webkit-mask: radial-gradient(circle at 50% 50%, #000 0 60%, transparent 61%);
-          mask: radial-gradient(circle at 50% 50%, #000 0 60%, transparent 61%);
-  transition: opacity 460ms ease;
-}
-
-/* When a scrying screen opens under the glass, dissolve the crosshair only */
-.altar-lens.lens-open .lens-reticle::before {
-  opacity: 0;
-}
+/* Loupe framing: a faint inner limbal ring (::after). The center crosshair
+   was removed — with a living iris/colony under the glass it only competed. */
 
 .lens-reticle::after {
   content: '';

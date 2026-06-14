@@ -345,7 +345,6 @@ function initAltarEye(sectionId) {
     tgx = clamp(dir.x, -1, 1) * R * 0.06;   // gaze NEVER aims: <= 6% of radius
     tgy = clamp(dir.y, -1, 1) * R * 0.06;
     mode = 'engaged';
-    lens.classList.add('lens-open');
     ensureLoop();
   }
   function onUnhover(card) {
@@ -353,7 +352,6 @@ function initAltarEye(sectionId) {
     hoveredCard = null;
     mode = 'idle';
     tgx = tgy = 0; tdil = 1;
-    lens.classList.remove('lens-open');
   }
 
   section.querySelectorAll('.slab.paper').forEach((card) => {
@@ -366,7 +364,7 @@ function initAltarEye(sectionId) {
   // ---- lifecycle ----
   const mo = new MutationObserver(() => {
     if (sectionActive() && lensVisible()) ensureLoop();
-    else if (!sectionActive()) { lens.classList.remove('lens-open'); stop(); }
+    else if (!sectionActive()) stop();
   });
   mo.observe(section, { attributes: true, attributeFilter: ['class'] });
 

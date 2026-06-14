@@ -38,31 +38,13 @@ GLOW.width = GLOW.height = GLOW_SIZE;
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-// Per-card constellations: nodes in normalised coords (-1..1, y down) scaled by
-// the formation radius; edges are node-index pairs drawn as struts.
-const CONSTELLATIONS = {
-  systems: {
-    nodes: [[0, 0], [0, -1], [0.87, -0.5], [0.87, 0.5], [0, 1], [-0.87, 0.5], [-0.87, -0.5]],
-    edges: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]],
-  },
-  mesh: {
-    nodes: [[0, -1], [0.87, -0.5], [0.87, 0.5], [0, 1], [-0.87, 0.5], [-0.87, -0.5]],
-    edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [0, 3], [1, 4], [2, 5]],
-  },
-  tree: {
-    nodes: [[0, 0.95], [-0.55, 0.25], [0.55, 0.25], [-0.82, -0.62], [-0.32, -0.62], [0.32, -0.62], [0.82, -0.62]],
-    edges: [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]],
-  },
-  scatter: {
-    nodes: [[-0.62, -0.5], [0.18, -0.85], [0.72, -0.18], [0.42, 0.55], [-0.32, 0.72], [-0.82, 0.18], [0.02, 0.06]],
-    edges: [[0, 5], [0, 6], [6, 3], [1, 2], [4, 6]],
-  },
-};
-const CARD_CONST = {
-  'slab-systems': 'systems',
-  'slab-interface': 'mesh',
-  'slab-scientific': 'tree',
-  'slab-restoflife': 'scatter',
+// One constellation for every card (the hub-and-spokes the owner liked): nodes
+// in normalised coords (-1..1, y down) scaled by the formation radius; edges are
+// node-index pairs drawn as struts. The whole figure's centre is pulled toward
+// the hovered card (the "gravity").
+const CONSTELLATION = {
+  nodes: [[0, 0], [0, -1], [0.87, -0.5], [0.87, 0.5], [0, 1], [-0.87, 0.5], [-0.87, -0.5]],
+  edges: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]],
 };
 
 function initAltarCulture(sectionId) {
@@ -78,7 +60,7 @@ function initAltarCulture(sectionId) {
   let lastTs = 0;
 
   let mode = 'idle';                 // 'idle' | 'crystallise'
-  let activeConst = CONSTELLATIONS.systems;
+  const activeConst = CONSTELLATION;
   let hoveredCard = null;
   let reachX = 0, reachY = 0, reachTX = 0, reachTY = 0;
   let intensity = 0;                 // eased 0 idle -> 1 engaged
@@ -138,9 +120,9 @@ function initAltarCulture(sectionId) {
     reachX += (reachTX - reachX) * 0.08;
     reachY += (reachTY - reachY) * 0.08;
 
-    const fx = cx + reachX * R * 0.3;
-    const fy = cy + reachY * R * 0.3;
-    const formR = R * 0.58;
+    const fx = cx + reachX * R * 0.34;   // pull the whole figure toward the card
+    const fy = cy + reachY * R * 0.34;
+    const formR = R * 0.55;
 
     const nodes = activeConst.nodes;
     const nc = nodes.length;
@@ -279,8 +261,6 @@ function initAltarCulture(sectionId) {
     return { x: clamp(vx / d, -1, 1), y: clamp(vy / d, -1, 1) };
   }
   function onHover(card) {
-    const key = [...card.classList].find((c) => CARD_CONST[c]);
-    activeConst = CONSTELLATIONS[CARD_CONST[key]] || CONSTELLATIONS.systems;
     hoveredCard = card;
     const dir = dirToCard(card);
     reachTX = dir.x; reachTY = dir.y;

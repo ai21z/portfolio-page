@@ -1,19 +1,15 @@
 // js/altar-eye.js — The Oracle's Eye for the About lens.
 //
-// The lens becomes a scrying orb with something alive UNDER the glass: a dark
-// vitreous well with a teal fibre-iris and a bottomless pupil that responds to
-// which About card you're reading. Every card reads as a living eye — a deep
-// glowing pupil-well in its own hue — and each carries a distinct iris:
-//   Background      -> LATTICE  (meridians + arcs + graticule ticks)   teal
-//   What I value    -> SIGIL    (quartered stroma, a violet cross)      cool violet
-//   Art's paramour  -> BLOOM    (warm ember welling from the pupil)     amber  (the warm one)
-//   Contact / Now   -> BEACON   (rings + bearing + transmission + pin)  signal cyan
+// The lens becomes a warm scrying eye under the glass — the "Art's paramour"
+// reading on every card: a teal fibre-iris with amber welling from a bottomless
+// pupil. The only thing that changes per card is which way the eye LOOKS: hover
+// or focus a card and the iris turns gently toward it.
 //
-// You peer INTO it, it never peers OUT at you. Five guardrails keep it an
-// instrument, not a creature: the gaze never aims (drift <= R*0.06, eased slow);
-// no blink / tremor / pupil-pulse; plain damped lerp (no overshoot); the
+// You peer INTO it, it never peers OUT at you. Guardrails keep it an instrument,
+// not a creature: the gaze leans but never snaps (eased slow, bounded); no
+// blink / tremor / pupil-pulse; plain damped lerp (no overshoot); the
 // catch-light (CSS .lens-glint) is glass, pinned, never tracking; the centre is
-// a bottomless well with only a subordinate abyss-glow.
+// a bottomless well with a subordinate abyss-glow.
 //
 // House rules: decorative + aria-hidden, desktop-only (>900px; lens display:none
 // below), governor 'altar-eye', self-stops offscreen (about is not an owner
@@ -24,6 +20,8 @@ import { sizeCanvas } from './utils.js';
 
 const prefersReducedMotion =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const WARM = [255, 150, 74]; // the amber that wells from the pupil
 
 const GLOW = document.createElement('canvas');
 GLOW.width = GLOW.height = 32;
@@ -40,16 +38,6 @@ GLOW.width = GLOW.height = 32;
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-// Per-card config. dilate = resting aperture; glow = the hue welling from the
-// pupil (what makes each card read as a living eye). Only paramour is warm.
-const IDLE_GLOW = [70, 200, 170];
-const CARD_IRIS = {
-  'slab-about': { motif: 'lattice', dilate: 0.96, glow: [70, 200, 170] },
-  'slab-expertise': { motif: 'sigil', dilate: 1.0, glow: [126, 150, 235] },
-  'slab-paramour': { motif: 'bloom', dilate: 1.18, glow: [255, 150, 74] },
-  'slab-vitals': { motif: 'beacon', dilate: 1.06, glow: [90, 220, 200] },
-};
-
 function initAltarEye(sectionId) {
   const section = document.getElementById(sectionId);
   if (!section) return;
@@ -63,11 +51,9 @@ function initAltarEye(sectionId) {
   let motes = [];
 
   let mode = 'idle';
-  let activeMotif = 'lattice';
-  let motifT = 0;
-  let gx = 0, gy = 0, tgx = 0, tgy = 0;
+  let motifT = 0;                 // 0 idle -> 1 engaged (brightness)
+  let gx = 0, gy = 0, tgx = 0, tgy = 0;   // gaze (eased), bounded
   let dil = 1, tdil = 1;
-  let cg = [...IDLE_GLOW], tg = [...IDLE_GLOW];   // eased glow colour
   let hoveredCard = null;
 
   const sectionActive = () => section.classList.contains('active-section');
@@ -113,7 +99,7 @@ function initAltarEye(sectionId) {
 
   // ---- drawing ----
   function drawBase(ox, oy, irisR, pupilR, breathe) {
-    const lift = 0.32 + 0.18 * motifT;     // iris fills out a little when engaged
+    const lift = 0.32 + 0.18 * motifT;
     const base = ctx.createRadialGradient(ox, oy, pupilR * 0.6, ox, oy, irisR);
     base.addColorStop(0, `rgba(40,120,104,${lift * breathe})`);
     base.addColorStop(0.6, `rgba(28,86,78,${0.62 * lift * breathe})`);
@@ -134,6 +120,7 @@ function initAltarEye(sectionId) {
     ctx.strokeStyle = `rgba(120,206,176,${(0.12 + 0.06 * motifT) * breathe})`;
     ctx.stroke();
 
+    // caustic collarette at the pupil edge
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineWidth = 2;
     ctx.strokeStyle = `rgba(150,235,205,${0.42 * breathe})`;
@@ -141,11 +128,10 @@ function initAltarEye(sectionId) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // the core glow welling from the pupil — what makes each card a LIVING eye.
-  // colour is the active card's hue (warm only for paramour), fades out by
-  // ~0.6*irisR so it never becomes a solid disc.
+  // the warm core glow welling from the pupil — gone by ~0.6*irisR (a gradient,
+  // never a solid disc) — plus slow devotional ripples.
   function coreGlow(ox, oy, irisR, pupilR) {
-    const r = cg[0] | 0, g = cg[1] | 0, bch = cg[2] | 0;
+    const [r, g, bch] = WARM;
     const gi = 0.12 + 0.34 * motifT;
     const gr = irisR * 0.62;
     ctx.globalCompositeOperation = 'lighter';
@@ -155,6 +141,12 @@ function initAltarEye(sectionId) {
     grad.addColorStop(1, `rgba(${r},${g},${bch},0)`);
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.arc(ox, oy, gr, 0, Math.PI * 2); ctx.fill();
+
+    ctx.lineWidth = 1;
+    for (let k = 1; k <= 2; k++) {
+      ctx.strokeStyle = `rgba(255,170,110,${0.1 * motifT})`;
+      ctx.beginPath(); ctx.arc(ox, oy, pupilR + (irisR - pupilR) * (0.35 * k), 0, Math.PI * 2); ctx.stroke();
+    }
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -167,9 +159,8 @@ function initAltarEye(sectionId) {
     ctx.beginPath(); ctx.arc(ox, oy, pupilR, 0, Math.PI * 2); ctx.fill();
   }
 
-  // a light at the bottom of the well, in the card's hue (candle / cool ember)
   function abyssGlow(ox, oy, pupilR) {
-    const r = cg[0] | 0, g = cg[1] | 0, bch = cg[2] | 0;
+    const [r, g, bch] = WARM;
     const a = 0.08 + 0.26 * motifT;
     ctx.globalCompositeOperation = 'lighter';
     const grad = ctx.createRadialGradient(ox, oy, 0, ox, oy, pupilR * 0.6);
@@ -181,76 +172,11 @@ function initAltarEye(sectionId) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  function motifLattice(ox, oy, irisR, pupilR, t) {
-    ctx.strokeStyle = `rgba(120,206,176,${0.28 * t})`;
-    ctx.lineWidth = 1;
-    for (let k = 1; k <= 3; k++) {
-      const rr = pupilR + (irisR - pupilR) * (k / 3.4);
-      ctx.beginPath(); ctx.arc(ox, oy, rr, 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.setLineDash([2, 4]);
-    ctx.strokeStyle = `rgba(150,235,205,${0.3 * t})`;
-    ctx.beginPath(); ctx.arc(ox, oy, irisR * 0.78, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  function motifSigil(ox, oy, irisR, pupilR, t) {
-    const mr = (pupilR + irisR) * 0.5;
-    ctx.strokeStyle = `rgba(120,206,176,${0.34 * t})`;
-    ctx.lineWidth = 1.4;
-    for (let q = 0; q < 4; q++) {
-      const a = q * Math.PI / 2;
-      const mx = ox + Math.cos(a) * mr, my = oy + Math.sin(a) * mr;
-      ctx.beginPath(); ctx.arc(mx, my, irisR * 0.12, a + 0.6, a + Math.PI - 0.6); ctx.stroke();
-    }
-    ctx.strokeStyle = `rgba(150,130,235,${0.42 * t})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(ox - irisR * 0.82, oy); ctx.lineTo(ox + irisR * 0.82, oy);
-    ctx.moveTo(ox, oy - irisR * 0.82); ctx.lineTo(ox, oy + irisR * 0.82);
-    ctx.stroke();
-  }
-
-  function motifBloom(ox, oy, irisR, pupilR, t) {
-    // the warmth is carried by coreGlow now; bloom adds slow devotional ripples
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.lineWidth = 1;
-    for (let k = 1; k <= 2; k++) {
-      ctx.strokeStyle = `rgba(255,170,110,${0.12 * t})`;
-      ctx.beginPath(); ctx.arc(ox, oy, pupilR + (irisR - pupilR) * (0.35 * k), 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  function motifBeacon(ox, oy, irisR, pupilR, t) {
-    ctx.strokeStyle = `rgba(120,206,176,${0.26 * t})`;
-    ctx.lineWidth = 1;
-    for (let k = 1; k <= 2; k++) {
-      ctx.beginPath(); ctx.arc(ox, oy, pupilR + (irisR - pupilR) * (k / 2.6), 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(ox, oy - pupilR * 1.1); ctx.lineTo(ox, oy - irisR * 0.86); ctx.stroke();
-    ctx.setLineDash([3, 5]);
-    ctx.strokeStyle = `rgba(150,235,205,${0.3 * t})`;
-    ctx.beginPath(); ctx.arc(ox, oy, irisR * 0.72, -0.5, 1.4); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalCompositeOperation = 'lighter';
-    const pin = ctx.createRadialGradient(ox, oy - irisR * 0.86, 0, ox, oy - irisR * 0.86, irisR * 0.1);
-    pin.addColorStop(0, `rgba(120,235,210,${0.55 * t})`);
-    pin.addColorStop(1, 'rgba(120,235,210,0)');
-    ctx.fillStyle = pin;
-    ctx.beginPath(); ctx.arc(ox, oy - irisR * 0.86, irisR * 0.1, 0, Math.PI * 2); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  const MOTIFS = { lattice: motifLattice, sigil: motifSigil, bloom: motifBloom, beacon: motifBeacon };
-
-  function step(ts) {
+  function step() {
     motifT += ((mode === 'engaged' ? 1 : 0) - motifT) * 0.07;
     gx += (tgx - gx) * 0.05;
     gy += (tgy - gy) * 0.05;
     dil += (tdil - dil) * 0.07;
-    for (let i = 0; i < 3; i++) cg[i] += (tg[i] - cg[i]) * 0.06;
     for (const m of motes) {
       m.x += m.vx; m.y += m.vy;
       const dx = m.x - cx, dy = m.y - cy, d = Math.hypot(dx, dy);
@@ -274,7 +200,6 @@ function initAltarEye(sectionId) {
 
     drawBase(ox, oy, irisR, pupilR, breathe);
     coreGlow(ox, oy, irisR, pupilR);
-    if (motifT > 0.02 && MOTIFS[activeMotif]) MOTIFS[activeMotif](ox, oy, irisR, pupilR, motifT);
     drawPupil(ox, oy, pupilR);
     abyssGlow(ox, oy, pupilR);
 
@@ -294,7 +219,6 @@ function initAltarEye(sectionId) {
     ensureCanvas();
     layout();
     mode = 'idle'; motifT = 0; gx = gy = tgx = tgy = 0; dil = tdil = 1;
-    cg = [...IDLE_GLOW]; tg = [...IDLE_GLOW];
     draw(performance.now());
   }
 
@@ -306,7 +230,7 @@ function initAltarEye(sectionId) {
     const interval = Math.max(33, b.frameIntervalMs || 33);
     if (ts - lastTs < interval) { rafId = requestAnimationFrame(loop); return; }
     const dt = ts - lastTs; lastTs = ts;
-    step(ts); draw(ts);
+    step(); draw(ts);
     reportFrameSample('altar-eye', dt);
     rafId = requestAnimationFrame(loop);
   }
@@ -335,15 +259,11 @@ function initAltarEye(sectionId) {
     return { x: vx / d, y: vy / d };
   }
   function onHover(card) {
-    const cfg = CARD_IRIS[[...card.classList].find((c) => CARD_IRIS[c])];
-    if (!cfg) return;
     hoveredCard = card;
-    activeMotif = cfg.motif;
-    tdil = cfg.dilate;
-    tg = [...cfg.glow];
+    tdil = 1.15;                              // a touch more open when attending
     const dir = dirToCard(card);
-    tgx = clamp(dir.x, -1, 1) * R * 0.06;   // gaze NEVER aims: <= 6% of radius
-    tgy = clamp(dir.y, -1, 1) * R * 0.06;
+    tgx = clamp(dir.x, -1, 1) * R * 0.11;     // look toward the card
+    tgy = clamp(dir.y, -1, 1) * R * 0.11;
     mode = 'engaged';
     ensureLoop();
   }
@@ -352,7 +272,6 @@ function initAltarEye(sectionId) {
     hoveredCard = null;
     mode = 'idle';
     tgx = tgy = 0; tdil = 1;
-    tg = [...IDLE_GLOW];
   }
 
   section.querySelectorAll('.slab.paper').forEach((card) => {

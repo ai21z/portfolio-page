@@ -44,6 +44,22 @@ test.describe('Work career rail', () => {
     await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
   });
 
+  test('the field-note closes on mouse-out, even after a click (regression)', async ({ page }) => {
+    await gotoWork(page, DESKTOP);
+    await page.waitForSelector('.rail-node');
+    const note = page.locator('.work-note');
+    const adp = page.locator('.rail-node[data-id="adp"] .rail-dot-btn');
+
+    await adp.hover();
+    await expect(note).toHaveClass(/is-visible/);
+
+    // A click drives the globe and keeps the dot highlighted, but must NOT pin the note open.
+    await adp.click();
+    await page.mouse.move(1240, 760);
+    await expect(note).not.toHaveClass(/is-visible/);
+    await expect(page.locator('.rail-node[data-id="adp"].is-selected')).toHaveCount(1);
+  });
+
   test('clicking a place or project drives the globe; a credential does not', async ({ page }) => {
     const pageErrors: string[] = [];
     page.on('pageerror', (e) => pageErrors.push(e.message));

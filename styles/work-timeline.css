@@ -257,13 +257,15 @@
 /* ---- field-note bubble ---- */
 .work-note {
   position: absolute;
-  left: 300px;
-  width: 322px;
-  background: rgba(11, 16, 16, 0.94);
-  border: 1px solid rgba(63, 255, 159, 0.28);
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55), inset 0 0 30px rgba(63, 255, 159, 0.03);
-  clip-path: polygon(0 0, 100% 0, 99% 26%, 100% 52%, 98.5% 78%, 100% 100%, 0 100%);
-  padding: 13px 18px;
+  left: 292px;
+  width: 342px;
+  /* no plate, no border: just a soft pool of shade that feathers out, darker near the dot */
+  background: rgba(5, 8, 8, 0.86);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  -webkit-mask-image: radial-gradient(150% 135% at 0% 50%, #000 56%, transparent 100%);
+  mask-image: radial-gradient(150% 135% at 0% 50%, #000 56%, transparent 100%);
+  padding: 14px 30px 14px 14px;
   pointer-events: none;
   opacity: 0;
   transform: translateX(-6px);

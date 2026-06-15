@@ -53,7 +53,7 @@ export function initWorkTimeline() {
   note.hidden = true;
 
   let hideTimer = 0;
-  let pinnedId = null;
+  let activeLi = null; // the node whose field-note is currently shown (so it can follow on scroll)
 
   function positionNote(li) {
     const hostRect = host.getBoundingClientRect();
@@ -66,6 +66,7 @@ export function initWorkTimeline() {
 
   function showNote(node, li) {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
+    activeLi = li;
     const driveHint = node.target
       ? (node.target.kind === 'moon' ? 'click → frame the moon' : 'click → locate on Earth')
       : 'credential · note only';
@@ -81,25 +82,22 @@ export function initWorkTimeline() {
   }
 
   function hideNoteSoon() {
-    if (pinnedId) return;
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = window.setTimeout(() => {
       note.classList.remove('is-visible');
       note.hidden = true;
+      activeLi = null;
     }, 140);
   }
 
   function selectNode(node, li) {
-    const wasPinned = pinnedId === node.id;
-    list.querySelectorAll('.rail-node.is-selected').forEach((n) => n.classList.remove('is-selected'));
-    if (wasPinned) {
-      pinnedId = null;
-      hideNoteSoon();
-    } else {
-      pinnedId = node.id;
-      li.classList.add('is-selected');
-      showNote(node, li);
-    }
+    // Persistent highlight of the milestone the globe is focused on; the note itself
+    // stays hover/focus-driven so it always closes when you move away.
+    list.querySelectorAll('.rail-node.is-selected').forEach((n) => {
+      if (n !== li) n.classList.remove('is-selected');
+    });
+    li.classList.add('is-selected');
+    showNote(node, li);
     if (node.target) {
       document.dispatchEvent(new CustomEvent('work-timeline:select', {
         detail: { id: node.id, target: node.target }
@@ -160,11 +158,15 @@ export function initWorkTimeline() {
     if (best) best.classList.add('is-centered');
   };
   scroll.addEventListener('scroll', () => {
-    if (pinnedId) {
-      const li = list.querySelector('.rail-node[data-id="' + pinnedId + '"]');
-      if (li) positionNote(li);
-    }
     if (!scrollRaf) scrollRaf = requestAnimationFrame(markCentered);
+    // Keep a shown note glued to its node; hide it only once the node scrolls out of view.
+    if (activeLi && note.classList.contains('is-visible')) {
+      const sr = scroll.getBoundingClientRect();
+      const lr = activeLi.getBoundingClientRect();
+      const center = lr.top + lr.height / 2;
+      if (center < sr.top || center > sr.bottom) hideNoteSoon();
+      else positionNote(activeLi);
+    }
   }, { passive: true });
   requestAnimationFrame(markCentered);
 }

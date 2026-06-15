@@ -841,6 +841,60 @@ async function initBlogNetwork(){
     // counter-glint — a short crisp bottom-right arc for the curvature read
     frag.appendChild(el('path', { d: arc(r + 9, 34, 62), fill: 'none', stroke: 'rgba(200,228,220,0.2)', 'stroke-width': 2, 'stroke-linecap': 'round' }));
 
+    // ===== Stage 2: the legendary signature =====
+    // (a) rim-growth FRINGE — growth creeps inward from the rim in the colony's OWN moss
+    //     palette (PAL.NECROTIC), masked to fade out before the colony core, so the article
+    //     network reads as the culture that grew in THIS dish. Anastomotic (splits + rejoins).
+    const fade = el('radialGradient', { id: 'dishFringeFade' });
+    fade.innerHTML = '<stop offset="0%" stop-color="#000"/><stop offset="58%" stop-color="#000"/>'
+      + '<stop offset="88%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/>';
+    const fmask = el('mask', { id: 'dishFringe', maskUnits: 'userSpaceOnUse' });
+    fmask.appendChild(el('circle', { cx, cy, r: r + 2, fill: 'url(#dishFringeFade)' }));
+    defs.append(fade, fmask);
+    const fringe = el('g', { class: 'dish-fringe', mask: 'url(#dishFringe)', fill: 'none', stroke: 'rgba(122,168,148,0.30)', 'stroke-width': 1.1, 'stroke-linecap': 'round' });
+    const NF = 13, tips = [];
+    for (let i = 0; i < NF; i++) {
+      const a = (i / NF) * Math.PI * 2 + ((i * 53) % 17) / 80;
+      const reach = r * (0.30 + ((i * 31) % 10) / 55);
+      const sway = ((i % 2) ? 1 : -1) * (0.10 + ((i * 7) % 9) / 70);
+      const am = a + sway, ae = a + sway * 1.7;
+      const x0 = cx + r * Math.cos(a), y0 = cy + r * Math.sin(a);
+      const xm = cx + (r - reach * 0.5) * Math.cos(am), ym = cy + (r - reach * 0.5) * Math.sin(am);
+      const xe = cx + (r - reach) * Math.cos(ae), ye = cy + (r - reach) * Math.sin(ae);
+      fringe.appendChild(el('path', { d: `M ${x0} ${y0} Q ${xm} ${ym} ${xe} ${ye}` }));
+      tips.push([xe, ye]);
+      if (i % 3 === 0) { // an offshoot that branches off
+        const bx = cx + (r - reach * 0.62) * Math.cos(am + 0.2), by = cy + (r - reach * 0.62) * Math.sin(am + 0.2);
+        fringe.appendChild(el('path', { d: `M ${xm} ${ym} Q ${(xm + bx) / 2} ${(ym + by) / 2} ${bx} ${by}` }));
+      }
+    }
+    for (let i = 0; i < NF; i += 3) { // anastomosis — rejoin adjacent tips into a web
+      const A = tips[i], B = tips[(i + 1) % NF];
+      const mx = (A[0] + B[0]) / 2 + (cx - (A[0] + B[0]) / 2) * 0.14, my = (A[1] + B[1]) / 2 + (cy - (A[1] + B[1]) / 2) * 0.14;
+      fringe.appendChild(el('path', { d: `M ${A[0]} ${A[1]} Q ${mx} ${my} ${B[0]} ${B[1]}`, 'stroke-width': 0.8 }));
+    }
+    frag.appendChild(fringe);
+
+    // (b) engraved specimen TAG — typewriter notation curved on the lower-left rim
+    //     (a dead zone between the N/E/S/W category labels).
+    defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 156) }));
+    const tagText = el('text', { class: 'dish-tag-text' });
+    const tp = el('textPath', { href: '#dishTagArc', startOffset: '50%', 'text-anchor': 'middle' });
+    tp.textContent = 'CULTURE No. AZ-2026 · incept vi.2026';
+    tagText.appendChild(tp);
+    frag.appendChild(tagText);
+    // (c) ember 'culture alive' tick at the head of the tag (the single warm focal)
+    const ea = 112 * Math.PI / 180, eR = r + 20;
+    frag.appendChild(el('circle', { class: 'dish-ember', cx: cx + eR * Math.cos(ea), cy: cy + eR * Math.sin(ea), r: 3.4 }));
+
+    // wire the ember to the blog hover bus ONCE — it brightens when you examine a hub
+    // (#dish keeps the class across resize innerHTML wipes; only its children are rebuilt)
+    if (!buildDish.__wired) {
+      buildDish.__wired = true;
+      window.addEventListener('blog:hover', () => svg.classList.add('dish-hot'));
+      window.addEventListener('blog:hover-off', () => svg.classList.remove('dish-hot'));
+    }
+
     svg.appendChild(frag);
     return { cx, cy, r };
   }

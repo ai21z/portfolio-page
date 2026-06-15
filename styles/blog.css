@@ -319,6 +319,28 @@
   outline-offset: 4px;
 }
 
+/* Petri-dish specimen tag + 'culture alive' ember (drawn into #dish) */
+.dish-tag-text {
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  fill: rgba(201, 194, 179, 0.7);
+}
+.dish-ember {
+  fill: #c1733a; /* the single warm focal */
+  transition: fill 220ms ease;
+}
+.dish.dish-hot .dish-ember {
+  fill: #e0944a; /* brightens while you examine a hub */
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dish-ember { animation: dish-pulse 3.4s ease-in-out infinite; }
+}
+@keyframes dish-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
 .arc-label {
   fill: rgba(228, 189, 140, 0.75); /* Warm brass - slightly brighter base */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;

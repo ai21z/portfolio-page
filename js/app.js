@@ -118,7 +118,6 @@ let myceliumReadyPromise = null;
 let navStreamsWired = false;
 let blogNetworkModulePromise = null;
 let workGlobeModulePromise = null;
-let nowCardsModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
@@ -135,12 +134,6 @@ function ensureSectionModule(sectionName) {
     });
   }
 
-  if (sectionName === 'now' && !nowCardsModulePromise) {
-    nowCardsModulePromise = import('./now-cards.js').catch((err) => {
-      nowCardsModulePromise = null;
-      console.warn('⚠️ now cards module unavailable:', err);
-    });
-  }
 }
 
 async function loadMycelium() {
@@ -1417,7 +1410,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       scheduleBlogHashAction(() => enterHub(hubId, { historyMode: 'none' }));
     }
   } else {
-    const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
+    const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
     showSectionWithEffects(initialSection);
   }
@@ -1615,7 +1608,7 @@ window.addEventListener('hashchange', () => {
     return;
   }
 
-  const validSections = ['intro', 'about', 'work', 'contact', 'skills', 'now'];
+  const validSections = ['intro', 'about', 'work', 'contact', 'skills'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash, { historyMode: 'none' });
   } else if (!hash) {

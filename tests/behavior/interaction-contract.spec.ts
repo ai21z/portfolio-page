@@ -279,36 +279,6 @@ test('tablet section navigation stays fully inside the viewport', async ({ page 
   expect(navRect.bottom).toBeLessThanOrEqual(768 - 16);
 });
 
-test('Now card dialogs expose an X button while preserving re-click close', async ({ page }) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto('/index.html#now');
-  await page.waitForLoadState('domcontentloaded');
-  await waitForActiveSection(page, 'now');
-
-  const firstCard = page.locator('#now-card-grid .now-card').first();
-  const firstFront = firstCard.locator('.now-card-front');
-  await expect(firstFront).toBeVisible();
-
-  await firstFront.click();
-  await expect(firstCard).toHaveClass(/active/);
-  await expect(firstCard.locator('.now-card-close')).toBeVisible();
-  const closeStyle = await textOnlyCloseStyle(page, '#now-card-grid .now-card.active .now-card-close');
-  expect(closeStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)');
-  expect(closeStyle.borderTopStyle).toBe('none');
-  expect(closeStyle.borderTopWidth).toBe('0px');
-  expect(closeStyle.borderRadius).toBe('0px');
-  expect(closeStyle.width).toBeLessThanOrEqual(30);
-  expect(closeStyle.height).toBeLessThanOrEqual(30);
-
-  await firstCard.locator('.now-card-close').click();
-  await expect(firstCard).not.toHaveClass(/active/);
-
-  await firstFront.click();
-  await expect(firstCard).toHaveClass(/active/);
-  await firstFront.click({ force: true });
-  await expect(firstCard).not.toHaveClass(/active/);
-});
-
 test('paper cards expose text-only X buttons and keep re-click close', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto('/index.html#about');
@@ -340,19 +310,10 @@ test('paper cards expose text-only X buttons and keep re-click close', async ({ 
 
 test('page close and section navigation close child overlays', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto('/index.html#now');
+  await page.goto('/index.html#about');
   await page.waitForLoadState('domcontentloaded');
-  await waitForActiveSection(page, 'now');
-
-  const firstNowCard = page.locator('#now-card-grid .now-card').first();
-  await firstNowCard.locator('.now-card-front').click();
-  await expect(firstNowCard).toHaveClass(/active/);
-  await page.locator('#now [data-action="go-intro"]').click();
-  await waitForActiveSection(page, 'main');
-  await expect(firstNowCard).not.toHaveClass(/active/);
-
-  await page.locator('.network-node-label[data-node="about"]').click();
   await waitForActiveSection(page, 'about');
+
   await page.locator('#about .paper').first().click();
   await expect(page.locator('body > .paper.paper-open')).toBeVisible();
   await page.locator('#about .section-nav-link[data-section="skills"]').click();
@@ -373,60 +334,6 @@ test('page close and section navigation close child overlays', async ({ page }) 
   await waitForActiveSection(page, 'contact');
   await expect(page.locator('.work-location-info.visible')).toHaveCount(0);
   await expect(page.locator('.project-panel.visible')).toHaveCount(0);
-});
-
-test('visible Now card actions are not placeholder hash links', async ({ page }) => {
-  await page.goto('/index.html#now');
-  await page.waitForLoadState('domcontentloaded');
-  await waitForActiveSection(page, 'now');
-
-  const cardCount = await page.locator('#now-card-grid .now-card').count();
-  for (let index = 0; index < cardCount; index += 1) {
-    const card = page.locator('#now-card-grid .now-card').nth(index);
-    await card.locator('.now-card-front').click();
-
-    const links = await card.locator('.now-card-link').evaluateAll((anchors) => {
-      return anchors
-        .filter((anchor) => {
-          const rect = anchor.getBoundingClientRect();
-          const style = getComputedStyle(anchor);
-          return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
-        })
-        .map((anchor) => ({
-          text: anchor.textContent?.trim() || '',
-          href: (anchor as HTMLAnchorElement).getAttribute('href') || ''
-        }));
-    });
-
-    expect(links, `card ${index} links`).not.toContainEqual(expect.objectContaining({ href: '#' }));
-    await page.keyboard.press('Escape');
-    await expect(card).not.toHaveClass(/active/);
-  }
-});
-
-test('Now section presents Talos first with a GitHub CTA', async ({ page }) => {
-  await page.goto('/index.html#now');
-  await page.waitForLoadState('domcontentloaded');
-  await waitForActiveSection(page, 'now');
-
-  const firstCard = page.locator('#now-card-grid .now-card').first();
-  await expect(firstCard).toHaveAttribute('data-id', 'talos');
-  await expect(firstCard.locator('.now-card-logo-text')).toBeVisible();
-
-  await firstCard.locator('.now-card-front').click();
-  await expect(firstCard.locator('.now-card-title')).toHaveText('Talos, Local Workspace Operator');
-  await expect(firstCard.locator('.now-card-line')).toHaveText('Governed CLI for local developer tasks');
-  await expect(firstCard.locator('.now-card-tag')).toContainText([
-    'Java',
-    'Local LLMs',
-    'Approval Gates',
-    'Traceability'
-  ]);
-
-  const cta = firstCard.locator('.now-card-link', { hasText: 'View on GitHub' });
-  await expect(cta).toHaveAttribute('href', 'https://github.com/ai21z/talos-cli');
-  await expect(cta).toHaveAttribute('target', '_blank');
-  await expect(cta).toHaveAttribute('rel', /noopener/);
 });
 
 test('Contact disables submit until required verification is ready', async ({ page }) => {

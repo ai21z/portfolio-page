@@ -44,7 +44,7 @@ test('loads major sections without page errors or missing local assets', async (
     }
   });
 
-  for (const hash of ['', '#now', '#work', '#blog', '#contact']) {
+  for (const hash of ['', '#about', '#work', '#blog', '#contact']) {
     await page.goto(`/index.html${hash}`);
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.stage.active-section')).toBeVisible();
@@ -53,7 +53,6 @@ test('loads major sections without page errors or missing local assets', async (
   await expect(page.locator('#main')).toHaveCount(1);
   await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
   await expect(page.locator('#blog-network-canvas')).toHaveCount(1);
-  await expect(page.locator('#now-card-grid')).toHaveCount(1);
   await expect(page.locator('#contact-form')).toHaveCount(1);
 
   expect(pageErrors).toEqual([]);
@@ -165,7 +164,7 @@ test('does not horizontally overflow common responsive viewports', async ({ page
     { width: 768, height: 1024 },
     { width: 1366, height: 768 }
   ];
-  const hashes = ['', '#now', '#work', '#blog', '#contact'];
+  const hashes = ['', '#about', '#skills', '#work', '#blog', '#contact'];
 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);

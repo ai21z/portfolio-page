@@ -45,7 +45,6 @@ const sections: SectionTarget[] = [
   { name: 'hero', hash: '', activeId: 'main' },
   { name: 'about', hash: '#about', activeId: 'about' },
   { name: 'skills', hash: '#skills', activeId: 'skills' },
-  { name: 'now', hash: '#now', activeId: 'now' },
   { name: 'blog', hash: '#blog', activeId: 'blog' },
   { name: 'work', hash: '#work', activeId: 'work' },
   { name: 'contact', hash: '#contact', activeId: 'contact' }

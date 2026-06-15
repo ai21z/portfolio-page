@@ -125,7 +125,6 @@ function createNavLabel(id) {
   label.href = `#${anchorId}`;
   
   const displayNames = {
-    'now': 'now',
     'about': 'about',
     'work': 'work',
     'blog': 'blog',

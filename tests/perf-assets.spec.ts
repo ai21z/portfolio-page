@@ -43,7 +43,6 @@ test('large runtime images have WebP variants referenced by the app', () => {
   const html = readText('index.html');
   const globe = readText('js/work-globe-webgl.js');
   const nav = readText('js/navigation.js');
-  const nowCards = readText('js/now-cards.js');
   const particles = readText('js/portrait-particles.js');
 
   expect(html).toContain('bg_base.webp');
@@ -53,7 +52,6 @@ test('large runtime images have WebP variants referenced by the app', () => {
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
   expect(nav).toContain('AZ-VZ-01.webp');
-  expect(nowCards).toContain('no-bg-seal-sigil.webp');
   expect(particles).toContain('AZ-VZ-01.webp');
 });
 
@@ -63,16 +61,13 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
 
   expect(html).not.toContain('src="./js/blog-network-webgl.js"');
   expect(html).not.toContain('src="./js/work-globe-webgl.js"');
-  expect(html).not.toContain('src="./js/now-cards.js"');
   expect(app).toContain("import('./blog-network-webgl.js')");
   expect(app).toContain("import('./work-globe-webgl.js')");
-  expect(app).toContain("import('./now-cards.js')");
 });
 
 test('portfolio content presents Talos instead of legacy project or retrieval acronym copy', () => {
   const contentFiles = [
     'index.html',
-    'js/now-cards.js',
     'js/work-globe/data/projects.js',
     'js/work-globe/data/work-locations.js'
   ];

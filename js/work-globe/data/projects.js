@@ -1,17 +1,17 @@
 export const PROJECTS = [
   {
-    id: 'personal-webpage',
-    name: 'Personal Necrographic Portfolio',
-    description: 'Interactive WebGL2 visualization with mycelial networks, atmospheric effects, and MTG-inspired project cards. Features pure JavaScript implementation without external 3D libraries.',
-    tech: ['WebGL2', 'JavaScript', 'GLSL Shaders', 'CSS3', 'Canvas API'],
-    github: 'https://github.com/ai21z/personal-webpage',
-    
+    id: 'true-rolls',
+    name: 'True-Rolls',
+    description: 'Provably-fair dice rolls for tabletop. A ChaCha20 RNG with HKDF key separation produces signed receipts and replay proofs, so any roll can be verified after the fact, no trust required.',
+    tech: ['ChaCha20', 'HKDF', 'Cryptography', 'Verifiable RNG'],
+    github: '',
+
     initialAngle: 0,
     orbitRadius: 1.15,
     orbitTilt: 0,
     rotationSpeed: 4.0,
-    
-    color: [0.66, 0.4, 0.87],
+
+    color: [0.85, 0.52, 0.28],
     moonRadius: 0.08,
     glowIntensity: 0.3,
     pulseSpeed: 0.5

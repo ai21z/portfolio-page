@@ -1273,9 +1273,9 @@ function showProjectPanel(moon) {
     <div class="tech-badges">
       ${project.tech.map(t => `<span class="tech-badge">${t}</span>`).join('')}
     </div>
-    <a href="${project.github}" class="github-link" target="_blank" rel="noopener noreferrer">
+    ${project.github ? `<a href="${project.github}" class="github-link" target="_blank" rel="noopener noreferrer">
       View on GitHub →
-    </a>
+    </a>` : '<span class="github-link github-link--soon">Public release soon</span>'}
   `;
   
   projectPanel.innerHTML = html;

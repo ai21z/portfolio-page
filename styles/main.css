@@ -1,13 +1,16 @@
-/* Main stylesheet imports */
+/* Main stylesheet imports.
+   Every child carries the same ?v as this file so a cache-bust on main.css
+   also busts the children (a bare @import is served from stale cache after a
+   deploy). Bump this token (and main.css's link in index.html) together. */
 
-@import 'base.css';
-@import 'canvas.css';
-@import 'navigation.css';
-@import 'layout.css';
-@import 'components.css';
-@import 'contact.css';
-@import 'altar.css';
-@import 'now-cultivating.css';
-@import 'now-cards.css';
-@import 'work.css';
-@import 'blog.css';
+@import 'base.css?v=20260615';
+@import 'canvas.css?v=20260615';
+@import 'navigation.css?v=20260615';
+@import 'layout.css?v=20260615';
+@import 'components.css?v=20260615';
+@import 'contact.css?v=20260615';
+@import 'altar.css?v=20260615';
+@import 'now-cultivating.css?v=20260615';
+@import 'now-cards.css?v=20260615';
+@import 'work.css?v=20260615';
+@import 'blog.css?v=20260615';

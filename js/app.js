@@ -934,7 +934,7 @@ function scheduleBlogHashAction(action) {
   }, 100);
 }
 
-function enterHub(hubId) {
+function enterHub(hubId, { historyMode = 'push' } = {}) {
   if (!hubId || hubId === 'source') {
     return;
   }
@@ -959,7 +959,9 @@ function enterHub(hubId) {
     loadCategoryContent(hubId);
   }
   
-  history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
+  if (historyMode === 'push') {
+    history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
+  }
 }
 
 function resetBlogMapState({ updateHistory = false } = {}) {
@@ -1144,7 +1146,7 @@ function initArticleScrollNav() {
   updateScrollNav();
 }
 
-function enterBlogArticle(hubId, articleId) {
+function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     categoryView.setAttribute('hidden', '');
@@ -1158,7 +1160,9 @@ function enterBlogArticle(hubId, articleId) {
     loadArticleContent(hubId, articleId);
   }
   
-  history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
+  if (historyMode === 'push') {
+    history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
+  }
 }
 
 function exitBlogArticle() {
@@ -1403,13 +1407,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     const parts = hash.split('/');
     const hubId = parts[1];
     const articleId = parts[2];
-    
-    showSectionWithEffects('blog');
-    
+
+    // Deep-link load: the hash is already correct, so don't touch history.
+    showSectionWithEffects('blog', { historyMode: 'none' });
+
     if (articleId) {
-      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId));
+      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId, { historyMode: 'none' }));
     } else if (hubId) {
-      scheduleBlogHashAction(() => enterHub(hubId));
+      scheduleBlogHashAction(() => enterHub(hubId, { historyMode: 'none' }));
     }
   } else {
     const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
@@ -1589,22 +1594,28 @@ window.verifyAlignment = function() {
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.slice(1);
   
-  if (hash.startsWith('blog/')) {
+  // Blog has three history states: #blog (map), #blog/<hub> (category),
+  // #blog/<hub>/<article> (article). Back/Forward drives this, so NEVER push or
+  // replace history here — the hash is already correct (pushing would duplicate
+  // the entry and destroy the Forward stack).
+  if (hash === 'blog' || hash.startsWith('blog/')) {
     const parts = hash.split('/');
     const hubId = parts[1]; // craft, cosmos, convergence, codex
     const articleId = parts[2]; // optional article slug
-    
-    showSectionWithEffects('blog');
-    
+
+    showSectionWithEffects('blog', { historyMode: 'none' });
+
     if (articleId) {
-      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId));
+      scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId, { historyMode: 'none' }));
     } else if (hubId) {
-      scheduleBlogHashAction(() => enterHub(hubId));
+      scheduleBlogHashAction(() => enterHub(hubId, { historyMode: 'none' }));
+    } else {
+      scheduleBlogHashAction(() => resetBlogMapState()); // back to the dish map
     }
     return;
   }
-  
-  const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills', 'now'];
+
+  const validSections = ['intro', 'about', 'work', 'contact', 'skills', 'now'];
   if (validSections.includes(hash)) {
     showSectionWithEffects(hash, { historyMode: 'none' });
   } else if (!hash) {

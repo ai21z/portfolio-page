@@ -464,12 +464,14 @@
   z-index: 1;
 }
 
-/* The "What I value / Recent work" card carries the most text; with the
-   raised readability floors it needs a little more height than the default
-   45% so its last line isn't clipped (.slab is overflow:hidden). Desktop
-   only — the <=900px blocks make every card scroll/auto-height anyway. */
+/* The "What I value / Recent work" and "Systems Thinking" (11 tech chips)
+   cards carry the most text; with the raised readability floors they need a
+   little more height than the default 45% so their last items aren't clipped
+   (.slab is overflow:hidden). Desktop only, the <=900px blocks make every
+   card scroll/auto-height anyway. */
 @media (min-width: 901px) {
-  .slab-expertise {
+  .slab-expertise,
+  .slab-systems {
     max-height: 56%;
   }
 }

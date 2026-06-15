@@ -1,0 +1,337 @@
+/* Work career rail: the interactive "core sample" (js/work-timeline.js).
+   A scrollable vertical spine of dotted nodes on the left of the Work globe.
+   Necrographic: textured dark, bone text, one teal cool glow, amber as the rare warm
+   focal. Certs sit as a lighter stratum so roles and projects stay the focal beats. */
+
+.work-rail {
+  position: absolute;
+  left: 40px;
+  top: 84px;
+  bottom: 36px;
+  width: 384px;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  font-family: 'Special Elite', monospace;
+  pointer-events: none;
+  opacity: 0;
+  animation: hudFadeIn 1s ease-out 0.5s forwards;
+}
+
+/* ---- header + legend ---- */
+.work-rail-head {
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+}
+
+.work-rail-title {
+  font-size: 0.92rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(63, 255, 159, 0.62);
+}
+
+.work-rail-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: rgba(150, 170, 160, 0.5);
+  margin-top: 3px;
+}
+
+.work-rail-legend {
+  list-style: none;
+  margin: 11px 0 0;
+  padding: 0;
+  display: flex;
+  gap: 16px;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(180, 200, 190, 0.5);
+}
+
+.work-rail-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---- glyphs ---- */
+.rail-glyph {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.rail-glyph--work {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #2dd4af;
+  filter: drop-shadow(0 0 3px rgba(45, 212, 175, 0.55));
+}
+
+.rail-glyph--project {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d99a5e, #7a4f2e);
+  box-shadow: 0 0 6px rgba(184, 114, 66, 0.5);
+}
+
+.rail-glyph--cert {
+  width: 9px;
+  height: 9px;
+  background: rgba(201, 194, 179, 0.14);
+  border: 1px solid rgba(201, 194, 179, 0.58);
+  transform: rotate(45deg);
+}
+
+/* ---- scroll viewport ---- */
+.work-rail-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.work-rail-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  pointer-events: auto;
+  padding: 22px 0 64px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63, 255, 159, 0.3) transparent;
+  -webkit-mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
+  mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
+}
+
+.work-rail-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.work-rail-scroll::-webkit-scrollbar-thumb {
+  background: rgba(63, 255, 159, 0.3);
+  border-radius: 2px;
+}
+
+.work-rail-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* spine */
+.work-rail-spine {
+  position: absolute;
+  left: 18px;
+  top: 22px;
+  bottom: 64px;
+  width: 1px;
+  background: linear-gradient(rgba(63, 255, 159, 0.4), rgba(63, 255, 159, 0.05));
+}
+
+/* read-head, fixed at the viewport centre */
+.work-rail-readhead {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(63, 255, 159, 0) 0%, rgba(63, 255, 159, 0.22) 14%, rgba(63, 255, 159, 0.04) 70%, rgba(63, 255, 159, 0) 100%);
+}
+
+/* ---- nodes ---- */
+.work-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rail-node {
+  position: relative;
+}
+
+.rail-dot-btn {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: start;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 13px 10px 13px 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: transform 0.18s ease;
+}
+
+.rail-dot-btn > .rail-glyph {
+  justify-self: center;
+  align-self: start;
+  margin-top: 5px;
+}
+
+.rail-dot-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 2px 0 0 0 rgba(63, 255, 159, 0.6);
+}
+
+.rail-node-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rail-node-year {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: rgba(170, 195, 184, 0.6);
+}
+
+.rail-node-title {
+  font-size: 0.92rem;
+  line-height: 1.15;
+  color: rgba(225, 233, 228, 0.92);
+  margin-top: 1px;
+}
+
+.rail-node-sub {
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: rgba(150, 170, 160, 0.5);
+  margin-top: 3px;
+}
+
+.rail-node--project .rail-node-title {
+  color: rgba(216, 182, 142, 0.92);
+}
+
+/* certifications: a lighter stratum (smaller, dimmer, tighter) */
+.rail-node--cert .rail-dot-btn {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.rail-node--cert .rail-node-title {
+  font-size: 0.78rem;
+  color: rgba(205, 212, 206, 0.6);
+}
+
+.rail-node--cert .rail-node-sub {
+  color: rgba(150, 170, 160, 0.4);
+}
+
+.rail-node--cert .rail-node-year {
+  color: rgba(170, 195, 184, 0.42);
+}
+
+/* hover / focus / centred / selected */
+.rail-node:hover .rail-node-title,
+.rail-dot-btn:focus-visible .rail-node-title {
+  color: #f0f4ef;
+}
+
+.rail-node.is-centered .rail-glyph--work {
+  filter: drop-shadow(0 0 6px rgba(45, 212, 175, 0.9));
+}
+
+.rail-node.is-centered .rail-glyph--project {
+  box-shadow: 0 0 10px rgba(184, 114, 66, 0.75);
+}
+
+.rail-node.is-selected .rail-node-title {
+  color: #f4f7f2;
+}
+
+.rail-node.is-selected .rail-glyph--work {
+  border-bottom-color: #3fff9f;
+  filter: drop-shadow(0 0 7px rgba(63, 255, 159, 0.95));
+}
+
+/* ---- field-note bubble ---- */
+.work-note {
+  position: absolute;
+  left: 300px;
+  width: 322px;
+  background: rgba(11, 16, 16, 0.94);
+  border: 1px solid rgba(63, 255, 159, 0.28);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55), inset 0 0 30px rgba(63, 255, 159, 0.03);
+  clip-path: polygon(0 0, 100% 0, 99% 26%, 100% 52%, 98.5% 78%, 100% 100%, 0 100%);
+  padding: 13px 18px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 12;
+}
+
+.work-note.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.work-note-kicker {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(63, 255, 159, 0.5);
+}
+
+.work-note-title {
+  font-size: 1rem;
+  color: #e9f1ec;
+  margin-top: 5px;
+}
+
+.work-note-meta {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: rgba(150, 180, 168, 0.72);
+  margin-top: 3px;
+}
+
+.work-note-summary {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: rgba(210, 220, 213, 0.85);
+  margin-top: 8px;
+}
+
+.work-note-cta {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(150, 170, 160, 0.45);
+  margin-top: 9px;
+}
+
+.work-note-cta--live {
+  color: rgba(240, 180, 106, 0.78);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-rail {
+    animation: none;
+    opacity: 1;
+  }
+  .work-note {
+    transition: none;
+  }
+  .rail-dot-btn {
+    transition: none;
+  }
+}
+
+/* hide on tablet / mobile (handled like the old HUD via .desktop-only, but be explicit) */
+@media (max-width: 900px) {
+  .work-rail {
+    display: none;
+  }
+}

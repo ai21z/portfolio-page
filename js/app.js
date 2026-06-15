@@ -118,6 +118,7 @@ let myceliumReadyPromise = null;
 let navStreamsWired = false;
 let blogNetworkModulePromise = null;
 let workGlobeModulePromise = null;
+let workTimelineModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
@@ -132,6 +133,15 @@ function ensureSectionModule(sectionName) {
       workGlobeModulePromise = null;
       console.warn('⚠️ work globe module unavailable:', err);
     });
+  }
+
+  if (sectionName === 'work' && !workTimelineModulePromise) {
+    workTimelineModulePromise = import('./work-timeline.js')
+      .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
+      .catch((err) => {
+        workTimelineModulePromise = null;
+        console.warn('⚠️ work timeline module unavailable:', err);
+      });
   }
 
 }

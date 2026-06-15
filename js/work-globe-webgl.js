@@ -41,6 +41,7 @@ let clickStartPos = { x: 0, y: 0 };
 let clickStartTime = 0;
 let animationFrameId = null;
 let autoRotate = true;
+let focusTween = null; // { fromX, fromY, toX, toY, elapsed, dur } while the rail is driving the globe
 let time = 0;
 let lastFrameTime = 0;
 
@@ -500,6 +501,7 @@ function initWorkGlobe() {
     }
   };
   document.addEventListener('visibilitychange', boundVisibilityHandler);
+  document.addEventListener('work-timeline:select', onTimelineSelect);
 
   try {
     initAutoWriter();
@@ -528,15 +530,27 @@ function render(deltaTime) {
   }
 
   if (!isDragging) {
-    rotation.y += rotationVelocity.x;
-    rotation.x += rotationVelocity.y;
+    if (focusTween) {
+      // The rail is steering the globe: ease rotation toward the focused target.
+      focusTween.elapsed += Math.min(deltaTime, 0.05);
+      const t = Math.min(1, focusTween.elapsed / focusTween.dur);
+      const k = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      rotation.x = focusTween.fromX + (focusTween.toX - focusTween.fromX) * k;
+      rotation.y = focusTween.fromY + (focusTween.toY - focusTween.fromY) * k;
+      rotationVelocity.x = 0;
+      rotationVelocity.y = 0;
+      if (t >= 1) focusTween = null;
+    } else {
+      rotation.y += rotationVelocity.x;
+      rotation.x += rotationVelocity.y;
 
-    const rotDecay = Math.pow(0.95, deltaTime * 60);
-    rotationVelocity.x *= rotDecay;
-    rotationVelocity.y *= rotDecay;
+      const rotDecay = Math.pow(0.95, deltaTime * 60);
+      rotationVelocity.x *= rotDecay;
+      rotationVelocity.y *= rotDecay;
 
-    if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
-      rotation.y += 0.002;
+      if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
+        rotation.y += 0.002;
+      }
     }
   }
 
@@ -1340,6 +1354,107 @@ window.addEventListener('ui:close-overlays', () => {
   hideProjectPanel();
 });
 
+// ---- Rail coupling: the timeline drives the globe ----
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Find the globe rotation {x, y} that brings a model-space point to face the camera (+Z).
+// Solved numerically against the real matrix helpers, so it is independent of the storage
+// and compose-order conventions. nearY keeps the chosen yaw close to the current one so the
+// globe takes the short way around instead of unwinding a full spin.
+function faceRotationFor(modelPos, nearY) {
+  const len = Math.hypot(modelPos[0], modelPos[1], modelPos[2]) || 1;
+  const p = [modelPos[0] / len, modelPos[1] / len, modelPos[2] / len];
+  const HALF_PI = Math.PI / 2;
+  const zOf = (rx, ry) => {
+    const m = mat4.multiply(mat4.rotateY(ry), mat4.rotateX(rx));
+    return mat4.transformPoint(m, p)[2];
+  };
+  let bestX = 0;
+  let bestY = 0;
+  let best = -Infinity;
+  for (let ry = -Math.PI; ry < Math.PI; ry += Math.PI / 18) {
+    for (let rx = -HALF_PI; rx <= HALF_PI + 1e-6; rx += Math.PI / 18) {
+      const z = zOf(rx, ry);
+      if (z > best) { best = z; bestX = rx; bestY = ry; }
+    }
+  }
+  let step = Math.PI / 18;
+  for (let i = 0; i < 28; i++) {
+    step *= 0.7;
+    const trials = [[bestX + step, bestY], [bestX - step, bestY], [bestX, bestY + step], [bestX, bestY - step]];
+    for (let t = 0; t < trials.length; t++) {
+      const rx = Math.max(-HALF_PI, Math.min(HALF_PI, trials[t][0]));
+      const ry = trials[t][1];
+      const z = zOf(rx, ry);
+      if (z > best) { best = z; bestX = rx; bestY = ry; }
+    }
+  }
+  const TWO_PI = Math.PI * 2;
+  let dy = bestY - nearY;
+  dy -= TWO_PI * Math.round(dy / TWO_PI);
+  return { x: bestX, y: nearY + dy };
+}
+
+function startFocusTween(target) {
+  autoRotate = false;
+  rotationVelocity.x = 0;
+  rotationVelocity.y = 0;
+  const HALF_PI = Math.PI / 2;
+  const toX = Math.max(-HALF_PI, Math.min(HALF_PI, target.x));
+  if (prefersReducedMotion()) {
+    rotation.x = toX;
+    rotation.y = target.y;
+    focusTween = null;
+    return;
+  }
+  focusTween = { fromX: rotation.x, fromY: rotation.y, toX, toY: target.y, elapsed: 0, dur: 0.85 };
+}
+
+function restoreMoons() {
+  if (!moonOrbitSystem) return;
+  moonOrbitSystem.moons.forEach((m) => { m.paused = false; m.targetScale = 1.0; });
+}
+
+function focusLocation(id) {
+  if (!workPinSystem) return;
+  const pin = workPinSystem.pins.find((p) => p.key === id);
+  if (!pin) return;
+  markWorkGlobeActivity();
+  restoreMoons();
+  if (moonOrbitSystem) moonOrbitSystem.setHoveredMoon(null);
+  startFocusTween(faceRotationFor(pin.basePos, rotation.y));
+  // ignite the focused pin
+  workPinSystem.pins.forEach((p) => { p.hovered = (p === pin); });
+  workPinSystem.hoveredPin = pin.key;
+}
+
+function focusMoon(id) {
+  if (!moonOrbitSystem) return;
+  const moon = moonOrbitSystem.moons.find((m) => m.project && m.project.id === id);
+  if (!moon) return;
+  markWorkGlobeActivity();
+  // freeze the orbit so the moon stays readable; lift the focused moon, dim the rest
+  moonOrbitSystem.moons.forEach((m) => {
+    m.paused = true;
+    m.targetScale = (m === moon) ? 1.25 : 0.45;
+  });
+  moonOrbitSystem.setHoveredMoon(moon);
+  if (workPinSystem) workPinSystem.pins.forEach((p) => { p.hovered = false; });
+  startFocusTween(faceRotationFor(moonOrbitSystem.getWorldPosition(moon), rotation.y));
+}
+
+function onTimelineSelect(e) {
+  const detail = e && e.detail;
+  if (!detail || !detail.target) return;
+  if (detail.target.kind === 'location') focusLocation(detail.target.id);
+  else if (detail.target.kind === 'moon') focusMoon(detail.target.id);
+}
+
 function onPointerUp(e) {
   const wasDragging = isDragging;
   isDragging = false;
@@ -1506,6 +1621,7 @@ function cleanupWorkGlobe() {
   if (boundVisibilityHandler) {
     document.removeEventListener('visibilitychange', boundVisibilityHandler);
   }
+  document.removeEventListener('work-timeline:select', onTimelineSelect);
   if (boundContextHealthCleanup) {
     boundContextHealthCleanup();
   }

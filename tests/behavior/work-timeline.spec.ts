@@ -1,68 +1,76 @@
 import { test, expect } from '@playwright/test';
 
-const DESKTOP = { width: 1366, height: 768 };
+const DESKTOP = { width: 1440, height: 880 };
 const MOBILE = { width: 390, height: 844 };
 
-test.describe('Work career timeline', () => {
-  test('renders beneath the memorandum on desktop with the real chronology', async ({ page }) => {
-    await page.setViewportSize(DESKTOP);
-    await page.goto('/index.html#work');
-    await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('#work.active-section')).toBeVisible();
+async function gotoWork(page, viewport: { width: number; height: number }) {
+  await page.setViewportSize(viewport);
+  await page.goto('/index.html#work');
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('#work.active-section')).toBeVisible();
+}
 
-    const timeline = page.locator('.work-timeline');
-    await expect(timeline).toBeVisible();
+test.describe('Work career rail', () => {
+  test('renders the full chronology, newest first, with three node types', async ({ page }) => {
+    await gotoWork(page, DESKTOP);
+    await expect(page.locator('.work-rail')).toBeVisible();
+    await page.waitForSelector('.rail-node');
 
-    // The five curated milestones, in chronological order.
-    const years = await page.locator('.work-timeline-item .work-timeline-year').allTextContents();
-    expect(years).toEqual(['2009', '2017', '2019', '2022', '2024']);
+    const ids = await page.locator('.rail-node').evaluateAll((els) =>
+      els.map((e) => (e as HTMLElement).dataset.id));
+    expect(ids.length).toBe(18);
+    expect(ids[0]).toBe('adp'); // present sits at the surface
+    expect(ids[ids.length - 1]).toBe('beng'); // bedrock
 
-    // The present year is the single active node.
-    await expect(page.locator('.work-timeline-item--current')).toHaveCount(1);
-    await expect(page.locator('.work-timeline-item--current .work-timeline-year')).toHaveText('2024');
-
-    // The closing milestone names the current chapter and personal projects.
-    const currentLabel = await page.locator('.work-timeline-item--current .work-timeline-label').textContent();
-    expect(currentLabel).toContain('ADP');
-    expect(currentLabel).toContain('Talos');
-    expect(currentLabel).toContain('True-Rolls');
-
-    // It sits in the memorandum's left column, strictly below it, with a small gap,
-    // and stays fully inside the viewport.
-    const geo = await page.evaluate(() => {
-      const rect = (selector: string) => {
-        const el = document.querySelector(selector);
-        return el ? el.getBoundingClientRect() : null;
-      };
-      const memo = rect('.work-memorandum');
-      const tl = rect('.work-timeline');
-      if (!memo || !tl) return { ok: false } as const;
-      return {
-        ok: true as const,
-        sameColumn: Math.abs(tl.left - memo.left) <= 1,
-        below: tl.top >= memo.bottom,
-        gap: tl.top - memo.bottom,
-        withinViewport: tl.bottom <= window.innerHeight
-      };
-    });
-    expect(geo.ok).toBe(true);
-    if (geo.ok) {
-      expect(geo.sameColumn).toBe(true);
-      expect(geo.below).toBe(true);
-      expect(geo.gap).toBeGreaterThan(4);
-      expect(geo.gap).toBeLessThan(60);
-      expect(geo.withinViewport).toBe(true);
-    }
+    expect(await page.locator('.rail-node--work').count()).toBeGreaterThanOrEqual(3);
+    expect(await page.locator('.rail-node--project').count()).toBe(2);
+    // credentials are the majority, shown as the lighter stratum
+    expect(await page.locator('.rail-node--cert').count()).toBeGreaterThanOrEqual(8);
   });
 
-  test('is hidden on mobile, where the globe and auto-writer carry the section', async ({ page }) => {
-    await page.setViewportSize(MOBILE);
-    await page.goto('/index.html#work');
-    await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('#work.active-section')).toBeVisible();
+  test('hover reveals a field-note; places invite a globe action, credentials do not', async ({ page }) => {
+    await gotoWork(page, DESKTOP);
+    await page.waitForSelector('.rail-node');
+    const note = page.locator('.work-note');
 
-    // Desktop-only specimen plate; the globe stays on mobile per design.
-    await expect(page.locator('.work-timeline')).toBeHidden();
+    await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').hover();
+    await expect(note).toBeVisible();
+    await expect(note.locator('.work-note-title')).toHaveText('ADP');
+    await expect(note).toContainText('Lyric HCM');
+    await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
+
+    await page.locator('.rail-node[data-id="cert-oci-foundations"] .rail-dot-btn').hover();
+    await expect(note.locator('.work-note-title')).toContainText('Oracle Cloud Infrastructure');
+    await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
+  });
+
+  test('clicking a place or project drives the globe; a credential does not', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (e) => pageErrors.push(e.message));
+    await gotoWork(page, DESKTOP);
+    await page.waitForSelector('.rail-node');
+
+    const select = (id: string) => page.evaluate((nodeId) => new Promise((res) => {
+      let got: unknown = null;
+      const handler = (e: Event) => { got = (e as CustomEvent).detail; };
+      document.addEventListener('work-timeline:select', handler, { once: true });
+      (document.querySelector(`.rail-node[data-id="${nodeId}"] .rail-dot-btn`) as HTMLElement).click();
+      setTimeout(() => { document.removeEventListener('work-timeline:select', handler); res(got); }, 120);
+    }), id);
+
+    expect(await select('adp')).toEqual({ id: 'adp', target: { kind: 'location', id: 'spain' } });
+    expect(await select('netcompany')).toEqual({ id: 'netcompany', target: { kind: 'location', id: 'greece' } });
+    expect(await select('talos')).toEqual({ id: 'talos', target: { kind: 'moon', id: 'talos-cli' } });
+    expect(await select('true-rolls')).toEqual({ id: 'true-rolls', target: { kind: 'moon', id: 'true-rolls' } });
+    // a credential is note-only: no globe event fires
+    expect(await select('cert-oci-foundations')).toBeNull();
+
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('is hidden on mobile, where the globe carries the section', async ({ page }) => {
+    await gotoWork(page, MOBILE);
+    await expect(page.locator('.work-rail')).toBeHidden();
     await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
   });
 });

@@ -1048,59 +1048,10 @@
         <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the globe visualization.</p>
       </canvas>
       
-      <!-- Desktop HUD: Memorandum -->
-      <div class="work-memorandum desktop-only">
-        <div class="memorandum-header">
-          <span class="memorandum-title">SYSTEM MEMORANDUM</span>
-        </div>
-        <div class="memorandum-list">
-          <div class="memorandum-row">
-            <div class="icon-box">
-              <div class="icon-cone"></div>
-            </div>
-            <div class="memorandum-text">
-              <span class="mem-label">LOCATION CONES</span>
-              <span class="mem-sub">Click green spires to view</span>
-            </div>
-          </div>
-          <div class="memorandum-row">
-            <div class="icon-box">
-              <div class="icon-moon"></div>
-            </div>
-            <div class="memorandum-text">
-              <span class="mem-label">PROJECT MOONS</span>
-              <span class="mem-sub">Click orbiting moons to view</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Career timeline (under the memorandum) -->
-      <nav class="work-timeline desktop-only" aria-label="Career timeline">
-        <div class="work-timeline-title">TIMELINE</div>
-        <ol class="work-timeline-list">
-          <li class="work-timeline-item">
-            <span class="work-timeline-year">2009</span>
-            <span class="work-timeline-label">BEng Environmental Engineering, Univ. of Western Macedonia</span>
-          </li>
-          <li class="work-timeline-item">
-            <span class="work-timeline-year">2017</span>
-            <span class="work-timeline-label">Pivot to software. Self-taught dev and freelance translation work</span>
-          </li>
-          <li class="work-timeline-item">
-            <span class="work-timeline-year">2019</span>
-            <span class="work-timeline-label">MSc Software Engineering, Univ. of Thessaly</span>
-          </li>
-          <li class="work-timeline-item">
-            <span class="work-timeline-year">2022</span>
-            <span class="work-timeline-label">Software Engineer, Netcompany-Intrasoft (EU platforms)</span>
-          </li>
-          <li class="work-timeline-item work-timeline-item--current">
-            <span class="work-timeline-year">2024</span>
-            <span class="work-timeline-label">Software Engineer at ADP, Barcelona. Building Talos and True-Rolls</span>
-          </li>
-        </ol>
-      </nav>
+      <!-- Desktop: interactive career core-sample (the rail). The cone/moon/seal legend
+           lives in its header, so it absorbs the old memorandum. Rendered by
+           js/work-timeline.js from js/work-globe/data/timeline.js. -->
+      <aside class="work-rail desktop-only" aria-label="Career timeline"></aside>
 
       <!-- Mobile HUD: Auto-Writer Log -->
       <div class="work-auto-writer mobile-only">

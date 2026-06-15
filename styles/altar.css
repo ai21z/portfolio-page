@@ -1023,3 +1023,38 @@ button.ghost:hover {
     display: none;
   }
 }
+
+/* ============================================================
+   Properly grimy, hand-drawn aged paper — additive over the original
+   pencil-sketch cards (#skills / #about). Grubbier paper + an SVG grime
+   layer (sketchy cross-hatch, ink smudges, cracks, specks; roughened by
+   displacement so it reads hand-drawn, not photographic). Delete this
+   block + artifacts/textures/handgrime.svg to restore the clean paper.
+   ============================================================ */
+/* target .slab.paper globally (not #skills/#about) so the override follows a card when
+   openPaper() reparents it into the body-level overlay (the zoomed view) */
+.slab.paper {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.5) 0%, rgba(92,72,46,0.3) 34%, transparent 64%),
+    radial-gradient(ellipse 60% 60% at 92% 108%, rgba(42,30,15,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 55% at -8% 95%, rgba(48,34,17,0.5) 0%, transparent 62%),
+    radial-gradient(ellipse 72% 82% at 50% 48%, transparent 40%, rgba(38,28,15,0.34) 100%),
+    repeating-linear-gradient(0deg, transparent,
+      transparent calc(var(--rule-gap) * var(--k)),
+      rgba(80, 60, 38, 0.1) calc(var(--rule-gap) * var(--k)),
+      rgba(80, 60, 38, 0.1) calc((var(--rule-gap) + var(--rule-thickness)) * var(--k))),
+    linear-gradient(155deg, #b3a37e 0%, #a08f6a 45%, #8a7a56 80%, #756645 100%) !important;
+}
+
+/* the hand-drawn grime (dirt specks + soft smudges, no lines), multiplied onto the paper */
+.slab.paper::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background: url('../artifacts/textures/handgrime.svg?v=20260625') repeat !important;
+  background-size: 420px 420px !important;
+  opacity: 0.85 !important;
+  mix-blend-mode: multiply !important;
+  pointer-events: none !important;
+}

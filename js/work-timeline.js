@@ -6,7 +6,7 @@
 // re-sorted by year (default), by type, or by place, morphing between layouts with a FLIP.
 // Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
-import { TIMELINE } from './work-globe/data/timeline.js?v=20260619';
+import { TIMELINE } from './work-globe/data/timeline.js?v=20260625';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 

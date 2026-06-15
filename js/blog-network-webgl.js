@@ -1075,15 +1075,22 @@ async function initBlogNetwork(){
     }
     
     let lastMinute = -1;
-    
-    // Get time components in target timezone
+    let lastClockTs = 0;
+
+    // One formatter, hoisted (formatToParts in a single call instead of 3
+    // toLocaleString round-trips per frame).
+    const clockFmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone, hour: 'numeric', hour12: false, minute: 'numeric', second: 'numeric'
+    });
     function getTimeInZone() {
       const now = new Date();
-      const h = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, hour: 'numeric', hour12: false }));
-      const m = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, minute: 'numeric' }));
-      const s = parseInt(now.toLocaleString('en-US', { timeZone: userTimezone, second: 'numeric' }));
-      const ms = now.getMilliseconds();
-      return { h, m, s, ms };
+      let h = 0, m = 0, s = 0;
+      for (const p of clockFmt.formatToParts(now)) {
+        if (p.type === 'hour') h = parseInt(p.value);
+        else if (p.type === 'minute') m = parseInt(p.value);
+        else if (p.type === 'second') s = parseInt(p.value);
+      }
+      return { h: h % 24, m, s, ms: now.getMilliseconds() };
     }
     
     function renderClockFrame() {
@@ -1119,14 +1126,19 @@ async function initBlogNetwork(){
       }
     }
 
-    // Smooth clock animation using requestAnimationFrame while the blog map is visible.
-    function animateClock() {
+    // Clock animation while the blog map is visible — throttled to the governor's
+    // frame interval (was an uncapped rAF doing per-frame Intl formatting).
+    function animateClock(ts) {
       if (!running || document.hidden) {
         clockRafId = null;
         return;
       }
-
-      renderClockFrame();
+      const now = ts || performance.now();
+      const interval = Math.max(33, getGraphicsBudget('blog-network').frameIntervalMs || 33);
+      if (now - lastClockTs >= interval) {
+        lastClockTs = now;
+        renderClockFrame();
+      }
       clockRafId = requestAnimationFrame(animateClock);
     }
     

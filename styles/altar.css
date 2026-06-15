@@ -877,10 +877,11 @@ button.ghost:hover {
     position: static !important;
     inset: auto !important;
 
-    /* key fix: subtract L/R padding + a tiny bleed for the rotation */
-    --tilt-bleed: 8px;
-    /* room for the angled corners */
-    width: calc(100vw - (var(--gutter) * 2) - var(--tilt-bleed)) !important;
+    /* Size to the container (not 100vw): the altar sits inset from the section edge, so a
+       viewport-width card overflowed and margin:auto could not centre it. Leave room for the
+       rotated corners so the tilt does not clip. */
+    --tilt-bleed: 24px;
+    width: calc(100% - var(--tilt-bleed)) !important;
     max-width: 540px !important;
     /* “fit-to-content” ceiling */
     margin: 0 auto 30px !important;
@@ -949,10 +950,11 @@ button.ghost:hover {
     position: static !important;
     inset: auto !important;
 
-    /* key fix: subtract L/R padding + a tiny bleed for the rotation */
-    --tilt-bleed: 8px;
-    /* room for the angled corners */
-    width: calc(100vw - (var(--gutter) * 2) - var(--tilt-bleed)) !important;
+    /* Size to the container (not 100vw): the altar sits inset from the section edge, so a
+       viewport-width card overflowed and margin:auto could not centre it. Leave room for the
+       rotated corners so the tilt does not clip. */
+    --tilt-bleed: 24px;
+    width: calc(100% - var(--tilt-bleed)) !important;
     max-width: 540px !important;
     /* "fit-to-content" ceiling */
     margin: 0 auto 30px !important;

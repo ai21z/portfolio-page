@@ -3,13 +3,13 @@
    also busts the children (a bare @import is served from stale cache after a
    deploy). Bump this token (and main.css's link in index.html) together. */
 
-@import 'base.css?v=20260615';
-@import 'canvas.css?v=20260615';
-@import 'navigation.css?v=20260615';
-@import 'layout.css?v=20260615';
-@import 'components.css?v=20260615';
-@import 'contact.css?v=20260615';
-@import 'altar.css?v=20260615';
-@import 'work.css?v=20260615';
-@import 'work-timeline.css?v=20260615';
-@import 'blog.css?v=20260615';
+@import 'base.css?v=20260616';
+@import 'canvas.css?v=20260616';
+@import 'navigation.css?v=20260616';
+@import 'layout.css?v=20260616';
+@import 'components.css?v=20260616';
+@import 'contact.css?v=20260616';
+@import 'altar.css?v=20260616';
+@import 'work.css?v=20260616';
+@import 'work-timeline.css?v=20260616';
+@import 'blog.css?v=20260616';

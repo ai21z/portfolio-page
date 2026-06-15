@@ -3,7 +3,7 @@ import { cappedDpr } from './utils.js';
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
-const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20251029-trunks6-branch1p2x-rough';
+const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
   window.__BLOG_NETWORK_VERSION = BLOG_NETWORK_VERSION;
 }
@@ -13,7 +13,7 @@ const AUTO_CENTER = true;
 const FIXED_SHIFT = [0, 0];
 
 const PAL = {
-  ABYSS: [0.05, 0.06, 0.07],        // soft charcoal background
+  ABYSS: [0.031, 0.035, 0.039],     // near-black abyss floor (9b)
   BRANCH1: [0.25, 0.35, 0.28],      // mossy green
   BRANCH2: [0.30, 0.40, 0.45],      // blue-teal
   BRANCH3: [0.35, 0.30, 0.25],      // earthy brown
@@ -207,16 +207,19 @@ void main(){
   float colorVar = colorSeed; // per-segment variation
   float localNoise = noise(world * 0.15); // texture within segment
   
+  // Cool moss->bone ramp by vein thickness (flux-driven). Ember stays reserved for the centre mass.
   vec3 col;
-  if(vKind > 0.5) {
-    // Fusions: alternate between two fusion colors
-    col = mix(uFusion1, uFusion2, step(0.5, colorVar));
-  } else {
-    // Branches: pick from 4 colors based on hash
-    if(colorVar < 0.25) col = uBranch1;
-    else if(colorVar < 0.5) col = uBranch2;
-    else if(colorVar < 0.75) col = uBranch3;
-    else col = uBranch4;
+  {
+    float t = clamp(vThick, 0.0, 1.0);
+    vec3 c0 = vec3(0.247,0.353,0.298); // dark moss (fine mesh)
+    vec3 c1 = vec3(0.357,0.490,0.408);
+    vec3 c2 = vec3(0.529,0.627,0.518); // moss light
+    vec3 c3 = vec3(0.498,0.749,0.651); // teal-green
+    vec3 c4 = vec3(0.788,0.761,0.702); // bone (thick trunks)
+    col = t < 0.25 ? mix(c0,c1, t/0.25)
+        : t < 0.5  ? mix(c1,c2,(t-0.25)/0.25)
+        : t < 0.75 ? mix(c2,c3,(t-0.5)/0.25)
+        :            mix(c3,c4,(t-0.75)/0.25);
   }
   
   // Add painterly texture variation
@@ -232,26 +235,7 @@ void main(){
   float strokeVar = noise(vec2(along * 10.0, colorVar * 100.0)) * (0.15 + 0.15 * roughBranch);
   col *= 1.0 + strokeVar;
 
-  // Hub ember highlights (multi-color)
-  float minHub = 1e9;
-  int nearestHub = 0;
-  for(int i=0;i<8;i++){
-    if(i>=uHubCount) break;
-    vec2 h = uHubPos[i];
-  float dist2 = dot(world-h, world-h);
-    if(dist2<minHub) { minHub = dist2; nearestHub = i; }
-  }
-  float nearHub = smoothstep(uEmberR*uEmberR, 0.0, minHub);
-  float thickOK = step(0.7, vThick);
-  
-  // Pick ember color based on hub index
-  vec3 emberCol;
-  int hubMod = nearestHub % 3;
-  if(hubMod == 0) emberCol = uEmber1;
-  else if(hubMod == 1) emberCol = uEmber2;
-  else emberCol = uEmber3;
-  
-  col = mix(col, emberCol, nearHub * thickOK * 0.75);
+  // (no per-vein ember: the single warm focal is the centre plasmodial mass)
 
   // Soft painted glow
   float glow = smoothstep(3.5, 0.0, d) * 0.2;
@@ -260,7 +244,11 @@ void main(){
   // Apply highlight (clamped to 1.25x max)
   col *= min(uHighlight, 1.25);
 
-  o = vec4(clamp(col, 0.0, 1.0), alpha * 0.95);
+  // overall brightness trim — the veins were reading too hot
+  col *= 0.5;
+
+  // grade opacity by thickness: fine mesh recedes, trunks read solid (the 9b look)
+  o = vec4(clamp(col, 0.0, 1.0), alpha * (0.20 + 0.72 * clamp(vThick, 0.0, 1.0)));
 }`;
 
 const VS_CYST = `#version 300 es
@@ -492,126 +480,58 @@ async function initBlogNetwork(){
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
   const data = await res.json();
 
-  // Build geometry buffers (segments)
+  // Build geometry buffers. Per-vertex vein diameter comes from the JSON ([x,y,w]) — width is
+  // flux-driven now, not derived from distance/depth.
   const segs = [];
-  const MAXW = 4.5, MINW = 0.9;
-  const WIDTH_SCALE = 1.4; // global thickness boost (30% thinner than previous double width)
   const hubLookup = new Map();
   (data.hubs||[]).forEach((hub)=>{
     if(hub && hub.id!==undefined && typeof hub.x==='number' && typeof hub.y==='number'){
       hubLookup.set(hub.id, [hub.x, hub.y]);
     }
   });
-  
-  // Per-hub segment buffers for selective rendering
+
+  // Per-hub segment buffers for hover highlight, bucketed by the flux-tag in the data
+  // (the category whose protoplasmic flow each vein carries), not by spatial proximity.
   const hubIds = ['craft', 'cosmos', 'codex', 'convergence'];
   const perHub = Object.fromEntries(hubIds.map(h => [h, []]));
-  
-  const nodeMap = new Map();
-  const nodes = [];
-  const stashNode = (x, y, radius, kind)=>{
-    const key = `${Math.round(x)}:${Math.round(y)}`;
-    const existing = nodeMap.get(key);
-    if(existing){
-      existing.radius = Math.max(existing.radius, radius);
-      existing.kind = Math.max(existing.kind, kind);
-    }else{
-      nodeMap.set(key, { x, y, radius, kind });
-    }
-  };
+
+  // Global max vein diameter -> thickRatio for the shader's color + alpha grading.
+  let maxW = 1e-6;
+  (data.paths||[]).forEach((p)=>{
+    for(const pt of p){ const w = pt[2]||1; if(w>maxW) maxW = w; }
+  });
+
+  const VEIN_WIDTH_K = 0.5;   // overall vein thinness (0.5 = half the generated diameter)
   (data.paths||[]).forEach((p, i)=>{
     if(p.length<2) return;
     const meta = (data.paths_meta&&data.paths_meta[i])||{};
-    const kind = meta.kind==='fusion'?1:0;
-    const isTrunk = meta.kind === 'trunk';
-    const tier = typeof meta.tier === 'number' ? meta.tier : null;
-    const hub = meta.hub || 'craft'; // default to craft if no hub specified
-  // Mirror generator's radial taper when depth is absent in metadata.
-  let depth = typeof meta.depth==='number' ? meta.depth : null;
-    if(depth===null){
-      const ref = p[0];
-      let origin = null;
-      if(meta.hub && hubLookup.has(meta.hub)){
-        origin = hubLookup.get(meta.hub);
-      }else if(hubLookup.size){
-        let minDist = Infinity;
-        hubLookup.forEach(([hx, hy])=>{
-          const d = Math.hypot(ref[0]-hx, ref[1]-hy);
-          if(d<minDist){
-            minDist = d;
-            origin = [hx, hy];
-          }
-        });
-      }
-      if(origin){
-        const dist = Math.hypot(ref[0]-origin[0], ref[1]-origin[1]);
-        depth = Math.min(8, Math.floor(dist/80));
-      }else{
-        depth = 0;
-      }
-    }
-  const branchBoost = (!isTrunk && tier !== null && tier <= 1) ? 1.0 : 0.0;
-  const thicknessScale = isTrunk ? 1.0 : 1.2;
-  const base = (Math.max(MINW, MAXW - 0.5*depth) * WIDTH_SCALE + branchBoost) * thicknessScale;
-    const pushEndpoint = (point, prog, shrink)=>{
-      if(!point) return;
-  const w = base*(1.0 - 0.4*prog);
-      const scale = shrink ? 0.5 : 1.0;
-      const radius = Math.max(6.0*scale, w*1.4*scale);
-      stashNode(point[0], point[1], radius, kind);
-    };
-    pushEndpoint(p[0], 0, false);
-    pushEndpoint(p[p.length-1], p.length>1 ? 1 : 0, true);
+    const bucket = (meta.hub && perHub[meta.hub]) ? perHub[meta.hub] : null;
     for(let j=0;j<p.length-1;j++){
-      const [x1,y1] = p[j], [x2,y2] = p[j+1];
-      const prog = j/(p.length-1);
-      const w = base*(1.0 - 0.4*prog);
-      const thickRatio = Math.min(1.0, w/(MAXW * WIDTH_SCALE));
-      // Push to global buffer
-      segs.push(x1,y1,x2,y2,w, kind, thickRatio);
-      
-      // Assign segment to hub based on SPATIAL PROXIMITY (segment midpoint)
-      // rather than path metadata destination tag
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2;
-      let closestHub = null;
-      let minDist = Infinity;
-      
-      // Check distance to each interactive hub
-      hubIds.forEach(hubId => {
-        const hubData = hubLookup.get(hubId);
-        if(hubData) {
-          const [hx, hy] = hubData;
-          const dist = Math.hypot(midX - hx, midY - hy);
-          if(dist < minDist) {
-            minDist = dist;
-            closestHub = hubId;
-          }
-        }
-      });
-      
-      // Push segment to the spatially-closest hub buffer
-      if(closestHub && perHub[closestHub]) {
-        perHub[closestHub].push(x1,y1,x2,y2,w, kind, thickRatio);
-      }
+      const x1=p[j][0], y1=p[j][1], x2=p[j+1][0], y2=p[j+1][1];
+      const wOrig = ((p[j][2]||1) + (p[j+1][2]||1)) * 0.5;   // mean endpoint diameter (VIEW px)
+      const thickRatio = Math.min(1.0, wOrig/maxW);          // color/alpha keep the true hierarchy
+      const w = wOrig * VEIN_WIDTH_K;                         // physical width, thinned
+      segs.push(x1,y1,x2,y2, w, 0.0, thickRatio);
+      if(bucket) bucket.push(x1,y1,x2,y2, w, 0.0, thickRatio);
     }
   });
-  nodeMap.forEach((n)=>{
-    nodes.push(n.x, n.y, n.radius, n.kind);
-  });
-  const segCount = segs.length/7;
-  const nodeCount = nodes.length/4;
 
-  // infected/cyst nodes (every 12th)
-  const cysts = [];
-  const interval = 12;
-  (data.paths||[]).forEach((p)=>{
-    for(let i=interval;i<p.length-interval;i+=interval){
-      const [x,y] = p[i];
-      cysts.push(x,y, 2.5, Math.random()*6.2831);
+  const nodes = [];                       // scattered node dots dropped (not in this look)
+  const segCount = segs.length/7;
+  const nodeCount = 0;
+
+  // Plasmodial mass blobs at the anchors (rendered via the cyst program, under the veins).
+  // [x, y, size, kind]  kind 0 = food (moss), 1 = source (ember)
+  const masses = [];
+  (data.masses||[]).forEach((m)=>{
+    if(typeof m.x==='number' && typeof m.y==='number'){
+      masses.push(m.x, m.y, (m.r||56), m.kind==='source'?1:0);
     }
   });
-  const cystCount = cysts.length/4;
+
+  // hub-halo / hover-ember reuse a 1-instance dynamic cyst buffer; no scattered cysts.
+  const cysts = [0,0,2.5,0];
+  const cystCount = 0;
 
   // Prepare buffers/VAOs
   function makeVAOforSegments(){
@@ -887,6 +807,59 @@ async function initBlogNetwork(){
     const ea = 112 * Math.PI / 180, eR = r + 20;
     frag.appendChild(el('circle', { class: 'dish-ember', cx: cx + eR * Math.cos(ea), cy: cy + eR * Math.sin(ea), r: 3.4 }));
 
+    // ===== Stage 3: humidity LID — condensation on the sealed glass =====
+    // A sealed petri dish fogs: glassy beads scattered on the lid, denser toward the rim.
+    // One reusable <symbol> (shadow + clear lens + meniscus rim + specular) instanced via
+    // <use>, so it stays light. Static, decorative, aria-hidden via #dish.
+    const dropGrad = el('radialGradient', { id: 'dishDrop', cx: '0.42', cy: '0.40', r: '0.62' });
+    dropGrad.innerHTML =
+      '<stop offset="0%"  stop-color="rgba(210,228,222,0.03)"/>' +
+      '<stop offset="55%" stop-color="rgba(200,220,214,0.06)"/>' +
+      '<stop offset="82%" stop-color="rgba(228,242,236,0.18)"/>' +   // bright meniscus edge
+      '<stop offset="100%" stop-color="rgba(150,175,168,0.06)"/>';
+    const dropSym = el('symbol', { id: 'dishDropBead', viewBox: '-1.4 -1.4 2.8 2.8', overflow: 'visible' });
+    dropSym.innerHTML =
+      '<circle cx="0.18" cy="0.24" r="1.02" fill="rgba(0,0,0,0.16)"/>' +                                   // cast shadow
+      '<circle cx="0" cy="0" r="1" fill="url(#dishDrop)"/>' +                                              // clear lens
+      '<circle cx="0" cy="0" r="1" fill="none" stroke="rgba(228,242,236,0.22)" stroke-width="0.05"/>' +   // rim
+      '<ellipse cx="-0.34" cy="-0.36" rx="0.30" ry="0.20" fill="rgba(255,255,255,0.70)"/>' +              // specular
+      '<circle cx="0.22" cy="0.32" r="0.08" fill="rgba(255,255,255,0.26)"/>';                              // counter-glint
+    defs.append(dropGrad, dropSym);
+
+    const lid = el('g', { class: 'dish-lid' });
+    let dseed = 0x9e3779b9 ^ Math.round(r);                  // stable per dish size
+    const drnd = () => { dseed |= 0; dseed = (dseed + 0x6D2B79F5) | 0;
+      let t = Math.imul(dseed ^ (dseed >>> 15), 1 | dseed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const placeDrop = (dx, dy, dr, cls) => {
+      const u = el('use', { x: dx - 1.4 * dr, y: dy - 1.4 * dr, width: 2.8 * dr, height: 2.8 * dr });
+      if (cls) u.setAttribute('class', cls);
+      u.setAttribute('href', '#dishDropBead');
+      u.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#dishDropBead');
+      lid.appendChild(u);
+    };
+    // (a) prominent beads — varied size, a few fat ones, pooled toward the rim
+    const NBEADS = Math.round(r * 0.20);
+    for (let i = 0; i < NBEADS; i++) {
+      const dr = 1.2 + Math.pow(drnd(), 3) * 16;
+      const ang = drnd() * Math.PI * 2;
+      const rad = (r - dr - 4) * Math.sqrt(0.12 + 0.88 * drnd());
+      placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
+    }
+    // (b) fine micro-condensation — many tiny beads spread evenly across the whole lid
+    const NMICRO = Math.round(r * 0.9);
+    for (let i = 0; i < NMICRO; i++) {
+      const dr = 0.5 + Math.pow(drnd(), 2) * 2.6;            // 0.5 .. ~3 px
+      const ang = drnd() * Math.PI * 2;
+      const rad = (r - dr - 2) * Math.sqrt(drnd());          // uniform across the disc
+      placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
+    }
+    // (c) a couple of beads that drift slowly (reduced-motion gated in CSS)
+    placeDrop(cx + r * 0.34, cy - r * 0.42, 8.5, 'dish-drop-drift');
+    placeDrop(cx - r * 0.46, cy + r * 0.28, 7.0, 'dish-drop-drift2');
+    frag.appendChild(lid);
+
     // wire the ember to the blog hover bus ONCE — it brightens when you examine a hub
     // (#dish keeps the class across resize innerHTML wipes; only its children are rebuilt)
     if (!buildDish.__wired) {
@@ -1153,6 +1126,10 @@ async function initBlogNetwork(){
     ? [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy]
     : FIXED_SHIFT;
 
+  // Zoom starts at the minimum (0.75x); resize() applies it, so it survives resize + re-activation.
+  let userZoom = 0.75;
+  let baseScale = 1;
+
   let resizeTimeout = null;
   let currentDish = null;
   
@@ -1175,15 +1152,17 @@ async function initBlogNetwork(){
       gl.viewport(0, 0, w, h);
     }
     
-    // scale & offset to fit 1920x1080
-    const scale = Math.min(cssW/VIEW.W, cssH/VIEW.H);
+    // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x)
+    baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H);
+    const scale = baseScale * userZoom;
     const offX = (cssW - VIEW.W*scale)/2;
     const offY = (cssH - VIEW.H*scale)/2;
-    
+
     // Build Petri dish and curved labels
     currentDish = buildDish({wCss: cssW, hCss: cssH});
     updateDishUniforms(currentDish);
     buildLabels(currentDish);
+    updateZoomIndicator();   // buildLabels rebuilds the label -> refresh it to the real zoom
     
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
     window.dispatchEvent(new CustomEvent('blog:transform', {
@@ -1376,13 +1355,8 @@ async function initBlogNetwork(){
     }
   }
   
-  // Wheel zoom (clamp to 0.75x - 1.0x base scale)
-  const baseScale = fit.scale;
-  let userZoom = 0.81;
-  fit.scale = baseScale * userZoom;
-  fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;
-  fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
-  
+  // Wheel zoom (clamp 0.75x - 1.0x). userZoom + baseScale are declared up top and applied inside
+  // resize(), so zoom survives resizes and section re-activation.
   function updateZoomIndicator() {
     const zoomTextContent = document.getElementById('zoom-text-content');
     if (zoomTextContent) {
@@ -1451,6 +1425,34 @@ async function initBlogNetwork(){
     set3('paper','uAbyss', PAL.ABYSS);
     gl.uniform1f(_uCache.paper['uVignette'], 0.35);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // PLASMODIAL MASSES — soft blobs at the anchors, drawn under the veins.
+    // Moss for the four foods, ember for the central inoculation (the one warm focal).
+    if (masses.length) {
+      gl.useProgram(progCyst);
+      set2('cyst','uScale', fit.scale, fit.scale);
+      set2('cyst','uOffset', fit.offX, fit.offY);
+      set2('cyst','uShift', shift[0], shift[1]);
+      set2('cyst','uRes', fit.cssW, fit.cssH);
+      gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
+      gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
+      for (let m = 0; m < masses.length; m += 4) {
+        const mx = masses[m], my = masses[m+1], msz = masses[m+2], mkind = masses[m+3];
+        if (mkind > 0.5) {            // source: ember
+          set3('cyst','uGlow1', PAL.EMBER1); set3('cyst','uGlow2', PAL.EMBER2); set3('cyst','uGlow3', PAL.EMBER3);
+          set3('cyst','uBranch1', [0.20, 0.14, 0.09]);
+        } else {                      // food: moss
+          set3('cyst','uGlow1', [0.30, 0.45, 0.38]); set3('cyst','uGlow2', [0.36, 0.52, 0.43]); set3('cyst','uGlow3', [0.26, 0.39, 0.33]);
+          set3('cyst','uBranch1', [0.15, 0.25, 0.21]);
+        }
+        vaoCyst.data.set([mx, my, msz * 0.5, m * 0.7], 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, vaoCyst.data.subarray(0, 4));
+        gl.bindVertexArray(vaoCyst.vao);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, 1);
+        gl.bindVertexArray(null);
+      }
+    }
 
     // SEGMENTS
     gl.useProgram(progSeg);
@@ -1551,28 +1553,8 @@ async function initBlogNetwork(){
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoCyst.count);
     gl.bindVertexArray(null);
 
-    // Hub point pulsing glow (subtle, ominous breathing)
-    for (let i = 0; i < hubPos.length; i++) {
-      const hub = data.hubs[i];
-      if (!hub) continue;
-      // Gentle pulse: each hub has offset phase for organic feel
-      const phase = now * 0.0008 + i * 1.57; // ~0.8 sec period, π/2 offset between hubs
-      const pulse = 0.4 + 0.15 * Math.sin(phase); // subtle 0.25-0.55 range
-      const size = 8 + 3 * Math.sin(phase * 0.7); // gentle size breathing
-      
-      // Dim ember colors for subtle glow
-      set3('cyst','uGlow1', [PAL.EMBER1[0]*pulse, PAL.EMBER1[1]*pulse, PAL.EMBER1[2]*pulse]);
-      set3('cyst','uGlow2', [PAL.EMBER2[0]*pulse, PAL.EMBER2[1]*pulse, PAL.EMBER2[2]*pulse]);
-      set3('cyst','uGlow3', [PAL.EMBER3[0]*pulse, PAL.EMBER3[1]*pulse, PAL.EMBER3[2]*pulse]);
-      set3('cyst','uBranch1', PAL.BRANCH1);
-      
-      vaoCyst.data.set([hub.x, hub.y, size, i * 0.5], 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, vaoCyst.data.subarray(0,4));
-      gl.bindVertexArray(vaoCyst.vao);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, 1);
-      gl.bindVertexArray(null);
-    }
+    // (per-hub ember pulse removed: the masses provide the hub glow, and the warm
+    //  ember is reserved for the central inoculation mass + the on-hover halo)
 
     // Hover halo (breathing ember) — brighter overdraw when hovered
     if(hoveredHubId){

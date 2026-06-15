@@ -6,6 +6,9 @@ package-lock.json
 __pycache__/
 *.pyc
 
+# Python virtualenv (prototype / local tooling)
+.venv/
+
 # OS files
 .DS_Store
 Thumbs.db

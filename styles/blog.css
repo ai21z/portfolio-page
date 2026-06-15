@@ -341,6 +341,14 @@
   50%      { opacity: 1; }
 }
 
+/* Condensation: a couple of beads drift slowly, like humidity creeping on the lid */
+@media (prefers-reduced-motion: no-preference) {
+  .dish-drop-drift  { animation: bead-drift  8.5s ease-in-out infinite; }
+  .dish-drop-drift2 { animation: bead-drift2 11s   ease-in-out infinite; }
+}
+@keyframes bead-drift  { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0.6px, 2.6px); } }
+@keyframes bead-drift2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-0.8px, 1.9px); } }
+
 .arc-label {
   fill: rgba(228, 189, 140, 0.75); /* Warm brass - slightly brighter base */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;

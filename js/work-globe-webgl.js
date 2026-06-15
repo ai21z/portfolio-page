@@ -1715,6 +1715,7 @@ function cleanupWorkGlobe() {
   boundProjectOutsideClickHandler = null;
   autoWriterTimeoutId = null;
   lastWorkActivityAt = 0;
+  globeViewActive = true; // known-good default; init re-derives it from the work-view class
 }
 
 function autoInit() {

@@ -6,7 +6,7 @@
 // re-sorted by year (default), by type, or by place, morphing between layouts with a FLIP.
 // Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
-import { TIMELINE } from './work-globe/data/timeline.js?v=20260617';
+import { TIMELINE } from './work-globe/data/timeline.js?v=20260618';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
@@ -69,8 +69,9 @@ export function initWorkTimeline() {
   const list = el('ol', 'work-rail-list');
   list.setAttribute('aria-label', 'Career timeline');
 
+  // Visual-only: the per-node identity is already in each rail button's aria-label, so the
+  // note carries no live region (a role=status here announced every node the pointer crossed).
   const note = el('div', 'work-note');
-  note.setAttribute('role', 'status');
   note.hidden = true;
 
   let hideTimer = 0;
@@ -152,7 +153,7 @@ export function initWorkTimeline() {
     btn.addEventListener('focus', () => { if (!isCompact()) showNote(node, li); });
     btn.addEventListener('mouseleave', hideNoteSoon);
     btn.addEventListener('blur', hideNoteSoon);
-    btn.addEventListener('click', () => { if (isCompact()) openCard(node); else selectNode(node, li); });
+    btn.addEventListener('click', () => { if (isCompact()) openCard(node, btn); else selectNode(node, li); });
 
     li.appendChild(btn);
     nodeLis.set(node.id, li);
@@ -271,7 +272,11 @@ export function initWorkTimeline() {
   card.appendChild(cardBody);
   backdrop.appendChild(card);
 
-  function openCard(node) {
+  let cardTrigger = null; // the rail button that opened the card, to restore focus on close
+  let cardCloseTimer = 0;
+
+  function openCard(node, triggerEl) {
+    cardTrigger = triggerEl || null;
     cardBody.innerHTML =
       '<div class="work-note-kicker">' + GLYPH_HINT[node.type] + '</div>' +
       '<div class="work-card-title">' + node.title + '</div>' +
@@ -281,25 +286,51 @@ export function initWorkTimeline() {
     const globeBtn = cardBody.querySelector('.work-card-globe');
     if (globeBtn) {
       globeBtn.addEventListener('click', () => {
-        closeCard();
+        const target = node.target;
+        closeCard({ restoreFocus: false }); // focus moves to the globe, not back to the rail
         setView('globe');
-        document.dispatchEvent(new CustomEvent('work-timeline:select', { detail: { id: node.id, target: node.target } }));
+        document.dispatchEvent(new CustomEvent('work-timeline:select', { detail: { id: node.id, target } }));
       });
     }
+    if (cardCloseTimer) { clearTimeout(cardCloseTimer); cardCloseTimer = 0; }
     backdrop.hidden = false;
+    if (workSection) workSection.setAttribute('aria-hidden', 'true'); // background inert to assistive tech
     requestAnimationFrame(() => backdrop.classList.add('is-open'));
     cardClose.focus();
   }
 
-  function closeCard() {
+  function closeCard(opts) {
     if (backdrop.hidden) return;
+    const restoreFocus = !opts || opts.restoreFocus !== false;
     backdrop.classList.remove('is-open');
-    window.setTimeout(() => { backdrop.hidden = true; }, 200);
+    if (workSection) workSection.removeAttribute('aria-hidden');
+    if (cardCloseTimer) clearTimeout(cardCloseTimer);
+    if (reducedMotion) backdrop.hidden = true;
+    else cardCloseTimer = window.setTimeout(() => { backdrop.hidden = true; }, 200);
+    if (restoreFocus && cardTrigger && typeof cardTrigger.focus === 'function') cardTrigger.focus();
+    cardTrigger = null;
   }
 
-  cardClose.addEventListener('click', closeCard);
+  function cardFocusables() {
+    return [cardClose, ...card.querySelectorAll('.work-card-globe')];
+  }
+
+  cardClose.addEventListener('click', () => closeCard());
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCard(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !backdrop.hidden) closeCard(); });
+  // Escape + a Tab focus-trap, scoped to the open card so keyboard/AT users can't reach the
+  // covered rail behind the backdrop.
+  backdrop.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeCard(); return; }
+    if (e.key !== 'Tab') return;
+    const f = cardFocusables();
+    if (!f.length) return;
+    const first = f[0];
+    const last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+  // Close the card when navigating away from Work or when the layout leaves compact.
+  document.addEventListener('ui:close-overlays', () => closeCard({ restoreFocus: false }));
 
   scroll.appendChild(spine);
   scroll.appendChild(list);
@@ -316,6 +347,7 @@ export function initWorkTimeline() {
   // Re-evaluate the globe's run/pause state when crossing the compact breakpoint.
   let viewResizeTimer = 0;
   window.addEventListener('resize', () => {
+    if (!isCompact()) closeCard({ restoreFocus: false }); // a card left open while widening to desktop
     clearTimeout(viewResizeTimer);
     viewResizeTimer = window.setTimeout(() => {
       document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view: currentView } }));

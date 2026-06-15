@@ -55,6 +55,7 @@ const PROFILE_BUDGETS = {
 
 const subscribers = new Set();
 const frameSamples = [];
+let lastFrameAdjustAt = 0;
 
 let initialized = false;
 let selectedProfile = normalizeSelectableProfile(readStoredProfile() || 'balanced');
@@ -186,7 +187,21 @@ function hardwareClass({ hardwareConcurrency, deviceMemory, rendererCategory }) 
   return 'capable';
 }
 
+// Capability is derived from matchMedia / UA / viewport / WebGL probes that only change on
+// resize, dpr, motion-preference or connection changes. getGraphicsBudget() runs every frame
+// (so systems pick up runtime auto-downgrades via the effective profile), so memoize the
+// expensive capability detection and invalidate it only on those events.
+let _capabilityCache = null;
+function invalidateGraphicsCapability() { _capabilityCache = null; }
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', invalidateGraphicsCapability, { passive: true });
+  window.addEventListener('dpr-changed', invalidateGraphicsCapability);
+  try { window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', invalidateGraphicsCapability); } catch { /* older Safari */ }
+  try { navigator.connection?.addEventListener?.('change', invalidateGraphicsCapability); } catch { /* unsupported */ }
+}
+
 function getGraphicsCapability() {
+  if (_capabilityCache) return _capabilityCache;
   const hardwareConcurrency = readCoarseNumber(navigator.hardwareConcurrency);
   const deviceMemory = readCoarseNumber(navigator.deviceMemory);
   const engine = browserEngine();
@@ -238,7 +253,7 @@ function getGraphicsCapability() {
     reasons.push('standard-capability');
   }
 
-  return {
+  _capabilityCache = {
     recommendedProfile,
     reasons: Array.from(new Set(reasons)),
     engine,
@@ -253,6 +268,7 @@ function getGraphicsCapability() {
     rendererCategory: webgl.rendererCategory,
     hardwareClass: classification
   };
+  return _capabilityCache;
 }
 
 function validProfile(profile) {
@@ -725,8 +741,14 @@ export function markGraphicsActivity(reason = 'activity', durationMs = 700) {
 export function reportFrameSample(systemName, deltaMs) {
   const now = performance.now();
   frameSamples.push({ systemName, deltaMs, at: now });
-  maybeAdjustFromFrames(now);
-  updateDebugOverlay();
+  // Collect a sample every frame (cheap push), but only run the prune/adjust + overlay a
+  // couple of times a second. Auto-downgrade reasons about 10s windows, so per-frame
+  // filter()+spread churn bought nothing.
+  if (now - lastFrameAdjustAt >= 500) {
+    lastFrameAdjustAt = now;
+    maybeAdjustFromFrames(now);
+    updateDebugOverlay();
+  }
 }
 
 export function setGraphicsSection(sectionName) {

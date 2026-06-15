@@ -108,9 +108,43 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.rail-group')).toHaveCount(0);
   });
 
-  test('is hidden on mobile, where the globe carries the section', async ({ page }) => {
+  test('compact: timeline by default, tap opens a card, toggle reveals the globe', async ({ page }) => {
     await gotoWork(page, MOBILE);
+    await page.waitForSelector('.rail-node');
+
+    await expect(page.locator('.work-view-toggle')).toBeVisible();
+    await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
+    await expect(page.locator('.work-rail')).toBeVisible();
+
+    // tap a place -> centered card with an X and a "see on the globe" action
+    await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').click();
+    const card = page.locator('.work-card-backdrop');
+    await expect(card).toHaveClass(/is-open/);
+    await expect(page.locator('.work-card-title')).toHaveText('ADP');
+    await expect(page.locator('.work-card-globe')).toHaveCount(1);
+    await page.locator('.work-card-close').click();
+    await expect(card).toBeHidden();
+
+    // a credential card carries no globe action
+    await page.locator('.rail-node[data-id="cert-blockchain"] .rail-dot-btn').click();
+    await expect(page.locator('.work-card-title')).toHaveText('Blockchain Specialization');
+    await expect(page.locator('.work-card-globe')).toHaveCount(0);
+    await page.locator('.work-card-close').click();
+
+    // toggle to the globe: rail hides, the canvas carries the section
+    await page.locator('.work-view-btn[data-view="globe"]').click();
+    await expect(page.locator('#work')).toHaveClass(/work-view-globe/);
     await expect(page.locator('.work-rail')).toBeHidden();
+    // canvas carries the section now (it renders under real WebGL; headless falls back to 1x1)
     await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
+  });
+
+  test('desktop: no toggle, and hover shows the side note rather than the card', async ({ page }) => {
+    await gotoWork(page, DESKTOP);
+    await page.waitForSelector('.rail-node');
+    await expect(page.locator('.work-view-toggle')).toBeHidden();
+    await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').hover();
+    await expect(page.locator('.work-note')).toHaveClass(/is-visible/);
+    await expect(page.locator('.work-card-backdrop')).toBeHidden();
   });
 });

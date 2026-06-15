@@ -6,7 +6,7 @@
 // re-sorted by year (default), by type, or by place, morphing between layouts with a FLIP.
 // Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
-import { TIMELINE } from './work-globe/data/timeline.js?v=20260616';
+import { TIMELINE } from './work-globe/data/timeline.js?v=20260617';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
@@ -40,6 +40,8 @@ export function initWorkTimeline() {
 
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const nodes = [...TIMELINE].sort((a, b) => b.sortKey - a.sortKey);
+  const workSection = host.closest('.stage') || document.getElementById('work');
+  const isCompact = () => window.matchMedia('(max-width: 900px)').matches;
 
   host.textContent = '';
 
@@ -144,11 +146,13 @@ export function initWorkTimeline() {
       '<span class="rail-node-sub">' + node.subtitle + '</span>' +
       '</span>';
 
-    btn.addEventListener('mouseenter', () => showNote(node, li));
-    btn.addEventListener('focus', () => showNote(node, li));
+    // Desktop: hover/focus reveals the side note, click drives the globe.
+    // Compact: no side note; a tap opens the centered modal card instead.
+    btn.addEventListener('mouseenter', () => { if (!isCompact()) showNote(node, li); });
+    btn.addEventListener('focus', () => { if (!isCompact()) showNote(node, li); });
     btn.addEventListener('mouseleave', hideNoteSoon);
     btn.addEventListener('blur', hideNoteSoon);
-    btn.addEventListener('click', () => selectNode(node, li));
+    btn.addEventListener('click', () => { if (isCompact()) openCard(node); else selectNode(node, li); });
 
     li.appendChild(btn);
     nodeLis.set(node.id, li);
@@ -225,14 +229,98 @@ export function initWorkTimeline() {
     modeBar.appendChild(b);
   });
 
+  // ---- compact view toggle: Timeline <-> Globe (hidden on desktop, where both show) ----
+  let currentView = 'timeline';
+  const toggle = el('div', 'work-view-toggle');
+  toggle.setAttribute('role', 'group');
+  toggle.setAttribute('aria-label', 'Switch between the timeline and the globe');
+  const toggleButtons = {};
+  ['timeline', 'globe'].forEach((view) => {
+    const tb = el('button', 'work-view-btn');
+    tb.type = 'button';
+    tb.dataset.view = view;
+    tb.textContent = view === 'timeline' ? 'Timeline' : 'Globe';
+    tb.addEventListener('click', () => setView(view));
+    toggle.appendChild(tb);
+    toggleButtons[view] = tb;
+  });
+
+  function setView(view) {
+    currentView = view;
+    if (workSection) {
+      workSection.classList.toggle('work-view-timeline', view === 'timeline');
+      workSection.classList.toggle('work-view-globe', view === 'globe');
+    }
+    Object.keys(toggleButtons).forEach((v) => toggleButtons[v].setAttribute('aria-pressed', v === view ? 'true' : 'false'));
+    if (view === 'globe') closeCard();
+    document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view } }));
+  }
+
+  // ---- the field-note as a centered modal card (compact tap target) ----
+  const backdrop = el('div', 'work-card-backdrop');
+  backdrop.hidden = true;
+  const card = el('div', 'work-card');
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-modal', 'true');
+  const cardClose = el('button', 'work-card-close');
+  cardClose.type = 'button';
+  cardClose.setAttribute('aria-label', 'Close');
+  cardClose.innerHTML = '&times;';
+  const cardBody = el('div', 'work-card-body');
+  card.appendChild(cardClose);
+  card.appendChild(cardBody);
+  backdrop.appendChild(card);
+
+  function openCard(node) {
+    cardBody.innerHTML =
+      '<div class="work-note-kicker">' + GLYPH_HINT[node.type] + '</div>' +
+      '<div class="work-card-title">' + node.title + '</div>' +
+      '<div class="work-card-meta">' + node.dates + (node.subtitle ? ' · ' + node.subtitle : '') + '</div>' +
+      '<div class="work-card-summary">' + node.summary + '</div>' +
+      (node.target ? '<button type="button" class="work-card-globe">See it on the globe</button>' : '');
+    const globeBtn = cardBody.querySelector('.work-card-globe');
+    if (globeBtn) {
+      globeBtn.addEventListener('click', () => {
+        closeCard();
+        setView('globe');
+        document.dispatchEvent(new CustomEvent('work-timeline:select', { detail: { id: node.id, target: node.target } }));
+      });
+    }
+    backdrop.hidden = false;
+    requestAnimationFrame(() => backdrop.classList.add('is-open'));
+    cardClose.focus();
+  }
+
+  function closeCard() {
+    if (backdrop.hidden) return;
+    backdrop.classList.remove('is-open');
+    window.setTimeout(() => { backdrop.hidden = true; }, 200);
+  }
+
+  cardClose.addEventListener('click', closeCard);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCard(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !backdrop.hidden) closeCard(); });
+
   scroll.appendChild(spine);
   scroll.appendChild(list);
   viewport.appendChild(scroll);
   viewport.appendChild(readhead);
   host.appendChild(viewport);
   host.appendChild(note);
+  if (workSection) workSection.appendChild(toggle);
+  document.body.appendChild(backdrop);
 
   layout('year', false);
+  setView('timeline');
+
+  // Re-evaluate the globe's run/pause state when crossing the compact breakpoint.
+  let viewResizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(viewResizeTimer);
+    viewResizeTimer = window.setTimeout(() => {
+      document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view: currentView } }));
+    }, 160);
+  });
 
   scroll.addEventListener('scroll', () => {
     if (!scrollRaf) scrollRaf = requestAnimationFrame(markCentered);

@@ -42,6 +42,7 @@ let clickStartTime = 0;
 let animationFrameId = null;
 let autoRotate = true;
 let focusTween = null; // { fromX, fromY, toX, toY, elapsed, dur } while the rail is driving the globe
+let globeViewActive = true; // false while the compact timeline view covers the globe (pause render)
 let time = 0;
 let lastFrameTime = 0;
 
@@ -502,6 +503,13 @@ function initWorkGlobe() {
   };
   document.addEventListener('visibilitychange', boundVisibilityHandler);
   document.addEventListener('work-timeline:select', onTimelineSelect);
+  document.addEventListener('work-view:change', onWorkViewChange);
+  // If the compact timeline view is already showing, init paused (covered, not rendering).
+  {
+    const compact = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+    const ws = document.getElementById('work');
+    globeViewActive = !(compact && ws && ws.classList.contains('work-view-timeline'));
+  }
 
   try {
     initAutoWriter();
@@ -829,7 +837,7 @@ function render(deltaTime) {
 }
 
 function animate(timestamp) {
-  if (document.hidden || !canvas?.closest('.active-section')) {
+  if (document.hidden || !canvas?.closest('.active-section') || !globeViewActive) {
     animationFrameId = null;
     return;
   }
@@ -1455,6 +1463,24 @@ function onTimelineSelect(e) {
   else if (detail.target.kind === 'moon') focusMoon(detail.target.id);
 }
 
+// Pause rendering while the compact timeline view covers the globe; resume on toggle/resize.
+function onWorkViewChange(e) {
+  const view = e && e.detail && e.detail.view;
+  const compact = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  if (compact && view === 'timeline') {
+    globeViewActive = false;
+  } else {
+    globeViewActive = true;
+    if (gl) {
+      try { resizeCanvas(); } catch (err) { /* container may be mid-layout */ }
+      if (!animationFrameId) {
+        lastFrameTime = 0;
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+  }
+}
+
 function onPointerUp(e) {
   const wasDragging = isDragging;
   isDragging = false;
@@ -1622,6 +1648,7 @@ function cleanupWorkGlobe() {
     document.removeEventListener('visibilitychange', boundVisibilityHandler);
   }
   document.removeEventListener('work-timeline:select', onTimelineSelect);
+  document.removeEventListener('work-view:change', onWorkViewChange);
   if (boundContextHealthCleanup) {
     boundContextHealthCleanup();
   }

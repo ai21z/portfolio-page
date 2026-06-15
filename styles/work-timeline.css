@@ -407,9 +407,198 @@
   }
 }
 
-/* hide on tablet / mobile (handled like the old HUD via .desktop-only, but be explicit) */
+/* ============================================================
+   Compact (tablet + mobile): toggle between the timeline and the globe.
+   Desktop (> 900px) shows both side by side and the toggle stays hidden.
+   ============================================================ */
+
+.work-view-toggle {
+  display: none;
+}
+
+/* the field-note as a centered modal card (opened by a tap on compact) */
+.work-card-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 4, 4, 0.66);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.work-card-backdrop.is-open {
+  opacity: 1;
+}
+
+.work-card-backdrop[hidden] {
+  display: none;
+}
+
+.work-card {
+  position: relative;
+  width: min(92vw, 460px);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: rgba(10, 12, 14, 0.97);
+  border: 1px solid rgba(63, 255, 159, 0.32);
+  border-radius: 6px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  padding: 22px 22px 24px;
+  font-family: 'Special Elite', monospace;
+  transform: translateY(8px) scale(0.985);
+  transition: transform 0.2s ease;
+}
+
+.work-card-backdrop.is-open .work-card {
+  transform: none;
+}
+
+.work-card-close {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  width: 36px;
+  height: 36px;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: rgba(200, 220, 210, 0.7);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.work-card-close:hover,
+.work-card-close:focus-visible {
+  color: #f0f4ef;
+  outline: none;
+}
+
+.work-card-title {
+  font-size: 1.15rem;
+  color: #e9f1ec;
+  margin-top: 6px;
+  padding-right: 30px;
+}
+
+.work-card-meta {
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: rgba(150, 180, 168, 0.75);
+  margin-top: 5px;
+}
+
+.work-card-summary {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(214, 224, 217, 0.9);
+  margin-top: 12px;
+}
+
+.work-card-globe {
+  margin-top: 16px;
+  width: 100%;
+  font-family: 'Special Elite', monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(240, 180, 106, 0.92);
+  background: rgba(240, 180, 106, 0.08);
+  border: 1px solid rgba(240, 180, 106, 0.4);
+  border-radius: 3px;
+  padding: 11px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.work-card-globe:hover,
+.work-card-globe:focus-visible {
+  background: rgba(240, 180, 106, 0.16);
+  outline: none;
+}
+
 @media (max-width: 900px) {
+  /* the Timeline / Globe toggle, pinned to the top of the work section */
+  .work-view-toggle {
+    display: flex;
+    gap: 4px;
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(8, 10, 12, 0.82);
+    border: 1px solid rgba(63, 255, 159, 0.22);
+    border-radius: 4px;
+    padding: 3px;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .work-view-btn {
+    font-family: 'Special Elite', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(180, 200, 190, 0.6);
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    padding: 6px 15px;
+    cursor: pointer;
+  }
+
+  .work-view-btn[aria-pressed="true"] {
+    color: rgba(63, 255, 159, 0.95);
+    background: rgba(63, 255, 159, 0.1);
+  }
+
+  /* timeline view: the rail goes full-width and opaque, covering the globe */
   .work-rail {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    padding: 56px 16px 10px;
+    background: #07090a;
+    z-index: 20;
+    animation: none;
+    opacity: 1;
+  }
+
+  /* full-width on phones, a tidy reading column on tablets */
+  .work-rail-head,
+  .work-rail-viewport {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .work-rail-head {
+    margin-bottom: 8px;
+  }
+
+  .work-rail-key {
+    padding: 10px 12px;
+    gap: 7px;
+    margin-bottom: 9px;
+  }
+
+  /* no hover note on touch; a tap opens the modal card instead */
+  .work-note {
+    display: none;
+  }
+
+  /* view switching */
+  #work.work-view-globe .work-rail {
+    display: none;
+  }
+
+  #work.work-view-timeline .work-auto-writer {
     display: none;
   }
 }

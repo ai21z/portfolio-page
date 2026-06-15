@@ -792,104 +792,57 @@ async function initBlogNetwork(){
     svg.setAttribute('viewBox', `0 0 ${wCss} ${hCss}`);
     svg.innerHTML = '';
 
-    const cx = wCss/2, cy = hCss/2;
-    const r  = Math.floor(Math.min(wCss,hCss) * PETRI_K); // inner radius for crop (uses PETRI_K constant)
+    const cx = wCss / 2, cy = hCss / 2;
+    const r = Math.floor(Math.min(wCss, hCss) * PETRI_K); // inner agar edge; all glass is drawn OUTSIDE r
+    const NS = 'http://www.w3.org/2000/svg';
+    const el = (tag, attrs) => {
+      const n = document.createElementNS(NS, tag);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      return n;
+    };
+    const arc = (rr, d0, d1) => {
+      const a0 = d0 * Math.PI / 180, a1 = d1 * Math.PI / 180;
+      return `M ${cx + rr * Math.cos(a0)} ${cy + rr * Math.sin(a0)} `
+        + `A ${rr} ${rr} 0 0 1 ${cx + rr * Math.cos(a1)} ${cy + rr * Math.sin(a1)}`;
+    };
+    const frag = document.createDocumentFragment();
 
-    // Create defs for gradients
-    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-    
-    // Glass rim gradient (top-down lighting)
-    const rimGrad = document.createElementNS('http://www.w3.org/2000/svg','radialGradient');
-    rimGrad.setAttribute('id','rimGrad');
-    rimGrad.innerHTML = `
-      <stop offset="0%" stop-color="rgba(255,255,255,0.08)" />
-      <stop offset="70%" stop-color="rgba(228,189,140,0.15)" />
-      <stop offset="85%" stop-color="rgba(255,255,255,0.25)" />
-      <stop offset="100%" stop-color="rgba(180,160,130,0.3)" />
-    `;
-    
-    // Agar medium gradient (subtle depth - keep transparent for network visibility)
-    const agarGrad = document.createElementNS('http://www.w3.org/2000/svg','radialGradient');
-    agarGrad.setAttribute('id','agarGrad');
-    agarGrad.innerHTML = `
-      <stop offset="0%" stop-color="rgba(160,140,120,0.04)" />
-      <stop offset="50%" stop-color="rgba(140,120,100,0.02)" />
-      <stop offset="100%" stop-color="rgba(120,100,80,0.01)" />
-    `;
-    
-    defs.append(rimGrad, agarGrad);
-    svg.appendChild(defs);
+    // A bevelled glass-wall gradient (a LINEAR gradient on a ring reads as a glass cylinder,
+    // not a flat disc) + a cool teal-bone agar that harmonises with the colony, not warm tan
+    // over teal. Everything cool; warm is reserved for the later 'culture alive' ember.
+    const defs = el('defs', {});
+    const wall = el('linearGradient', { id: 'dishWall', gradientTransform: 'rotate(115 0.5 0.5)' });
+    wall.innerHTML =
+      '<stop offset="0%"   stop-color="rgba(214,236,228,0.42)"/>' +   // lit top edge (bone)
+      '<stop offset="38%"  stop-color="rgba(150,178,170,0.10)"/>' +
+      '<stop offset="62%"  stop-color="rgba(10,18,18,0.06)"/>' +      // dark underside (cylindrical)
+      '<stop offset="100%" stop-color="rgba(150,200,186,0.30)"/>';    // faint lit bottom
+    const agarGrad = el('radialGradient', { id: 'dishAgar' });
+    agarGrad.innerHTML =
+      '<stop offset="0%"   stop-color="rgba(120,150,140,0.04)"/>' +
+      '<stop offset="55%"  stop-color="rgba(90,120,112,0.06)"/>' +
+      '<stop offset="100%" stop-color="rgba(58,84,78,0.10)"/>';       // capped 0.10 — colony stays the hero
+    defs.append(wall, agarGrad);
+    frag.appendChild(defs);
 
-    // Outer shadow (dish sitting on surface)
-    const shadow = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    shadow.setAttribute('cx', cx); 
-    shadow.setAttribute('cy', cy);
-    shadow.setAttribute('r', r+16);
-    shadow.setAttribute('fill','none');
-    shadow.setAttribute('stroke','rgba(0,0,0,0.15)');
-    shadow.setAttribute('stroke-width','6');
-    shadow.setAttribute('opacity','0.6');
+    // proud-lid cast shadow — a faint dark ring nudged down: the dish reads as TWO pieces on the abyss
+    frag.appendChild(el('circle', { cx, cy: cy + 6, r: r + 14, fill: 'none', stroke: 'rgba(6,10,11,0.4)', 'stroke-width': 6 }));
+    // cool agar growth medium (the first visible medium)
+    frag.appendChild(el('circle', { cx, cy, r, fill: 'url(#dishAgar)', stroke: 'none' }));
+    // meniscus — a bright/dark pair where the gel climbs the wall (the key 'liquid in glass' cue)
+    frag.appendChild(el('circle', { cx, cy, r: r - 3, fill: 'none', stroke: 'rgba(8,14,12,0.28)', 'stroke-width': 0.6 }));
+    frag.appendChild(el('circle', { cx, cy, r: r - 1.5, fill: 'none', stroke: 'rgba(196,224,214,0.5)', 'stroke-width': 2 }));
+    // double wall with thickness: a thin base ring + a proud bevelled lid-lip (the gap = the glass thickness)
+    frag.appendChild(el('circle', { cx, cy, r: r + 3, fill: 'none', stroke: 'rgba(150,178,170,0.3)', 'stroke-width': 2 }));
+    frag.appendChild(el('circle', { cx, cy, r: r + 11, fill: 'none', stroke: 'url(#dishWall)', 'stroke-width': 9 }));
+    // broad lid sheen — a wide soft top-left glint with a brighter core (asymmetric, never a centered bloom)
+    frag.appendChild(el('path', { d: arc(r + 9, -168, -90), fill: 'none', stroke: 'rgba(216,240,232,0.12)', 'stroke-width': 6, 'stroke-linecap': 'round' }));
+    frag.appendChild(el('path', { d: arc(r + 9, -150, -112), fill: 'none', stroke: 'rgba(232,250,244,0.34)', 'stroke-width': 2.5, 'stroke-linecap': 'round' }));
+    // counter-glint — a short crisp bottom-right arc for the curvature read
+    frag.appendChild(el('path', { d: arc(r + 9, 34, 62), fill: 'none', stroke: 'rgba(200,228,220,0.2)', 'stroke-width': 2, 'stroke-linecap': 'round' }));
 
-    // Glass rim (thick wall with gradient)
-    const rimOuter = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    rimOuter.setAttribute('cx', cx); 
-    rimOuter.setAttribute('cy', cy);
-    rimOuter.setAttribute('r', r+14);
-    rimOuter.setAttribute('fill','none');
-    rimOuter.setAttribute('stroke','url(#rimGrad)');
-    rimOuter.setAttribute('stroke-width','12');
-
-    // Inner glass edge (where medium meets wall)
-    const rimInner = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    rimInner.setAttribute('cx', cx); 
-    rimInner.setAttribute('cy', cy);
-    rimInner.setAttribute('r', r+2);
-    rimInner.setAttribute('fill','none');
-    rimInner.setAttribute('stroke','rgba(200,180,150,0.2)');
-    rimInner.setAttribute('stroke-width','1.5');
-
-    // Agar medium (subtle gel texture)
-    const agar = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    agar.setAttribute('cx', cx); 
-    agar.setAttribute('cy', cy);
-    agar.setAttribute('r', r);
-    agar.setAttribute('fill','url(#agarGrad)');
-    agar.setAttribute('stroke','none');
-
-    // Meniscus line (liquid surface tension)
-    const meniscus = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    meniscus.setAttribute('cx', cx); 
-    meniscus.setAttribute('cy', cy);
-    meniscus.setAttribute('r', r-1);
-    meniscus.setAttribute('fill','none');
-    meniscus.setAttribute('stroke','rgba(228,189,140,0.08)');
-    meniscus.setAttribute('stroke-width','0.5');
-
-    // Top-left specular highlight (overhead light reflection)
-    const spec1 = document.createElementNS('http://www.w3.org/2000/svg','path');
-    const a0 = -160*Math.PI/180, a1 = -115*Math.PI/180, rs = r+8;
-    const x0 = cx + rs*Math.cos(a0), y0 = cy + rs*Math.sin(a0);
-    const x1 = cx + rs*Math.cos(a1), y1 = cy + rs*Math.sin(a1);
-    spec1.setAttribute('d', `M ${x0} ${y0} A ${rs} ${rs} 0 0 1 ${x1} ${y1}`);
-    spec1.setAttribute('stroke','rgba(255,255,255,0.25)');
-    spec1.setAttribute('stroke-width','3');
-    spec1.setAttribute('fill','none');
-    spec1.setAttribute('stroke-linecap','round');
-
-    // Bottom-right subtle reflection
-    const spec2 = document.createElementNS('http://www.w3.org/2000/svg','path');
-    const a2 = 25*Math.PI/180, a3 = 70*Math.PI/180;
-    const x2 = cx + rs*Math.cos(a2), y2 = cy + rs*Math.sin(a2);
-    const x3 = cx + rs*Math.cos(a3), y3 = cy + rs*Math.sin(a3);
-    spec2.setAttribute('d', `M ${x2} ${y2} A ${rs} ${rs} 0 0 1 ${x3} ${y3}`);
-    spec2.setAttribute('stroke','rgba(255,255,255,0.12)');
-    spec2.setAttribute('stroke-width','2');
-    spec2.setAttribute('fill','none');
-    spec2.setAttribute('stroke-linecap','round');
-
-    svg.append(shadow, agar, meniscus, rimInner, rimOuter, spec1, spec2);
-    
-    return {cx, cy, r};
+    svg.appendChild(frag);
+    return { cx, cy, r };
   }
 
   // Update dish clipping uniforms (CSS pixel space, not buffer pixels)

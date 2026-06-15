@@ -339,6 +339,22 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
   line-height: 32px; /* Align with notebook lines */
 }
 
+/* Contact epigraph: a typed quote + its attribution on the notebook paper */
+.notebook-quote {
+  margin-bottom: 0; /* keep the attribution on the next ruled line */
+}
+
+.notebook-cite {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6A5F4D;
+  text-align: center;
+  line-height: 32px; /* drop to the next ruled line */
+  margin: 0 0 1.5rem;
+}
+
 .notebook-lines {
   font-family: 'Special Elite', monospace;
   font-size: 1rem;
@@ -705,6 +721,15 @@ body:has(#contact.stage.active-section) .blog-hud-cluster {
     font-size: clamp(0.8rem, 3.5vw, 0.9rem);
     margin-bottom: 1.2rem;
     line-height: 1.4;
+  }
+
+  .notebook-quote {
+    margin-bottom: 0.35rem;
+  }
+
+  .notebook-cite {
+    line-height: 1.4;
+    margin-bottom: 1.2rem;
   }
 
   .notebook-label {

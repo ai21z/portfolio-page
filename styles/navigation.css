@@ -163,9 +163,8 @@
     0 0 40px 12px rgba(184, 114, 66, 0.2);
 }
 
-/* Work & Now - Faded Violet glow (lighter & stronger) */
-.network-node-label[data-node="work"]::after,
-.network-node-label[data-node="now"]::after {
+/* Work - Faded Violet glow (lighter & stronger) */
+.network-node-label[data-node="work"]::after {
   box-shadow: 
     0 0 8px 4px rgba(120, 90, 150, 0.55),
     0 0 20px 8px rgba(120, 90, 150, 0.35);
@@ -187,8 +186,7 @@
   }
 }
 
-.network-node-label[data-node="work"]:hover::after,
-.network-node-label[data-node="now"]:hover::after {
+.network-node-label[data-node="work"]:hover::after {
   box-shadow: 
     0 0 10px 5px rgba(120, 90, 150, 0.75),
     0 0 28px 10px rgba(120, 90, 150, 0.55),

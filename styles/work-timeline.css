@@ -38,22 +38,61 @@
   margin-top: 3px;
 }
 
-.work-rail-legend {
-  list-style: none;
-  margin: 11px 0 0;
-  padding: 0;
+/* sort control: year (default) / type / place */
+.work-rail-modes {
   display: flex;
-  gap: 16px;
-  font-size: 0.56rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(180, 200, 190, 0.5);
+  gap: 4px;
+  margin-top: 12px;
+  pointer-events: auto;
 }
 
-.work-rail-legend li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.work-rail-mode {
+  font-family: 'Special Elite', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(180, 200, 190, 0.5);
+  background: rgba(63, 255, 159, 0.03);
+  border: 1px solid rgba(63, 255, 159, 0.14);
+  border-radius: 2px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.work-rail-mode:hover {
+  color: rgba(210, 230, 220, 0.85);
+  border-color: rgba(63, 255, 159, 0.3);
+}
+
+.work-rail-mode[aria-pressed="true"] {
+  color: rgba(63, 255, 159, 0.9);
+  border-color: rgba(63, 255, 159, 0.45);
+  background: rgba(63, 255, 159, 0.08);
+}
+
+.work-rail-mode:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(63, 255, 159, 0.6);
+}
+
+/* cluster label shown in the by-type / by-place layouts */
+.rail-group {
+  padding: 16px 0 5px 34px;
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(63, 255, 159, 0.45);
+  animation: railGroupIn 0.4s ease both;
+}
+
+.rail-group:first-child {
+  padding-top: 4px;
+}
+
+@keyframes railGroupIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ---- glyphs ---- */
@@ -151,6 +190,7 @@
 
 .rail-node {
   position: relative;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .rail-dot-btn {
@@ -328,6 +368,12 @@
   }
   .rail-dot-btn {
     transition: none;
+  }
+  .rail-node {
+    transition: none;
+  }
+  .rail-group {
+    animation: none;
   }
 }
 

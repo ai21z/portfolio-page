@@ -1,14 +1,28 @@
 // Work career rail: the interactive "core sample" that indexes the globe.
 //
-// Renders the TIMELINE as a scrollable vertical spine of dotted nodes (newest at the
-// surface). Hover or keyboard-focus a node to read its field-note on the right; click a
-// node to drive the globe (places turn the Earth, projects frame a moon, credentials are
-// note-only). Coupling is decoupled: a click dispatches `work-timeline:select` on document,
-// and the globe module listens for it.
+// Renders the TIMELINE as a scrollable vertical spine of dotted nodes. Hover or keyboard-
+// focus a node to read its field-note on the right; click a node to drive the globe (places
+// turn the Earth, projects frame a moon, credentials are note-only). The same nodes can be
+// re-sorted by year (default), by type, or by place, morphing between layouts with a FLIP.
+// Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
 import { TIMELINE } from './work-globe/data/timeline.js';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
+
+// Grouping bucket for the "place" sort. A view concern, so it lives here, not in the data.
+const PLACE_BY_ID = {
+  adp: 'Spain', talos: 'Spain', 'true-rolls': 'Spain', 'data-annotation': 'Spain',
+  netcompany: 'Greece', 'freelance-turn': 'Greece', msc: 'Greece', beng: 'Greece',
+  'cert-frontend-gfoss': 'Greece'
+};
+const placeOf = (node) => PLACE_BY_ID[node.id] || 'Online';
+
+const MODES = {
+  year: { label: 'Year' },
+  type: { label: 'Type', order: ['work', 'project', 'cert'], labels: { work: 'Roles', project: 'Projects', cert: 'Credentials' }, key: (n) => n.type },
+  place: { label: 'Place', order: ['Spain', 'Greece', 'Online'], labels: { Spain: 'Spain', Greece: 'Greece', Online: 'Online' }, key: placeOf }
+};
 
 let inited = false;
 
@@ -24,19 +38,19 @@ export function initWorkTimeline() {
   if (!host) return;
   inited = true;
 
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const nodes = [...TIMELINE].sort((a, b) => b.sortKey - a.sortKey);
 
   host.textContent = '';
 
   const header = el('div', 'work-rail-head');
   header.innerHTML =
-    '<div class="work-rail-title">The record</div>' +
-    '<div class="work-rail-sub">a core sample · now at the surface</div>' +
-    '<ul class="work-rail-legend" aria-hidden="true">' +
-    '<li><span class="rail-glyph rail-glyph--work"></span>place</li>' +
-    '<li><span class="rail-glyph rail-glyph--project"></span>project</li>' +
-    '<li><span class="rail-glyph rail-glyph--cert"></span>credential</li>' +
-    '</ul>';
+    '<div class="work-rail-title">Trajectory</div>' +
+    '<div class="work-rail-sub">click a marker to place it on the globe</div>';
+  const modeBar = el('div', 'work-rail-modes');
+  modeBar.setAttribute('role', 'group');
+  modeBar.setAttribute('aria-label', 'Sort the timeline');
+  header.appendChild(modeBar);
   host.appendChild(header);
 
   const viewport = el('div', 'work-rail-viewport');
@@ -46,14 +60,14 @@ export function initWorkTimeline() {
   const spine = el('div', 'work-rail-spine');
   spine.setAttribute('aria-hidden', 'true');
   const list = el('ol', 'work-rail-list');
-  list.setAttribute('aria-label', 'Career timeline, most recent first');
+  list.setAttribute('aria-label', 'Career timeline');
 
   const note = el('div', 'work-note');
   note.setAttribute('role', 'status');
   note.hidden = true;
 
   let hideTimer = 0;
-  let activeLi = null; // the node whose field-note is currently shown (so it can follow on scroll)
+  let activeLi = null;
 
   function positionNote(li) {
     const hostRect = host.getBoundingClientRect();
@@ -105,6 +119,8 @@ export function initWorkTimeline() {
     }
   }
 
+  // Build every node once, keyed by id, so re-sorting just reorders the DOM.
+  const nodeLis = new Map();
   nodes.forEach((node) => {
     const li = el('li', 'rail-node rail-node--' + node.type);
     li.dataset.id = node.id;
@@ -130,17 +146,9 @@ export function initWorkTimeline() {
     btn.addEventListener('click', () => selectNode(node, li));
 
     li.appendChild(btn);
-    list.appendChild(li);
+    nodeLis.set(node.id, li);
   });
 
-  scroll.appendChild(spine);
-  scroll.appendChild(list);
-  viewport.appendChild(scroll);
-  viewport.appendChild(readhead);
-  host.appendChild(viewport);
-  host.appendChild(note);
-
-  // Mark the node nearest the read-head as centered (ambient "scrub" feedback).
   let scrollRaf = 0;
   const markCentered = () => {
     scrollRaf = 0;
@@ -157,6 +165,70 @@ export function initWorkTimeline() {
     });
     if (best) best.classList.add('is-centered');
   };
+
+  function buildGroups(mode) {
+    if (mode === 'year') return [{ label: null, ids: nodes.map((n) => n.id) }];
+    const cfg = MODES[mode];
+    return cfg.order
+      .map((g) => ({ label: cfg.labels[g], ids: nodes.filter((n) => cfg.key(n) === g).map((n) => n.id) }))
+      .filter((grp) => grp.ids.length);
+  }
+
+  let currentMode = 'year';
+  function layout(mode, animate) {
+    const first = new Map();
+    if (animate && !reducedMotion) nodeLis.forEach((li, id) => first.set(id, li.getBoundingClientRect().top));
+
+    list.textContent = '';
+    buildGroups(mode).forEach((grp) => {
+      if (grp.label) {
+        const h = el('li', 'rail-group');
+        h.textContent = grp.label;
+        h.setAttribute('aria-hidden', 'true');
+        list.appendChild(h);
+      }
+      grp.ids.forEach((id) => list.appendChild(nodeLis.get(id)));
+    });
+
+    if (animate && !reducedMotion) {
+      nodeLis.forEach((li, id) => {
+        const dy = (first.get(id) || 0) - li.getBoundingClientRect().top;
+        if (dy) {
+          li.style.transition = 'none';
+          li.style.transform = 'translateY(' + dy + 'px)';
+          requestAnimationFrame(() => { li.style.transition = ''; li.style.transform = ''; });
+        }
+      });
+    }
+
+    currentMode = mode;
+    hideNoteSoon();
+    requestAnimationFrame(markCentered);
+  }
+
+  Object.keys(MODES).forEach((mode) => {
+    const b = el('button', 'work-rail-mode');
+    b.type = 'button';
+    b.textContent = MODES[mode].label;
+    b.setAttribute('aria-pressed', mode === 'year' ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      if (currentMode === mode) return;
+      modeBar.querySelectorAll('.work-rail-mode').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      layout(mode, true);
+    });
+    modeBar.appendChild(b);
+  });
+
+  scroll.appendChild(spine);
+  scroll.appendChild(list);
+  viewport.appendChild(scroll);
+  viewport.appendChild(readhead);
+  host.appendChild(viewport);
+  host.appendChild(note);
+
+  layout('year', false);
+
   scroll.addEventListener('scroll', () => {
     if (!scrollRaf) scrollRaf = requestAnimationFrame(markCentered);
     // Keep a shown note glued to its node; hide it only once the node scrolls out of view.
@@ -168,5 +240,4 @@ export function initWorkTimeline() {
       else positionNote(activeLi);
     }
   }, { passive: true });
-  requestAnimationFrame(markCentered);
 }

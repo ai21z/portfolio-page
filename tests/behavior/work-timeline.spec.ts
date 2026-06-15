@@ -14,7 +14,9 @@ test.describe('Work career rail', () => {
   test('renders the full chronology, newest first, with three node types', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await expect(page.locator('.work-rail')).toBeVisible();
-    await expect(page.locator('.work-rail-title')).toHaveText('Trajectory');
+    await expect(page.locator('.work-rail-title')).toHaveText('Timeline');
+    // the legend lives in the boxed panel
+    await expect(page.locator('.work-rail-key-row')).toHaveText(['place', 'project', 'credential']);
     await page.waitForSelector('.rail-node');
 
     const ids = await page.locator('.rail-node').evaluateAll((els) =>

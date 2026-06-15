@@ -45,7 +45,12 @@ export function initWorkTimeline() {
 
   const header = el('div', 'work-rail-head');
   header.innerHTML =
-    '<div class="work-rail-title">Trajectory</div>' +
+    '<div class="work-rail-key">' +
+    '<div class="work-rail-key-row"><span class="rail-glyph rail-glyph--work"></span><span>place</span></div>' +
+    '<div class="work-rail-key-row"><span class="rail-glyph rail-glyph--project"></span><span>project</span></div>' +
+    '<div class="work-rail-key-row"><span class="rail-glyph rail-glyph--cert"></span><span>credential</span></div>' +
+    '</div>' +
+    '<div class="work-rail-title">Timeline</div>' +
     '<div class="work-rail-sub">click a marker to place it on the globe</div>';
   const modeBar = el('div', 'work-rail-modes');
   modeBar.setAttribute('role', 'group');

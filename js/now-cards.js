@@ -8,7 +8,7 @@ const NOW_STREAMS = [
   {
     id: 'talos',
     logoText: 'T',
-    title: 'Talos — Local Workspace Operator',
+    title: 'Talos, Local Workspace Operator',
     line: 'Governed CLI for local developer tasks',
     status: 'high',
     tags: ['Java', 'Local LLMs', 'Approval Gates', 'Traceability'],

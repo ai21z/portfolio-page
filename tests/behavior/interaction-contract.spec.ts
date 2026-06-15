@@ -414,7 +414,7 @@ test('Now section presents Talos first with a GitHub CTA', async ({ page }) => {
   await expect(firstCard.locator('.now-card-logo-text')).toBeVisible();
 
   await firstCard.locator('.now-card-front').click();
-  await expect(firstCard.locator('.now-card-title')).toHaveText('Talos — Local Workspace Operator');
+  await expect(firstCard.locator('.now-card-title')).toHaveText('Talos, Local Workspace Operator');
   await expect(firstCard.locator('.now-card-line')).toHaveText('Governed CLI for local developer tasks');
   await expect(firstCard.locator('.now-card-tag')).toContainText([
     'Java',

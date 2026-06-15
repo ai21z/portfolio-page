@@ -36,7 +36,7 @@ export const WORK_LOCATIONS = {
       {
         company: 'ADP (Lyric HCM)',
         position: 'Software Engineer',
-        period: '2024 — Present',
+        period: '2024 to Present',
         responsibilities: [
           'Software Engineer on Lyric HCM payroll platform',
           'Development & cross-region integrations under strict compliance',

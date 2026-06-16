@@ -3,25 +3,16 @@
 // Renders the TIMELINE as a scrollable vertical spine of dotted nodes. Hover or keyboard-
 // focus a node to read its field-note on the right; click a node to drive the globe (places
 // turn the Earth, projects frame a moon, credentials are note-only). The same nodes can be
-// re-sorted by year (default), by type, or by place, morphing between layouts with a FLIP.
+// re-sorted by year (default) or by type, morphing between layouts with a FLIP.
 // Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
 import { TIMELINE } from './work-globe/data/timeline.js?v=20260625';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
-// Grouping bucket for the "place" sort. A view concern, so it lives here, not in the data.
-const PLACE_BY_ID = {
-  adp: 'Spain', talos: 'Spain', 'true-rolls': 'Spain', 'data-annotation': 'Spain',
-  netcompany: 'Greece', 'freelance-turn': 'Greece', msc: 'Greece', beng: 'Greece',
-  'cert-frontend-gfoss': 'Greece'
-};
-const placeOf = (node) => PLACE_BY_ID[node.id] || 'Online';
-
 const MODES = {
   year: { label: 'Year' },
-  type: { label: 'Type', order: ['work', 'project', 'cert'], labels: { work: 'Roles', project: 'Projects', cert: 'Credentials' }, key: (n) => n.type },
-  place: { label: 'Place', order: ['Spain', 'Greece', 'Online'], labels: { Spain: 'Spain', Greece: 'Greece', Online: 'Online' }, key: placeOf }
+  type: { label: 'Type', order: ['work', 'project', 'cert'], labels: { work: 'Roles', project: 'Projects', cert: 'Credentials' }, key: (n) => n.type }
 };
 
 let inited = false;

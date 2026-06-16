@@ -87,11 +87,13 @@ test.describe('Work career rail', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('re-sorts by type and by place, then back to year', async ({ page }) => {
+  test('re-sorts by type, then back to year (Year and Type are the only modes)', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');
     // default "year" layout is a flat chronology, no cluster labels
     await expect(page.locator('.rail-group')).toHaveCount(0);
+    // the Place sort was removed: only Year and Type remain
+    await expect(page.locator('.work-rail-mode')).toHaveText(['Year', 'Type']);
 
     await page.locator('.work-rail-mode', { hasText: 'Type' }).click();
     await expect(page.locator('.rail-group')).toHaveText(['Roles', 'Projects', 'Credentials']);
@@ -100,9 +102,6 @@ test.describe('Work career rail', () => {
     expect(typeOrder.slice(0, 4).every((t) => t === 'work')).toBe(true);
     expect(typeOrder.slice(4, 6).every((t) => t === 'project')).toBe(true);
     expect(typeOrder.slice(6).every((t) => t === 'cert')).toBe(true);
-
-    await page.locator('.work-rail-mode', { hasText: 'Place' }).click();
-    await expect(page.locator('.rail-group')).toHaveText(['Spain', 'Greece', 'Online']);
 
     await page.locator('.work-rail-mode', { hasText: 'Year' }).click();
     await expect(page.locator('.rail-group')).toHaveCount(0);

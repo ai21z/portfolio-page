@@ -12,7 +12,7 @@ export const TIMELINE = [
   {
     id: 'adp',
     type: 'work',
-    dates: '2024 — present',
+    dates: '2024 - present',
     sortKey: 2026.9,
     title: 'ADP',
     subtitle: 'Software Engineer · Barcelona',
@@ -22,7 +22,7 @@ export const TIMELINE = [
   {
     id: 'talos',
     type: 'project',
-    dates: '2024 — present',
+    dates: '2024 - present',
     sortKey: 2026.6,
     title: 'Talos',
     subtitle: 'Local workspace operator',
@@ -32,7 +32,7 @@ export const TIMELINE = [
   {
     id: 'true-rolls',
     type: 'project',
-    dates: '2024 — present',
+    dates: '2024 - present',
     sortKey: 2026.55,
     title: 'True-Rolls',
     subtitle: 'Verifiable tabletop rolls',
@@ -52,7 +52,7 @@ export const TIMELINE = [
   {
     id: 'netcompany',
     type: 'work',
-    dates: '2022 — 2024',
+    dates: '2022 - 2024',
     sortKey: 2024.2,
     title: 'Netcompany-Intrasoft',
     subtitle: 'Software Engineer · remote',
@@ -92,7 +92,7 @@ export const TIMELINE = [
   {
     id: 'freelance-turn',
     type: 'work',
-    dates: '2017 — 2022',
+    dates: '2017 - 2022',
     sortKey: 2022.99,
     title: 'The turn to software',
     subtitle: 'Freelance · Greece',
@@ -122,7 +122,7 @@ export const TIMELINE = [
   {
     id: 'msc',
     type: 'cert',
-    dates: '2019 — 2021',
+    dates: '2019 - 2021',
     sortKey: 2021.99,
     title: 'M.Sc. Computer Software Engineering',
     subtitle: 'University of Thessaly',
@@ -182,7 +182,7 @@ export const TIMELINE = [
   {
     id: 'beng',
     type: 'cert',
-    dates: '2009 — 2015',
+    dates: '2009 - 2015',
     sortKey: 2015,
     title: 'B.Eng Environmental Engineering',
     subtitle: 'University of Western Macedonia',

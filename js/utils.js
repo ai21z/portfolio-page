@@ -100,11 +100,3 @@ export const throttle = (fn, ms = 125) => {
     }
   };
 };
-
-export const viewportSize = () => {
-  const vv = window.visualViewport;
-  return {
-    w: window.innerWidth,
-    h: vv ? Math.round(vv.height) : window.innerHeight
-  };
-};

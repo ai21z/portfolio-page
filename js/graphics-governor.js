@@ -67,8 +67,6 @@ let currentSection = 'intro';
 let debugOverlay = null;
 let webglCapabilityProbe = null;
 
-export const GRAPHICS_PROFILES = PROFILES;
-
 function isFirefox() {
   return /\bFirefox\//.test(navigator.userAgent);
 }

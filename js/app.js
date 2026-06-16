@@ -50,14 +50,12 @@ import {
 import {
   computeCoverFromImage,
   toViewport,
-  toImg,
   projectXY
 } from './viewport.js';
 import {
   startSpark,
   drawSparks,
-  startSparkToPoint,
-  computeRouteVp
+  startSparkToPoint
 } from './sparks.js';
 import {
   computeNavOffsets,

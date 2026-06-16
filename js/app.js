@@ -732,50 +732,6 @@ async function initNetworkAndNav() {
 function initBlogControls() {
   populateBlogCounts();
   
-  const hubButtons = document.querySelectorAll('.hub-btn');
-  
-  let lastButtonClickTime = 0;
-  const BUTTON_DEBOUNCE = 300; // ms
-  
-  hubButtons.forEach(btn => {
-    const hubId = btn.dataset.hub;
-    
-    btn.addEventListener('mouseenter', () => {
-      window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId, source: 'menu' } }));
-    });
-    
-    btn.addEventListener('mouseleave', () => {
-      window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId } }));
-    });
-    
-    btn.addEventListener('focus', () => {
-      window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId, source: 'menu' } }));
-    });
-    
-    btn.addEventListener('blur', () => {
-      window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId } }));
-    });
-    
-    const activateHub = () => {
-      const now = performance.now();
-      if (now - lastButtonClickTime < BUTTON_DEBOUNCE) {
-        return;
-      }
-      lastButtonClickTime = now;
-      
-      enterBlogCategory(hubId);
-    };
-    
-    btn.addEventListener('click', activateHub);
-    
-    btn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        activateHub();
-      }
-    });
-  });
-
   document.querySelectorAll('.blog-memo-item[data-hub]').forEach(item => {
     if (item.__blogMemoBound) return;
     item.__blogMemoBound = true;

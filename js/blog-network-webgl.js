@@ -428,7 +428,6 @@ function program(gl, vs, fs){
 }
 
 let initialized = false;
-let animationActive = false;
 
 async function initBlogNetwork(){
   if (initialized) return;
@@ -483,12 +482,6 @@ async function initBlogNetwork(){
   // Build geometry buffers. Per-vertex vein diameter comes from the JSON ([x,y,w]) — width is
   // flux-driven now, not derived from distance/depth.
   const segs = [];
-  const hubLookup = new Map();
-  (data.hubs||[]).forEach((hub)=>{
-    if(hub && hub.id!==undefined && typeof hub.x==='number' && typeof hub.y==='number'){
-      hubLookup.set(hub.id, [hub.x, hub.y]);
-    }
-  });
 
   // Per-hub segment buffers for hover highlight, bucketed by the flux-tag in the data
   // (the category whose protoplasmic flow each vein carries), not by spatial proximity.
@@ -1399,7 +1392,6 @@ async function initBlogNetwork(){
 
   // animate
   let last = performance.now();
-  let frameCount = 0;
   function loop(now){
     if (!running || document.hidden) {
       rafId = null;
@@ -1415,7 +1407,6 @@ async function initBlogNetwork(){
     }
     last = now;
     reportFrameSample('blog-network', dt);
-    frameCount++;
 
     // PAPER (renders background)
     gl.useProgram(progPaper);
@@ -1633,7 +1624,6 @@ async function initBlogNetwork(){
   });
   
   // Start animation loop
-  animationActive = true;
   startLoop();
 }
 

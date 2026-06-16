@@ -311,8 +311,6 @@ class PortraitParticles {
 
     this.mouseX = -9999;
     this.mouseY = -9999;
-    this.prevMouseX = -9999;
-    this.prevMouseY = -9999;
     this.mouseVelX = 0;
     this.mouseVelY = 0;
     this.isNearWrapper = false;
@@ -331,7 +329,6 @@ class PortraitParticles {
     this.bufWidth = 0;
     this.bufHeight = 0;
     this.renderMode = renderModeForBudget();
-    this.lastStats = null;
 
     this.animationId = null;
     this.releaseTimer = 0;
@@ -459,7 +456,6 @@ class PortraitParticles {
       ...extra
     };
 
-    this.lastStats = stats;
     window.__portraitParticleStats = stats;
   }
 
@@ -794,8 +790,6 @@ class PortraitParticles {
 
     this.mouseVelX = localX - this.mouseX;
     this.mouseVelY = localY - this.mouseY;
-    this.prevMouseX = this.mouseX;
-    this.prevMouseY = this.mouseY;
     this.mouseX = localX;
     this.mouseY = localY;
 

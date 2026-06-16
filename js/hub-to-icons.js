@@ -153,11 +153,4 @@ export function initHubToIcons() {
   };
   
   runCycle();
-
-  const handleResize = () => {
-    if (window.innerWidth > 900) {
-    }
-  };
-  
-  window.addEventListener('resize', handleResize);
 }

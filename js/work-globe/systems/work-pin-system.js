@@ -59,7 +59,6 @@ export class WorkPinSystem {
     this.locations = locations;
     this.pins = [];
     this.hoveredPin = null;
-    this.selectedPin = null;
     this.pinGeometry = pinGeometry;
     
     this.textRenderer = new TextRenderer(gl);
@@ -120,7 +119,6 @@ export class WorkPinSystem {
         currentScale: 1.0,
         pulsePhase: Math.random() * Math.PI * 2,
         hovered: false,
-        selected: false,
         imageCoords,
         orbitals: []
       });
@@ -509,11 +507,5 @@ export class WorkPinSystem {
     gl.depthMask(true);
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
-  }
-  
-  checkHover(ray, cameraPos) {
-    this.pins.forEach(pin => {
-      pin.hovered = false;
-    });
   }
 }

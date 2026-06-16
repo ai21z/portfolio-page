@@ -62,7 +62,6 @@ let boundVisibilityHandler = null;
 let boundContextHealthCleanup = null;
 let boundLocationOutsideClickHandler = null;
 let boundProjectOutsideClickHandler = null;
-let dprCheckIntervalId = null;
 let autoWriterTimeoutId = null;
 
 let isMobile = false;
@@ -148,12 +147,6 @@ let earthTexture = null;
 let fogTexture = null;
 let lightningTexture = null;
 let texturesReady = false;
-
-function checkAllTexturesLoaded() {
-  if (earthTexture && fogTexture && lightningTexture) {
-    texturesReady = true;
-  }
-}
 
 /**
  * Cache uniform locations for a program to avoid getUniformLocation calls every frame.
@@ -1129,23 +1122,6 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
   return closestPin;
 }
 
-function projectToScreen(worldPos) {
-  const modelPos = mat4.transformPoint(modelMatrix, worldPos);
-  const viewPos = mat4.transformPoint(viewMatrix, modelPos);
-  const clipPos = mat4.transformPoint(projectionMatrix, viewPos);
-  
-  // transformPoint already returned normalized device coordinates
-  const ndcX = clipPos[0];
-  const ndcY = clipPos[1];
-  
-  // Convert from clip space (-1 to 1) to screen space
-  const rect = canvas.getBoundingClientRect();
-  const x = (ndcX * 0.5 + 0.5) * rect.width + rect.left;
-  const y = (1 - (ndcY * 0.5 + 0.5)) * rect.height + rect.top;
-  
-  return { x, y };
-}
-
 function showLocationInfo(pin) {
   let infoBubble = document.querySelector('.work-location-info');
   if (!infoBubble) {
@@ -1236,26 +1212,6 @@ function hideLocationInfo() {
   if (infoBubble) {
     infoBubble.classList.remove('visible');
   }
-}
-
-function checkMoonClick(mouseX, mouseY) {
-  if (!moonOrbitSystem || !projectionMatrix || !viewMatrix || !modelMatrix) return null;
-  
-  // Convert mouse to NDC
-  const rect = canvas.getBoundingClientRect();
-  const ndcX = ((mouseX - rect.left) / rect.width) * 2 - 1;
-  const ndcY = -((mouseY - rect.top) / rect.height) * 2 + 1;
-  
-  // Check if moon was clicked
-  const clickedMoon = moonOrbitSystem.getMoonAtPosition(ndcX, ndcY, projectionMatrix, viewMatrix, modelMatrix);
-  
-  if (clickedMoon) {
-    moonOrbitSystem.triggerMoonClick(clickedMoon); // Trigger moth wing click animation
-    showProjectPanel(clickedMoon);
-    return clickedMoon;
-  }
-  
-  return null;
 }
 
 function showProjectPanel(moon) {
@@ -1584,12 +1540,6 @@ function cleanupWorkGlobe() {
   if (autoWriterTimeoutId) {
     clearTimeout(autoWriterTimeoutId);
     autoWriterTimeoutId = null;
-  }
-  
-  // Clear the DPR check interval
-  if (dprCheckIntervalId) {
-    clearInterval(dprCheckIntervalId);
-    dprCheckIntervalId = null;
   }
 
   if (gl) {

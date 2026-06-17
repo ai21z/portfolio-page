@@ -262,14 +262,6 @@ export class MoonOrbitSystem {
     });
   }
   
-  triggerMoonClick(moon) {
-    if (!moon) return;
-    
-    moon.shimmerActive = true;
-    moon.shimmerStartTime = Date.now();
-    moon.shimmerPhase = -1.0;
-  }
-  
   getMoonWorldPosition(moon) {
     if (!moon) return null;
     return this.getWorldPosition(moon);

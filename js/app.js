@@ -951,7 +951,6 @@ function exitToMap() {
   resetBlogMapState({ updateHistory: true });
 }
 
-function enterBlogCategory(hubId) { return enterHub(hubId); }
 function exitBlogCategory() { return exitToMap(); }
 
 let ARTICLES_REGISTRY = null;
@@ -1455,7 +1454,6 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
     a.addEventListener('click', (e) => {
       e.preventDefault();
       const section = a.getAttribute('data-nav-open');
-      document.dispatchEvent(new CustomEvent('open-section', { detail: section }));
       if (section) location.hash = section;
       menuDlg.close();
     });
@@ -1523,29 +1521,6 @@ function simpleParticles(x, y) {
   
   setTimeout(() => layer.remove(), 600);
 }
-
-// Debug helper (console command)
-window.verifyAlignment = function() {
-  console.log('\n=== ALIGNMENT VERIFICATION ===');
-  console.log(`Ritual Active: ${ritualActive}`);
-  console.log(`Cover Ready: ${COVER.ready}`);
-  console.log(`Base Dimensions: ${COVER.baseW}×${COVER.baseH}`);
-  console.log(`Transform: scale=${COVER.s.toFixed(4)}, offset=(${COVER.dx.toFixed(2)}, ${COVER.dy.toFixed(2)})`);
-  console.log('\nLabel Positions:');
-  for (const [id, pt] of Object.entries(NAV_COORDS)) {
-    const el = document.querySelector(`[data-node="${id}"]`);
-    if (!el) continue;
-    const [ax, ay] = toViewport(pt.x, pt.y);
-    const rect = el.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const deltaX = centerX - ax;
-    const deltaY = centerY - ay;
-    const route = LOCKED_ROUTES[id];
-    console.log(`  ${id.padEnd(10)}: anchor=(${ax.toFixed(1)}, ${ay.toFixed(1)}), center=(${centerX.toFixed(1)}, ${centerY.toFixed(1)}), delta=(${deltaX.toFixed(1)}, ${deltaY.toFixed(1)})${route ? `, route=${route.len.toFixed(0)}px` : ''}`);
-  }
-  console.log('\nRun this command after load and after toggling ritual to verify alignment.\n');
-};
 
 // Hash change (back/forward)
 window.addEventListener('hashchange', () => {
@@ -1819,7 +1794,6 @@ function initPaperFocusForSection(sectionId){
   const section = document.getElementById(sectionId);
   if (!section) return;
   if (section.__paperFocusBound) return;
-  section.querySelectorAll('.paper-overlay')?.forEach(n=>n.remove());
 
   const backdrop = document.getElementById('paper-backdrop');
   if (!backdrop) {

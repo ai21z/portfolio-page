@@ -84,8 +84,8 @@ body.has-paper-open-global #bg-front-img {
 .fungi-ambient{
   position:absolute; inset:0;
   background:
-    radial-gradient(ellipse 100vw 100dvh at 75% 25%, rgba(63,255,159,.025), transparent 55%),
-    radial-gradient(ellipse 120vw 100dvh at 25% 75%, rgba(122,174,138,.02), transparent 60%),
+    radial-gradient(ellipse 100vw 100dvh at 75% 25%, rgba(var(--decay-green-rgb),.025), transparent 55%),
+    radial-gradient(ellipse 120vw 100dvh at 25% 75%, rgba(var(--necrotic-rgb),.02), transparent 60%),
     radial-gradient(ellipse 80vw 80dvh at 50% 50%, rgba(74, 92, 82,.015), transparent 65%);
   opacity:.95;
   pointer-events:none;
@@ -120,7 +120,7 @@ body.has-paper-open-global #bg-front-img {
 
 .glitch-text:hover::before{
   left:2px;
-  text-shadow:-2px 0 rgba(63, 255, 159, 0.7);
+  text-shadow:-2px 0 rgba(var(--decay-green-rgb), 0.7);
   clip:rect(44px, 450px, 56px, 0);
   animation:glitch-anim 0.6s infinite linear alternate-reverse;
 }

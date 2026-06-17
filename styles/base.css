@@ -1,9 +1,22 @@
 /* Design Tokens */
 :root{
   /* Dark Horror Palette - High contrast with eerie accents */
-  --abyss:#0B0B0C; --charcoal:#131417; --ash:#1E2024; --void:#08090A;
+  --abyss:#0B0B0C; --void:#08090A;
   --bone:#E6E3D8; --spectral:#8FB4FF; --necrotic:#7AAE8A; --ember:#C24A2E;
-  --decay-green: #3FFF9F; --blood-red: #FF3B3B; --fungal: #4A5C52;
+  --decay-green: #3FFF9F;
+  --decay-green-rgb: 63, 255, 159;   /* channels for rgba(var(--decay-green-rgb), a) */
+  --necrotic-rgb: 122, 174, 138;     /* channels for rgba(var(--necrotic-rgb), a) */
+  --paper-ink: #2A251F;  /* aged-paper text ink (altar/contact/work) */
+
+  /* Per-hub accent colors (keys are JS-produced: craft/cosmos/codex/convergence) */
+  --hub-craft: #3da88a;
+  --hub-cosmos: #9a7ee6;
+  --hub-codex: #e6b03a;
+  --hub-convergence: #e66830;
+
+  /* Repeated UI transition lists (referenced via var, with explicit properties) */
+  --ui-transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  --ui-transition-slow: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
 
   /* Font + dim tokens. These are referenced (often bare, no fallback) across
      blog.css and others; defining them here gives the site one vocabulary and
@@ -21,14 +34,8 @@
   --gap-large: calc(var(--unit) * 6);  /* 48px */
   
   /* Typography Scale - Modular (Generous leading) */
-  --text-caption: 10px;
-  --text-xs: 14px;
-  --text-sm: 16px;
   --text-base: clamp(16px, 1.6vw, 18px);
-  --text-lg: 24px;
-  --text-xl: 32px;
   --text-2xl: clamp(38px, 5vw, 52px);
-  --text-3xl: 64px;
   
   /* Line heights (Swiss: generous whitespace) */
   --leading-tight: 1.1;
@@ -67,8 +74,8 @@ body{
   /* Subtle texture overlay - consistent across all sections */
   background-image: 
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
-    radial-gradient(ellipse at 20% 30%, rgba(63,255,159,.015) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 70%, rgba(122,174,138,.015) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 30%, rgba(var(--decay-green-rgb),.015) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(var(--necrotic-rgb),.015) 0%, transparent 50%);
   background-attachment: scroll;
 }
 
@@ -86,29 +93,6 @@ a, button {
 
 /* Z-Index Stack: 0=#bg, 1=canvases, 2=content, 10=nav, 9999=skip */
 
-@media (max-width: 1280px) {
-  :root {
-    --breakpoint: 1280px;
-  }
-}
-
-@media (max-width: 900px) {
-  :root {
-    --breakpoint: 900px;
-  }
-}
-
-@media (max-width: 640px) {
-  :root {
-    --breakpoint: 640px;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --breakpoint: 480px;
-  }
-}
 
 /* 44px minimum touch targets */
 @media (hover: none) {

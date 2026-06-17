@@ -217,7 +217,7 @@
   padding: calc(var(--pad-top) * var(--k)) calc(var(--pad-right) * var(--k)) 
            calc(var(--pad-bottom) * var(--k)) calc(var(--pad-left) * var(--k));
   
-  color: #2A251F;
+  color: var(--paper-ink);
   
   /* Ruled line spacing — scales with container width so lines match font size */
   --rule-gap: clamp(19px, 7.5cqi, 32px);
@@ -439,7 +439,7 @@
 .slab h3 {
   --h-margin-bottom: 6px;
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
-  color: #2A251F;
+  color: var(--paper-ink);
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
   /* cqi = % of container (card) inline-size — immune to browser zoom changes */
   font-size: clamp(13.5px, 5cqi, 21px);
@@ -501,7 +501,7 @@
 }
 
 .kv a {
-  color: #2A251F;
+  color: var(--paper-ink);
   text-decoration: none;
   border-bottom: 1px dashed rgba(101, 67, 33, 0.4);
 }
@@ -767,7 +767,7 @@
   color: rgba(232,232,234,0.7);
   font-size: 20px;
   line-height: 1;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+  transition: var(--ui-transition);
   z-index: 10;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);

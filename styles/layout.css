@@ -70,7 +70,7 @@
 }
 
 .stage::-webkit-scrollbar-thumb:hover{
-  background:rgba(122, 174, 138, 0.6);
+  background:rgba(var(--necrotic-rgb), 0.6);
   background-clip:padding-box;
 }
 

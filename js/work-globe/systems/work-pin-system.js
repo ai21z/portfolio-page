@@ -1,3 +1,5 @@
+import { NECRO_GREEN } from '../core/palette.js';
+
 class TextRenderer {
   constructor(gl) {
     this.gl = gl;
@@ -112,7 +114,7 @@ export class WorkPinSystem {
         key,
         name: name || key,
         basePos,
-        color: color || [0.247, 1.0, 0.624],
+        color: color || [...NECRO_GREEN],
         targetHeight: 0.12,
         currentHeight: 0.12,
         targetScale: 1.0,

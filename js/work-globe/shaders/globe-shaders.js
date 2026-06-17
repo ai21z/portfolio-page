@@ -34,6 +34,10 @@ uniform float uTime;
 uniform sampler2D uDaymap;
 uniform bool uUseDaymap;
 
+// Ocean/land palette, shared by the daymap and procedural branches below.
+const vec3 OCEAN_COLOR = vec3(0.08, 0.12, 0.13);  // Subtle dark teal
+const vec3 LAND_COLOR = vec3(0.55, 0.75, 0.60);   // Keep land brighter
+
 void main() {
   vec3 baseColor;
   
@@ -48,12 +52,8 @@ void main() {
     float luminance = dot(sampledColor, vec3(0.299, 0.587, 0.114));
     float landness = smoothstep(0.15, 0.40, luminance);
     
-    // Target palette: slightly darker oceans, preserve land colors
-    vec3 oceanTarget = vec3(0.08, 0.12, 0.13);   // Subtle dark teal
-    vec3 landTarget = vec3(0.55, 0.75, 0.60);    // Keep land brighter
-    
     // Very subtle remap (10% strength - mostly shows original texture)
-    vec3 targetColor = mix(oceanTarget, landTarget, landness);
+    vec3 targetColor = mix(OCEAN_COLOR, LAND_COLOR, landness);
     baseColor = mix(sampledColor, targetColor, 0.10);
     
   } else {
@@ -61,12 +61,11 @@ void main() {
     float v = sin(vUv.x * 12.0 + sin(vUv.y * 8.0)) * 
               sin(vUv.y * 10.0 + sin(vUv.x * 6.0));
     float land = step(0.2, v);
-    vec3 oceanColor = vec3(0.08, 0.12, 0.13);
-    vec3 landColor = vec3(0.55, 0.75, 0.60);
-    baseColor = mix(oceanColor, landColor, land);
+    baseColor = mix(OCEAN_COLOR, LAND_COLOR, land);
   }
   
   // Lambert lighting: balanced ambient + diffuse
+  // NOTE: this lightDir is duplicated in moon-shaders.js — keep the two in sync.
   vec3 lightDir = normalize(vec3(0.5, 0.3, 0.5));
   float diffuse = max(dot(normalize(vNormal), lightDir), 0.0);
   float ambient = 0.15;  // brighter overall

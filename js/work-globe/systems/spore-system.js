@@ -68,93 +68,58 @@ export class SporeSystem {
       const radius = Math.sqrt(origin[0]**2 + origin[1]**2 + origin[2]**2);
       const normal = [origin[0]/radius, origin[1]/radius, origin[2]/radius];
       
-      for (let i = 0; i < tinyParticles; i++) {
-        const particle = this.getInactiveParticle();
-        if (!particle) break;
-        
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
-        
-        let dir = [
-          Math.sin(phi) * Math.cos(theta),
-          Math.sin(phi) * Math.sin(theta),
-          Math.cos(phi)
-        ];
-        
-        const radialComponent = dir[0]*normal[0] + dir[1]*normal[1] + dir[2]*normal[2];
-        dir[0] -= normal[0] * radialComponent * 0.7;
-        dir[1] -= normal[1] * radialComponent * 0.7;
-        dir[2] -= normal[2] * radialComponent * 0.7;
-        
-        const len = Math.sqrt(dir[0]**2 + dir[1]**2 + dir[2]**2);
-        const speed = 0.4 + Math.random() * 0.6;
-        dir[0] = (dir[0]/len) * speed;
-        dir[1] = (dir[1]/len) * speed;
-        dir[2] = (dir[2]/len) * speed;
-        
-        dir[0] += normal[0] * 0.08;
-        dir[1] += normal[1] * 0.08;
-        dir[2] += normal[2] * 0.08;
-        
-        const jitter = 0.05;
-        particle.position = [
-          origin[0] + (Math.random() - 0.5) * jitter,
-          origin[1] + (Math.random() - 0.5) * jitter,
-          origin[2] + (Math.random() - 0.5) * jitter
-        ];
-        particle.velocity = dir;
-        particle.life = 1.0;
-        particle.size = 0.03 + Math.random() * 0.06;
-        particle.active = true;
-        
-        emitted.push(particle);
-      }
-      
-      for (let i = 0; i < regularParticles; i++) {
-        const particle = this.getInactiveParticle();
-        if (!particle) break;
-        
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
-        
-        let dir = [
-          Math.sin(phi) * Math.cos(theta),
-          Math.sin(phi) * Math.sin(theta),
-          Math.cos(phi)
-        ];
-        
-        const radialComponent = dir[0]*normal[0] + dir[1]*normal[1] + dir[2]*normal[2];
-        dir[0] -= normal[0] * radialComponent * 0.7;
-        dir[1] -= normal[1] * radialComponent * 0.7;
-        dir[2] -= normal[2] * radialComponent * 0.7;
-        
-        const len = Math.sqrt(dir[0]**2 + dir[1]**2 + dir[2]**2);
-        const speed = 0.5 + Math.random() * 0.7;
-        dir[0] = (dir[0]/len) * speed;
-        dir[1] = (dir[1]/len) * speed;
-        dir[2] = (dir[2]/len) * speed;
-        
-        dir[0] += normal[0] * 0.1;
-        dir[1] += normal[1] * 0.1;
-        dir[2] += normal[2] * 0.1;
-        
-        const jitter = 0.05;
-        particle.position = [
-          origin[0] + (Math.random() - 0.5) * jitter,
-          origin[1] + (Math.random() - 0.5) * jitter,
-          origin[2] + (Math.random() - 0.5) * jitter
-        ];
-        particle.velocity = dir;
-        particle.life = 1.0;
-        particle.size = 0.12 + Math.random() * 0.15;
-        particle.active = true;
-        
-        emitted.push(particle);
-      }
+      this._emitParticles(tinyParticles, origin, normal, emitted,
+        { speedBase: 0.4, speedRand: 0.6, normalPush: 0.08, sizeBase: 0.03, sizeRand: 0.06 });
+      this._emitParticles(regularParticles, origin, normal, emitted,
+        { speedBase: 0.5, speedRand: 0.7, normalPush: 0.1, sizeBase: 0.12, sizeRand: 0.15 });
     }
     
     this.emissionCooldown = 0.35;
     return emitted.length;
+  }
+
+  _emitParticles(count, origin, normal, emitted, { speedBase, speedRand, normalPush, sizeBase, sizeRand }) {
+    for (let i = 0; i < count; i++) {
+      const particle = this.getInactiveParticle();
+      if (!particle) break;
+
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+
+      let dir = [
+        Math.sin(phi) * Math.cos(theta),
+        Math.sin(phi) * Math.sin(theta),
+        Math.cos(phi)
+      ];
+
+      const radialComponent = dir[0]*normal[0] + dir[1]*normal[1] + dir[2]*normal[2];
+      dir[0] -= normal[0] * radialComponent * 0.7;
+      dir[1] -= normal[1] * radialComponent * 0.7;
+      dir[2] -= normal[2] * radialComponent * 0.7;
+
+      const len = Math.sqrt(dir[0]**2 + dir[1]**2 + dir[2]**2);
+      const speed = speedBase + Math.random() * speedRand;
+      dir[0] = (dir[0]/len) * speed;
+      dir[1] = (dir[1]/len) * speed;
+      dir[2] = (dir[2]/len) * speed;
+
+      dir[0] += normal[0] * normalPush;
+      dir[1] += normal[1] * normalPush;
+      dir[2] += normal[2] * normalPush;
+
+      const jitter = 0.05;
+      particle.position = [
+        origin[0] + (Math.random() - 0.5) * jitter,
+        origin[1] + (Math.random() - 0.5) * jitter,
+        origin[2] + (Math.random() - 0.5) * jitter
+      ];
+      particle.velocity = dir;
+      particle.life = 1.0;
+      particle.size = sizeBase + Math.random() * sizeRand;
+      particle.active = true;
+
+      emitted.push(particle);
+    }
   }
   
   getInactiveParticle() {

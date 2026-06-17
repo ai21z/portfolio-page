@@ -1,3 +1,5 @@
+import { NECRO_GREEN } from '../core/palette.js';
+
 export class DataStreamSystem {
   constructor(gl, maxParticles = 500) {
     this.gl = gl;
@@ -6,7 +8,7 @@ export class DataStreamSystem {
     this.activeParticles = 0;
     this.emitting = false;
     this.emissionPoint = [0, 0, 0];
-    this.emissionColor = [0.247, 1.0, 0.624];
+    this.emissionColor = [...NECRO_GREEN];
     
     for (let i = 0; i < maxParticles; i++) {
       this.particles.push({

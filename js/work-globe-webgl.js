@@ -3,6 +3,7 @@
 import { mat4 } from './work-globe/core/math-utils.js';
 import { cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
+import { NECRO_GREEN } from './work-globe/core/palette.js';
 
 import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';
 import { PROJECTS } from './work-globe/data/projects.js';
@@ -636,7 +637,7 @@ function render(deltaTime) {
     gl.uniform1f(mycUniforms.uTime, time);
     // Using intro page palette: darker necrotic for body, bright decay-green for highlights
     gl.uniform3f(mycUniforms.uBodyColor, 0.35, 0.50, 0.40); // Darkened necrotic - fibrous mass
-    gl.uniform3f(mycUniforms.uCoreColor, 0.247, 1.0, 0.624); // rgb(63, 255, 159) - decay-green glow!
+    gl.uniform3f(mycUniforms.uCoreColor, NECRO_GREEN[0], NECRO_GREEN[1], NECRO_GREEN[2]); // rgb(63, 255, 159) - decay-green glow!
     gl.uniform1f(mycUniforms.uCoreGain, 0.0); // No core in body pass
     gl.uniform1f(mycUniforms.uGrowthTime, myceliumGrowthTime);
     gl.uniform1f(mycUniforms.uOpacityNoise, 0.025); // 2.5% opacity variation
@@ -658,7 +659,7 @@ function render(deltaTime) {
     gl.uniformMatrix4fv(coreUniforms.uView, false, viewMatrix);
     gl.uniformMatrix4fv(coreUniforms.uModel, false, modelMatrix);
     gl.uniform1f(coreUniforms.uTime, time);
-    gl.uniform3f(coreUniforms.uCoreColor, 0.247, 1.0, 0.624); // Decay-green glint - memorable!
+    gl.uniform3f(coreUniforms.uCoreColor, NECRO_GREEN[0], NECRO_GREEN[1], NECRO_GREEN[2]); // Decay-green glint - memorable!
     gl.uniform1f(coreUniforms.uCoreGain, 0.15); // Slightly brighter for visibility
     gl.uniform1f(coreUniforms.uGrowthTime, myceliumGrowthTime);
     
@@ -762,7 +763,7 @@ function render(deltaTime) {
     gl.uniformMatrix4fv(sporeUniforms.uView, false, viewMatrix);
     gl.uniformMatrix4fv(sporeUniforms.uModel, false, modelMatrix);
     gl.uniform1f(sporeUniforms.uTime, time);
-    gl.uniform3f(sporeUniforms.uSporeColor, 0.247, 1.0, 0.624);
+    gl.uniform3f(sporeUniforms.uSporeColor, NECRO_GREEN[0], NECRO_GREEN[1], NECRO_GREEN[2]);
     gl.uniform3f(sporeUniforms.uEmberColor, 0.784, 1.0, 0.863); // Ember color #C8FFDC
     
     sporeSystem.render(sporeProgram);

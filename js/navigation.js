@@ -144,12 +144,12 @@ function createSigilNode() {
 export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) {
   const nav = document.getElementById('network-nav');
   if (!nav) {
-    console.error('❌ layoutNavNodes: #network-nav element not found!');
+    console.error('layoutNavNodes: #network-nav element not found!');
     return;
   }
   
   if (!COVER.ready) {
-    console.warn('⚠️ layoutNavNodes: COVER not ready, skipping layout');
+    console.warn('layoutNavNodes: COVER not ready, skipping layout');
     return;
   }
 

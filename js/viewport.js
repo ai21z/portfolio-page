@@ -10,7 +10,7 @@ export function computeCoverFromImage() {
   const H = bgImg ? bgImg.naturalHeight : 0;
   
   if (!W || !H) {
-    console.warn('⚠️ Cover: Image not ready yet, dimensions unavailable');
+    console.warn('Cover: Image not ready yet, dimensions unavailable');
     return false;
   }
   

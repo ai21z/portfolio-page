@@ -453,12 +453,12 @@ export class WorkPinSystem {
     const gl = this.gl;
     
     if (!program) {
-      console.error('❌ Text billboard program is null!');
+      console.error('Text billboard program is null!');
       return;
     }
     
     if (!this.billboardVAO) {
-      console.error('❌ Billboard VAO not created!');
+      console.error('Billboard VAO not created!');
       return;
     }
     

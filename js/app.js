@@ -122,14 +122,14 @@ function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
     blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260626').catch((err) => {
       blogNetworkModulePromise = null;
-      console.warn('⚠️ blog network module unavailable:', err);
+      console.warn('blog network module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
     workGlobeModulePromise = import('./work-globe-webgl.js?v=20260626').catch((err) => {
       workGlobeModulePromise = null;
-      console.warn('⚠️ work globe module unavailable:', err);
+      console.warn('work globe module unavailable:', err);
     });
   }
 
@@ -138,7 +138,7 @@ function ensureSectionModule(sectionName) {
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;
-        console.warn('⚠️ work timeline module unavailable:', err);
+        console.warn('work timeline module unavailable:', err);
       });
   }
 
@@ -161,7 +161,7 @@ function ensureMyceliumReady() {
       return true;
     })().catch((err) => {
       myceliumReadyPromise = null;
-      console.warn('⚠️ network-lite.json unavailable:', err);
+      console.warn('network-lite.json unavailable:', err);
       return false;
     });
   }
@@ -426,13 +426,13 @@ function resizeAll() {
 // Init after background loads
 function initAfterImageLoad() {
   if (!bgImg) {
-    console.error('❌ bgImg element not found!');
+    console.error('bgImg element not found!');
     return;
   }
   
   // Compute cover using naturalWidth/naturalHeight
   if (!computeCoverFromImage()) {
-    console.error('❌ Failed to compute cover from image');
+    console.error('Failed to compute cover from image');
     return;
   }
   
@@ -457,11 +457,11 @@ if (bgImg) {
   } else if (bgImg.naturalWidth > 0) {
     initAfterImageLoad();
   } else {
-    console.warn('⚠️ Background image complete but no naturalWidth, waiting for load event');
+    console.warn('Background image complete but no naturalWidth, waiting for load event');
     bgImg.addEventListener('load', initAfterImageLoad, { once: true });
   }
 } else {
-  console.error('❌ #bg-front-img element not found in DOM');
+  console.error('#bg-front-img element not found in DOM');
 }
 
 // Throttled resize
@@ -487,7 +487,7 @@ function toggleRitualFromSigil(el){
     img.style.transform = `rotate(${ritualActive ? 180 : 0}deg)`;
     img.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
   } else {
-    console.warn('⚠️ img#sigil not found in sigil node');
+    console.warn('img#sigil not found in sigil node');
   }
 
   const r = el.getBoundingClientRect();
@@ -511,11 +511,11 @@ function wireSigilToggle(){
   const sigilImg = sigil ? sigil.querySelector('img#sigil') : null;
   
   if (!sigil) {
-    console.warn('⚠️ .network-sigil-node not found — toggle will not work');
+    console.warn('.network-sigil-node not found — toggle will not work');
     return;
   }
   if (!sigilImg) {
-    console.warn('⚠️ img#sigil not found inside .network-sigil-node — rotation will not work');
+    console.warn('img#sigil not found inside .network-sigil-node — rotation will not work');
   }
   
   sigil.addEventListener('click', () => toggleRitualFromSigil(sigil));
@@ -1732,7 +1732,7 @@ function initPaperFocusForSection(sectionId){
 
   const backdrop = document.getElementById('paper-backdrop');
   if (!backdrop) {
-    console.warn('⚠️ paper-backdrop not found');
+    console.warn('paper-backdrop not found');
     return;
   }
   section.__paperFocusBound = true;

@@ -121,12 +121,12 @@ function computeLockedRouteFor(id, anchor) {
   let start = GRAPH.nearestId(anchor.x, anchor.y, 160, 12);
   
   if (start < 0) {
-    if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: nearestId failed at r=160, retrying with r=240`);
+    if (ROUTE_DEBUG) console.warn(`[LOCKED-ROUTE] ${id}: nearestId failed at r=160, retrying with r=240`);
     start = GRAPH.nearestId(anchor.x, anchor.y, 240, 12);
   }
   
   if (start < 0) {
-    console.error(`❌ [LOCKED-ROUTE] ${id}: nearestId failed even with r=240`);
+    console.error(`[LOCKED-ROUTE] ${id}: nearestId failed even with r=240`);
     return null;
   }
 
@@ -150,12 +150,12 @@ function computeLockedRouteFor(id, anchor) {
 
   const sampled = resampleToViewport(trimmed.imgPts);
   if (sampled.projPts.length < 2) {
-    console.error(`❌ [LOCKED-ROUTE] ${id}: resample produced < 2 points`);
+    console.error(`[LOCKED-ROUTE] ${id}: resample produced < 2 points`);
     return null;
   }
 
   if (sampled.len < MIN_ROUTE_LEN_PX) {
-    if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: route too short (${sampled.len.toFixed(1)}px < ${MIN_ROUTE_LEN_PX}px)`);
+    if (ROUTE_DEBUG) console.warn(`[LOCKED-ROUTE] ${id}: route too short (${sampled.len.toFixed(1)}px < ${MIN_ROUTE_LEN_PX}px)`);
     return { ...sampled, imgPts: trimmed.imgPts, len: sampled.len, tooShort: true };
   }
   
@@ -170,7 +170,7 @@ export function buildLockedRoutes() {
     
     const route = computeLockedRouteFor(id, anchor);
     if (!route) {
-      if (ROUTE_DEBUG) console.warn(`❌ [LOCKED-ROUTE] ${id}: failed; fallback to static anchor`);
+      if (ROUTE_DEBUG) console.warn(`[LOCKED-ROUTE] ${id}: failed; fallback to static anchor`);
       LOCKED.set(id, null);
       continue;
     }

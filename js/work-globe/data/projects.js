@@ -21,7 +21,8 @@ export const PROJECTS = [
     name: 'Talos, Local Workspace Operator',
     description: 'Local-first Java CLI workspace operator for governed developer tasks. Talos uses bounded tools, explicit approval gates, local inspect-edit-verify loops and traceable runs so changes stay private, reviewable and reproducible.',
     tech: ['Java', 'CLI', 'Workspace Operator', 'Approval Gates', 'Lucene', 'Local LLMs'],
-    github: 'https://github.com/ai21z/talos-cli',
+    github: '',                 // public repo not ready yet (was https://github.com/ai21z/talos-cli)
+    soon: 'Beta release coming soon',
     
     initialAngle: 180,
     orbitRadius: 1.15,

@@ -24,11 +24,11 @@
   <link rel="manifest" href="./manifest.json" />
   
   <!-- Preload critical resources -->
-  <link rel="preload" href="./styles/main.css?v=20260627" as="style" />
+  <link rel="preload" href="./styles/main.css?v=20260628" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" as="image" href="./artifacts/sigil/no-bg-seal-sigil.webp" />
 
-  <link rel="stylesheet" href="./styles/main.css?v=20260627" />
+  <link rel="stylesheet" href="./styles/main.css?v=20260628" />
   <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260501-graphics" />
 
   <!-- Threshold (opening gateway + graphics-reload cover). Critical + inline so
@@ -500,40 +500,9 @@
           </div>
         </a>
         
-        <!-- Vial 5: Resume Download - Splits into PDF/DOCX on hover -->
-        <div class="sigil-vial sigil-vial-split" aria-label="Download Resume">
-          <!-- PDF Bubble (pops to top-left) -->
-          <a href="./artifacts/resume/Vissarion_Zounarakis_Software_Engineer_Resume.pdf" class="vial-split-bubble vial-bubble-pdf" aria-label="Download PDF Resume" download>
-            <div class="vial-container">
-              <div class="vial-glass">
-                <div class="vial-matter"></div>
-                <div class="vial-lightning"></div>
-                <svg class="vial-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                </svg>
-                <span class="vial-label">PDF</span>
-              </div>
-            </div>
-          </a>
-          
-          <!-- DOCX Bubble (pops to bottom-right) -->
-          <a href="./artifacts/resume/Vissarion_Zounarakis_Software_Engineer_Resume.docx" class="vial-split-bubble vial-bubble-docx" aria-label="Download DOCX Resume" download>
-            <div class="vial-container">
-              <div class="vial-glass">
-                <div class="vial-matter"></div>
-                <div class="vial-lightning"></div>
-                <svg class="vial-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                </svg>
-                <span class="vial-label">DOC</span>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        <!-- Mobile fallback: single PDF icon (hidden on desktop) -->
+        <!-- Vial 5: Resume Download (PDF) -->
         <a href="./artifacts/resume/Vissarion_Zounarakis_Software_Engineer_Resume.pdf"
-           class="sigil-vial sigil-vial-resume-mobile"
+           class="sigil-vial"
            aria-label="Download Resume (PDF)"
            download>
           <div class="vial-container">
@@ -1276,7 +1245,7 @@
     })();
   </script>
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=__turnstileOnLoad"></script>
-  <script type="module" src="./js/app.js?v=20260627"></script>
+  <script type="module" src="./js/app.js?v=20260628"></script>
   <!-- Accessible text equivalent of the Work globe (renders into #work-index) -->
   <script type="module" src="./js/work-globe/work-index.js"></script>
   <!-- "Living Culture" scrying animation inside the Skills altar lens -->

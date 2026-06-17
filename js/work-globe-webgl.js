@@ -1250,7 +1250,7 @@ function showProjectPanel(moon) {
     </div>
     ${project.github ? `<a href="${project.github}" class="github-link" target="_blank" rel="noopener noreferrer">
       View on GitHub →
-    </a>` : '<span class="github-link github-link--soon">Public release soon</span>'}
+    </a>` : `<span class="github-link github-link--soon">${project.soon || 'Public release soon'}</span>`}
   `;
   
   projectPanel.innerHTML = html;

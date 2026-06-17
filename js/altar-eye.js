@@ -16,7 +16,7 @@
 // section), reduced-motion/quiet -> one calm OPEN static frame.
 
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
-import { sizeCanvas } from './utils.js';
+import { sizeCanvas, clamp } from './utils.js';
 
 const prefersReducedMotion =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -34,9 +34,6 @@ GLOW.width = GLOW.height = 32;
   g.fillStyle = grad;
   g.fillRect(0, 0, 32, 32);
 }
-
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 function initAltarEye(sectionId) {
   const section = document.getElementById(sectionId);

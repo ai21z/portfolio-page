@@ -174,7 +174,11 @@ export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
   
   const toId = GRAPH.nearestId(imgX, imgY, 96, 24);
   if (toId == null || toId < 0) {
-    console.warn(`[LOCKED-ROUTE] No graph node near (${imgX.toFixed(0)}, ${imgY.toFixed(0)}) for spark`);
+    const key = `nonode:${imgX.toFixed(0)},${imgY.toFixed(0)}`;
+    if (!loggedPathFailures.has(key)) {
+      console.warn(`[LOCKED-ROUTE] No graph node near (${imgX.toFixed(0)}, ${imgY.toFixed(0)}) for spark`);
+      loggedPathFailures.add(key);
+    }
     return;
   }
   

@@ -84,6 +84,9 @@ export function pointAt(pts, cum, s) {
   return [ax + (bx - ax) * t, ay + (by - ay) * t];
 }
 
+export const lerp = (a, b, t) => a + (b - a) * t;
+export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
 export const throttle = (fn, ms = 125) => {
   let t = 0, raf = 0;
   return (...args) => {

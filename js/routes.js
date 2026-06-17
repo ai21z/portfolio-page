@@ -175,12 +175,6 @@ export function buildLockedRoutes() {
       continue;
     }
     
-    const pointsCount = route.projPts?.length || 0;
-    
-    if (route.tooShort || route.len < 140 || pointsCount < 3) {
-      if (ROUTE_DEBUG) console.warn(`⚠️ [LOCKED-ROUTE] ${id}: len=${route.len.toFixed(1)}px, points=${pointsCount} (BELOW TARGET: want 140-240px, ≥3 points)`);
-    }
-    
     const [anchorX, anchorY] = coverMap(anchor.x, anchor.y);
     const sHome = findClosestSOnRoute(route, anchorX, anchorY);
     

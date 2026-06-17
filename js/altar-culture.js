@@ -15,7 +15,7 @@
 // reduced-motion/quiet -> one static frame, desktop only.
 
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
-import { sizeCanvas } from './utils.js';
+import { sizeCanvas, lerp, clamp } from './utils.js';
 
 const prefersReducedMotion =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -35,8 +35,6 @@ GLOW.width = GLOW.height = GLOW_SIZE;
   g.fillRect(0, 0, GLOW_SIZE, GLOW_SIZE);
 }
 
-const lerp = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // One constellation for every card (the hub-and-spokes the owner liked): nodes
 // in normalised coords (-1..1, y down) scaled by the formation radius; edges are

@@ -126,7 +126,6 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
     maxLength = 220,
     branchProb = 0.08,         // 8% chance per segment
     killRadius = 0.025,        // Stop when near existing path
-    mergeRadius = 0.015,       // Merge when very close
     widthBase = 0.010,         // Base strand width
     widthNode = 0.016,         // Width at branch nodes
     tubeSegments = 6           // Cross-section resolution
@@ -197,9 +196,6 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
       const nearPoint = isNearPath(lat, lon, killRadius);
       if (nearPoint && nearPoint.pathId !== pathId) {
         killed = true;
-        if (isNearPath(lat, lon, mergeRadius)) {
-          width = widthNode;
-        }
         break;
       }
       

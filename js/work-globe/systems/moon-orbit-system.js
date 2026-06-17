@@ -77,9 +77,11 @@ export class MoonOrbitSystem {
     const isMobile = window.innerWidth <= 768;
 
     this.moons.forEach(moon => {
-      moon.angle += moon.rotationSpeed * dt;
-      if (moon.angle > 360) moon.angle -= 360;
-      
+      if (!moon.paused) {
+        moon.angle += moon.rotationSpeed * dt;
+        if (moon.angle > 360) moon.angle -= 360;
+      }
+
       let targetScale = moon.targetScale;
 
       if (isMobile && Math.abs(moon.targetScale - 1.0) < 0.01) {

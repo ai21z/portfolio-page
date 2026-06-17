@@ -53,6 +53,14 @@ let uniformCache = {};
 const scaledModelFog = new Float32Array(16);
 const scaledModelLightning = new Float32Array(16);
 
+// Scale a model matrix's diagonal (0/5/10) so a layer sits slightly above the globe surface.
+function scaleModelAboveSurface(dst, src, scale = 1.012) {
+  for (let i = 0; i < 16; i++) {
+    dst[i] = src[i];
+    if (i === 0 || i === 5 || i === 10) dst[i] *= scale;
+  }
+}
+
 // Stored handler references for proper cleanup
 let boundResizeHandler = null;
 let boundTouchStartHandler = null;
@@ -313,7 +321,6 @@ function initWorkGlobe() {
     maxLength: quality.myceliumMaxLength,
     branchProb: quality.myceliumBranchProb,
     killRadius: 0.025,
-    mergeRadius: 0.015,
     widthBase: 0.010,
     widthNode: 0.016,
     tubeSegments: quality.myceliumTubeSegments
@@ -667,14 +674,8 @@ function render(deltaTime) {
     gl.useProgram(fogProgram);
     gl.bindVertexArray(globeVAO);
     
-    // Scale model matrix slightly (1.012x) to sit above surface - reuse pre-allocated array
-    const fogScale = 1.012;
-    for (let i = 0; i < 16; i++) {
-      scaledModelFog[i] = modelMatrix[i];
-      if (i === 0 || i === 5 || i === 10) {
-        scaledModelFog[i] *= fogScale;
-      }
-    }
+    // Scale model matrix slightly to sit above surface - reuse pre-allocated array
+    scaleModelAboveSurface(scaledModelFog, modelMatrix);
     
     const fogUniforms = uniformCache.fog;
     gl.uniformMatrix4fv(fogUniforms.uProjection, false, projectionMatrix);
@@ -703,13 +704,7 @@ function render(deltaTime) {
     gl.bindVertexArray(globeVAO);
     
     // Use same scaled model as fog - reuse pre-allocated array
-    const lightningScale = 1.012;
-    for (let i = 0; i < 16; i++) {
-      scaledModelLightning[i] = modelMatrix[i];
-      if (i === 0 || i === 5 || i === 10) {
-        scaledModelLightning[i] *= lightningScale;
-      }
-    }
+    scaleModelAboveSurface(scaledModelLightning, modelMatrix);
     
     const lightningUniforms = uniformCache.lightning;
     gl.uniformMatrix4fv(lightningUniforms.uProjection, false, projectionMatrix);
@@ -781,7 +776,7 @@ function render(deltaTime) {
     
     gl.useProgram(pinProgram);
     
-    const cameraPos = [0, 0, 3.5];
+    const cameraPos = [0, 0, cameraDistance];
     workPinSystem.render(pinProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
     
     workPinSystem.renderText(textBillboardProgram, projectionMatrix, viewMatrix);
@@ -792,7 +787,7 @@ function render(deltaTime) {
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(true);
     
-    const cameraPos = [0, 0, 3.5];
+    const cameraPos = [0, 0, cameraDistance];
     moonOrbitSystem.render(moonProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
   }
   

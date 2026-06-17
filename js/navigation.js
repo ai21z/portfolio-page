@@ -124,14 +124,7 @@ function createNavLabel(id) {
   const anchorId = id === 'intro' ? 'main' : id;
   label.href = `#${anchorId}`;
   
-  const displayNames = {
-    'about': 'about',
-    'work': 'work',
-    'blog': 'blog',
-    'contact': 'contact',
-    'skills': 'skills'
-  };
-  const displayText = displayNames[id] || id;
+  const displayText = id;
   
   label.innerHTML = `<span class="node-label">${displayText}</span>`;
   label.setAttribute('aria-label', `Navigate to ${displayText}`);
@@ -143,7 +136,6 @@ function createSigilNode() {
   sigil.dataset.node = 'intro';
   sigil.dataset.section = 'intro';
   sigil.className = 'network-sigil-node';
-  sigil.setAttribute('role', 'button');
   sigil.setAttribute('aria-label', 'Toggle ritual');
   sigil.innerHTML = '<picture><source srcset="./artifacts/sigil/AZ-VZ-01.webp" type="image/webp"><img id="sigil" src="./artifacts/sigil/AZ-VZ-01.png" alt="" width="64" height="64" decoding="async"></picture>';
   return sigil;

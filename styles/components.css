@@ -717,8 +717,7 @@
     position: relative !important;
   }
 
-  .sigil-vial-split::before,
-  .sigil-vial-split::after {
+  .sigil-vial-split::before {
     display: none !important;
   }
 
@@ -748,8 +747,4 @@
     height: 24px;
   }
 
-  .sigil-vial-split::after {
-    width: 24px;
-    height: 24px;
-  }
 }

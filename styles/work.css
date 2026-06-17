@@ -290,9 +290,6 @@
   transform: translate(-50%, 0) scale(1);
 }
 
-/* Mobile bottom sheet adaptation */
-/* REVERTED: User preferred the original paper aesthetic */
-/* @media (max-width: 900px) { ... } */
 
 /* Close button (matches altar-close) */
 .work-close {
@@ -384,20 +381,8 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulseText {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; text-shadow: 0 0 5px rgba(63, 255, 159, 0.4); }
-}
-
-@keyframes blinkCursor {
-  from, to { border-color: transparent; }
-  50% { border-color: rgba(63, 255, 159, 0.8); }
-}
 
 /* Responsive Visibility */
-@media (max-width: 768px) {
-  .desktop-only { display: none !important; }
-}
 
 @media (min-width: 769px) {
   .mobile-only { display: none !important; }
@@ -457,9 +442,6 @@
   }
 }
 
-/* Mobile-specific "Bottom Sheet" styles for the Project Panel */
-/* REVERTED: User preferred the original paper aesthetic */
-/* @media (max-width: 900px) { ... } */
 
 /* Project panel */
 .project-panel {

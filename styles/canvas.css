@@ -19,9 +19,6 @@
   z-index: 1;
 }
 
-#bg-deep, #bg-mid, #bg-front {
-  display: none !important;
-}
 
 #spore-canvas, #reveal-canvas{
   position:fixed;

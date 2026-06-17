@@ -286,8 +286,7 @@
 }
 
 /* Suppressed state */
-.nav-suppressed .network-node-label,
-.nav-suppressed [data-nav] {
+.nav-suppressed .network-node-label {
   display: none !important;
 }
 
@@ -351,8 +350,6 @@ body.has-paper-open-global #network-nav {
     z-index: 6;                 /* above background, below dialogs */
   }
 
-  /* Horizontal mycelium strip behind the sigil */
-  /* Removed .myco-strip::before - now using SVG rail instead */
 
   /* SVG rail: full-row, behind the sigil, not part of flex layout */
   .myco-rail{
@@ -891,8 +888,6 @@ body.has-paper-open-global #network-nav {
     100% { opacity: 0; transform: scale(1.08); }
   }
 
-  /* optional: a softer outer haze */
-  /* Removed .myco-strip::after - now using SVG rail instead */
 
   .name{ grid-row: 3 !important; }
   .portrait-wrap{ grid-row: 4 !important; }

@@ -206,7 +206,7 @@
      scale with the card itself, not the browser viewport/zoom */
   container-type: inline-size;
 
-  /* Scaling factor for decorative geometry: 1 by default, set to --open-scale when settled */
+  /* Scaling factor for decorative geometry: always 1 (no JS writes --k) */
   --k: 1;
   
   /* Padding variables (base values in px) */
@@ -635,31 +635,6 @@
   100% { transform: translate(1.3px, 0.9px) rotate(0.1deg) skewX(-0.7deg); }
 }
 
-button.ghost {
-  --btn-margin-top: 10px;
-  margin-top: calc(var(--btn-margin-top) * var(--k));
-  background: rgba(101, 67, 33, 0.1);
-  color: #2A251F;
-  --btn-border: 1px;
-  border: calc(var(--btn-border) * var(--k)) solid rgba(101, 67, 33, 0.3);
-  --btn-radius: 4px;
-  border-radius: calc(var(--btn-radius) * var(--k));
-  --btn-pad-v: 8px;
-  --btn-pad-h: 12px;
-  padding: calc(var(--btn-pad-v) * var(--k)) calc(var(--btn-pad-h) * var(--k));
-  cursor: var(--cursor-spore), pointer;
-  font-family: inherit;
-  font-size: clamp(10px, 1vw, 14px);
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
-  position: relative;
-  z-index: 1;
-}
-
-button.ghost:hover {
-  border-color: rgba(101, 67, 33, 0.5);
-  background: rgba(101, 67, 33, 0.2);
-  color: #1A1510;
-}
 
 .slab,
 .slab *{
@@ -765,21 +740,7 @@ button.ghost:hover {
   transform: translate(-50%, -50%);
   transition: opacity 100ms ease;
 }
-.hovering-paper .cursor-ring{
-  opacity: 1;
-  /* Removed breathing animation for performance */
-}
 
-/* Dim background visuals when paper is open */
-.altar-screen.has-paper-open .ring,
-.altar-screen.has-paper-open .core,
-.altar-screen.has-paper-open .slab:not(.paper-open){
-  opacity: 0.5;
-  transition: opacity 150ms ease;
-  /* Prevent interaction and optimize rendering */
-  pointer-events: none;
-  will-change: opacity;
-}
 
 .altar-screen .paper:focus-visible{
   outline: 2px dashed rgba(57,39,20,.8); outline-offset: 2px;

@@ -1,14 +1,9 @@
 // Utility functions
 import { getGraphicsBudget } from './graphics-governor.js';
+import { isFirefox, isWebKit } from './ua.js';
 
-export function isFirefox() {
-  return /\bFirefox\//.test(navigator.userAgent);
-}
-
-export function isWebKit() {
-  return /AppleWebKit/i.test(navigator.userAgent)
-    && !/(Chrome|Chromium|Edg|OPR|Firefox)/i.test(navigator.userAgent);
-}
+// Re-export so existing importers (portrait-particles, work-globe-webgl) keep working.
+export { isFirefox, isWebKit };
 
 export function cappedDpr(max = 1.5, options = {}) {
   const {

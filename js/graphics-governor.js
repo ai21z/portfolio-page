@@ -1,3 +1,5 @@
+import { isFirefox, isWebKit } from './ua.js';
+
 const STORAGE_KEY = 'vissarion.graphicsProfile';
 const PROFILES = ['quiet', 'balanced', 'rich', 'full'];
 const PROFILE_RANK = new Map(PROFILES.map((profile, index) => [profile, index]));
@@ -61,15 +63,6 @@ let lastPromotionCheck = 0;
 let currentSection = 'intro';
 let debugOverlay = null;
 let webglCapabilityProbe = null;
-
-function isFirefox() {
-  return /\bFirefox\//.test(navigator.userAgent);
-}
-
-function isWebKit() {
-  return /AppleWebKit/i.test(navigator.userAgent)
-    && !/(Chrome|Chromium|Edg|OPR|Firefox)/i.test(navigator.userAgent);
-}
 
 function isMobileViewport() {
   return window.innerWidth <= 760 || window.matchMedia('(pointer: coarse)').matches;

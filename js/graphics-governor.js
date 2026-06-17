@@ -12,7 +12,6 @@ const PROFILE_BUDGETS = {
     particleScale: 0,
     geometryScale: 0.55,
     effectsScale: 0.25,
-    allowWorkers: false,
     quiet: true
   },
   balanced: {
@@ -24,7 +23,6 @@ const PROFILE_BUDGETS = {
     particleScale: 0.55,
     geometryScale: 0.72,
     effectsScale: 0.65,
-    allowWorkers: true,
     quiet: false
   },
   rich: {
@@ -36,7 +34,6 @@ const PROFILE_BUDGETS = {
     particleScale: 0.85,
     geometryScale: 0.9,
     effectsScale: 0.9,
-    allowWorkers: true,
     quiet: false
   },
   full: {
@@ -48,12 +45,10 @@ const PROFILE_BUDGETS = {
     particleScale: 1,
     geometryScale: 1,
     effectsScale: 1,
-    allowWorkers: true,
     quiet: false
   }
 };
 
-const subscribers = new Set();
 const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
@@ -408,13 +403,6 @@ function notifySubscribers(reason) {
   const state = getGraphicsState();
   window.dispatchEvent(new CustomEvent('graphics:profile-change', { detail: { ...state, reason } }));
   window.dispatchEvent(new CustomEvent('dpr-changed', { detail: { ...state, reason } }));
-  subscribers.forEach((callback) => {
-    try {
-      callback(state);
-    } catch (error) {
-      console.warn('[graphics] subscriber failed:', error);
-    }
-  });
 }
 
 function syncControl() {
@@ -722,12 +710,6 @@ export function setGraphicsProfile(profile, options = {}) {
   downgradeSteps = 0;
   if (options.persist !== false) writeStoredProfile(nextProfile);
   updateDocumentState('profile');
-}
-
-export function subscribeGraphics(callback) {
-  subscribers.add(callback);
-  callback(getGraphicsState());
-  return () => subscribers.delete(callback);
 }
 
 export function markGraphicsActivity(reason = 'activity', durationMs = 700) {

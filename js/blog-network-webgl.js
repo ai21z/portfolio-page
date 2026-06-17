@@ -9,8 +9,6 @@ if (!window.__BLOG_NETWORK_VERSION) {
 }
 
 const PETRI_K = 0.42;
-const AUTO_CENTER = true;
-const FIXED_SHIFT = [0, 0];
 
 const PAL = {
   ABYSS: [0.031, 0.035, 0.039],     // near-black abyss floor (9b)
@@ -29,7 +27,6 @@ const PAL = {
   MOSS_DARK: [0.20, 0.27, 0.22],    // damp moss shadow
   MOSS_LIGHT: [0.46, 0.63, 0.50],   // lichen highlight
   NECROTIC: [0.48, 0.66, 0.58],     // necrographic node tint
-  BONE:   [0.788, 0.761, 0.702],    // #C9C2B3
 };
 
 function currentDPR() {
@@ -136,15 +133,8 @@ void main(){
 const FS_SEG = `#version 300 es
 precision highp float;
 out vec4 o;
-uniform vec3 uBranch1, uBranch2, uBranch3, uBranch4;
-uniform vec3 uFusion1, uFusion2;
-uniform vec3 uEmber1, uEmber2, uEmber3;
 uniform vec2 uScale, uOffset, uShift;
 uniform vec2 uRes;
-uniform float uTime;
-uniform vec2 uHubPos[8];
-uniform int uHubCount;
-uniform float uEmberR;
 uniform float uHighlight; // 1.0 = normal, up to 1.25 for hover lift
 uniform vec2 uDishCenterPx;   // Petri dish center in CSS pixels (CSS top-left origin)
 uniform float uDishRadiusPx;  // Petri dish radius in CSS pixels
@@ -667,10 +657,8 @@ async function initBlogNetwork(){
   }
   cacheUniformsFor(progPaper, 'paper', ['uRes','uTime','uAbyss','uVignette']);
   cacheUniformsFor(progSeg, 'seg', [
-    'uScale','uOffset','uShift','uRes','uTime','uDpr',
-    'uBranch1','uBranch2','uBranch3','uBranch4',
-    'uFusion1','uFusion2','uEmber1','uEmber2','uEmber3','uEmberR',
-    'uHubPos[0]','uHubCount','uHighlight',
+    'uScale','uOffset','uShift','uRes','uDpr',
+    'uHighlight',
     'uDishCenterPx','uDishRadiusPx'
   ]);
   cacheUniformsFor(progNode, 'node', [
@@ -690,12 +678,6 @@ async function initBlogNetwork(){
 
   // hubs → uniform array
   const hubPos = (data.hubs||[]).map(h=>[h.x, h.y]);
-  const _hubFlat = new Float32Array(16); // pre-allocated
-  hubPos.forEach((h,i)=>{ _hubFlat[i*2]=h[0]; _hubFlat[i*2+1]=h[1]; });
-  function setHubs(key){
-    gl.uniform2fv(_uCache[key]['uHubPos[0]'], _hubFlat);
-    gl.uniform1i(_uCache[key]['uHubCount'], hubPos.length);
-  }
 
   // Build Petri dish SVG overlay (realistic top-down view)
   function buildDish({wCss, hCss}) {
@@ -1115,9 +1097,7 @@ async function initBlogNetwork(){
   }
 
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
-  const shift = AUTO_CENTER 
-    ? [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy]
-    : FIXED_SHIFT;
+  const shift = [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy];
 
   // Zoom starts at the minimum (0.75x); resize() applies it, so it survives resize + re-activation.
   let userZoom = 0.75;
@@ -1451,23 +1431,8 @@ async function initBlogNetwork(){
     set2('seg','uOffset', fit.offX, fit.offY);
     set2('seg','uShift', shift[0], shift[1]);
     set2('seg','uRes', fit.cssW, fit.cssH);
-    gl.uniform1f(_uCache.seg['uTime'], now*0.001);
     gl.uniform1f(_uCache.seg['uDpr'], currentDPR());
     // Petri dish clipping handled by updateDishUniforms() (already set)
-    // Set all branch colors
-    set3('seg','uBranch1', PAL.BRANCH1);
-    set3('seg','uBranch2', PAL.BRANCH2);
-    set3('seg','uBranch3', PAL.BRANCH3);
-    set3('seg','uBranch4', PAL.BRANCH4);
-    // Set fusion colors
-    set3('seg','uFusion1', PAL.FUSION1);
-    set3('seg','uFusion2', PAL.FUSION2);
-    // Set ember colors
-    set3('seg','uEmber1', PAL.EMBER1);
-    set3('seg','uEmber2', PAL.EMBER2);
-    set3('seg','uEmber3', PAL.EMBER3);
-    gl.uniform1f(_uCache.seg['uEmberR'], 86.0);
-    setHubs('seg');
 
     if (!activeHub) {
       // OVERVIEW MODE: Draw all segments with optional hover highlight
@@ -1526,23 +1491,6 @@ async function initBlogNetwork(){
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoNode.count);
       gl.bindVertexArray(null);
     }
-
-    // CYSTS
-    gl.useProgram(progCyst);
-    set2('cyst','uScale', fit.scale, fit.scale);
-    set2('cyst','uOffset', fit.offX, fit.offY);
-    set2('cyst','uShift', shift[0], shift[1]);
-    set2('cyst','uRes', fit.cssW, fit.cssH);
-    gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
-    gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
-    set3('cyst','uGlow1', PAL.GLOW1);
-    set3('cyst','uGlow2', PAL.GLOW2);
-    set3('cyst','uGlow3', PAL.GLOW3);
-    set3('cyst','uBranch1', PAL.BRANCH1);
-    // Petri dish clipping handled by updateDishUniforms() (already set)
-    gl.bindVertexArray(vaoCyst.vao);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoCyst.count);
-    gl.bindVertexArray(null);
 
     // (per-hub ember pulse removed: the masses provide the hub glow, and the warm
     //  ember is reserved for the central inoculation mass + the on-hover halo)

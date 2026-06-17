@@ -6,7 +6,6 @@ layout(location = 1) in float life;
 layout(location = 2) in float phase;
 
 out float vLife;
-out float vPhase;
 
 uniform mat4 uProjection;
 uniform mat4 uView;
@@ -15,7 +14,6 @@ uniform float uTime;
 
 void main() {
   vLife = life;
-  vPhase = phase;
   
   vec4 viewPos = uView * uModel * vec4(position, 1.0);
   
@@ -31,7 +29,6 @@ export const DATA_STREAM_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 
 in float vLife;
-in float vPhase;
 
 out vec4 fragColor;
 

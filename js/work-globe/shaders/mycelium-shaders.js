@@ -15,8 +15,6 @@ out float vDepth;
 uniform mat4 uProjection;
 uniform mat4 uView;
 uniform mat4 uModel;
-uniform float uTime;
-uniform float uGrowthTime; // Animated reveal
 
 void main() {
   vNormal = normalize(mat3(uModel) * normal);
@@ -42,7 +40,6 @@ in float vDepth;
 
 out vec4 fragColor;
 
-uniform float uTime;
 uniform vec3 uBodyColor;      // Dark fibrous base
 uniform vec3 uCoreColor;      // Subtle core glint
 uniform float uCoreGain;      // Core intensity (≤0.18)
@@ -92,11 +89,8 @@ void main() {
 export const MYCELIUM_CORE_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 
-in vec3 vNormal;
-in vec3 vPosition;
 in vec2 vUv;
 in float vAge;
-in float vDepth;
 
 out vec4 fragColor;
 

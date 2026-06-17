@@ -18,7 +18,6 @@ uniform mat4 uView;
 uniform mat4 uModel;
 uniform vec3 uCameraPos;
 uniform float uTime;
-uniform float uBreathIntensity;
 
 // Noise for rocky displacement
 float hash(vec3 p) {
@@ -80,24 +79,15 @@ void main() {
 export const MOON_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 
-in vec3 vNormal;
-in vec3 vPosition;
 in vec3 vWorldNormal;
-in vec3 vWorldPos;
 in vec3 vViewDir;
 in vec3 vLocalPos;
-in vec2 vUV;
 
 out vec4 fragColor;
 
 uniform vec3 uMoonColor;
-uniform vec3 uRimColor;
 uniform float uTime;
-uniform float uGlowIntensity;
-uniform float uPulseSpeed;
 uniform float uHoverAmount;
-uniform float uEyeDilation;
-uniform float uShimmerPhase;
 
 // Dark rocky moon color palette
 const vec3 COLOR_ROCK_BASE = vec3(0.10, 0.06, 0.12);       // Dark purple
@@ -107,26 +97,11 @@ const vec3 COLOR_MYCELIUM = vec3(0.1, 0.3, 0.15);          // Ominous dark green
 const vec3 COLOR_MYCELIUM_BRIGHT = vec3(0.2, 0.6, 0.3);    // Brighter green glow
 
 // === NOISE FUNCTIONS ===
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
 
 float hash3D(vec3 p) {
   return fract(sin(dot(p, vec3(12.9898, 78.233, 45.5432))) * 43758.5453);
 }
 
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
 
 float noise3D(vec3 p) {
   return hash3D(p);
@@ -135,7 +110,7 @@ float noise3D(vec3 p) {
 // === ROCKY MOON EFFECTS ===
 
 // Rock texture (smooth with subtle variation)
-vec3 getRockTexture(vec3 pos, vec3 normal) {
+vec3 getRockTexture(vec3 pos) {
   // Larger scale variation - smoother surface
   float rockLarge = noise3D(pos * 2.0);
   float rockMedium = noise3D(pos * 4.0);
@@ -199,7 +174,7 @@ void main() {
   vec3 rockColor = uMoonColor;
   
   // === ROCKY SURFACE ===
-  vec3 rockTexture = getRockTexture(vLocalPos, N);
+  vec3 rockTexture = getRockTexture(vLocalPos);
   // Tint rock texture with moon color
   rockTexture = mix(rockTexture, rockColor, 0.7);
   

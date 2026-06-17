@@ -149,13 +149,7 @@ export class MoonOrbitSystem {
       uCameraPos: gl.getUniformLocation(program, 'uCameraPos'),
       uModel: gl.getUniformLocation(program, 'uModel'),
       uMoonColor: gl.getUniformLocation(program, 'uMoonColor'),
-      uRimColor: gl.getUniformLocation(program, 'uRimColor'),
-      uGlowIntensity: gl.getUniformLocation(program, 'uGlowIntensity'),
-      uPulseSpeed: gl.getUniformLocation(program, 'uPulseSpeed'),
-      uBreathIntensity: gl.getUniformLocation(program, 'uBreathIntensity'),
       uHoverAmount: gl.getUniformLocation(program, 'uHoverAmount'),
-      uEyeDilation: gl.getUniformLocation(program, 'uEyeDilation'),
-      uShimmerPhase: gl.getUniformLocation(program, 'uShimmerPhase'),
     };
   }
 
@@ -194,20 +188,7 @@ export class MoonOrbitSystem {
       gl.uniformMatrix4fv(u.uModel, false, m);
       gl.uniform3fv(u.uMoonColor, moon.color);
       
-      const rimColor = [
-        Math.min(moon.color[0] * 1.4, 1.0),
-        Math.min(moon.color[1] * 1.4, 1.0),
-        Math.min(moon.color[2] * 1.4, 1.0)
-      ];
-      gl.uniform3fv(u.uRimColor, rimColor);
-      
-      gl.uniform1f(u.uGlowIntensity, moon.glowIntensity);
-      gl.uniform1f(u.uPulseSpeed, moon.pulseSpeed);
-      
-      gl.uniform1f(u.uBreathIntensity, moon.breathIntensity);
       gl.uniform1f(u.uHoverAmount, moon.hoverAmount);
-      gl.uniform1f(u.uEyeDilation, moon.eyeDilation);
-      gl.uniform1f(u.uShimmerPhase, moon.shimmerPhase);
       
       gl.drawElements(gl.TRIANGLES, this.vertexCount, gl.UNSIGNED_SHORT, 0);
     });

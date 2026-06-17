@@ -120,21 +120,21 @@ let workTimelineModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260625').catch((err) => {
+    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260626').catch((err) => {
       blogNetworkModulePromise = null;
       console.warn('⚠️ blog network module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260625').catch((err) => {
+    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260626').catch((err) => {
       workGlobeModulePromise = null;
       console.warn('⚠️ work globe module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20260625')
+    workTimelineModulePromise = import('./work-timeline.js?v=20260626')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;

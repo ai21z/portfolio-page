@@ -34,6 +34,7 @@ let workPinSystem = null;
 let dataStreamSystem = null;
 let moonOrbitSystem = null;
 let projectionMatrix, viewMatrix, modelMatrix;
+let cameraDistance = 3.5; // camera Z, set at init (isMobile ? 6 : 3.5); read by the render passes for uCameraPos
 let rotation = { x: 0, y: 0 };
 let rotationVelocity = { x: 0, y: 0 };
 let isDragging = false;
@@ -398,7 +399,7 @@ function initWorkGlobe() {
   
   moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS, { sphereDetail: quality.moonDetail });
 
-  const cameraDistance = isMobile ? 6 : 3.5;
+  cameraDistance = isMobile ? 6 : 3.5;
   
   projectionMatrix = mat4.perspective(
     Math.PI / 4,

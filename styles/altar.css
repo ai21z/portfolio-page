@@ -785,15 +785,6 @@ button.ghost:hover {
   outline: 2px dashed rgba(57,39,20,.8); outline-offset: 2px;
 }
 
-/* Suppress background nav when sections open */
-.nav-suppressed .network-node-label,
-.nav-suppressed [data-nav] {
-  display: none !important;
-}
-.nav-suppressed #network-nav {
-  pointer-events: none !important;
-}
-
 .nav-suppressed #bg-front-img {
   opacity: 0.35 !important; /* Slightly dimmed but visible */
   filter: contrast(1.15) brightness(0.7);

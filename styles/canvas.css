@@ -68,21 +68,6 @@ body.has-paper-open-global .signals-canvas {
   opacity: 0.35 !important;
 }
 
-.paper-backdrop{
-  position: fixed;
-  inset: 0;
-  z-index: 8;
-  background: rgba(6,8,10,0.88);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 300ms ease;
-}
-
-.has-paper-open-global .paper-backdrop{
-  opacity: 1;
-  pointer-events: auto;
-}
-
 .cursor-ring{
   position: fixed;
   width: 20px;

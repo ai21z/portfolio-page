@@ -96,10 +96,6 @@ a, button {
   :root {
     --breakpoint: 900px;
   }
-  /* Keep texture scrolling with the page; fixed backgrounds cause full-page repaints. */
-  body {
-    background-attachment: scroll;
-  }
 }
 
 @media (max-width: 640px) {

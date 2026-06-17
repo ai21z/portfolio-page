@@ -574,13 +574,6 @@
   display: none;
 }
 
-.blog-article-content {
-  max-width: 800px;
-  margin: 0 auto;
-  color: rgba(200, 201, 197, 0.88);
-  line-height: 1.7;
-}
-
 .blog-article-content img,
 .blog-article-content video {
   display: block;
@@ -1252,10 +1245,6 @@
   line-height: 1.6;
   color: var(--bone);
   opacity: 0.85;
-}
-
-.blog-article-view[hidden] {
-  display: none;
 }
 
 .article-container {

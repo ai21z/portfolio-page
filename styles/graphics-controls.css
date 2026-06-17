@@ -72,8 +72,7 @@
   margin-top: 7px;
 }
 
-.graphics-control__status,
-.graphics-control__reason {
+.graphics-control__status {
   color: rgba(133, 214, 164, 0.96);
 }
 

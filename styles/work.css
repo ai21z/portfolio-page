@@ -881,15 +881,6 @@
   animation: pencil-wobble 260ms ease-in-out infinite alternate;
 }
 
-/* Ensure mobile styles override base styles for project panel */
-@media (max-width: 900px) {
-  .project-panel {
-    max-width: calc(100vw - 40px);
-    min-width: 280px;
-    padding: 3rem 1.75rem 1.25rem 2.5rem;
-  }
-}
-
 /* Disable hover effects on touch devices */
 @media (hover: none) {
   .work-close:hover {

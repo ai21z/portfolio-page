@@ -751,10 +751,6 @@
   filter: contrast(1.15) brightness(0.7);
 }
 
-/* Disabled radial rays effect */
-.signals-canvas{
-  display: none !important; /* DISABLED - No radial rays effect */
-}
 
 .altar-close,
 .resume-close {

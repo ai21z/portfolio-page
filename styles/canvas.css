@@ -42,17 +42,6 @@
   min-height: 200px;
 }
 
-.signals-canvas{
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 5;
-  opacity: .85;
-  mix-blend-mode: screen;
-}
 
 /* Reduce effects for sharper text when content open */
 body.has-paper-open-global #bg-front-img {
@@ -60,10 +49,6 @@ body.has-paper-open-global #bg-front-img {
   opacity: 0.25 !important;
 }
 
-body.has-paper-open-global .signals-canvas {
-  mix-blend-mode: normal !important;
-  opacity: 0.35 !important;
-}
 
 .cursor-ring{
   position: fixed;

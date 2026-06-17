@@ -19,7 +19,7 @@ export const WORK_LOCATIONS = {
         position: 'Freelance, M.Sc. Software Engineering, EU platforms',
         period: 'Freelance & postgraduate work',
         responsibilities: [
-          'Greek ↔ English transcription & translation on work-on-demand platforms, i18n/l10n projects',
+          'Greek and English transcription & translation on work-on-demand platforms, i18n/l10n projects',
           'M.Sc. Software Engineering (University of Thessaly)',
           'Software Engineer at Netcompany-Intrasoft: Full-stack development on EU statistical platforms (Java/Spring, React/Angular)',
           'Early data annotation & AI-related work'

@@ -936,7 +936,7 @@ async function initBlogNetwork(){
       grp.dataset.hub = c.id;
       grp.setAttribute('tabindex','0');
       grp.setAttribute('role','button');
-      grp.setAttribute('aria-label', `${c.text} — open category`);
+      grp.setAttribute('aria-label', `${c.text}, open category`);
 
       // Hit zone path - covers rim through label area
       const hitPath = document.createElementNS(svg.namespaceURI,'path');

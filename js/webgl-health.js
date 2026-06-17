@@ -1,7 +1,7 @@
 const FALLBACK_TEXT = {
   unavailable: 'Graphics are reduced on this browser/device for smoothness. The content remains available. Use Chrome or Edge with hardware acceleration for the full WebGL scene, or try Rich/Full if your device can handle it.',
   'performance-caveat': 'Graphics are reduced on this browser/device for smoothness. The browser reported that the full WebGL scene may be slow here. Use Chrome or Edge with hardware acceleration for the full scene, or try Rich/Full if your device can handle it.',
-  'context-lost': 'Graphics are reduced because the WebGL context was interrupted. The content remains available; reload or switch graphics modes if you want to try the scene again.'
+  'context-lost': 'Graphics are reduced because the WebGL context was interrupted. The content remains available. Reload or switch graphics modes if you want to try the scene again.'
 };
 
 function probeWebGL2Availability(options = {}) {

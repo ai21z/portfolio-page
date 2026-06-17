@@ -53,7 +53,7 @@ def distance_squared(p1, p2):
     return dx*dx + dy*dy
 
 def in_growth_zone(x, y):
-    """Check if point is in valid growth wedge"""
+    """Check if point is inside the canvas boundary margin"""
     # Boundary check
     margin = 30
     if x < margin or y < margin or x > W-margin or y > H-margin:
@@ -84,7 +84,6 @@ for _ in range(NUM_ATTRACTORS):
 print(f"Created {len(attractors)} attractors")
 
 # Initialize growth tree with ROOT + initial branches
-import math as m
 nodes = [ROOT]
 parent_indices = [-1]
 children = [[]]
@@ -94,8 +93,8 @@ node_depths = [0]  # Track generation depth for tapering
 initial_branches = 8
 for i in range(initial_branches):
     angle = BIAS_ANGLE + (i - initial_branches/2) * 0.4
-    x = ROOT[0] + m.cos(angle) * STEP_SIZE * 2
-    y = ROOT[1] + m.sin(angle) * STEP_SIZE * 2
+    x = ROOT[0] + math.cos(angle) * STEP_SIZE * 2
+    y = ROOT[1] + math.sin(angle) * STEP_SIZE * 2
     nodes.append((x, y))
     parent_indices.append(0)
     node_depths.append(1)  # First generation from root
@@ -263,13 +262,6 @@ def build_path(node_idx, path_so_far):
 build_path(0, [])
 print(f"Created {len(paths)} paths")
 
-# DEBUG: Print sample path coordinates
-if paths:
-    print(f"DEBUG - First path has {len(paths[0])} points")
-    print(f"DEBUG - First 3 points: {paths[0][:3]}")
-    print(f"DEBUG - Last 3 points: {paths[0][-3:]}")
-    print(f"DEBUG - Coordinate range X: {min(p[0] for path in paths for p in path):.1f} to {max(p[0] for path in paths for p in path):.1f}")
-    print(f"DEBUG - Coordinate range Y: {min(p[1] for path in paths for p in path):.1f} to {max(p[1] for path in paths for p in path):.1f}")
 
 # Smooth paths with Chaikin subdivision (preserve depth) - MORE PASSES for smoother curves
 def chaikin_smooth(points, iterations=4):
@@ -304,10 +296,8 @@ print("Applied Chaikin smoothing")
 
 # Find junctions (branch points with 2+ children for better detection)
 junctions = []
-child_counts = {}
 for idx, child_list in enumerate(children):
     count = len(child_list)
-    child_counts[count] = child_counts.get(count, 0) + 1
     
     if count >= 2:  # Lowered from 3+ to 2+ for better junction detection
         x, y = nodes[idx]
@@ -321,38 +311,7 @@ for idx, child_list in enumerate(children):
         })
 
 print(f"Found {len(junctions)} junctions (nodes with 2+ children)")
-print(f"Child count distribution: {dict(sorted(child_counts.items()))}")
 
-# Pick strategic navigation nodes by angle sectors
-def pick_by_angle(target_degrees, min_distance=250):
-    """Find junction closest to target angle from root"""
-    target_rad = math.radians(target_degrees)
-    best_junction = None
-    best_score = float('inf')
-    
-    for j in junctions:
-        dx = j["x"] - ROOT[0]
-        dy = j["y"] - ROOT[1]
-        distance = math.sqrt(dx*dx + dy*dy)
-        
-        if distance < min_distance:
-            continue
-        
-        angle = math.atan2(dy, dx)
-        normalized = (angle + 2*math.pi) % (2*math.pi)
-        
-        # Angular difference
-        diff = min(abs(normalized - target_rad), 
-                  2*math.pi - abs(normalized - target_rad))
-        
-        # Score: prefer correct angle + far from root
-        score = diff * 1000 - distance
-        
-        if score < best_score:
-            best_score = score
-            best_junction = j
-    
-    return best_junction
 
 # Strategic nodes: VERTICAL placement on LEFT side (top to bottom)
 # Find junctions on the RIGHT side between intro and middle, at different vertical positions
@@ -409,8 +368,6 @@ def render_network(is_glow=False):
     img = Image.new("RGB", (render_w, render_h), ABYSS)
     draw = ImageDraw.Draw(img, "RGBA")
     
-    # VIGNETTE DISABLED - was making image too dark
-    # Just use plain background for now
     
     # Draw paths with hierarchical tapering at 2x resolution
     # HAND-DRAWN PENCIL style: gaps in lines + vibrant multi-colors
@@ -543,14 +500,12 @@ def render_network(is_glow=False):
     return img
 
 base_img = render_network(is_glow=False)
-glow_img = render_network(is_glow=True)
 
 # Save outputs
 os.makedirs("artifacts", exist_ok=True)
 
 # Save with maximum quality and optimize for sharpness
 base_img.save("artifacts/bg_base.png", optimize=True, quality=95)
-glow_img.save("artifacts/bg_glow.png", optimize=True, quality=95)
 
 # Save network data
 network_data = {
@@ -568,6 +523,5 @@ with open("artifacts/network.json", "w") as f:
 
 print("✅ Complete!")
 print(f"   bg_base.png: {len(paths)} paths")
-print(f"   bg_glow.png: glow overlay")
 print(f"   network.json: {len(junctions)} junctions")
 print(f"   Strategic nodes: intro, about, projects, blog")

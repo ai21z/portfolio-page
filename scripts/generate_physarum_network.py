@@ -201,7 +201,7 @@ def main():
     loops = FG.number_of_edges() - FG.number_of_nodes() + nx.number_connected_components(FG)
     deg = collections.Counter(d for _, d in FG.degree())
     tot = sum(deg.values()) or 1
-    print(f"seed={args.seed} seeds={args.seed and args.seeds}")
+    print(f"seed={args.seed} seeds={args.seeds}")
     print(f"vein edges={len(edges)}  fan paths={len(fpaths)}  total paths={len(paths)}")
     print(f"degree-3 share={100*deg.get(3,0)/tot:.0f}%  loops={loops}")
     print(f"width(px) min={W_MIN} max={W_MAX} ratio={W_MAX/W_MIN:.1f}x")

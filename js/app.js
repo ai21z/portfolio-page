@@ -120,7 +120,7 @@ let workTimelineModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js').catch((err) => {
+    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260625').catch((err) => {
       blogNetworkModulePromise = null;
       console.warn('⚠️ blog network module unavailable:', err);
     });

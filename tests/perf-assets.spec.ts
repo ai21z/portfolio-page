@@ -61,8 +61,9 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
 
   expect(html).not.toContain('src="./js/blog-network-webgl.js"');
   expect(html).not.toContain('src="./js/work-globe-webgl.js"');
-  expect(app).toContain("import('./blog-network-webgl.js')");
-  expect(app).toContain("import('./work-globe-webgl.js')");
+  // version-tolerant: matches both bare and ?v= cache-busted dynamic imports
+  expect(app).toContain("import('./blog-network-webgl.js");
+  expect(app).toContain("import('./work-globe-webgl.js");
 });
 
 test('portfolio content presents Talos instead of legacy project or retrieval acronym copy', () => {

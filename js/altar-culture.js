@@ -111,7 +111,7 @@ function initAltarCulture(sectionId) {
     });
   }
 
-  function step(ts) {
+  function step() {
     intensity += ((mode === 'idle' ? 0 : 1) - intensity) * 0.08;
     crystal += ((mode === 'crystallise' ? 1 : 0) - crystal) * 0.08;
     reachX += (reachTX - reachX) * 0.08;

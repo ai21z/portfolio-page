@@ -16,7 +16,6 @@ export function initHubToIcons() {
     { x: 380, y: 40, side: 'right' }
   ];
 
-  let currentHubIndex = Math.floor(Math.random() * hubs.length);
 
   const svgToPage = (svgX, svgY) => {
     const stripRect = mycoStrip.getBoundingClientRect();
@@ -112,7 +111,6 @@ export function initHubToIcons() {
   const HUB_OFFSET = 4500;
   const BURST_TIMING = 4320;
   
-  let cycleCount = 0;
   
   const pauseHubAnimations = () => {
     hubElements.forEach(hub => {
@@ -133,7 +131,6 @@ export function initHubToIcons() {
   };
   
   const runCycle = () => {
-    cycleCount++;
     
     resumeHubAnimations();
     

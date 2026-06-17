@@ -115,9 +115,6 @@ const CONFIG = {
   IDLE_THRESHOLD_MS: 200,
   RECOVERY_DURATION_MS: 400,
 
-  DEBUG_PERF: false,
-  DEBUG_FLOW: false,
-  DEBUG_SIGIL: false,
   RENDER_MODE: 'auto',
 };
 
@@ -347,13 +344,6 @@ class PortraitParticles {
     this.boundHandleGraphicsChange = this.handleGraphicsChange.bind(this);
     this.boundAnimate = this.animate.bind(this);
 
-    this.perfBufferSize = 300;
-    this.perfIndex = 0;
-    this.perfFrameMs = new Float32Array(300);
-    this.perfPhysicsMs = new Float32Array(300);
-    this.perfRenderMs = new Float32Array(300);
-    this.perfFrameCount = 0;
-    this.lastPerfLogTime = 0;
 
     // Dirty rect tracking (swap pattern, allocation-free bounds)
     this.dirtyPrev = null;
@@ -639,7 +629,6 @@ class PortraitParticles {
       this.img.style.transition = 'opacity 0.15s ease-out';
     }
 
-    if (CONFIG.DEBUG_FLOW) console.log('[particles]', this.particles.length, 'sampled');
     this.publishStats({ sampled: true });
   }
 
@@ -686,7 +675,6 @@ class PortraitParticles {
         }
       }
       
-      if (CONFIG.DEBUG_SIGIL) console.log('[particles] Sigil constellation:', sigilCount, 'particles marked');
     };
     
     sigil.onerror = () => {
@@ -1197,42 +1185,10 @@ class PortraitParticles {
     const renderMs = renderEnd - renderStart;
     reportFrameSample('portrait-particles', frameMs);
 
-    if (CONFIG.DEBUG_PERF) {
-      this.perfFrameMs[this.perfIndex] = frameMs;
-      this.perfPhysicsMs[this.perfIndex] = physicsMs;
-      this.perfRenderMs[this.perfIndex] = renderMs;
-      this.perfIndex = (this.perfIndex + 1) % this.perfBufferSize;
-      this.perfFrameCount++;
-
-      if (this.perfFrameCount % 60 === 0) this.logPerfMetrics();
-    }
 
     this.animationId = requestAnimationFrame(this.boundAnimate);
   }
 
-  logPerfMetrics() {
-    const samples = Math.min(this.perfFrameCount, this.perfBufferSize);
-    if (samples < 10) return;
-
-    let sumFrame = 0, sumPhysics = 0, sumRender = 0;
-    for (let i = 0; i < samples; i++) {
-      sumFrame += this.perfFrameMs[i];
-      sumPhysics += this.perfPhysicsMs[i];
-      sumRender += this.perfRenderMs[i];
-    }
-    const avgFrame = sumFrame / samples;
-    const avgPhysics = sumPhysics / samples;
-    const avgRender = sumRender / samples;
-
-    const frameCopy = Array.from(this.perfFrameMs.subarray(0, samples)).sort((a, b) => a - b);
-    const p95Index = Math.floor(samples * 0.95);
-    const p95Frame = frameCopy[p95Index];
-    const avgFps = avgFrame > 0 ? 1000 / avgFrame : 0;
-
-    console.log(
-      `[perf] frames=${samples} | avgFrame=${avgFrame.toFixed(2)}ms (${avgFps.toFixed(1)}fps) | p95=${p95Frame.toFixed(2)}ms | physics=${avgPhysics.toFixed(2)}ms | render=${avgRender.toFixed(2)}ms | particles=${this.particles.length}`
-    );
-  }
 
   render() {
     if (this.renderMode === 'imagedata') this.renderImageData();

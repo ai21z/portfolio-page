@@ -121,7 +121,6 @@ function fbmNoise(lon, lat, octaves = 3) {
 
 export function createMyceliumHyphae(radius, seeds, options = {}) {
   const {
-    landBias = 0.15,          // Bias toward land (not implemented yet - optional)
     stepSize = 0.008,          // Radians per step (~0.5 degrees)
     minLength = 120,
     maxLength = 220,
@@ -218,7 +217,6 @@ export function createMyceliumHyphae(radius, seeds, options = {}) {
       
       if (depth < maxDepth && step > 10 && step < length - 10 && Math.random() < branchProb) {
         const branchAngle = direction + (Math.random() - 0.5) * Math.PI * 0.6;
-        const branchLength = Math.floor(length * (0.4 + Math.random() * 0.3));
         const subPath = growPath(lat, lon, branchAngle, paths.length, depth + 1, maxDepth);
         if (subPath.segments.length > 5) {
           paths.push(subPath);

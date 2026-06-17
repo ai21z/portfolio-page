@@ -243,7 +243,6 @@ export class WorkPinSystem {
       this.instanceScaleData[i] = pin.currentScale;
       
       pin.orbitals.forEach(orbital => {
-        orbital.targetActive = 1.0;
         orbital.active = 1.0;
         
         orbital.angle += orbital.speed * dt;
@@ -260,7 +259,6 @@ export class WorkPinSystem {
     this.pins.forEach((pin, i) => {
       const quad = this.textQuads.get(pin.key);
       if (quad) {
-        quad.targetAlpha = 1.0;
         quad.alpha = 1.0;
       }
     });
@@ -412,8 +410,7 @@ export class WorkPinSystem {
           speed: 1.5 + Math.random() * 0.5,
           radius: 0.15 + Math.random() * 0.05,
           phaseOffset: Math.random() * Math.PI * 2,
-          active: 0.0,
-          targetActive: 0.0
+          active: 0.0
         };
         pin.orbitals.push(orbital);
       }
@@ -432,8 +429,7 @@ export class WorkPinSystem {
       
       this.textQuads.set(key, {
         texture: texture,
-        alpha: 0.0,
-        targetAlpha: 0.0
+        alpha: 0.0
       });
     }
   }

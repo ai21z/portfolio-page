@@ -3,7 +3,7 @@
 // The globe renders all employment + project content into pointer-only canvas
 // popups, so keyboard users, screen-reader users, and anyone whose WebGL2
 // context fails got nothing. This renders the same data as a real DOM list
-// (headings, text, github links) into #work-index — generated from the single
+// (headings, text, github links) into #work-index, generated from the single
 // source of truth so it can never drift from the globe. It is visually hidden
 // by default (the globe stays the visual), but exposed to assistive tech,
 // reachable by keyboard, revealed on focus, and shown as the genuine fallback
@@ -19,7 +19,7 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
-export function renderWorkIndex(mount) {
+function renderWorkIndex(mount) {
   if (!mount) return;
   mount.replaceChildren();
 

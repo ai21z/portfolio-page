@@ -271,7 +271,7 @@ function initWorkGlobe() {
   });
   
   if (!textBillboardProgram) {
-    console.error('❌ Failed to create text billboard shader program!');
+    console.error('[Work Globe] Failed to create text billboard shader program!');
   }
 
   // Cache uniform locations for all programs (avoids getUniformLocation every frame)
@@ -1011,7 +1011,7 @@ function checkClickWithDepth(mouseX, mouseY) {
     }
   }
   
-  // Check pins with TIGHT click radius
+  // Check pins with click radius (0.15, same as hover)
   if (workPinSystem) {
     const CLICK_RADIUS = 0.15; // Increased from 0.08 to make clicking easier
     
@@ -1077,7 +1077,7 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
   const x = ((mouseX - rect.left) / rect.width) * 2 - 1;
   const y = -((mouseY - rect.top) / rect.height) * 2 + 1;
   
-  // HOVER radius - more generous than click radius
+  // Hover radius (0.15, same as click)
   let closestPin = null;
   let closestDist = 0.15; // Hover radius in NDC space (15% of screen width)
   

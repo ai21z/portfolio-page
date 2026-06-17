@@ -116,7 +116,7 @@ export const TIMELINE = [
     sortKey: 2022.9,
     title: 'JavaScript: Understanding the Weird Parts',
     subtitle: 'Udemy',
-    summary: 'JavaScript internals and the language’s weird parts.',
+    summary: 'JavaScript internals and the language\'s weird parts.',
     target: null
   },
   {

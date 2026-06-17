@@ -44,7 +44,7 @@ void main() {
     // SIMPLIFIED: No linearization - texture is already sRGB, work directly
     // Most Earth textures are pre-processed for display
     
-    // Subtle palette shift (much lighter touch - 10% instead of 25%)
+    // Subtle palette shift (much lighter touch)
     float luminance = dot(sampledColor, vec3(0.299, 0.587, 0.114));
     float landness = smoothstep(0.15, 0.40, luminance);
     
@@ -69,13 +69,13 @@ void main() {
   // Lambert lighting: balanced ambient + diffuse
   vec3 lightDir = normalize(vec3(0.5, 0.3, 0.5));
   float diffuse = max(dot(normalize(vNormal), lightDir), 0.0);
-  float ambient = 0.15;  // Increased from 0.08 - brighter overall
+  float ambient = 0.15;  // brighter overall
   float lighting = ambient + diffuse * 0.65;
   
   // Apply lighting
   vec3 color = baseColor * lighting;
   
-  // Micro-grain: very subtle (2% instead of 3%)
+  // Micro-grain: very subtle
   float grain = sin(vUv.x * 20.0 + uTime * 0.5) * 
                 sin(vUv.y * 15.0 + uTime * 0.3);
   color += vec3(grain) * 0.02;

@@ -35,7 +35,7 @@ export function showWebGLFallback(canvas, reason = 'unavailable') {
   canvas.parentNode.insertBefore(fallback, canvas.nextSibling);
 }
 
-export function restoreWebGLCanvas(canvas) {
+function restoreWebGLCanvas(canvas) {
   if (!canvas?.parentNode) return;
   const existing = canvas.parentNode.querySelector(`[data-webgl-fallback-for="${canvas.id}"]`);
   existing?.remove();

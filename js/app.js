@@ -899,7 +899,7 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
   const blogSection = document.getElementById('blog');
   if (blogSection) {
     blogSection.dataset.mode = 'category';
-    blogSection.classList.add('in-category'); // Legacy support
+    blogSection.classList.add('in-category'); // drives category-mode CSS
   }
   
   const dishLabels = document.getElementById('dish-labels');

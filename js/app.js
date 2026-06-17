@@ -641,6 +641,18 @@ function sporeLoopHasWork() {
     && budget.particleScale > 0;
 }
 
+function sporeLoop(ts) {
+  const introActive = _introStage?.classList.contains('active-section');
+  if (!introActive || document.hidden || !sporeLoopHasWork()) {
+    // Clear and stop loop — will restart when section becomes active
+    releaseCanvasBacking(sporeCanvas, sporeCtx);
+    _sporeRafId = null;
+    return;
+  }
+  drawSpores(ts);
+  _sporeRafId = requestAnimationFrame(sporeLoop);
+}
+
 function startSpores() {
   if (!sporeCanvas || prefersReducedMotion) return;
   const budget = getGraphicsBudget('intro-spores');
@@ -649,32 +661,11 @@ function startSpores() {
   if (!sporeCtx) return;
   createSpores();
 
-  function loop(ts) {
-    const introActive = _introStage?.classList.contains('active-section');
-    if (!introActive || document.hidden || !sporeLoopHasWork()) {
-      // Clear and stop loop — will restart when section becomes active
-      releaseCanvasBacking(sporeCanvas, sporeCtx);
-      _sporeRafId = null;
-      return;
-    }
-    drawSpores(ts);
-    _sporeRafId = requestAnimationFrame(loop);
-  }
-
-  _sporeRafId = requestAnimationFrame(loop);
+  _sporeRafId = requestAnimationFrame(sporeLoop);
 }
 function ensureSporeLoop() {
   if (_sporeRafId == null && sporeCanvas && isIntroSectionActive() && sporeLoopHasWork()) {
-    _sporeRafId = requestAnimationFrame(function loop(ts) {
-      const introActive = _introStage?.classList.contains('active-section');
-      if (!introActive || document.hidden || !sporeLoopHasWork()) {
-        releaseCanvasBacking(sporeCanvas, sporeCtx);
-        _sporeRafId = null;
-        return;
-      }
-      drawSpores(ts);
-      _sporeRafId = requestAnimationFrame(loop);
-    });
+    _sporeRafId = requestAnimationFrame(sporeLoop);
   }
 }
 
@@ -1227,10 +1218,7 @@ function closeTransientUi() {
   document.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
   window.dispatchEvent(new CustomEvent('ui:close-overlays', { detail }));
 
-  document.querySelectorAll('.altar.has-front')
-    .forEach(el => el.classList.remove('has-front'));
-  document.querySelectorAll('.slab.paper.is-front')
-    .forEach(el => el.classList.remove('is-front'));
+  clearFront(document);
   document.querySelectorAll('.work-location-info.visible, .project-panel.visible')
     .forEach(el => el.classList.remove('visible'));
 }
@@ -1612,11 +1600,21 @@ mqMobile.addEventListener('change', e => {
   if (e.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
 });
 
-(function () {
-  const mqMobile = window.matchMedia('(max-width: 900px)');
-  const altarSel = '#about .altar';
+function clearFront(scope) {
+  if (scope === document) {
+    document.querySelectorAll('.altar.has-front').forEach(el => el.classList.remove('has-front'));
+    document.querySelectorAll('.slab.paper.is-front').forEach(el => el.classList.remove('is-front'));
+  } else {
+    scope.classList.remove('has-front');
+    scope.querySelectorAll('.slab.paper.is-front').forEach(el => el.classList.remove('is-front'));
+  }
+}
 
-  function bindAboutFrontToggle() {
+// Mobile (<=900px) blur toggle: tap a specimen card to bring it to front, blurring the rest.
+function bindAltarFrontToggle(altarSel) {
+  const mqMobile = window.matchMedia('(max-width: 900px)');
+
+  function bind() {
     const altar = document.querySelector(altarSel);
     if (!altar || altar.__frontBound) return;
     altar.__frontBound = true;
@@ -1624,31 +1622,23 @@ mqMobile.addEventListener('change', e => {
     altar.addEventListener('click', (e) => {
       const card = e.target.closest('.slab.paper');
 
-      // 1) Clicked the background → clear everything (no blur)
+      // Clicked the background -> clear everything (no blur)
       if (!card) {
-        altar.classList.remove('has-front');
-        altar.querySelectorAll('.slab.paper.is-front')
-             .forEach(el => el.classList.remove('is-front'));
+        clearFront(altar);
         return;
       }
 
-      // 2) Don’t toggle when clicking real controls inside the card
+      // Don't toggle when clicking real controls inside the card
       if (e.target.closest('a,button,[role="button"]')) return;
 
-      // 3) Toggle front: if card is already front → clear; else set it front
+      // Toggle front: if card is already front -> clear; else set it front
       const isFront = card.classList.contains('is-front');
-      
-      // Always clear all is-front classes first
       altar.querySelectorAll('.slab.paper.is-front')
            .forEach(el => el.classList.remove('is-front'));
-      
-      // If card was NOT front, set it as front and add has-front to altar
-      // If card WAS front, remove has-front from altar (clears blur on all cards)
       if (!isFront) {
         altar.classList.add('has-front');
         card.classList.add('is-front');
       } else {
-        // Remove has-front class - CSS will handle blur clearing automatically
         altar.classList.remove('has-front');
       }
     }, { passive: true });
@@ -1657,72 +1647,17 @@ mqMobile.addEventListener('change', e => {
   function unbindState() {
     const altar = document.querySelector(altarSel);
     if (!altar) return;
-    altar.classList.remove('has-front');
-    altar.querySelectorAll('.slab.paper.is-front')
-         .forEach(el => el.classList.remove('is-front'));
+    clearFront(altar);
   }
 
-  if (mqMobile.matches) bindAboutFrontToggle();
+  if (mqMobile.matches) bind();
   mqMobile.addEventListener('change', e => {
-    if (e.matches) bindAboutFrontToggle(); else unbindState();
+    if (e.matches) bind(); else unbindState();
   });
-})();
+}
 
-// Skills mobile blur toggle
-(function() {
-  const mqMobile = window.matchMedia('(max-width: 900px)');
-  const altarSel = '#skills .altar';
-
-  function bindSkillsFrontToggle() {
-    const altar = document.querySelector(altarSel);
-    if (!altar || altar.__frontBound) return;
-    altar.__frontBound = true;
-
-    altar.addEventListener('click', (e) => {
-      const card = e.target.closest('.slab.paper');
-
-      // 1) Clicked the background → clear everything (no blur)
-      if (!card) {
-        altar.classList.remove('has-front');
-        altar.querySelectorAll('.slab.paper.is-front')
-             .forEach(el => el.classList.remove('is-front'));
-        return;
-      }
-
-      if (e.target.closest('a,button,[role="button"]')) return;
-
-      // 3) Toggle front: if card is already front → clear; else set it front
-      const isFront = card.classList.contains('is-front');
-      
-      // Always clear all is-front classes first
-      altar.querySelectorAll('.slab.paper.is-front')
-           .forEach(el => el.classList.remove('is-front'));
-      
-      // If card was NOT front, set it as front and add has-front to altar
-      // If card WAS front, remove has-front from altar (clears blur on all cards)
-      if (!isFront) {
-        altar.classList.add('has-front');
-        card.classList.add('is-front');
-      } else {
-        // Remove has-front class - CSS will handle blur clearing automatically
-        altar.classList.remove('has-front');
-      }
-    }, { passive: true });
-  }
-
-  function unbindState() {
-    const altar = document.querySelector(altarSel);
-    if (!altar) return;
-    altar.classList.remove('has-front');
-    altar.querySelectorAll('.slab.paper.is-front')
-         .forEach(el => el.classList.remove('is-front'));
-  }
-
-  if (mqMobile.matches) bindSkillsFrontToggle();
-  mqMobile.addEventListener('change', e => {
-    if (e.matches) bindSkillsFrontToggle(); else unbindState();
-  });
-})();
+bindAltarFrontToggle('#about .altar');
+bindAltarFrontToggle('#skills .altar');
 
 // [AA-FIX] Watch for DPR changes via matchMedia (event-driven, no polling)
 let lastDPR = window.devicePixelRatio || 1;

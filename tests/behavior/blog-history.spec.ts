@@ -44,7 +44,6 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   await page.waitForTimeout(350);
   const afterForward = await mode();
 
-  console.log('BLOGHIST', JSON.stringify({ len0, len1, atCraft, afterBack, afterForward, errors }));
   expect(errors).toEqual([]);
   // entering the hub adds exactly ONE history entry (no double-push)
   expect(len1 - len0).toBe(1);

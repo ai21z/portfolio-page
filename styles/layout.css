@@ -135,7 +135,15 @@
        (max-width: 1366px) and (pointer: coarse) {
   .grid{
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto 1fr auto; /* Added row for living-sigils */
+    /* Vertical rhythm: content-sized tracks + center the cohesive group, so the slack
+       no longer dumps into one ~490px band below the intro. The whole cluster (sigils,
+       name, portrait, intro, footer) sits centered with balanced breathing above and
+       below, instead of clinging to the top. "safe" falls back to top alignment if
+       content ever exceeds the viewport (short/landscape tablets scroll, never clip).
+       Phones (<=900px) use navigation.css:339's 7-track template with a 1fr spacer,
+       which keeps this align-content inert there, so the phone layout is unchanged. */
+    grid-template-rows: auto auto auto auto auto auto;
+    align-content: safe center;
     gap: calc(var(--gap) * 2);
     padding: var(--gap);
     padding-top: max(var(--gap), env(safe-area-inset-top, 0)); /* Safe area for notch */
@@ -239,7 +247,9 @@
 }
 
 
-@media (max-width: 900px){
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .network-node-label{
     font-size:11px;
   }

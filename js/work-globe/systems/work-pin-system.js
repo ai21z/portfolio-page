@@ -1,4 +1,5 @@
 import { NECRO_GREEN } from '../core/palette.js';
+import { isCompact } from '../../compact.js';
 
 class TextRenderer {
   constructor(gl) {
@@ -209,7 +210,7 @@ export class WorkPinSystem {
   }
   
   update(dt, time) {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isCompact();
 
     this.pins.forEach((pin, i) => {
       let targetHeight = pin.hovered ? pin.targetHeight * 1.2 : pin.targetHeight;
@@ -469,7 +470,7 @@ export class WorkPinSystem {
     
     gl.useProgram(program);
     
-    const isMobile = window.innerWidth <= 900;
+    const isMobile = isCompact();
     
     if (isMobile) return;
     

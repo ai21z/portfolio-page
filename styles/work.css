@@ -384,13 +384,15 @@
 
 /* Responsive Visibility */
 
-@media (min-width: 769px) {
+@media (min-width: 901px) and (pointer: fine) {
   .mobile-only { display: none !important; }
   .work-auto-writer { display: none !important; } /* Redundant but safe */
 }
 
 /* Responsive adjustments */
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .work-globe-container {
     width: 100%;
     height: 100%;

@@ -302,7 +302,9 @@ body.has-paper-open-global #network-nav {
 }
 
 /* Responsive */
-@media (max-width: 900px){
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .network-node-label{
     font-size: 11px;
     opacity: 0.65; /* More visible on mobile */
@@ -327,13 +329,17 @@ body.has-paper-open-global #network-nav {
 }
 
 /* --- kill network graph on phones --- */
-@media (max-width: 900px){
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   #network-nav{ display:none !important; }
 }
 
 /* --- Myco strip row (phones only) --- */
 .myco-strip{ display:none; }
-@media (max-width: 900px){
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .grid{
     /* add one extra row for the strip: [sigils][myco-strip][name][portrait][text][spacer][footer] */
     grid-template-rows: auto auto auto auto auto 1fr auto;
@@ -1185,14 +1191,16 @@ body.has-paper-open-global #network-nav {
 
 /* Hide on mobile - too cramped. Aligned to the 900px layout breakpoint so the
    desktop rail never floats over the mobile single-column panels (769-900px). */
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .section-nav {
     display: none;
   }
 }
 
 /* Adjust position for smaller screens */
-@media (max-width: 1024px) and (min-width: 901px) {
+@media (max-width: 1024px) and (min-width: 901px) and (pointer: fine) {
   .section-nav {
     right: 16px;
     top: 64px;

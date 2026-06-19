@@ -6,7 +6,8 @@
 // re-sorted by year (default) or by type, morphing between layouts with a FLIP.
 // Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
 
-import { TIMELINE } from './work-globe/data/timeline.js?v=20260629';
+import { TIMELINE } from './work-globe/data/timeline.js?v=20260631';
+import { isCompact } from './compact.js';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
@@ -32,7 +33,6 @@ export function initWorkTimeline() {
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const nodes = [...TIMELINE].sort((a, b) => b.sortKey - a.sortKey);
   const workSection = host.closest('.stage') || document.getElementById('work');
-  const isCompact = () => window.matchMedia('(max-width: 900px)').matches;
 
   host.textContent = '';
 

@@ -13,6 +13,7 @@ import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
 import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
+import { isCompact } from './compact.js';
 import { getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
@@ -85,13 +86,13 @@ function markWorkGlobeActivity() {
 }
 
 function updateMobileState() {
-  isMobile = window.innerWidth <= 900;
+  isMobile = isCompact();
   return isMobile;
 }
 
 function getWorkGlobeQuality() {
   const firefox = isFirefox();
-  const mobile = window.innerWidth <= 900;
+  const mobile = isCompact();
   const budget = getGraphicsBudget('work-globe');
 
   const scaleInt = (value, scale, min) => Math.max(min, Math.round(value * scale));
@@ -508,7 +509,7 @@ function initWorkGlobe() {
   document.addEventListener('work-view:change', onWorkViewChange);
   // If the compact timeline view is already showing, init paused (covered, not rendering).
   {
-    const compact = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+    const compact = isCompact();
     const ws = document.getElementById('work');
     globeViewActive = !(compact && ws && ws.classList.contains('work-view-timeline'));
   }
@@ -1419,7 +1420,7 @@ function onTimelineSelect(e) {
 // Pause rendering while the compact timeline view covers the globe; resume on toggle/resize.
 function onWorkViewChange(e) {
   const view = e && e.detail && e.detail.view;
-  const compact = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  const compact = isCompact();
   if (compact && view === 'timeline') {
     globeViewActive = false;
   } else {

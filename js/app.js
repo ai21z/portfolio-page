@@ -11,6 +11,7 @@ import { buildGraphFromPaths, aStarPath } from './graph.js';
 import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
 import { NAV_COORDS } from './config.js';
+import { isCompact, COMPACT_MQ } from './compact.js';
 import {
   prefersReducedMotion,
   hudEnabled,
@@ -120,21 +121,21 @@ let workTimelineModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260629').catch((err) => {
+    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260631').catch((err) => {
       blogNetworkModulePromise = null;
       console.warn('blog network module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260629').catch((err) => {
+    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260631').catch((err) => {
       workGlobeModulePromise = null;
       console.warn('work globe module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20260629')
+    workTimelineModulePromise = import('./work-timeline.js?v=20260631')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;
@@ -1564,20 +1565,14 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Paper focus (desktop)
-const mqWide = window.matchMedia('(min-width: 901px)');
-if (mqWide.matches) {
-  initAboutPaperFocus();       // desktop/tablet-wide only
-  initSkillsPaperFocus();      // desktop/tablet-wide only
+// Paper focus is a DESKTOP-only interaction; compact (phones AND tablets) use the
+// tap-to-front blur toggle below instead. Keyed on the shared compact trigger so the
+// JS interaction can never drift from the CSS layout.
+const mqCompact = window.matchMedia(COMPACT_MQ);
+if (!mqCompact.matches) {
+  initAboutPaperFocus();       // desktop only
+  initSkillsPaperFocus();      // desktop only
 }
-mqWide.addEventListener('change', (e) => {
-  if (e.matches) {
-    initAboutPaperFocus();
-    initSkillsPaperFocus();
-  }
-});
-
-const mqMobile = window.matchMedia('(max-width: 900px)');
 
 function aboutMobileInertify() {
   const papers = document.querySelectorAll('#about [data-paper]');
@@ -1595,9 +1590,15 @@ function aboutRestoreFocusForWide() {
   });
 }
 
-if (mqMobile.matches) aboutMobileInertify();
-mqMobile.addEventListener('change', e => {
-  if (e.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
+if (mqCompact.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
+mqCompact.addEventListener('change', e => {
+  if (e.matches) {
+    aboutMobileInertify();
+  } else {
+    aboutRestoreFocusForWide();
+    initAboutPaperFocus();
+    initSkillsPaperFocus();
+  }
 });
 
 function clearFront(scope) {
@@ -1612,7 +1613,7 @@ function clearFront(scope) {
 
 // Mobile (<=900px) blur toggle: tap a specimen card to bring it to front, blurring the rest.
 function bindAltarFrontToggle(altarSel) {
-  const mqMobile = window.matchMedia('(max-width: 900px)');
+  const mqMobile = window.matchMedia(COMPACT_MQ);
 
   function bind() {
     const altar = document.querySelector(altarSel);
@@ -1743,7 +1744,7 @@ function initPaperFocusForSection(sectionId){
     ensurePaperCloseButton(p, closePaper);
     
     p.addEventListener('click', (event) => {
-      if (window.innerWidth <= 900) return;
+      if (isCompact()) return;
       if (event.target.closest('.paper-card-close')) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
@@ -1752,7 +1753,7 @@ function initPaperFocusForSection(sectionId){
       }
     });
     p.addEventListener('keydown', (e) => {
-      if (window.innerWidth <= 900) return;
+      if (isCompact()) return;
       
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();

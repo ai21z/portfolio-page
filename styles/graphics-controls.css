@@ -9,7 +9,7 @@
   font: 12px/1.2 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
 }
 
-@media (min-width: 901px) and (max-height: 800px) {
+@media (min-width: 901px) and (max-height: 800px) and (pointer: fine) {
   .graphics-control {
     right: max(18px, env(safe-area-inset-right));
     bottom: max(18px, env(safe-area-inset-bottom));
@@ -134,7 +134,9 @@
   pointer-events: none;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .graphics-control {
     display: none;
     right: max(10px, env(safe-area-inset-right));

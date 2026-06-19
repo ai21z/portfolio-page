@@ -1,5 +1,6 @@
 import { createSphereGeometry } from '../core/geometry.js';
 import { mat4 } from '../core/math-utils.js';
+import { isCompact } from '../../compact.js';
 
 export class MoonOrbitSystem {
   constructor(gl, projects, options = {}) {
@@ -74,7 +75,7 @@ export class MoonOrbitSystem {
   }
   
   update(dt) {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isCompact();
 
     this.moons.forEach(moon => {
       if (!moon.paused) {

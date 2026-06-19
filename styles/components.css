@@ -584,7 +584,9 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .living-sigils {
     position: relative;              /* Use relative to work with grid layout */
     top: auto;

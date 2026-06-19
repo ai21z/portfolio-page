@@ -89,7 +89,7 @@
   align-items: start;
 }
 
-@media (min-width: 901px) and (max-height: 800px) {
+@media (min-width: 901px) and (max-height: 800px) and (pointer: fine) {
   .grid {
     grid-template-rows: minmax(18px, 0.35fr) auto auto auto minmax(8px, 0.3fr) auto;
     row-gap: clamp(14px, 2vh, 22px);
@@ -98,7 +98,7 @@
   }
 }
 
-@media (min-width: 901px) and (max-height: 680px) {
+@media (min-width: 901px) and (max-height: 680px) and (pointer: fine) {
   .grid {
     grid-template-rows: 16px auto auto auto minmax(8px, 1fr) auto;
     row-gap: 12px;
@@ -108,7 +108,9 @@
 }
 
 /* Mobile: add subtle backdrop for readability over network */
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .grid::before {
     content: '';
     position: absolute;
@@ -124,8 +126,14 @@
   }
 }
 
-@media (max-width: 900px){
-  .grid{ 
+/* Vertical-flow layout. Fires for phones (<=900), portrait/square tablets up to
+   1199 (catches iPad Pro 12.9 portrait at 1024x1366), and any touch device up to
+   1366 in either orientation (catches landscape tablets, e.g. 11" Android).
+   Real desktops keep the wide grid below: they are pointer:fine and landscape. */
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
+  .grid{
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto auto 1fr auto; /* Added row for living-sigils */
     gap: calc(var(--gap) * 2);
@@ -317,7 +325,9 @@
 }
 
 /* === Mobile fixes ======================================================= */
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   /* 1) Text column: truly centered + sensible width */
   .text-column{
     grid-column: 1 / -1 !important;

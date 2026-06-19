@@ -786,7 +786,9 @@
 }
 
 /* Mobile adjustments for altar/resume close buttons */
-@media (max-width: 900px) {
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
   .altar-close {
     top: max(12px, env(safe-area-inset-top, 12px));
     right: max(12px, env(safe-area-inset-right, 12px));
@@ -799,8 +801,12 @@
   }
 }
 
-/* Mobile: flow layout (≤900px) */
-@media (max-width: 900px) {
+/* Flow layout for phones, portrait/square tablets, and any touch tablet.
+   Matches the landing trigger in layout.css so the corner-pinned slabs
+   collapse to a centered vertical stack on tablets too. */
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
 
   #about .ring,
   #about .core {
@@ -995,7 +1001,7 @@
   position: absolute !important;
   inset: 0 !important;
   z-index: 0 !important;
-  background: url('../artifacts/textures/handgrime.svg?v=20260628') repeat !important;
+  background: url('../artifacts/textures/handgrime.svg?v=20260629') repeat !important;
   background-size: 420px 420px !important;
   opacity: 0.85 !important;
   mix-blend-mode: multiply !important;

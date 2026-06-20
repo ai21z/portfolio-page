@@ -12,9 +12,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: contrast(1.15) brightness(0.82);
-  opacity: 0.50;
-  mix-blend-mode: lighten;
+  filter: contrast(1.15) brightness(0.9);
+  opacity: 0.55;
+  /* screen (not lighten) so the dim dark-green filaments ADD luminance over the near-black
+     --void instead of having to beat it with max(); lighten left almost no headroom and the
+     network collapsed to invisible on colour-managed macOS P3 displays. */
+  mix-blend-mode: screen;
   transform: none !important;
   z-index: 1;
 }

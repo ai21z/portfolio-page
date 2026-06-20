@@ -24,11 +24,11 @@
   <link rel="manifest" href="./manifest.json" />
   
   <!-- Preload critical resources -->
-  <link rel="preload" href="./styles/main.css?v=20260631" as="style" />
+  <link rel="preload" href="./styles/main.css?v=20260632" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" as="image" href="./artifacts/sigil/no-bg-seal-sigil.webp" />
 
-  <link rel="stylesheet" href="./styles/main.css?v=20260631" />
+  <link rel="stylesheet" href="./styles/main.css?v=20260632" />
   <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260501-graphics" />
 
   <!-- Threshold (opening gateway + graphics-reload cover). Critical + inline so
@@ -907,10 +907,13 @@
     
     <!-- Article Scroll Navigation (outside article-view to fix position:fixed with backdrop-filter) -->
     <nav class="article-scroll-nav" aria-label="Article scroll navigation">
-      <button class="scroll-nav-btn" data-action="top" aria-label="Scroll to top">⯭</button>
-      <button class="scroll-nav-btn" data-action="up" aria-label="Scroll up">🠅</button>
-      <button class="scroll-nav-btn" data-action="down" aria-label="Scroll down">🠇</button>
-      <button class="scroll-nav-btn" data-action="bottom" aria-label="Scroll to bottom">⯯</button>
+      <!-- Inline SVG chevrons (not Unicode arrows): U+2BED/U+1F805/U+1F807/U+2BEF have no glyph
+           in the macOS monospace font fallback and rendered as .notdef tofu. SVG is font-independent
+           and inherits the button's green via stroke="currentColor". -->
+      <button class="scroll-nav-btn" data-action="top" aria-label="Scroll to top"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 8 4.5 12 8.5"/><path d="M4 12.5 8 8.5 12 12.5"/></svg></button>
+      <button class="scroll-nav-btn" data-action="up" aria-label="Scroll up"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 6.5 12 10.5"/></svg></button>
+      <button class="scroll-nav-btn" data-action="down" aria-label="Scroll down"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5 8 9.5 12 5.5"/></svg></button>
+      <button class="scroll-nav-btn" data-action="bottom" aria-label="Scroll to bottom"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5 8 7.5 12 3.5"/><path d="M4 7.5 8 11.5 12 7.5"/></svg></button>
     </nav>
     
     <!-- Memorandum Hover Interactions -->

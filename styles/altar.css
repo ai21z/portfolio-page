@@ -575,6 +575,30 @@
   z-index: 1;
 }
 
+/* ── Short desktop / laptop viewports: scale the specimen cards down to fit ──
+   The altar is min(92dvh, 88vw), so on a short laptop screen (e.g. a MacBook after
+   the menu bar + browser chrome) little vertical room is left, yet the content-tall
+   cards (the 11-chip Skills card, the What-I-value card) want many rows and tower
+   over their siblings. --k is the sanctioned decorative-geometry scale knob
+   (padding / margins / gaps / ruled lines) and the type uses cqi, so we lower BOTH
+   together — the four cards shrink as a unit and fit, improving balance without a
+   re-layout. Mirrors the hero's short-viewport pattern (components.css). Desktop /
+   fine-pointer only; the <=900px vertical-flow block below is untouched. */
+@media (min-width: 901px) and (max-height: 940px) and (pointer: fine) {
+  .slab { --k: 0.86; }
+  .slab h2, .slab h3 { font-size: clamp(11.5px, 4.3cqi, 20px); }
+  .slab p, .slab li { font-size: clamp(10.5px, 3.8cqi, 16px); }
+  .kv li { font-size: clamp(10px, 3.5cqi, 15px); }
+  .tech-stack { font-size: clamp(10px, 3.6cqi, 15px); }
+}
+@media (min-width: 901px) and (max-height: 760px) and (pointer: fine) {
+  .slab { --k: 0.76; }
+  .slab h2, .slab h3 { font-size: clamp(11px, 3.9cqi, 18px); }
+  .slab p, .slab li { font-size: clamp(10px, 3.5cqi, 14px); }
+  .kv li { font-size: clamp(9.5px, 3.2cqi, 13px); }
+  .tech-stack { font-size: clamp(9.5px, 3.3cqi, 13px); }
+}
+
 /* Pencil sketch style tags */
 .tech-stack li {
   position: relative;
@@ -747,8 +771,12 @@
 }
 
 .nav-suppressed #bg-front-img {
-  opacity: 0.35 !important; /* Slightly dimmed but visible */
-  filter: contrast(1.15) brightness(0.7);
+  /* Dimmed behind the cards but still visible. The old 0.35 / brightness(0.7) over the
+     lighten blend went fully invisible on colour-managed macOS P3 displays (the network the
+     user reported "not showing"); with the screen blend (inherited from the base rule) a small
+     lift keeps it subdued behind content yet actually present on every display. */
+  opacity: 0.44 !important;
+  filter: contrast(1.15) brightness(0.82);
 }
 
 

@@ -212,11 +212,16 @@ function getGraphicsCapability() {
   });
 
   let recommendedProfile = 'balanced';
+  // A failed failIfMajorPerformanceCaveat probe is NOT a reliable "weak GPU" signal: Apple
+  // Silicon (M1/M2) under ANGLE-Metal / WebKit raises the caveat despite being plenty capable,
+  // which used to force Quiet (particleScale:0) and kill the ambient particles on Macs. Genuinely
+  // weak GPUs are still caught by 'software-renderer' + the 'weak' hardware class, and the
+  // per-frame runtime auto-downgrade backstops anything that actually struggles -- so we no longer
+  // force Quiet on the caveat alone ('major-performance-caveat' stays in `reasons` for telemetry).
   const quietReasons = new Set([
     'reduced-motion',
     'save-data',
     'no-webgl2',
-    'major-performance-caveat',
     'software-renderer'
   ]);
 

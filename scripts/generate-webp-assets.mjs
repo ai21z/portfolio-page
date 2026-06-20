@@ -1,66 +1,41 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+// quality is 0-100 (sharp), mirroring the old 0-1 toDataURL values.
 const assets = [
-  { src: 'myOminousGreenPortrait.png', dest: 'myOminousGreenPortrait.webp', quality: 0.88 },
-  { src: 'artifacts/bg_base.png', dest: 'artifacts/bg_base.webp', quality: 0.86 },
-  { src: 'artifacts/sigil/AZ-VZ-01.png', dest: 'artifacts/sigil/AZ-VZ-01.webp', quality: 0.9 },
-  { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil.webp', quality: 0.9 },
-  { src: 'artifacts/work-page/ominus-earth.png', dest: 'artifacts/work-page/ominus-earth.webp', quality: 0.9 },
-  { src: 'artifacts/work-page/ominus-fog-cloud.png', dest: 'artifacts/work-page/ominus-fog-cloud.webp', quality: 0.86 },
-  { src: 'artifacts/work-page/lightning.png', dest: 'artifacts/work-page/lightning.webp', quality: 0.9 },
+  { src: 'myOminousGreenPortrait.png', dest: 'myOminousGreenPortrait.webp', quality: 88 },
+  { src: 'artifacts/bg_base.png', dest: 'artifacts/bg_base.webp', quality: 86 },
+  { src: 'artifacts/sigil/AZ-VZ-01.png', dest: 'artifacts/sigil/AZ-VZ-01.webp', quality: 90 },
+  { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil.webp', quality: 90 },
+  { src: 'artifacts/work-page/ominus-earth.png', dest: 'artifacts/work-page/ominus-earth.webp', quality: 90 },
+  { src: 'artifacts/work-page/ominus-fog-cloud.png', dest: 'artifacts/work-page/ominus-fog-cloud.webp', quality: 86 },
+  { src: 'artifacts/work-page/lightning.png', dest: 'artifacts/work-page/lightning.webp', quality: 90 },
 ];
 
-function toDataUrl(relativePath) {
-  const absolutePath = path.join(repoRoot, relativePath);
-  const bytes = fs.readFileSync(absolutePath);
-  return `data:image/png;base64,${bytes.toString('base64')}`;
-}
+// Encode each PNG straight to WebP with sharp.
+//
+// The previous implementation loaded each PNG into a headless-Chromium <canvas> and called
+// canvas.toDataURL('image/webp'). That path round-tripped the pixels through the build
+// machine's canvas colour pipeline and BAKED IN that machine's monitor ICC profile, yielding
+// WebPs that were ~2x darker than the source PNG and tagged with a display-specific profile.
+// On colour-managed screens (macOS Retina / Display-P3, and worse in Safari) those WebPs
+// rendered dark — the portrait + its sampled particles looked dim. sharp is deterministic,
+// preserves the source pixels exactly, and embeds no profile (we never call withMetadata),
+// so the WebP now matches the PNG on every display.
+for (const asset of assets) {
+  const srcPath = path.join(repoRoot, asset.src);
+  const destPath = path.join(repoRoot, asset.dest);
 
-const browser = await chromium.launch();
-const page = await browser.newPage();
+  const meta = await sharp(srcPath).metadata();
+  await sharp(srcPath)
+    .webp({ quality: asset.quality }) // no .withMetadata() => no embedded ICC profile
+    .toFile(destPath);
 
-try {
-  for (const asset of assets) {
-    const result = await page.evaluate(
-      async ({ dataUrl, quality }) => {
-        const image = new Image();
-        image.decoding = 'async';
-        const loaded = new Promise((resolve, reject) => {
-          image.onload = resolve;
-          image.onerror = () => reject(new Error('Image decode failed'));
-        });
-        image.src = dataUrl;
-        await loaded;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-
-        const context = canvas.getContext('2d', { alpha: true });
-        context.drawImage(image, 0, 0);
-
-        return {
-          dataUrl: canvas.toDataURL('image/webp', quality),
-          width: image.naturalWidth,
-          height: image.naturalHeight,
-        };
-      },
-      { dataUrl: toDataUrl(asset.src), quality: asset.quality }
-    );
-
-    const encoded = result.dataUrl.replace(/^data:image\/webp;base64,/, '');
-    const outputPath = path.join(repoRoot, asset.dest);
-    fs.writeFileSync(outputPath, Buffer.from(encoded, 'base64'));
-
-    const before = fs.statSync(path.join(repoRoot, asset.src)).size;
-    const after = fs.statSync(outputPath).size;
-    console.log(`${asset.dest}: ${result.width}x${result.height}, ${before} -> ${after} bytes`);
-  }
-} finally {
-  await browser.close();
+  const before = fs.statSync(srcPath).size;
+  const after = fs.statSync(destPath).size;
+  console.log(`${asset.dest}: ${meta.width}x${meta.height}, ${before} -> ${after} bytes`);
 }

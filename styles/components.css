@@ -35,8 +35,10 @@
 }
 
 @keyframes fadeInPortrait {
-  from { 
-    opacity: 0; 
+  from {
+    /* Start from a creditable opacity (not 0) so Chromium counts the portrait toward LCP the
+       moment it paints, instead of withholding credit while the slow fade lifts it off zero. */
+    opacity: 0.3;
     transform: translateY(-10px) scale(0.95);
   }
   to { 
@@ -172,11 +174,14 @@
 
 @media (prefers-reduced-motion: reduce){
   /* Kill all animations; show final states */
-  .tape, .text-column::before{ 
-    animation: none; 
+  .tape, .text-column::before{
+    animation: none;
     max-width: var(--tape-w);
     opacity: 0.95;
   }
+  /* Show the portrait immediately at full opacity (no fade) — respects the motion preference
+     and gives reduced-motion users the fastest possible LCP. */
+  .portrait-wrap{ animation: none; opacity: 1 !important; }
 }
 
 @media (max-width: 1200px) {

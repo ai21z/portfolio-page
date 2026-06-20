@@ -26,6 +26,10 @@
   <!-- Preload critical resources -->
   <link rel="preload" href="./styles/main.css?v=20260632" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- The portrait is the LCP element. Preload it so its fetch starts at the top of the document
+       instead of after CSS + body parse (~520 lines down) — the main cause of the slow mobile LCP.
+       The URL must match the <source>/<img> exactly (same ?v=20260631 token) so it dedupes. -->
+  <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=20260631" type="image/webp" fetchpriority="high" />
   <link rel="preload" as="image" href="./artifacts/sigil/no-bg-seal-sigil.webp" />
 
   <link rel="stylesheet" href="./styles/main.css?v=20260632" />
@@ -108,7 +112,9 @@
   <div id="bg" aria-hidden="true">
     <picture>
       <source srcset="./artifacts/bg_base.webp" type="image/webp" />
-      <img id="bg-front-img" src="./artifacts/bg_base.png" alt="" width="1920" height="1080" decoding="async" fetchpriority="high" />
+      <!-- fetchpriority=low: decorative backdrop texture, not the LCP element, so it must not
+           contend with the high-priority portrait for bandwidth on slow mobile connections. -->
+      <img id="bg-front-img" src="./artifacts/bg_base.png" alt="" width="1920" height="1080" decoding="async" fetchpriority="low" />
     </picture>
   </div>
   

@@ -6,12 +6,10 @@ Single-page portfolio. WebGL visualizations, interactive showcase, secure contac
 
 ## Features
 
-- **Work Globe** — WebGL2 3D network graph
-- **Blog Network** — Force-directed topic visualization
-- **Projects Wheel** — Circular showcase with MTG-style cards
-- **Contact Form** — Rate-limited, Turnstile-protected
-- **Responsive** — Desktop and mobile optimized
-- **Vanilla Stack** — No framework dependencies
+- **Work Globe** - WebGL2 3D network graph
+- **Contact Form** = Rate-limited, Turnstile-protected
+- **Responsive** = Desktop and mobile optimized
+- **Vanilla Stack** = No framework dependencies
 
 ---
 

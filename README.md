@@ -71,4 +71,4 @@ Code is original. Images and artifacts are property of Aris Zounarakis.
 
 ---
 
-**Aris Zounarakis** — Barcelona
+**Aris Zounarakis**

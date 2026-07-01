@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 
-const SOURCE = './artifacts/sigil/AZ-VZ-01.png';
+const SOURCE = './artifacts/sigil/AZ-01.png';
 const OUTPUT_DIR = './og';
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -39,7 +39,7 @@ try {
           fill: #a6a39a;
         }
       </style>
-      <text x="600" y="480" text-anchor="middle" class="title">Vissarion Zounarakis</text>
+      <text x="600" y="480" text-anchor="middle" class="title">Aris Zounarakis</text>
       <text x="600" y="520" text-anchor="middle" class="subtitle">Barcelona-based software engineer</text>
     </svg>
   `;

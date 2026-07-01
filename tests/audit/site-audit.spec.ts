@@ -907,7 +907,7 @@ test.describe('browser audit', () => {
   test('graphics governor recommends Quiet for save-data or reduced-motion users', async ({ page, baseURL }) => {
     test.setTimeout(60_000);
     await page.addInitScript(() => {
-      window.localStorage.removeItem('vissarion.graphicsProfile');
+      window.localStorage.removeItem('aris.graphicsProfile');
       Object.defineProperty(Navigator.prototype, 'connection', {
         configurable: true,
         get: () => ({ saveData: true })
@@ -932,7 +932,7 @@ test.describe('browser audit', () => {
   test('graphics governor caps weak WebGL capability while rejecting unavailable Firefox Full selection', async ({ page, baseURL, browserName }) => {
     test.setTimeout(60_000);
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'full');
+      window.localStorage.setItem('aris.graphicsProfile', 'full');
       Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', {
         configurable: true,
         get: () => 2
@@ -985,7 +985,7 @@ test.describe('browser audit', () => {
     test.setTimeout(75_000);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'full');
+      window.localStorage.setItem('aris.graphicsProfile', 'full');
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
@@ -1015,7 +1015,7 @@ test.describe('browser audit', () => {
     test.skip(browserName !== 'chromium', 'The strong capability expectation is Chromium-specific.');
     test.setTimeout(60_000);
     await page.addInitScript(() => {
-      window.localStorage.removeItem('vissarion.graphicsProfile');
+      window.localStorage.removeItem('aris.graphicsProfile');
     });
     await mockStrongWebGLCapability(page);
 
@@ -1080,7 +1080,7 @@ test.describe('browser audit', () => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'quiet');
+      window.localStorage.setItem('aris.graphicsProfile', 'quiet');
       Object.defineProperty(window, 'devicePixelRatio', {
         configurable: true,
         get: () => 2
@@ -1129,7 +1129,7 @@ test.describe('browser audit', () => {
       await mockStrongWebGLCapability(page);
     }
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+      window.localStorage.setItem('aris.graphicsProfile', 'balanced');
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
@@ -1198,7 +1198,7 @@ test.describe('browser audit', () => {
   test('graphics governor tracks active section and temporary movement regression', async ({ page, baseURL }) => {
     test.setTimeout(60_000);
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'rich');
+      window.localStorage.setItem('aris.graphicsProfile', 'rich');
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
@@ -1233,7 +1233,7 @@ test.describe('browser audit', () => {
       await mockStrongWebGLCapability(page);
     }
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+      window.localStorage.setItem('aris.graphicsProfile', 'balanced');
     });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
@@ -1280,7 +1280,7 @@ test.describe('browser audit', () => {
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
-      window.localStorage.setItem('vissarion.graphicsProfile', 'balanced');
+      window.localStorage.setItem('aris.graphicsProfile', 'balanced');
     });
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveAttribute('data-graphics-profile', 'balanced');

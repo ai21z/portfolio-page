@@ -87,8 +87,8 @@ const CONFIG = {
   REFORM_STREAM_PHASE_DIST: 150,
 
   // Constellation mode (click easter egg)
-  SIGIL_PATH: './artifacts/sigil/AZ-VZ-01.webp',
-  SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-VZ-01.png',
+  SIGIL_PATH: './artifacts/sigil/AZ-01.webp',
+  SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-01.png',
   SIGIL_BRIGHTNESS_THRESHOLD: 40,
   CONSTELLATION_SCATTER: 0.6,
   CONSTELLATION_SPRING: 0.2,
@@ -678,7 +678,7 @@ class PortraitParticles {
     };
     
     sigil.onerror = () => {
-      if (sigil.src.endsWith('/AZ-VZ-01.webp') || sigil.src.endsWith('AZ-VZ-01.webp')) {
+      if (sigil.src.endsWith('/AZ-01.webp') || sigil.src.endsWith('AZ-01.webp')) {
         sigil.src = CONFIG.SIGIL_FALLBACK_PATH;
         return;
       }

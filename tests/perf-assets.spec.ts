@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const formerFullName = ['V', 'issarion ', 'Zounarakis'].join('');
 
 function readText(relativePath: string): string {
   return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
@@ -28,7 +29,7 @@ test('large runtime images have WebP variants referenced by the app', () => {
   const pairs = [
     ['myOminousGreenPortrait.png', 'myOminousGreenPortrait.webp'],
     ['artifacts/bg_base.png', 'artifacts/bg_base.webp'],
-    ['artifacts/sigil/AZ-VZ-01.png', 'artifacts/sigil/AZ-VZ-01.webp'],
+    ['artifacts/sigil/AZ-01.png', 'artifacts/sigil/AZ-01.webp'],
     ['artifacts/sigil/no-bg-seal-sigil.png', 'artifacts/sigil/no-bg-seal-sigil.webp'],
     ['artifacts/work-page/ominus-earth.png', 'artifacts/work-page/ominus-earth.webp'],
     ['artifacts/work-page/ominus-fog-cloud.png', 'artifacts/work-page/ominus-fog-cloud.webp'],
@@ -51,8 +52,8 @@ test('large runtime images have WebP variants referenced by the app', () => {
   expect(globe).toContain('ominus-earth.webp');
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
-  expect(nav).toContain('AZ-VZ-01.webp');
-  expect(particles).toContain('AZ-VZ-01.webp');
+  expect(nav).toContain('AZ-01.webp');
+  expect(particles).toContain('AZ-01.webp');
 });
 
 test('below-the-fold feature modules are lazy-loaded by section', () => {
@@ -64,6 +65,74 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
   // version-tolerant: matches both bare and ?v= cache-busted dynamic imports
   expect(app).toContain("import('./blog-network-webgl.js");
   expect(app).toContain("import('./work-globe-webgl.js");
+});
+
+test('homepage exposes a clear professional search entity', () => {
+  const html = readText('index.html');
+  const manifest = JSON.parse(readText('manifest.json'));
+  const description = 'Aris Zounarakis is a Barcelona-based software engineer at ADP working full-stack on global HCM/payroll systems, AI code evaluation, and local-first developer tools.';
+
+  expect(html).toContain('<title>Aris Zounarakis | Software Engineer in Barcelona</title>');
+  expect(html).toContain(`<meta name="description" content="${description}" />`);
+  expect(html).toContain(`<meta property="og:description" content="${description}" />`);
+  expect(html).toContain(`<meta name="twitter:description" content="${description}" />`);
+  expect(manifest.name).toBe('Aris Zounarakis');
+  expect(manifest.short_name).toBe('AZ');
+  expect(manifest.description).toBe('Barcelona-based software engineer at ADP working full-stack on global HCM/payroll systems, AI code evaluation, and local-first developer tools');
+
+  const h1Matches = html.match(/<h1\b/gi) ?? [];
+  expect(h1Matches).toHaveLength(1);
+  expect(html).toContain('<h1 class="name glitch-text">Aris Zounarakis</h1>');
+  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona-based software engineer at ADP.');
+  expect(html).not.toContain(`${formerFullName} |`);
+  expect(html).not.toContain(`<h1 class="name glitch-text">${formerFullName}</h1>`);
+
+  const jsonLdMatch = html.match(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/);
+  expect(jsonLdMatch).not.toBeNull();
+
+  const person = JSON.parse(jsonLdMatch?.[1] || '{}');
+  expect(person).toMatchObject({
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'Aris Zounarakis',
+    jobTitle: 'Software Engineer',
+    email: 'mailto:aris@zounarakis.com',
+    nationality: {
+      '@type': 'Country',
+      name: 'Greece'
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Barcelona',
+      addressCountry: 'ES'
+    }
+  });
+  expect(person.sameAs).toEqual(expect.arrayContaining([
+    'https://github.com/ai21z',
+    'https://gitlab.com/ariszoun',
+    'https://linkedin.com/in/aris-zounarakis'
+  ]));
+  expect(person.knowsAbout).toEqual(expect.arrayContaining([
+    'Java',
+    'Spring Boot',
+    'Local-first LLM tools',
+    'AI code evaluation',
+    'Global HCM/payroll systems',
+    'Developer tooling'
+  ]));
+});
+
+test('generated identity assets use the Aris public name', () => {
+  const ogGenerator = readText('generate-og.js');
+  const iconGenerator = readText('generate-icons.js');
+  const readme = readText('README.md');
+
+  expect(ogGenerator).toContain('Aris Zounarakis');
+  expect(ogGenerator).not.toContain(formerFullName);
+  expect(iconGenerator).toContain('>AZ<');
+  expect(iconGenerator).not.toContain('>VZ<');
+  expect(readme).toContain('Aris Zounarakis');
+  expect(readme).not.toContain(formerFullName);
 });
 
 test('portfolio content presents Talos instead of legacy project or retrieval acronym copy', () => {

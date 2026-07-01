@@ -9,7 +9,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const assets = [
   { src: 'myOminousGreenPortrait.png', dest: 'myOminousGreenPortrait.webp', quality: 88 },
   { src: 'artifacts/bg_base.png', dest: 'artifacts/bg_base.webp', quality: 86 },
-  { src: 'artifacts/sigil/AZ-VZ-01.png', dest: 'artifacts/sigil/AZ-VZ-01.webp', quality: 90 },
+  { src: 'artifacts/sigil/AZ-01.png', dest: 'artifacts/sigil/AZ-01.webp', quality: 90 },
   { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil.webp', quality: 90 },
   { src: 'artifacts/work-page/ominus-earth.png', dest: 'artifacts/work-page/ominus-earth.webp', quality: 90 },
   { src: 'artifacts/work-page/ominus-fog-cloud.png', dest: 'artifacts/work-page/ominus-fog-cloud.webp', quality: 86 },

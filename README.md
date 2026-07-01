@@ -69,8 +69,8 @@ Environment variables configured via Vercel dashboard. Details in `docs/local/`.
 
 ## License
 
-Code is original. Images and artifacts are property of Vissarion Zounarakis.
+Code is original. Images and artifacts are property of Aris Zounarakis.
 
 ---
 
-**Vissarion Zounarakis** — Barcelona
+**Aris Zounarakis** — Barcelona

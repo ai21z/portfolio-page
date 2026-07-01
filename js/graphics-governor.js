@@ -1,6 +1,6 @@
 import { isFirefox, isWebKit } from './ua.js';
 
-const STORAGE_KEY = 'vissarion.graphicsProfile';
+const STORAGE_KEY = 'aris.graphicsProfile';
 const PROFILES = ['quiet', 'balanced', 'rich', 'full'];
 const PROFILE_RANK = new Map(PROFILES.map((profile, index) => [profile, index]));
 

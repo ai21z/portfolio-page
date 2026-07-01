@@ -137,7 +137,7 @@ function createSigilNode() {
   sigil.dataset.section = 'intro';
   sigil.className = 'network-sigil-node';
   sigil.setAttribute('aria-label', 'Toggle ritual');
-  sigil.innerHTML = '<picture><source srcset="./artifacts/sigil/AZ-VZ-01.webp" type="image/webp"><img id="sigil" src="./artifacts/sigil/AZ-VZ-01.png" alt="" width="64" height="64" decoding="async"></picture>';
+  sigil.innerHTML = '<picture><source srcset="./artifacts/sigil/AZ-01.webp" type="image/webp"><img id="sigil" src="./artifacts/sigil/AZ-01.png" alt="" width="64" height="64" decoding="async"></picture>';
   return sigil;
 }
 

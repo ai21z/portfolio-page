@@ -4,7 +4,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUBJECT_LIMIT = { min: 5, max: 60 };
 const MESSAGE_LIMIT = { min: 10, max: 350 };
 const NAME_LIMIT = { min: 2, max: 80 };
-const DIRECT_EMAIL = 'vissarion@zounarakis.com';
+const DIRECT_EMAIL = 'aris@zounarakis.com';
 
 class NotebookContact {
   constructor() {

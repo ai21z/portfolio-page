@@ -1,4 +1,4 @@
-/* Necrography — Vissarion Zounarakis
+/* Necrography — Aris Zounarakis
  * Navigation system with mycelium background and spark animations
  */
 

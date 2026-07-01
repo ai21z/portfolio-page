@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-const SOURCE = './artifacts/sigil/AZ-VZ-01.png';
+const SOURCE = './artifacts/sigil/AZ-01.png';
 const OUTPUT_DIR = './icons';
 
 const ICONS = [
@@ -57,7 +57,7 @@ try {
   const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
   <rect width="16" height="16" fill="#000"/>
-  <text x="8" y="12" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#fff">VZ</text>
+  <text x="8" y="12" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle" fill="#fff">AZ</text>
 </svg>`;
   
   await writeFile(join(OUTPUT_DIR, 'pinned-tab.svg'), svgContent);

@@ -70,7 +70,7 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
 test('homepage exposes a clear professional search entity', () => {
   const html = readText('index.html');
   const manifest = JSON.parse(readText('manifest.json'));
-  const description = 'Aris Zounarakis is a Barcelona based software engineer at ADP working full-stack on global HCM/payroll systems and trusted tools.';
+  const description = 'Aris Zounarakis is a Barcelona based software engineer at ADP working on global HCM/payroll systems across full stack product and platform tooling.';
 
   expect(html).toContain('<title>Aris Zounarakis | Software Engineer in Barcelona</title>');
   expect(html).toContain(`<meta name="description" content="${description}" />`);
@@ -78,12 +78,12 @@ test('homepage exposes a clear professional search entity', () => {
   expect(html).toContain(`<meta name="twitter:description" content="${description}" />`);
   expect(manifest.name).toBe('Aris Zounarakis');
   expect(manifest.short_name).toBe('AZ');
-  expect(manifest.description).toBe('Barcelona based software engineer at ADP working full-stack on global HCM/payroll systems and trusted tools');
+  expect(manifest.description).toBe('Barcelona based software engineer at ADP working on global HCM/payroll systems across full stack product and platform tooling');
 
   const h1Matches = html.match(/<h1\b/gi) ?? [];
   expect(h1Matches).toHaveLength(1);
   expect(html).toContain('<h1 class="name glitch-text">Aris Zounarakis</h1>');
-  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP.');
+  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I work on global HCM and payroll systems, mostly across full stack product and platform tooling. Outside work, it is tinkering, music, side projects, and a cold one. If you like it here, cheers!');
   expect(html).not.toContain(`${formerFullName} |`);
   expect(html).not.toContain(`<h1 class="name glitch-text">${formerFullName}</h1>`);
 
@@ -117,7 +117,8 @@ test('homepage exposes a clear professional search entity', () => {
     'Spring Boot',
     'Global HCM/payroll systems',
     'Developer tooling',
-    'Trusted tools'
+    'Product tooling',
+    'Platform tooling'
   ]));
 });
 

@@ -40,7 +40,7 @@ try {
         }
       </style>
       <text x="600" y="480" text-anchor="middle" class="title">Aris Zounarakis</text>
-      <text x="600" y="520" text-anchor="middle" class="subtitle">Barcelona-based software engineer</text>
+      <text x="600" y="520" text-anchor="middle" class="subtitle">Barcelona based software engineer</text>
     </svg>
   `;
 

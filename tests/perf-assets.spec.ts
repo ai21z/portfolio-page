@@ -70,7 +70,7 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
 test('homepage exposes a clear professional search entity', () => {
   const html = readText('index.html');
   const manifest = JSON.parse(readText('manifest.json'));
-  const description = 'Aris Zounarakis is a Barcelona-based software engineer at ADP working full-stack on global HCM/payroll systems, AI code evaluation, and local-first developer tools.';
+  const description = 'Aris Zounarakis is a Barcelona based software engineer at ADP working full-stack on global HCM/payroll systems and trusted tools.';
 
   expect(html).toContain('<title>Aris Zounarakis | Software Engineer in Barcelona</title>');
   expect(html).toContain(`<meta name="description" content="${description}" />`);
@@ -78,12 +78,12 @@ test('homepage exposes a clear professional search entity', () => {
   expect(html).toContain(`<meta name="twitter:description" content="${description}" />`);
   expect(manifest.name).toBe('Aris Zounarakis');
   expect(manifest.short_name).toBe('AZ');
-  expect(manifest.description).toBe('Barcelona-based software engineer at ADP working full-stack on global HCM/payroll systems, AI code evaluation, and local-first developer tools');
+  expect(manifest.description).toBe('Barcelona based software engineer at ADP working full-stack on global HCM/payroll systems and trusted tools');
 
   const h1Matches = html.match(/<h1\b/gi) ?? [];
   expect(h1Matches).toHaveLength(1);
   expect(html).toContain('<h1 class="name glitch-text">Aris Zounarakis</h1>');
-  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona-based software engineer at ADP.');
+  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP.');
   expect(html).not.toContain(`${formerFullName} |`);
   expect(html).not.toContain(`<h1 class="name glitch-text">${formerFullName}</h1>`);
 
@@ -115,10 +115,9 @@ test('homepage exposes a clear professional search entity', () => {
   expect(person.knowsAbout).toEqual(expect.arrayContaining([
     'Java',
     'Spring Boot',
-    'Local-first LLM tools',
-    'AI code evaluation',
     'Global HCM/payroll systems',
-    'Developer tooling'
+    'Developer tooling',
+    'Trusted tools'
   ]));
 });
 

@@ -165,6 +165,28 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   expect(legacyMatches).toEqual([]);
 });
 
+test('work content module graph shares one cache-busting version', () => {
+  const references: Array<[string, RegExp]> = [
+    ['index.html', /src="\.\/js\/app\.js\?v=([^"]+)"/],
+    ['index.html', /src="\.\/js\/work-globe\/work-index\.js\?v=([^"]+)"/],
+    ['js/app.js', /import\('\.\/work-globe-webgl\.js\?v=([^']+)'\)/],
+    ['js/app.js', /import\('\.\/work-timeline\.js\?v=([^']+)'\)/],
+    ['js/work-globe-webgl.js', /work-locations\.js\?v=([^']+)'/],
+    ['js/work-globe-webgl.js', /projects\.js\?v=([^']+)'/],
+    ['js/work-timeline.js', /timeline\.js\?v=([^']+)'/],
+    ['js/work-globe/work-index.js', /work-locations\.js\?v=([^']+)'/],
+    ['js/work-globe/work-index.js', /projects\.js\?v=([^']+)'/]
+  ];
+
+  const versions = references.map(([file, pattern]) => {
+    const match = readText(file).match(pattern);
+    expect(match, `${file} must cache-bust its Work content dependency`).not.toBeNull();
+    return match?.[1];
+  });
+
+  expect(new Set(versions).size).toBe(1);
+});
+
 test('homepage downloads the final resume while preserving the legacy asset as an updated alias', () => {
   const html = readText('index.html');
   const finalPdf = 'artifacts/resume/Vissarion_Aris_Zounarakis_Software_Engineer_Resume.pdf';

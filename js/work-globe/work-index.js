@@ -9,8 +9,8 @@
 // reachable by keyboard, revealed on focus, and shown as the genuine fallback
 // when the WebGL scene is unavailable.
 
-import { WORK_LOCATIONS } from './data/work-locations.js';
-import { PROJECTS } from './data/projects.js';
+import { WORK_LOCATIONS } from './data/work-locations.js?v=20260711';
+import { PROJECTS } from './data/projects.js?v=20260711';
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);

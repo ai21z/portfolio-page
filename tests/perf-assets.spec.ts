@@ -165,6 +165,70 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   expect(legacyMatches).toEqual([]);
 });
 
+test('public discovery files identify the canonical portfolio URL', () => {
+  const robots = readText('robots.txt');
+  const sitemap = readText('sitemap.xml');
+
+  expect(robots).toContain('User-agent: *');
+  expect(robots).toContain('Allow: /');
+  expect(robots).toContain('Sitemap: https://zounarakis.com/sitemap.xml');
+  expect(sitemap).toContain('<loc>https://zounarakis.com/</loc>');
+  expect(sitemap).toContain('<lastmod>2026-07-11</lastmod>');
+  expect(sitemap).not.toContain('personal-webpage-20m.pages.dev');
+});
+
+test('social previews use absolute, fully described image metadata', () => {
+  const html = readText('index.html');
+  const imageUrl = 'https://zounarakis.com/og/og-1200x630.png';
+
+  expect(html).toContain(`<meta property="og:image" content="${imageUrl}" />`);
+  expect(html).toContain(`<meta property="og:image:secure_url" content="${imageUrl}" />`);
+  expect(html).toContain('<meta property="og:image:width" content="1200" />');
+  expect(html).toContain('<meta property="og:image:height" content="630" />');
+  expect(html).toContain('<meta property="og:image:alt" content="Aris Zounarakis portfolio" />');
+  expect(html).toContain(`<meta name="twitter:image" content="${imageUrl}" />`);
+  expect(html).toContain('<meta name="twitter:image:alt" content="Aris Zounarakis portfolio" />');
+  expect(html).not.toContain('content="./og/og-1200x630.png"');
+});
+
+test('fallback routing and static response headers are explicit', () => {
+  const notFound = readText('404.html');
+  const headers = readText('_headers');
+
+  expect(notFound).toContain('<meta name="robots" content="noindex, follow" />');
+  expect(notFound).toContain('<h1>Page not found</h1>');
+  expect(notFound).toContain('<a href="/">Return to zounarakis.com</a>');
+  expect(headers).toContain('Strict-Transport-Security: max-age=31536000');
+  expect(headers).toContain('X-Frame-Options: DENY');
+  expect(headers).toContain('X-Content-Type-Options: nosniff');
+  expect(headers).toContain('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+});
+
+test('quick links prioritize active professional profiles', () => {
+  const html = readText('index.html');
+  const quickNavStart = html.indexOf('<nav class="living-sigils"');
+  const quickNavEnd = html.indexOf('</nav>', quickNavStart);
+  const quickNav = html.slice(quickNavStart, quickNavEnd);
+  const labels = ['GitHub', 'LinkedIn', 'Email', 'Download Resume (PDF)', 'GitLab'];
+  const positions = labels.map((label) => quickNav.indexOf(`aria-label="${label}"`));
+
+  expect(quickNavStart).toBeGreaterThan(-1);
+  expect(quickNavEnd).toBeGreaterThan(quickNavStart);
+  expect(positions.every((position) => position >= 0)).toBe(true);
+  expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  expect(quickNav).toContain('rel="me noopener noreferrer"');
+});
+
+test('repository documentation matches the Cloudflare Pages deployment', () => {
+  const readme = readText('README.md');
+
+  expect(readme).toContain('[zounarakis.com](https://zounarakis.com)');
+  expect(readme).toContain('Cloudflare Pages Functions');
+  expect(readme).toContain('npx wrangler pages deploy . --project-name personal-webpage --branch master');
+  expect(readme).toContain('functions/');
+  expect(readme).not.toContain('Vercel');
+});
+
 test('work content module graph shares one cache-busting version', () => {
   const references: Array<[string, RegExp]> = [
     ['index.html', /src="\.\/js\/app\.js\?v=([^"]+)"/],

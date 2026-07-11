@@ -1035,9 +1035,15 @@ test.describe('browser audit', () => {
 
     await page.goto(urlFor(baseURL, sections.find((section) => section.name === 'blog')!), { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#blog')).toHaveClass(/active-section/);
+    await page.waitForFunction(() => window.__webglContextRequests.some((request) => {
+      return request.canvasId === 'blog-network-canvas' && request.failIfMajorPerformanceCaveat;
+    }));
 
     const work = sections.find((section) => section.name === 'work')!;
     await switchSection(page, work);
+    await page.waitForFunction(() => window.__webglContextRequests.some((request) => {
+      return request.canvasId === 'work-globe-canvas' && request.failIfMajorPerformanceCaveat;
+    }));
 
     const requests = await page.evaluate(() => window.__webglContextRequests);
     expect(requests).toEqual(expect.arrayContaining([

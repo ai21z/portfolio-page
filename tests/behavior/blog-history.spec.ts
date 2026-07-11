@@ -1,7 +1,29 @@
 import { test, expect } from '@playwright/test';
 
+const turnstileStubScript = `
+  window.turnstile = {
+    render: function () { return 'stub-widget'; },
+    execute: function () {},
+    reset: function () {},
+    remove: function () {}
+  };
+  if (typeof window.__turnstileOnLoad === 'function') {
+    window.__turnstileOnLoad();
+  } else {
+    document.dispatchEvent(new CustomEvent('turnstile-loaded'));
+  }
+`;
+
 test('blog Back/Forward traverses map <-> category without losing Forward', async ({ page }) => {
-  const errors: string[] = []; page.on('pageerror', (e) => errors.push(String(e)));
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.route('https://challenges.cloudflare.com/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: turnstileStubScript
+    });
+  });
   await page.addInitScript(() => {
     const orig = HTMLCanvasElement.prototype.getContext as any;
     HTMLCanvasElement.prototype.getContext = function (type: string, attrs: any) {

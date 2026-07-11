@@ -22,21 +22,21 @@ export const TIMELINE = [
   {
     id: 'talos',
     type: 'project',
-    dates: '2024 - present',
+    dates: '2025 - present',
     sortKey: 2026.6,
     title: 'Talos',
     subtitle: 'Local workspace operator',
-    summary: 'Local-first Java CLI workspace operator. Bounded tools, approval gates and traceable runs keep changes private and reproducible.',
+    summary: 'Installable local-first Java workspace operator with bounded tools, approval gates, local model backends and durable traces.',
     target: { kind: 'moon', id: 'talos-cli' }
   },
   {
     id: 'true-rolls',
     type: 'project',
-    dates: '2024 - present',
+    dates: '2025 - present',
     sortKey: 2026.55,
-    title: 'True-Rolls',
+    title: 'TrueRolls',
     subtitle: 'Verifiable tabletop rolls',
-    summary: 'Provably-fair dice rolls. A ChaCha20 RNG with HKDF key separation gives signed receipts, so any roll verifies after the fact.',
+    summary: 'Verifiable dice with Ed25519-signed drand receipts. Receipts replay offline; witnessed fairness remains a v2 goal.',
     target: { kind: 'moon', id: 'true-rolls' }
   },
   {
@@ -96,7 +96,7 @@ export const TIMELINE = [
     sortKey: 2022.99,
     title: 'The turn to software',
     subtitle: 'Freelance · Greece',
-    summary: 'Greek and English transcription and localization on demand, while teaching myself to build software.',
+    summary: 'Project-based data analysis, dashboards, reporting, localization and digital work for private clients while transitioning into software.',
     target: { kind: 'location', id: 'greece' }
   },
   {

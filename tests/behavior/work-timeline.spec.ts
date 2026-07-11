@@ -1,7 +1,36 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const DESKTOP = { width: 1440, height: 880 };
 const MOBILE = { width: 390, height: 844 };
+
+const turnstileStubScript = `
+  window.turnstile = {
+    render: function (container, options) {
+      if (options && typeof options.callback === 'function') {
+        options.callback('test-turnstile-token');
+      }
+      return 'stub-widget';
+    },
+    execute: function () {},
+    reset: function () {},
+    remove: function () {}
+  };
+  if (typeof window.__turnstileOnLoad === 'function') {
+    window.__turnstileOnLoad();
+  } else {
+    document.dispatchEvent(new CustomEvent('turnstile-loaded'));
+  }
+`;
+
+async function routeTurnstile(page: Page) {
+  await page.route('https://challenges.cloudflare.com/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: turnstileStubScript
+    });
+  });
+}
 
 async function gotoWork(page, viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
@@ -11,6 +40,10 @@ async function gotoWork(page, viewport: { width: number; height: number }) {
 }
 
 test.describe('Work career rail', () => {
+  test.beforeEach(async ({ page }) => {
+    await routeTurnstile(page);
+  });
+
   test('renders the full chronology, newest first, with three node types', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await expect(page.locator('.work-rail')).toBeVisible();

@@ -15,10 +15,13 @@ export const WORK_LOCATIONS = {
         ]
       },
       {
-        company: 'Transition to Software & AI',
-        position: 'Freelance, M.Sc. Software Engineering, EU platforms',
+        company: 'Transition to Software, Data & AI',
+        position: 'Independent projects, M.Sc. Software Engineering, EU platforms',
         period: 'Freelance & postgraduate work',
         responsibilities: [
+          'Data analysis and reporting for private clients using Excel, Python, SQL, Google Data Studio, JavaScript and TypeScript',
+          'Dynamic dashboards, multi-page reports and property comparisons for a private real estate engagement',
+          'Coordination of data requests and follow-ups between the client and contacts at Greek banks',
           'Greek and English transcription & translation on work-on-demand platforms, i18n/l10n projects',
           'M.Sc. Software Engineering (University of Thessaly)',
           'Software Engineer at Netcompany-Intrasoft: Full-stack development on EU statistical platforms (Java/Spring, React/Angular)',
@@ -50,7 +53,7 @@ export const WORK_LOCATIONS = {
         responsibilities: [
           'AI model evaluation for code generation, reasoning and content quality',
           'Prompt, rubric and acceptance-test design for coding, refactoring & debugging tasks',
-          'Design and development of local-first tools & prototypes (e.g. Talos, True-Rolls)',
+          'Design and development of local-first tools & prototypes (e.g. Talos, TrueRolls)',
           'Experiments with governed local AI workflows, workspace context and developer productivity tooling'
         ]
       }

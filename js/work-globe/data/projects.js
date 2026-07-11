@@ -1,10 +1,10 @@
 export const PROJECTS = [
   {
     id: 'true-rolls',
-    name: 'True-Rolls',
-    description: 'Provably-fair dice rolls for tabletop. A ChaCha20 RNG with HKDF key separation produces signed receipts and replay proofs, so any roll can be verified after the fact, no trust required.',
-    tech: ['ChaCha20', 'HKDF', 'Cryptography', 'Verifiable RNG'],
-    github: '',
+    name: 'TrueRolls',
+    description: 'Verifiable dice with Ed25519-signed receipts seeded from a BLS-verified public drand quicknet beacon. Receipts replay offline. Witnessed fairness against operator suppression remains a v2 goal.',
+    tech: ['Rust', 'Ed25519', 'drand', 'WebAssembly', 'React'],
+    github: 'https://github.com/ai21z/TrueRolls',
 
     initialAngle: 0,
     orbitRadius: 1.15,
@@ -19,10 +19,9 @@ export const PROJECTS = [
   {
     id: 'talos-cli',
     name: 'Talos, Local Workspace Operator',
-    description: 'Local-first Java CLI workspace operator for governed developer tasks. Talos uses bounded tools, explicit approval gates, local inspect-edit-verify loops and traceable runs so changes stay private, reviewable and reproducible.',
-    tech: ['Java', 'CLI', 'Workspace Operator', 'Approval Gates', 'Lucene', 'Local LLMs'],
-    github: '',                 // public repo not ready yet (was https://github.com/ai21z/talos-cli)
-    soon: 'Beta release coming soon',
+    description: 'Local-first Java CLI workspace operator for governed developer tasks. Talos combines bounded tools, explicit approval gates, local model backends, durable traces, context handling and verification-oriented outcomes.',
+    tech: ['Java', 'CLI', 'Approval Gates', 'Lucene', 'llama.cpp', 'Traceability'],
+    github: 'https://github.com/ai21z/talos-assistant',
     
     initialAngle: 180,
     orbitRadius: 1.15,

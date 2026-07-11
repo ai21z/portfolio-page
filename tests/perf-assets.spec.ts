@@ -95,6 +95,10 @@ test('homepage exposes a clear professional search entity', () => {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: 'Aris Zounarakis',
+    alternateName: [
+      'Vissarion Zounarakis',
+      'Vissarion Aris Zounarakis'
+    ],
     jobTitle: 'Software Engineer',
     email: 'mailto:aris@zounarakis.com',
     nationality: {
@@ -110,7 +114,7 @@ test('homepage exposes a clear professional search entity', () => {
   expect(person.sameAs).toEqual(expect.arrayContaining([
     'https://github.com/ai21z',
     'https://gitlab.com/ariszoun',
-    'https://linkedin.com/in/aris-zounarakis'
+    'https://www.linkedin.com/in/vissarion-aris-zounarakis/'
   ]));
   expect(person.knowsAbout).toEqual(expect.arrayContaining([
     'Java',
@@ -139,7 +143,8 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   const contentFiles = [
     'index.html',
     'js/work-globe/data/projects.js',
-    'js/work-globe/data/work-locations.js'
+    'js/work-globe/data/work-locations.js',
+    'js/work-globe/data/timeline.js'
   ];
   const combined = contentFiles.map((file) => readText(file)).join('\n');
   const legacyTerms = ['LOQ' + '-J', 'LOQ' + 'J', 'lo' + 'qj', 'R' + 'AG'];
@@ -152,8 +157,26 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   expect(combined).toContain('Talos');
   expect(combined).toContain('Workspace Operators');
   expect(combined).toContain('Approval Gates');
-  expect(combined).toContain('https://github.com/ai21z/talos-cli');
+  expect(combined).toContain('https://github.com/ai21z/talos-assistant');
+  expect(combined).toContain('https://github.com/ai21z/TrueRolls');
+  expect(combined).not.toContain('Provably-fair');
+  expect(combined).not.toContain('no trust required');
+  expect(combined).not.toContain('Beta release coming soon');
   expect(legacyMatches).toEqual([]);
+});
+
+test('homepage downloads the final resume while preserving the legacy asset as an updated alias', () => {
+  const html = readText('index.html');
+  const finalPdf = 'artifacts/resume/Vissarion_Aris_Zounarakis_Software_Engineer_Resume.pdf';
+  const legacyPdf = 'artifacts/resume/Aris_Zounarakis_Software_Engineer_Resume.pdf';
+  const finalDocx = 'artifacts/resume/Vissarion_Aris_Zounarakis_Software_Engineer_Resume.docx';
+  const legacyDocx = 'artifacts/resume/Aris_Zounarakis_Software_Engineer_Resume.docx';
+
+  expect(html).toContain(`./${finalPdf}`);
+  expect(fs.existsSync(path.join(repoRoot, finalPdf))).toBe(true);
+  expect(fs.existsSync(path.join(repoRoot, finalDocx))).toBe(true);
+  expect(fs.readFileSync(path.join(repoRoot, legacyPdf))).toEqual(fs.readFileSync(path.join(repoRoot, finalPdf)));
+  expect(fs.readFileSync(path.join(repoRoot, legacyDocx))).toEqual(fs.readFileSync(path.join(repoRoot, finalDocx)));
 });
 
 test('CSS avoids broad expensive transition and fixed-background patterns', () => {

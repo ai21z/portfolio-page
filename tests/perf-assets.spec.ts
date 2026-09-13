@@ -29,6 +29,7 @@ test('large runtime images have WebP variants referenced by the app', () => {
   const pairs = [
     ['myOminousGreenPortrait.png', 'myOminousGreenPortrait.webp'],
     ['artifacts/bg_base.png', 'artifacts/bg_base.webp'],
+    ['artifacts/blog-articles/1st-year-SE-article-image.png', 'artifacts/blog-articles/1st-year-SE-article-image.webp'],
     ['artifacts/sigil/AZ-01.png', 'artifacts/sigil/AZ-01.webp'],
     ['artifacts/sigil/no-bg-seal-sigil.png', 'artifacts/sigil/no-bg-seal-sigil.webp'],
     ['artifacts/work-page/ominus-earth.png', 'artifacts/work-page/ominus-earth.webp'],
@@ -166,8 +167,11 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
 
 test('responsive images stay smaller than their full-size sources', () => {
   expect(sizeOf('myOminousGreenPortrait-480.webp')).toBeLessThan(90_000);
+  expect(sizeOf('myOminousGreenPortrait-600.webp')).toBeLessThan(140_000);
   expect(sizeOf('myOminousGreenPortrait-800.webp')).toBeLessThan(sizeOf('myOminousGreenPortrait.webp') * 0.6);
   expect(sizeOf('artifacts/sigil/no-bg-seal-sigil-512.webp')).toBeLessThan(80_000);
+  expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image-800.webp')).toBeLessThan(90_000);
+  expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image.webp')).toBeLessThan(170_000);
 });
 
 test('public discovery files identify the canonical portfolio URL', () => {
@@ -229,7 +233,8 @@ test('repository documentation matches the Cloudflare Pages deployment', () => {
 
   expect(readme).toContain('[zounarakis.com](https://zounarakis.com)');
   expect(readme).toContain('Cloudflare Pages Functions');
-  expect(readme).toContain('wrangler pages deploy dist --project-name personal-webpage --branch master');
+  expect(readme).toContain('npm run deploy -- --commit');
+  expect(readme).toContain('npm run deploy:preview -- --commit');
   expect(readme).not.toContain('pages deploy . --');
   expect(readme).toContain('functions/');
   expect(readme).not.toContain('Vercel');
@@ -244,8 +249,9 @@ test('work content module graph shares one cache-busting version', () => {
     ['js/work-globe-webgl.js', /work-locations\.js\?v=([^']+)'/],
     ['js/work-globe-webgl.js', /projects\.js\?v=([^']+)'/],
     ['js/work-timeline.js', /timeline\.js\?v=([^']+)'/],
-    ['js/work-globe/work-index.js', /work-locations\.js\?v=([^']+)'/],
-    ['js/work-globe/work-index.js', /projects\.js\?v=([^']+)'/]
+    ['js/work-globe/work-index.js', /work-index-content\.js\?v=([^']+)'/],
+    ['js/work-globe/work-index-content.js', /work-locations\.js\?v=([^']+)'/],
+    ['js/work-globe/work-index-content.js', /projects\.js\?v=([^']+)'/]
   ];
 
   const versions = references.map(([file, pattern]) => {

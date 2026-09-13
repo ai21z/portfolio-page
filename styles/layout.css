@@ -172,7 +172,7 @@
   .portrait {
     display: block;
     margin-inline: auto;                     /* center inside wrapper */
-    width: auto !important;                  /* beat desktop clamp */
+    width: 320px !important;
     max-width: clamp(260px, 70vw, 320px);    /* responsive size */
     height: auto;
     filter: brightness(1.15) !important;

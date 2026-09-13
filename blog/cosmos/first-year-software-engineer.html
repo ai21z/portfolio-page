@@ -42,6 +42,7 @@
         }
     }
     </script>
+    <link rel="preload" href="../../artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="../../styles/main.css">
 </head>
 <body>
@@ -69,7 +70,10 @@
         </header>
         
         <article class="article-content">
-            <img src="../../artifacts/blog-articles/1st-year-SE-article-image.png" alt="Cyberpunk developer workspace" class="article-image">
+            <picture>
+                <source type="image/webp" srcset="../../artifacts/blog-articles/1st-year-SE-article-image-800.webp 800w, ../../artifacts/blog-articles/1st-year-SE-article-image.webp 1280w" sizes="(max-width: 600px) calc(100vw - 40px), (max-width: 720px) calc(100vw - 48px), 672px">
+                <img src="../../artifacts/blog-articles/1st-year-SE-article-image.png" alt="Cyberpunk developer workspace" class="article-image" width="1280" height="720" decoding="async" fetchpriority="high">
+            </picture>
             <p>As I look back on my first year in this job, I realize that I learned more than I ever thought possible. Even if there are many challenges along the way, I wouldn't trade the experience for anything. Here are some of the most important things I've learned so far:</p>
             <h2>1. Embrace creativity and challenge</h2>
             <p>One of the things that made me follow this career path was the opportunity to be creative and solve complex problems. I quickly learned that this can also be one of the most challenging aspects of this job. However, there were many times that I struggled to come up with a solution to a complex problem or times that I felt like I was at a dead end.</p>

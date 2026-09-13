@@ -1,4 +1,3 @@
-// blog-network-webgl.js — Hand-painted mycelium network
 import { cappedDpr } from './utils.js';
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
@@ -44,9 +43,9 @@ function computeNetworkCentroid(paths) {
   const B = {minX: +Infinity, minY: +Infinity, maxX: -Infinity, maxY: -Infinity};
   for (const path of (paths || [])) {
     for (const [x, y] of path) {
-      if (x < B.minX) B.minX = x; 
+      if (x < B.minX) B.minX = x;
       if (x > B.maxX) B.maxX = x;
-      if (y < B.minY) B.minY = y; 
+      if (y < B.minY) B.minY = y;
       if (y > B.maxY) B.maxY = y;
     }
   }
@@ -167,7 +166,7 @@ float noise(vec2 p){
 void main(){
   // Early discard for Petri dish clipping
   petriClip();
-  
+
   vec2 pix = gl_FragCoord.xy;
   pix.y = uRes.y - pix.y; // Flip Y back: gl_FragCoord has Y-up, but we need Y-down to match network space
   vec2 worldShifted = (pix - uOffset)/uScale;      // world coords with artistic shift applied
@@ -176,7 +175,7 @@ void main(){
 
   // SDF with wrinkled edges (hand-painted feel)
   float d = sdCapsule(worldShifted, vP0, vP1, vR);
-  
+
   // Add organic wrinkles/irregularity to edge
   // Scale wrinkle by segment radius AND scale to keep it stable at all zoom levels
   float wrinkle = noise(world * 0.3) * 0.8 + noise(world * 0.8) * 0.4;
@@ -189,14 +188,14 @@ void main(){
   d += (wrinkle - 0.5) * wrinkleAmount;
   d += (highFreq - 0.5) * wrinkleAmount * 0.6 * roughBranch;
   d += (microFreq - 0.5) * wrinkleAmount * 0.35 * roughBranch;
-  
+
   float aa = max(fwidth(d), 1e-4);
   float alpha = 1.0 - smoothstep(-aa*2.0, aa*0.5, d); // softer falloff
 
   // Color variation based on position (hand-painted variety)
   float colorVar = colorSeed; // per-segment variation
   float localNoise = noise(world * 0.15); // texture within segment
-  
+
   // Cool moss->bone ramp by vein thickness (flux-driven). Ember stays reserved for the centre mass.
   vec3 col;
   {
@@ -211,14 +210,14 @@ void main(){
         : t < 0.75 ? mix(c2,c3,(t-0.5)/0.25)
         :            mix(c3,c4,(t-0.75)/0.25);
   }
-  
+
   // Add painterly texture variation
   col *= 0.85 + localNoise * 0.3; // texture modulation
   float roughShade = noise(world * 2.6 + vec2(colorSeed * 57.1, colorSeed * 17.9));
   col *= 0.92 + roughShade * 0.35 * roughBranch;
   float roughMix = clamp((roughShade - 0.45) * 0.6 * roughBranch, 0.0, 1.0);
   col = mix(col, col * 0.78, roughMix);
-  
+
   // Color variation along the segment (brush stroke effect)
   vec2 segDir = normalize(vP1 - vP0);
   float along = dot(worldShifted - vP0, segDir) / max(0.1, length(vP1 - vP0));
@@ -230,11 +229,10 @@ void main(){
   // Soft painted glow
   float glow = smoothstep(3.5, 0.0, d) * 0.2;
   col += col * glow;
-  
+
   // Apply highlight (clamped to 1.25x max)
   col *= min(uHighlight, 1.25);
 
-  // overall brightness trim — the veins were reading too hot
   col *= 0.5;
 
   // grade opacity by thickness: fine mesh recedes, trunks read solid (the 9b look)
@@ -287,17 +285,17 @@ void petriClip() {
 
 void main(){
   petriClip();
-  
+
   float d = length(vUv-0.5);
   float a = smoothstep(0.6, 0.0, d);
-  
+
   // Pick color based on pulse phase
   float cVar = hash(vPulsePhase);
   vec3 glowCol;
   if(cVar < 0.33) glowCol = uGlow1;
   else if(cVar < 0.66) glowCol = uGlow2;
   else glowCol = uGlow3;
-  
+
   vec3 col = mix(uBranch1, glowCol, 0.7) * (0.5 + (1.0 - d)*0.4);
   o = vec4(col, a*0.7);
 }`;
@@ -365,7 +363,7 @@ void petriClip() {
 
 void main(){
   petriClip();  // Early discard for Petri dish clipping
-  
+
   vec2 c = vUv*2.0 - 1.0;
   float r = length(c);
   float edge = fwidth(r);
@@ -421,7 +419,7 @@ let initialized = false;
 
 async function initBlogNetwork(){
   if (initialized) return;
-  
+
   const canvas = q('#blog-network-canvas');
   if (!canvas) return;
   const context = requestProtectedWebGL2Context(canvas, { alpha:false, antialias:false, preserveDrawingBuffer:false, powerPreference:'high-performance' });
@@ -469,8 +467,7 @@ async function initBlogNetwork(){
   const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
   const data = await res.json();
 
-  // Build geometry buffers. Per-vertex vein diameter comes from the JSON ([x,y,w]) — width is
-  // flux-driven now, not derived from distance/depth.
+  // Vein widths come from the JSON's [x, y, width] values.
   const segs = [];
 
   // Per-hub segment buffers for hover highlight, bucketed by the flux-tag in the data
@@ -512,7 +509,7 @@ async function initBlogNetwork(){
     }
   });
 
-  // hub-halo / hover-ember reuse a 1-instance dynamic cyst buffer; no scattered cysts.
+  // Reuse one dynamic buffer for the hover halo.
   const cysts = [0,0,2.5,0];
   const cystCount = 0;
 
@@ -599,27 +596,27 @@ async function initBlogNetwork(){
   const vaoSeg  = makeVAOforSegments();
   const vaoCyst = makeVAOforCysts();
   const vaoNode = makeVAOforNodes();
-  
+
   // Create per-hub VAOs for highlighting
   const vaoByHub = {};
   for (const hubId of hubIds) {
     const hubSegs = perHub[hubId];
     const hubSegCount = hubSegs.length / 7;
-    
-    const vao = gl.createVertexArray(); 
+
+    const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
-    
+
     // quad (same as main)
     const quad = new Float32Array([0,-1, 0,1, 1,-1, 1,1]);
-    const bQuad = gl.createBuffer(); 
+    const bQuad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bQuad);
     gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    
+
     // instances for this hub
     const inst = new Float32Array(hubSegs);
-    const bInst = gl.createBuffer(); 
+    const bInst = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bInst);
     gl.bufferData(gl.ARRAY_BUFFER, inst, gl.STATIC_DRAW);
     const STRIDE = 7*4;
@@ -639,7 +636,7 @@ async function initBlogNetwork(){
     gl.vertexAttribPointer(5, 1, gl.FLOAT, false, STRIDE, 24);
     gl.vertexAttribDivisor(5, 1);
     gl.bindVertexArray(null);
-    
+
     vaoByHub[hubId] = { vao, count: hubSegCount };
   }
 
@@ -683,12 +680,12 @@ async function initBlogNetwork(){
   function buildDish({wCss, hCss}) {
     const svg = document.getElementById('dish');
     if (!svg) return null;
-    
+
     svg.setAttribute('viewBox', `0 0 ${wCss} ${hCss}`);
     svg.innerHTML = '';
 
     const cx = wCss / 2, cy = hCss / 2;
-    const r = Math.floor(Math.min(wCss, hCss) * PETRI_K); // inner agar edge; all glass is drawn OUTSIDE r
+    const r = Math.floor(Math.min(wCss, hCss) * PETRI_K); // Draw the glass outside the agar radius.
     const NS = 'http://www.w3.org/2000/svg';
     const el = (tag, attrs) => {
       const n = document.createElementNS(NS, tag);
@@ -702,9 +699,6 @@ async function initBlogNetwork(){
     };
     const frag = document.createDocumentFragment();
 
-    // A bevelled glass-wall gradient (a LINEAR gradient on a ring reads as a glass cylinder,
-    // not a flat disc) + a cool teal-bone agar that harmonises with the colony, not warm tan
-    // over teal. Everything cool; warm is reserved for the later 'culture alive' ember.
     const defs = el('defs', {});
     const wall = el('linearGradient', { id: 'dishWall', gradientTransform: 'rotate(115 0.5 0.5)' });
     wall.innerHTML =
@@ -716,30 +710,20 @@ async function initBlogNetwork(){
     agarGrad.innerHTML =
       '<stop offset="0%"   stop-color="rgba(120,150,140,0.04)"/>' +
       '<stop offset="55%"  stop-color="rgba(90,120,112,0.06)"/>' +
-      '<stop offset="100%" stop-color="rgba(58,84,78,0.10)"/>';       // capped 0.10 — colony stays the hero
+      '<stop offset="100%" stop-color="rgba(58,84,78,0.10)"/>';
     defs.append(wall, agarGrad);
     frag.appendChild(defs);
 
-    // proud-lid cast shadow — a faint dark ring nudged down: the dish reads as TWO pieces on the abyss
     frag.appendChild(el('circle', { cx, cy: cy + 6, r: r + 14, fill: 'none', stroke: 'rgba(6,10,11,0.4)', 'stroke-width': 6 }));
-    // cool agar growth medium (the first visible medium)
     frag.appendChild(el('circle', { cx, cy, r, fill: 'url(#dishAgar)', stroke: 'none' }));
-    // meniscus — a bright/dark pair where the gel climbs the wall (the key 'liquid in glass' cue)
     frag.appendChild(el('circle', { cx, cy, r: r - 3, fill: 'none', stroke: 'rgba(8,14,12,0.28)', 'stroke-width': 0.6 }));
     frag.appendChild(el('circle', { cx, cy, r: r - 1.5, fill: 'none', stroke: 'rgba(196,224,214,0.5)', 'stroke-width': 2 }));
-    // double wall with thickness: a thin base ring + a proud bevelled lid-lip (the gap = the glass thickness)
     frag.appendChild(el('circle', { cx, cy, r: r + 3, fill: 'none', stroke: 'rgba(150,178,170,0.3)', 'stroke-width': 2 }));
     frag.appendChild(el('circle', { cx, cy, r: r + 11, fill: 'none', stroke: 'url(#dishWall)', 'stroke-width': 9 }));
-    // broad lid sheen — a wide soft top-left glint with a brighter core (asymmetric, never a centered bloom)
     frag.appendChild(el('path', { d: arc(r + 9, -168, -90), fill: 'none', stroke: 'rgba(216,240,232,0.12)', 'stroke-width': 6, 'stroke-linecap': 'round' }));
     frag.appendChild(el('path', { d: arc(r + 9, -150, -112), fill: 'none', stroke: 'rgba(232,250,244,0.34)', 'stroke-width': 2.5, 'stroke-linecap': 'round' }));
-    // counter-glint — a short crisp bottom-right arc for the curvature read
     frag.appendChild(el('path', { d: arc(r + 9, 34, 62), fill: 'none', stroke: 'rgba(200,228,220,0.2)', 'stroke-width': 2, 'stroke-linecap': 'round' }));
 
-    // ===== Stage 2: the legendary signature =====
-    // (a) rim-growth FRINGE — growth creeps inward from the rim in the colony's OWN moss
-    //     palette (PAL.NECROTIC), masked to fade out before the colony core, so the article
-    //     network reads as the culture that grew in THIS dish. Anastomotic (splits + rejoins).
     const fade = el('radialGradient', { id: 'dishFringeFade' });
     fade.innerHTML = '<stop offset="0%" stop-color="#000"/><stop offset="58%" stop-color="#000"/>'
       + '<stop offset="88%" stop-color="#fff"/><stop offset="100%" stop-color="#fff"/>';
@@ -763,29 +747,22 @@ async function initBlogNetwork(){
         fringe.appendChild(el('path', { d: `M ${xm} ${ym} Q ${(xm + bx) / 2} ${(ym + by) / 2} ${bx} ${by}` }));
       }
     }
-    for (let i = 0; i < NF; i += 3) { // anastomosis — rejoin adjacent tips into a web
+    for (let i = 0; i < NF; i += 3) {
       const A = tips[i], B = tips[(i + 1) % NF];
       const mx = (A[0] + B[0]) / 2 + (cx - (A[0] + B[0]) / 2) * 0.14, my = (A[1] + B[1]) / 2 + (cy - (A[1] + B[1]) / 2) * 0.14;
       fringe.appendChild(el('path', { d: `M ${A[0]} ${A[1]} Q ${mx} ${my} ${B[0]} ${B[1]}`, 'stroke-width': 0.8 }));
     }
     frag.appendChild(fringe);
 
-    // (b) engraved specimen TAG — typewriter notation curved on the lower-left rim
-    //     (a dead zone between the N/E/S/W category labels).
     defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 156) }));
     const tagText = el('text', { class: 'dish-tag-text' });
     const tp = el('textPath', { href: '#dishTagArc', startOffset: '50%', 'text-anchor': 'middle' });
     tp.textContent = 'CULTURE No. AZ-2026 · incept vi.2026';
     tagText.appendChild(tp);
     frag.appendChild(tagText);
-    // (c) ember 'culture alive' tick at the head of the tag (the single warm focal)
     const ea = 112 * Math.PI / 180, eR = r + 20;
     frag.appendChild(el('circle', { class: 'dish-ember', cx: cx + eR * Math.cos(ea), cy: cy + eR * Math.sin(ea), r: 3.4 }));
 
-    // ===== Stage 3: humidity LID — condensation on the sealed glass =====
-    // A sealed petri dish fogs: glassy beads scattered on the lid, denser toward the rim.
-    // One reusable <symbol> (shadow + clear lens + meniscus rim + specular) instanced via
-    // <use>, so it stays light. Static, decorative, aria-hidden via #dish.
     const dropGrad = el('radialGradient', { id: 'dishDrop', cx: '0.42', cy: '0.40', r: '0.62' });
     dropGrad.innerHTML =
       '<stop offset="0%"  stop-color="rgba(210,228,222,0.03)"/>' +
@@ -814,7 +791,6 @@ async function initBlogNetwork(){
       u.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#dishDropBead');
       lid.appendChild(u);
     };
-    // (a) prominent beads — varied size, a few fat ones, pooled toward the rim
     const NBEADS = Math.round(r * 0.20);
     for (let i = 0; i < NBEADS; i++) {
       const dr = 1.2 + Math.pow(drnd(), 3) * 16;
@@ -822,10 +798,9 @@ async function initBlogNetwork(){
       const rad = (r - dr - 4) * Math.sqrt(0.12 + 0.88 * drnd());
       placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
     }
-    // (b) fine micro-condensation — many tiny beads spread evenly across the whole lid
     const NMICRO = Math.round(r * 0.9);
     for (let i = 0; i < NMICRO; i++) {
-      const dr = 0.5 + Math.pow(drnd(), 2) * 2.6;            // 0.5 .. ~3 px
+      const dr = 0.5 + Math.pow(drnd(), 2) * 2.6;
       const ang = drnd() * Math.PI * 2;
       const rad = (r - dr - 2) * Math.sqrt(drnd());          // uniform across the disc
       placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
@@ -835,8 +810,7 @@ async function initBlogNetwork(){
     placeDrop(cx - r * 0.46, cy + r * 0.28, 7.0, 'dish-drop-drift2');
     frag.appendChild(lid);
 
-    // wire the ember to the blog hover bus ONCE — it brightens when you examine a hub
-    // (#dish keeps the class across resize innerHTML wipes; only its children are rebuilt)
+    // Bind to the dish once. Resize replaces its children.
     if (!buildDish.__wired) {
       buildDish.__wired = true;
       window.addEventListener('blog:hover', () => svg.classList.add('dish-hot'));
@@ -850,7 +824,7 @@ async function initBlogNetwork(){
   // Update dish clipping uniforms (CSS pixel space, not buffer pixels)
   function updateDishUniforms(dish) {
     if (!dish) return;
-    
+
     const dpr = currentDPR();
 
     // Dish center/radius are already in CSS pixels (from buildDish)
@@ -873,11 +847,11 @@ async function initBlogNetwork(){
   function buildLabels(dish) {
     if (!dish) return;
     stopClockLoop();
-    
+
     const root = document.getElementById('dish-labels');
     if (!root) return;
-    
-    root.innerHTML = ''; 
+
+    root.innerHTML = '';
     root.style.pointerEvents = 'none';
 
     const cfg = [
@@ -893,7 +867,7 @@ async function initBlogNetwork(){
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.style.width='100%'; 
+    svg.style.width='100%';
     svg.style.height='100%';
     root.appendChild(svg);
 
@@ -902,12 +876,12 @@ async function initBlogNetwork(){
       const span = 70 * Math.PI/180;  // Wider arc for bigger text
       const a0 = (c.midDeg*Math.PI/180) - span/2;
       const a1 = (c.midDeg*Math.PI/180) + span/2;
-      
+
       // Hit zone centered between rim and label for full coverage
       const hitR = dish.r + 30; // Midpoint between rim (~r+14) and label (~r+48)
       const hx0 = cx + hitR*Math.cos(a0), hy0 = cy + hitR*Math.sin(a0);
       const hx1 = cx + hitR*Math.cos(a1), hy1 = cy + hitR*Math.sin(a1);
-      
+
       // Label text path at outer radius
       const x0 = cx + outerR*Math.cos(a0), y0 = cy + outerR*Math.sin(a0);
       const x1 = cx + outerR*Math.cos(a1), y1 = cy + outerR*Math.sin(a1);
@@ -951,7 +925,7 @@ async function initBlogNetwork(){
       grp.appendChild(text);
       svg.appendChild(grp);
     }
-    
+
     // Add zoom indicator arc between COSMOS (0°) and CODEX (90°) at ~45°
     const zoomArcId = 'arc-zoom';
     const zoomMidDeg = 45; // Bottom-right, between COSMOS and CODEX
@@ -960,7 +934,7 @@ async function initBlogNetwork(){
     const zoomA1 = (zoomMidDeg*Math.PI/180) + zoomSpan/2;
     const zoomX0 = cx + outerR*Math.cos(zoomA0), zoomY0 = cy + outerR*Math.sin(zoomA0);
     const zoomX1 = cx + outerR*Math.cos(zoomA1), zoomY1 = cy + outerR*Math.sin(zoomA1);
-    
+
     // Zoom arc path (non-interactive)
     const zoomPath = document.createElementNS(svg.namespaceURI,'path');
     zoomPath.setAttribute('id', zoomArcId);
@@ -968,7 +942,7 @@ async function initBlogNetwork(){
     zoomPath.setAttribute('fill','none');
     zoomPath.setAttribute('stroke','transparent');
     svg.appendChild(zoomPath);
-    
+
     // Zoom text (read-only, non-clickable)
     const zoomText = document.createElementNS(svg.namespaceURI,'text');
     zoomText.setAttribute('id','zoom-arc-label');
@@ -977,19 +951,19 @@ async function initBlogNetwork(){
     zoomText.setAttribute('font-size','16');  // Smaller than hub labels
     zoomText.setAttribute('letter-spacing','0.2em');
     zoomText.style.pointerEvents='none';
-    
+
     const zoomTextPath = document.createElementNS(svg.namespaceURI,'textPath');
     zoomTextPath.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href', `#${zoomArcId}`);
     zoomTextPath.setAttribute('startOffset','50%');
     zoomTextPath.setAttribute('id','zoom-text-content');
     zoomTextPath.textContent = '• ZOOM 100% •';
-    
+
     zoomText.appendChild(zoomTextPath);
     svg.appendChild(zoomText);
-    
+
     // Clock dots - orbiting between rim and labels
     const clockR = dish.r + 30; // Same track as hit zones, between rim and labels
-    
+
     // Hour dot (largest, brass/dish color)
     const hourDot = document.createElementNS(svg.namespaceURI,'circle');
     hourDot.setAttribute('id','clock-hour');
@@ -997,7 +971,7 @@ async function initBlogNetwork(){
     hourDot.setAttribute('fill','rgba(180, 150, 110, 0.8)');
     hourDot.style.pointerEvents='none';
     svg.appendChild(hourDot);
-    
+
     // Minute dot (medium, ominous green like craft)
     const minDot = document.createElementNS(svg.namespaceURI,'circle');
     minDot.setAttribute('id','clock-minute');
@@ -1005,7 +979,7 @@ async function initBlogNetwork(){
     minDot.setAttribute('fill','rgba(45, 140, 90, 0.75)');
     minDot.style.pointerEvents='none';
     svg.appendChild(minDot);
-    
+
     // Second dot (smallest, ominous purple like convergence)
     const secDot = document.createElementNS(svg.namespaceURI,'circle');
     secDot.setAttribute('id','clock-second');
@@ -1013,7 +987,7 @@ async function initBlogNetwork(){
     secDot.setAttribute('fill','rgba(130, 85, 145, 0.7)');
     secDot.style.pointerEvents='none';
     svg.appendChild(secDot);
-    
+
     // Get user timezone, fallback to Barcelona
     let userTimezone;
     try {
@@ -1021,7 +995,7 @@ async function initBlogNetwork(){
     } catch {
       userTimezone = 'Europe/Madrid';
     }
-    
+
     let lastMinute = -1;
     let lastClockTs = 0;
 
@@ -1040,20 +1014,20 @@ async function initBlogNetwork(){
       }
       return { h: h % 24, m, s, ms: now.getMilliseconds() };
     }
-    
+
     function renderClockFrame() {
       const { h, m, s, ms } = getTimeInZone();
-      
+
       // Smooth fractional values for continuous motion
       const secSmooth = s + ms / 1000;
       const minSmooth = m + secSmooth / 60;
       const hrSmooth = (h % 12) + minSmooth / 60;
-      
+
       // Convert to angles (12 o'clock = -90° in SVG, clockwise)
       const hourAngle = (hrSmooth * 30 - 90) * Math.PI / 180;
       const minAngle = (minSmooth * 6 - 90) * Math.PI / 180;
       const secAngle = (secSmooth * 6 - 90) * Math.PI / 180;
-      
+
       // Position dots
       hourDot.setAttribute('cx', cx + clockR * Math.cos(hourAngle));
       hourDot.setAttribute('cy', cy + clockR * Math.sin(hourAngle));
@@ -1061,7 +1035,7 @@ async function initBlogNetwork(){
       minDot.setAttribute('cy', cy + clockR * Math.sin(minAngle));
       secDot.setAttribute('cx', cx + clockR * Math.cos(secAngle));
       secDot.setAttribute('cy', cy + clockR * Math.sin(secAngle));
-      
+
       // Update sr-only time for accessibility (only on minute change)
       if (m !== lastMinute) {
         lastMinute = m;
@@ -1074,8 +1048,7 @@ async function initBlogNetwork(){
       }
     }
 
-    // Clock animation while the blog map is visible — throttled to the governor's
-    // frame interval (was an uncapped rAF doing per-frame Intl formatting).
+    // Throttle the clock to the graphics budget.
     function animateClock(ts) {
       if (!running || document.hidden) {
         clockRafId = null;
@@ -1089,7 +1062,7 @@ async function initBlogNetwork(){
       }
       clockRafId = requestAnimationFrame(animateClock);
     }
-    
+
     renderClockFrame();
     if (running && !document.hidden) {
       clockRafId = requestAnimationFrame(animateClock);
@@ -1099,32 +1072,32 @@ async function initBlogNetwork(){
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
   const shift = [VIEW.W * 0.5 - netCx, VIEW.H * 0.5 - netCy];
 
-  // Zoom starts at the minimum (0.75x); resize() applies it, so it survives resize + re-activation.
+  // Keep userZoom outside resize so it survives layout changes.
   let userZoom = 0.75;
   let baseScale = 1;
 
   let resizeTimeout = null;
   let currentDish = null;
-  
+
   function resize(){
     // Dynamic DPR: compute at resize time to handle display changes
     const dpr = currentDPR();
-    
+
     // Get actual canvas client dimensions
     const rect = canvas.getBoundingClientRect();
     const cssW = Math.max(300, rect.width); // minimum size to prevent tiny scales
     const cssH = Math.max(300, rect.height);
-    
+
     const w = Math.max(1, Math.floor(cssW * dpr));
     const h = Math.max(1, Math.floor(cssH * dpr));
-    
+
     // Only resize if dimensions changed significantly (>5px)
     if (Math.abs(canvas.width - w) > 5 || Math.abs(canvas.height - h) > 5) {
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
     }
-    
+
     // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x)
     baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H);
     const scale = baseScale * userZoom;
@@ -1136,7 +1109,7 @@ async function initBlogNetwork(){
     updateDishUniforms(currentDish);
     buildLabels(currentDish);
     updateZoomIndicator();   // buildLabels rebuilds the label -> refresh it to the real zoom
-    
+
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
     window.dispatchEvent(new CustomEvent('blog:transform', {
       detail: {
@@ -1149,19 +1122,19 @@ async function initBlogNetwork(){
         cssH
       }
     }));
-    
+
     return { scale, offX, offY, cssW, cssH };
   }
   let fit = resize();
-  
+
   // Debounced resize handler to prevent rapid resizing
-  window.addEventListener('resize', ()=>{ 
+  window.addEventListener('resize', ()=>{
     if (resizeTimeout) clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
       if (running) fit = resize();
     }, 100); // Wait 100ms after last resize event
   });
-  
+
   // Listen for DPR changes dispatched by app.js (event-driven, no polling)
   let lastDPR = currentDPR();
   window.addEventListener('dpr-changed', () => {
@@ -1174,12 +1147,12 @@ async function initBlogNetwork(){
 
   let hoveredHubId = null;
   let activeHub = null;
-  
+
   // Pan state (for right-mouse drag)
   let isPanning = false;
   let panStartX = 0, panStartY = 0;
   let panOffsetX = 0, panOffsetY = 0;
-  
+
   // simple hover picking in data space (36 world-px hover radius)
   canvas.addEventListener('mousemove', (e)=>{
     // Handle panning first
@@ -1192,7 +1165,7 @@ async function initBlogNetwork(){
       fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2 + panOffsetY;
       return;
     }
-    
+
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX-rect.left - fit.offX)/fit.scale - shift[0];
     const my = (e.clientY-rect.top  - fit.offY)/fit.scale - shift[1];
@@ -1207,25 +1180,25 @@ async function initBlogNetwork(){
     }
     hoveredHubId = idx>=0 ? (data.hubs[idx].id) : null;
     canvas.style.cursor = hoveredHubId ? 'pointer' : 'default';
-    
+
     // Emit hover events when hub changes
     if (hoveredHubId !== prevHovered) {
       if (hoveredHubId) {
-        window.dispatchEvent(new CustomEvent('blog:hover', { 
-          detail: { hubId: hoveredHubId, source: 'hub-point' } 
+        window.dispatchEvent(new CustomEvent('blog:hover', {
+          detail: { hubId: hoveredHubId, source: 'hub-point' }
         }));
       } else {
-        window.dispatchEvent(new CustomEvent('blog:hover-off', { 
-          detail: { hubId: prevHovered, source: 'hub-point' } 
+        window.dispatchEvent(new CustomEvent('blog:hover-off', {
+          detail: { hubId: prevHovered, source: 'hub-point' }
         }));
       }
     }
   });
-  
+
   // Click to navigate to category (debounced)
   let lastClickTime = 0;
   const CLICK_DEBOUNCE = 300; // ms
-  
+
   let lastTouchNav = 0;
   canvas.addEventListener('click', ()=>{
     if (performance.now() - lastTouchNav < 500) return; // ignore the ghost click after a touch tap
@@ -1247,9 +1220,7 @@ async function initBlogNetwork(){
     }));
   });
 
-  // Touch: tap a hub to navigate. Mobile fires no mousemove, so hoveredHubId
-  // is null when the synthetic click arrives — without this, tapping a hub
-  // (the most prominent interactive object on the page) does nothing.
+  // Touch does not set hoveredHubId through mousemove. Pick the hub from the tap position.
   let touchStartT = 0, touchStartX = 0, touchStartY = 0;
   canvas.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
@@ -1269,7 +1240,7 @@ async function initBlogNetwork(){
     const mx = (t.clientX - rect.left - fit.offX) / fit.scale - shift[0];
     const my = (t.clientY - rect.top  - fit.offY) / fit.scale - shift[1];
     let minD = 99999, idx = -1;
-    const TAP_RADIUS = 44; // larger than hover — fingers are coarse
+    const TAP_RADIUS = 44; // Use a larger target for touch.
     for (let i = 0; i < hubPos.length; i++) {
       const dx = mx - hubPos[i][0], dy = my - hubPos[i][1];
       const d = Math.hypot(dx, dy);
@@ -1292,13 +1263,13 @@ async function initBlogNetwork(){
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape' && activeHub){
       activeHub = null;
-      document.dispatchEvent(new CustomEvent('blog:activeHub', { 
-        detail: { id: null } 
+      document.dispatchEvent(new CustomEvent('blog:activeHub', {
+        detail: { id: null }
       }));
       history.replaceState(null, '', '#blog');
     }
   });
-  
+
   // Listen for external hover events (from rim labels and memo)
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
@@ -1307,7 +1278,7 @@ async function initBlogNetwork(){
       canvas.style.cursor = 'pointer';
     }
   });
-  
+
   window.addEventListener('blog:hover-off', (e) => {
     const { hubId, source } = e.detail;
     // Clear if from memo (no hubId check) or if matching hub
@@ -1316,18 +1287,18 @@ async function initBlogNetwork(){
       canvas.style.cursor = 'default';
     }
   });
-  
+
   // Restore deep link on load
   if (location.hash.startsWith('#blog/')) {
     const id = location.hash.split('/')[1];
     if (hubIds.includes(id)) {
       activeHub = id;
-      document.dispatchEvent(new CustomEvent('blog:activeHub', { 
-        detail: { id: activeHub } 
+      document.dispatchEvent(new CustomEvent('blog:activeHub', {
+        detail: { id: activeHub }
       }));
     }
   }
-  
+
   // Wheel zoom (clamp 0.75x - 1.0x). userZoom + baseScale are declared up top and applied inside
   // resize(), so zoom survives resizes and section re-activation.
   function updateZoomIndicator() {
@@ -1338,7 +1309,7 @@ async function initBlogNetwork(){
     }
   }
   updateZoomIndicator(); // Set initial indicator to match default zoom
-  
+
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.95 : 1.05;
@@ -1349,7 +1320,7 @@ async function initBlogNetwork(){
     fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
     updateZoomIndicator();
   }, { passive: false });
-  
+
   // Right-mouse drag panning handlers
   canvas.addEventListener('mousedown', (e) => {
     if (e.button === 2) { // right mouse
@@ -1359,13 +1330,13 @@ async function initBlogNetwork(){
       panStartY = e.clientY;
     }
   });
-  
+
   canvas.addEventListener('mouseup', (e) => {
     if (e.button === 2) {
       isPanning = false;
     }
   });
-  
+
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault(); // Disable context menu on right-click
   });
@@ -1397,8 +1368,6 @@ async function initBlogNetwork(){
     gl.uniform1f(_uCache.paper['uVignette'], 0.35);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // PLASMODIAL MASSES — soft blobs at the anchors, drawn under the veins.
-    // Moss for the four foods, ember for the central inoculation (the one warm focal).
     if (masses.length) {
       gl.useProgram(progCyst);
       set2('cyst','uScale', fit.scale, fit.scale);
@@ -1440,17 +1409,17 @@ async function initBlogNetwork(){
       gl.bindVertexArray(vaoSeg.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoSeg.count);
       gl.bindVertexArray(null);
-      
+
       // HOVER HIGHLIGHT: Additive pass for hovered hub
       if (hoveredHubId && vaoByHub[hoveredHubId]) {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE); // Additive
-        
+
         gl.uniform1f(_uCache.seg['uHighlight'], 1.15);
         gl.bindVertexArray(vaoByHub[hoveredHubId].vao);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoByHub[hoveredHubId].count);
         gl.bindVertexArray(null);
-        
+
         // Reset blend
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       }
@@ -1461,12 +1430,12 @@ async function initBlogNetwork(){
       gl.bindVertexArray(vaoSeg.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoSeg.count);
       gl.bindVertexArray(null);
-      
+
       // Pass 2: Draw active hub at higher contrast
       if (vaoByHub[activeHub]) {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        
+
         gl.uniform1f(_uCache.seg['uHighlight'], 1.2);
         gl.bindVertexArray(vaoByHub[activeHub].vao);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoByHub[activeHub].count);
@@ -1493,9 +1462,7 @@ async function initBlogNetwork(){
     }
 
     // (per-hub ember pulse removed: the masses provide the hub glow, and the warm
-    //  ember is reserved for the central inoculation mass + the on-hover halo)
 
-    // Hover halo (breathing ember) — brighter overdraw when hovered
     if(hoveredHubId){
       const hub = data.hubs.find(h=>h.id===hoveredHubId);
       if(hub){
@@ -1510,11 +1477,8 @@ async function initBlogNetwork(){
         set3('cyst','uGlow2', PAL.EMBER2);
         set3('cyst','uGlow3', PAL.EMBER3);
         set3('cyst','uBranch1', PAL.BRANCH1);
-        // draw one big pulse at hub
         const pulse = (Math.sin(now*0.0005)*0.2+0.8);
         const r = 20 + 44*pulse;
-        // quick immediate-mode instancing (no buffer update): use viewport trick
-        // simpler: draw a triangle strip with gl_VertexID FSQ but centered—reuse cyst VAO first instance by updating buffer
         vaoCyst.data.set([hub.x, hub.y, 10.0, 0.0], 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, vaoCyst.buf);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, vaoCyst.data.subarray(0,4));
@@ -1530,9 +1494,9 @@ async function initBlogNetwork(){
       rafId = null;
     }
   }
-  
+
   initialized = true;
-  
+
   // Pause/resume when blog section visibility changes
   const startLoop = () => {
     if (running && !document.hidden && !rafId) {
@@ -1558,7 +1522,7 @@ async function initBlogNetwork(){
       else stopLoop();
     });
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
-    
+
     // Initial check
     running = blogStage.classList.contains('active-section');
     if (!running) {
@@ -1570,7 +1534,7 @@ async function initBlogNetwork(){
     if (document.hidden) stopLoop();
     else startLoop();
   });
-  
+
   // Start animation loop
   startLoop();
 }
@@ -1587,13 +1551,13 @@ if (document.readyState === 'loading') {
 function watchForBlogSection() {
   const blogSection = document.getElementById('blog');
   if (!blogSection) return;
-  
+
   // Check if already visible
   if (blogSection.classList.contains('active-section')) {
     initBlogNetwork();
     return;
   }
-  
+
   // Watch for visibility changes
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -1605,7 +1569,7 @@ function watchForBlogSection() {
       }
     });
   });
-  
+
   observer.observe(blogSection, {
     attributes: true,
     attributeFilter: ['class']

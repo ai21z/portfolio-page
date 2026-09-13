@@ -60,13 +60,13 @@
 }
 
 @keyframes memoFadeIn {
-  from { 
-    opacity: 0; 
-    transform: translateY(-10px); 
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -101,7 +101,7 @@
   border: 1px solid transparent;
   cursor: pointer;
   pointer-events: auto;
-  transition: 
+  transition:
     border-color 0.2s ease,
     background-color 0.2s ease;
 }
@@ -137,36 +137,36 @@
   height: 14px;
   border-radius: 50%;
   margin-top: 2px;
-  
+
   /* Layered orb effect */
   background:
     /* Dim luminous core */
-    radial-gradient(circle at 40% 35%, 
-      var(--memo-orb-core) 0%, 
+    radial-gradient(circle at 40% 35%,
+      var(--memo-orb-core) 0%,
       color-mix(in oklab, var(--memo-orb-core), black 50%) 40%,
       transparent 70%
     ),
     /* Dark base */
-    radial-gradient(circle at 50% 50%, 
+    radial-gradient(circle at 50% 50%,
       color-mix(in oklab, var(--memo-orb-core), black 55%) 0%,
       color-mix(in oklab, var(--memo-orb-core), black 75%) 80%,
       transparent 100%
     );
-  
+
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.5),
     0 0 8px var(--memo-orb-glow);
-  
+
   animation: memo-orb-pulse 4s ease-in-out infinite;
   animation-delay: var(--memo-pulse-delay, 0s);
 }
 
 @keyframes memo-orb-pulse {
-  0%, 100% { 
+  0%, 100% {
     opacity: 0.85;
     filter: brightness(1);
   }
-  50% { 
+  50% {
     opacity: 1;
     filter: brightness(1.15);
   }
@@ -358,7 +358,7 @@
 .arc-btn:focus-visible .arc-label,
 .arc-btn.hovered .arc-label {
   fill: rgba(255, 230, 170, 1); /* Brighter, more saturated */
-  filter: drop-shadow(0 0 16px rgba(255, 180, 100, 0.9)) 
+  filter: drop-shadow(0 0 16px rgba(255, 180, 100, 0.9))
           drop-shadow(0 0 8px rgba(255, 220, 140, 0.7))
           brightness(1.3); /* Key: brightness boost like hubs */
   text-shadow: 0 0 12px rgba(255, 200, 120, 0.8);
@@ -402,7 +402,6 @@
   transform: rotate(90deg);
 }
 
-/* Keyboard focus ring — the only section close that was missing one */
 .blog-close:focus-visible {
   outline: 2px solid var(--decay-green);
   outline-offset: 4px;
@@ -487,11 +486,11 @@
     gap: 12px;
     align-items: flex-start;
   }
-  
+
   .blog-category-title {
     font-size: 1.2rem;
   }
-  
+
   .blog-map-btn {
     align-self: flex-end;
     padding: 8px 16px;
@@ -536,7 +535,7 @@
 .blog-category-view {
   position: absolute;
   inset: 0;
-  background: 
+  background:
     radial-gradient(ellipse 120% 120% at 85% 10%, rgba(45,212,175,0.04) 0%, transparent 50%),
     radial-gradient(ellipse 120% 120% at 10% 90%, rgba(255,122,51,0.03) 0%, transparent 50%),
     rgba(8,9,10,0.75);
@@ -556,7 +555,7 @@
 .blog-article-view {
   position: absolute;
   inset: 0;
-  background: 
+  background:
     radial-gradient(ellipse 120% 120% at 85% 10%, rgba(45,212,175,0.04) 0%, transparent 50%),
     radial-gradient(ellipse 120% 120% at 10% 90%, rgba(255,122,51,0.03) 0%, transparent 50%),
     rgba(8,9,10,0.75);
@@ -886,7 +885,7 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: clamp(60px, 15vh, 80px) 16px 24px;
-    background: 
+    background:
       radial-gradient(ellipse 120% 120% at 85% 10%, rgba(45,212,175,0.04) 0%, transparent 50%),
       radial-gradient(ellipse 120% 120% at 10% 90%, rgba(255,122,51,0.03) 0%, transparent 50%),
       rgba(8,9,10,0.75); /* Match altar-screen background for consistency */
@@ -906,7 +905,7 @@
     --edge-corrosion: #4a5a4a;
     --glass-tint: rgba(11, 12, 13, 0.88);
     --membrane: rgba(150, 120, 220, 0.04);
-    
+
     position: relative;
     display: flex;
     align-items: center;
@@ -915,9 +914,9 @@
     padding: 16px 18px;
     text-decoration: none;
     color: #C9C2B3;
-    
+
     /* Organic glass slide with etched edges */
-    background: 
+    background:
       /* Fingerprint smudge */
       radial-gradient(ellipse at 25% 30%, rgba(200, 180, 140, 0.02), transparent 45%),
       /* Specimen stain spreading from orb */
@@ -931,12 +930,12 @@
         var(--membrane) 4px
       ),
       /* Glass substrate */
-      linear-gradient(107deg, 
+      linear-gradient(107deg,
         var(--glass-tint),
         rgba(11, 12, 13, 0.92) 40%,
         var(--glass-tint)
       );
-    
+
     /* Corroded metal rim */
     border: 1.6px solid;
     border-image: linear-gradient(
@@ -947,23 +946,23 @@
       var(--edge-corrosion) 75%,
       #b99a5e 100%
     ) 1;
-    
+
     /* Irregular specimen edge */
     clip-path: polygon(
-      0.5% 2%, 98.5% 0%, 
+      0.5% 2%, 98.5% 0%,
       100% 98%, 1.5% 100%,
       0% calc(100% - 2px)
     );
-    
+
     border-radius: 4px;
-    
+
     /* Shadow with color bleed */
     box-shadow:
       0 0 0 0.5px rgba(0, 0, 0, 0.6) inset,
       0 4px 14px rgba(0, 0, 0, 0.7),
       0 0 32px var(--glow-color),
       0 16px 28px -8px var(--stain-shadow);
-    
+
     transition: transform 150ms ease, box-shadow 200ms ease;
   }
 
@@ -984,7 +983,7 @@
     height: 64px;
     border-radius: 50%;
     position: relative;
-    
+
     /* Dark infected colony with wrinkled grain texture */
     background:
       /* Mycelium grain pattern (organic noise) */
@@ -1010,32 +1009,32 @@
         transparent 8deg
       ),
       /* Dark infection veins */
-      radial-gradient(ellipse at 35% 30%, 
-        rgba(0, 0, 0, 0.35) 0%, 
+      radial-gradient(ellipse at 35% 30%,
+        rgba(0, 0, 0, 0.35) 0%,
         transparent 35%
       ),
-      radial-gradient(ellipse at 65% 70%, 
-        rgba(0, 0, 0, 0.3) 0%, 
+      radial-gradient(ellipse at 65% 70%,
+        rgba(0, 0, 0, 0.3) 0%,
         transparent 40%
       ),
       /* Dim luminous core */
-      radial-gradient(circle at 48% 45%, 
-        var(--orb-core) 0%, 
+      radial-gradient(circle at 48% 45%,
+        var(--orb-core) 0%,
         color-mix(in oklab, var(--orb-core), black 45%) 30%,
         transparent 58%
       ),
       /* Dark base membrane */
-      radial-gradient(circle at 50% 50%, 
+      radial-gradient(circle at 50% 50%,
         color-mix(in oklab, var(--orb-core), black 60%) 0%,
         color-mix(in oklab, var(--orb-core), black 75%) 70%,
         transparent 100%
       );
-    
+
     /* Subtle inner shadow for depth */
     box-shadow:
       inset 0 2px 8px rgba(0, 0, 0, 0.6),
       inset 0 -1px 4px rgba(0, 0, 0, 0.4);
-    
+
     filter: drop-shadow(0 0 14px var(--orb-glow));
     transform: translateZ(0);
     animation: colony-pulse var(--pulse-speed, 6s) ease-in-out infinite;
@@ -1045,7 +1044,7 @@
     content: '';
     position: absolute;
     inset: -20px;
-    background: 
+    background:
       /* Outer infection ring */
       radial-gradient(circle at 50% 50%,
         transparent 26%,
@@ -1154,30 +1153,30 @@
         0 0 48px var(--glow-color),
         0 20px 36px -8px var(--stain-shadow);
     }
-    
+
     .specimen-slide:hover .specimen-orb {
       animation-duration: calc(var(--pulse-speed) * 0.4);
     }
   }
 
   @keyframes colony-pulse {
-    0%, 100% { 
-      transform: scale(1); 
+    0%, 100% {
+      transform: scale(1);
       opacity: 0.9;
     }
-    50% { 
-      transform: scale(1.08); 
+    50% {
+      transform: scale(1.08);
       opacity: 1;
     }
   }
 
   @keyframes vein-spread {
-    0%, 100% { 
-      transform: scale(1) rotate(0deg); 
+    0%, 100% {
+      transform: scale(1) rotate(0deg);
       opacity: 0.3;
     }
-    50% { 
-      transform: scale(1.12) rotate(180deg); 
+    50% {
+      transform: scale(1.12) rotate(180deg);
       opacity: 0.5;
     }
   }
@@ -1187,7 +1186,7 @@
     .specimen-orb::after {
       animation: none;
     }
-    
+
     .specimen-slide {
       transition: none;
     }

@@ -1,19 +1,3 @@
-// "Living Culture" — the altar lens as a scrying petri dish (Skills).
-//
-// A small 2D-canvas colony of spore-points lives UNDER the glass of the Skills
-// examining lens. At rest it drifts and breathes; hover a specimen card and the
-// colony crystallises into THAT card's constellation — a different lit figure
-// per card, the same dots reorganising (never a swap/fade):
-//   Systems Thinking   -> a hub with six spokes (architecture)
-//   User Interface     -> a connected ring/mesh (surfaces, links)
-//   Scientific Rigor   -> a branching tree (hypothesis -> results)
-//   The rest of my life-> a loose scattered cluster with a few ties
-//
-// Progressive enhancement, house rules: decorative + aria-hidden (cards stay
-// the screen-reader truth), governor system 'altar-culture' (NOT an owner
-// section -> self-stops offscreen/hidden/paper-open/not-visible/<=900px),
-// reduced-motion/quiet -> one static frame, desktop only.
-
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, lerp, clamp } from './utils.js';
 
@@ -36,10 +20,7 @@ GLOW.width = GLOW.height = GLOW_SIZE;
 }
 
 
-// One constellation for every card (the hub-and-spokes the owner liked): nodes
-// in normalised coords (-1..1, y down) scaled by the formation radius; edges are
-// node-index pairs drawn as struts. The whole figure's centre is pulled toward
-// the hovered card (the "gravity").
+// Coordinates use -1 to 1 with Y down. Edges refer to node indices.
 const CONSTELLATION = {
   nodes: [[0, 0], [0, -1], [0.87, -0.5], [0.87, 0.5], [0, 1], [-0.87, 0.5], [-0.87, -0.5]],
   edges: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]],
@@ -57,13 +38,13 @@ function initAltarCulture(sectionId) {
   let cssW = 0, cssH = 0, cx = 0, cy = 0, R = 0;
   let lastTs = 0;
 
-  let mode = 'idle';                 // 'idle' | 'crystallise'
+  let mode = 'idle';
   const activeConst = CONSTELLATION;
   let hoveredCard = null;
   let reachX = 0, reachY = 0, reachTX = 0, reachTY = 0;
   let intensity = 0;                 // eased 0 idle -> 1 engaged
   let crystal = 0;                   // eased 0 -> 1 lattice/struts
-  let nodeWorld = [];                // live node positions (for struts)
+  let nodeWorld = [];
 
   const sectionActive = () => section.classList.contains('active-section');
   const lensVisible = () =>
@@ -84,7 +65,7 @@ function initAltarCulture(sectionId) {
     const h = Math.max(1, Math.round(lens.clientHeight));
     cssW = w; cssH = h; cx = w / 2; cy = h / 2; R = Math.min(w, h) / 2;
     sizeCanvas(canvas, { width: w, height: h, systemName: 'altar-culture', maxDpr: 2, minDpr: 1 });
-    makePoints(); // (re)seed the colony for the current size
+    makePoints();
   }
 
   function makePoints() {
@@ -115,7 +96,7 @@ function initAltarCulture(sectionId) {
     reachX += (reachTX - reachX) * 0.08;
     reachY += (reachTY - reachY) * 0.08;
 
-    const fx = cx + reachX * R * 0.34;   // pull the whole figure toward the card
+    const fx = cx + reachX * R * 0.34;
     const fy = cy + reachY * R * 0.34;
     const formR = R * 0.55;
 
@@ -127,7 +108,6 @@ function initAltarCulture(sectionId) {
     const ease = mode === 'crystallise' ? 0.1 : 0.05;
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
-      // idle "life": homes drift gently, reflecting inside the dish
       p.hx += p.hvx; p.hy += p.hvy;
       const dx = p.hx - cx, dy = p.hy - cy;
       const d = Math.hypot(dx, dy);
@@ -164,7 +144,6 @@ function initAltarCulture(sectionId) {
     ctx.arc(cx, cy, R * 0.97, 0, Math.PI * 2);
     ctx.clip();
 
-    // struts along the active constellation's edges
     if (crystal > 0.02) {
       ctx.lineWidth = 1;
       ctx.strokeStyle = `rgba(96,206,172,${0.24 * crystal})`;
@@ -207,9 +186,7 @@ function initAltarCulture(sectionId) {
   }
 
   function loop(ts) {
-    // Hard stop ONLY when the section is left (the observer restarts us on
-    // re-activation). Everything else is a transient pause: keep the loop alive
-    // (don't release) so it auto-resumes the moment it can draw again.
+    // Keep the loop alive during transient pauses so it can resume.
     if (!sectionActive()) { release(); rafId = null; return; }
     if (document.hidden || paperOpen() || !lensVisible()) {
       lastTs = ts;
@@ -238,9 +215,7 @@ function initAltarCulture(sectionId) {
   }
 
   function ensureLoop() {
-    // Start as soon as the section is active — NOT gated on lensVisible(), which
-    // can be transiently false right after activation (content-visibility). The
-    // loop waits for the lens to become measurable, then sizes + draws.
+    // The section can be active before the lens has measurable dimensions.
     if (!sectionActive()) return;
     if (prefersReducedMotion) {
       requestAnimationFrame(() => { if (sectionActive() && lensVisible()) renderStaticFrame(); });
@@ -297,8 +272,8 @@ function initAltarCulture(sectionId) {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!sectionActive()) return;
-      if (!lensVisible()) { stop(); return; } // e.g. shrunk to <=900px (lens hidden)
-      ensureLoop();                            // the loop re-sizes itself
+      if (!lensVisible()) { stop(); return; }
+      ensureLoop();
     }, 180);
   });
 

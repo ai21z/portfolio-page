@@ -127,4 +127,27 @@ test.describe('Contact form', () => {
     await expect(page.locator('[data-status]')).toHaveClass(/error/);
     await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
   });
+
+  test('keeps the message and shows an error when email delivery is rejected', async ({ page }) => {
+    await routeTurnstile(page);
+    await page.route('**/api/contact', route => route.fulfill({
+      status: 502,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Failed to deliver message. Please try again later.' })
+    }));
+
+    await page.goto('/index.html#contact');
+    await page.getByLabel('Your Name').fill('Test Visitor');
+    await page.getByLabel('Your Email').fill('visitor@example.test');
+    await page.getByLabel('Subject').fill('Please keep my message');
+    await page.getByLabel('Message').fill('This message must remain available after a failed send.');
+    await page.getByRole('button', { name: /send message/i }).click();
+
+    await expect(page.locator('[data-status]')).toHaveText('Failed to deliver message. Please try again later.');
+    await expect(page.locator('[data-status]')).toHaveClass(/error/);
+    await expect(page.getByLabel('Your Name')).toHaveValue('Test Visitor');
+    await expect(page.getByLabel('Your Email')).toHaveValue('visitor@example.test');
+    await expect(page.getByLabel('Subject')).toHaveValue('Please keep my message');
+    await expect(page.getByLabel('Message')).toHaveValue('This message must remain available after a failed send.');
+  });
 });

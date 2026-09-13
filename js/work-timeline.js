@@ -1,11 +1,3 @@
-// Work career rail: the interactive "core sample" that indexes the globe.
-//
-// Renders the TIMELINE as a scrollable vertical spine of dotted nodes. Hover or keyboard-
-// focus a node to read its field-note on the right; click a node to drive the globe (places
-// turn the Earth, projects frame a moon, credentials are note-only). The same nodes can be
-// re-sorted by year (default) or by type, morphing between layouts with a FLIP.
-// Coupling is decoupled: a click dispatches `work-timeline:select`; the globe listens.
-
 import { TIMELINE } from './work-globe/data/timeline.js?v=20260711';
 import { isCompact } from './compact.js';
 
@@ -60,8 +52,7 @@ export function initWorkTimeline() {
   const list = el('ol', 'work-rail-list');
   list.setAttribute('aria-label', 'Career timeline');
 
-  // Visual-only: the per-node identity is already in each rail button's aria-label, so the
-  // note carries no live region (a role=status here announced every node the pointer crossed).
+  // Button labels already announce milestones. A live region would repeat them on hover.
   const note = el('div', 'work-note');
   note.hidden = true;
 
@@ -104,8 +95,7 @@ export function initWorkTimeline() {
   }
 
   function selectNode(node, li) {
-    // Persistent highlight of the milestone the globe is focused on; the note itself
-    // stays hover/focus-driven so it always closes when you move away.
+    // Selection persists, but the note stays tied to hover or focus.
     list.querySelectorAll('.rail-node.is-selected').forEach((n) => {
       if (n !== li) n.classList.remove('is-selected');
     });
@@ -138,8 +128,6 @@ export function initWorkTimeline() {
       '<span class="rail-node-sub">' + node.subtitle + '</span>' +
       '</span>';
 
-    // Desktop: hover/focus reveals the side note, click drives the globe.
-    // Compact: no side note; a tap opens the centered modal card instead.
     btn.addEventListener('mouseenter', () => { if (!isCompact()) showNote(node, li); });
     btn.addEventListener('focus', () => { if (!isCompact()) showNote(node, li); });
     btn.addEventListener('mouseleave', hideNoteSoon);
@@ -221,7 +209,6 @@ export function initWorkTimeline() {
     modeBar.appendChild(b);
   });
 
-  // ---- compact view toggle: Timeline <-> Globe (hidden on desktop, where both show) ----
   let currentView = 'timeline';
   const toggle = el('div', 'work-view-toggle');
   toggle.setAttribute('role', 'group');
@@ -248,7 +235,6 @@ export function initWorkTimeline() {
     document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view } }));
   }
 
-  // ---- the field-note as a centered modal card (compact tap target) ----
   const backdrop = el('div', 'work-card-backdrop');
   backdrop.hidden = true;
   const card = el('div', 'work-card');
@@ -285,7 +271,7 @@ export function initWorkTimeline() {
     }
     if (cardCloseTimer) { clearTimeout(cardCloseTimer); cardCloseTimer = 0; }
     backdrop.hidden = false;
-    if (workSection) workSection.setAttribute('aria-hidden', 'true'); // background inert to assistive tech
+    if (workSection) workSection.setAttribute('aria-hidden', 'true');
     requestAnimationFrame(() => backdrop.classList.add('is-open'));
     cardClose.focus();
   }
@@ -320,7 +306,6 @@ export function initWorkTimeline() {
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
-  // Close the card when navigating away from Work or when the layout leaves compact.
   document.addEventListener('ui:close-overlays', () => closeCard({ restoreFocus: false }));
 
   scroll.appendChild(spine);
@@ -338,7 +323,7 @@ export function initWorkTimeline() {
   // Re-evaluate the globe's run/pause state when crossing the compact breakpoint.
   let viewResizeTimer = 0;
   window.addEventListener('resize', () => {
-    if (!isCompact()) closeCard({ restoreFocus: false }); // a card left open while widening to desktop
+    if (!isCompact()) closeCard({ restoreFocus: false });
     clearTimeout(viewResizeTimer);
     viewResizeTimer = window.setTimeout(() => {
       document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view: currentView } }));
@@ -347,7 +332,7 @@ export function initWorkTimeline() {
 
   scroll.addEventListener('scroll', () => {
     if (!scrollRaf) scrollRaf = requestAnimationFrame(markCentered);
-    // Keep a shown note glued to its node; hide it only once the node scrolls out of view.
+    // Hide the note when its node scrolls out of view.
     if (activeLi && note.classList.contains('is-visible')) {
       const sr = scroll.getBoundingClientRect();
       const lr = activeLi.getBoundingClientRect();

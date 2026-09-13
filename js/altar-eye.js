@@ -1,27 +1,10 @@
-// js/altar-eye.js — The Oracle's Eye for the About lens.
-//
-// The lens becomes a warm scrying eye under the glass — the "Art's paramour"
-// reading on every card: a teal fibre-iris with amber welling from a bottomless
-// pupil. The only thing that changes per card is which way the eye LOOKS: hover
-// or focus a card and the iris turns gently toward it.
-//
-// You peer INTO it, it never peers OUT at you. Guardrails keep it an instrument,
-// not a creature: the gaze leans but never snaps (eased slow, bounded); no
-// blink / tremor / pupil-pulse; plain damped lerp (no overshoot); the
-// catch-light (CSS .lens-glint) is glass, pinned, never tracking; the centre is
-// a bottomless well with a subordinate abyss-glow.
-//
-// House rules: decorative + aria-hidden, desktop-only (>900px; lens display:none
-// below), governor 'altar-eye', self-stops offscreen (about is not an owner
-// section), reduced-motion/quiet -> one calm OPEN static frame.
-
 import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, clamp } from './utils.js';
 
 const prefersReducedMotion =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const WARM = [255, 150, 74]; // the amber that wells from the pupil
+const WARM = [255, 150, 74];
 
 const GLOW = document.createElement('canvas');
 GLOW.width = GLOW.height = 32;
@@ -48,8 +31,8 @@ function initAltarEye(sectionId) {
   let motes = [];
 
   let mode = 'idle';
-  let motifT = 0;                 // 0 idle -> 1 engaged (brightness)
-  let gx = 0, gy = 0, tgx = 0, tgy = 0;   // gaze (eased), bounded
+  let motifT = 0;
+  let gx = 0, gy = 0, tgx = 0, tgy = 0;
   let dil = 1, tdil = 1;
   let hoveredCard = null;
 
@@ -94,7 +77,6 @@ function initAltarEye(sectionId) {
     cssW = 0; // force a fresh layout when the section is shown again
   }
 
-  // ---- drawing ----
   function drawBase(ox, oy, irisR, pupilR, breathe) {
     const lift = 0.32 + 0.18 * motifT;
     const base = ctx.createRadialGradient(ox, oy, pupilR * 0.6, ox, oy, irisR);
@@ -117,7 +99,6 @@ function initAltarEye(sectionId) {
     ctx.strokeStyle = `rgba(120,206,176,${(0.12 + 0.06 * motifT) * breathe})`;
     ctx.stroke();
 
-    // caustic collarette at the pupil edge
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineWidth = 2;
     ctx.strokeStyle = `rgba(150,235,205,${0.42 * breathe})`;
@@ -125,8 +106,6 @@ function initAltarEye(sectionId) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // the warm core glow welling from the pupil — gone by ~0.6*irisR (a gradient,
-  // never a solid disc) — plus slow devotional ripples.
   function coreGlow(ox, oy, irisR, pupilR) {
     const [r, g, bch] = WARM;
     const gi = 0.12 + 0.34 * motifT;
@@ -220,9 +199,7 @@ function initAltarEye(sectionId) {
   }
 
   function loop(ts) {
-    // Hard stop ONLY when the section is left — the observer restarts us on
-    // re-activation. Everything else is a transient pause: keep the loop alive
-    // (don't release the canvas) so it auto-resumes the moment it can draw.
+    // Keep the loop alive during transient pauses so it can resume.
     if (!sectionActive()) { release(); rafId = null; return; }
     if (document.hidden || paperOpen() || !lensVisible()) {
       lastTs = ts; // don't accumulate a huge dt across the pause
@@ -241,10 +218,7 @@ function initAltarEye(sectionId) {
   }
 
   function ensureLoop() {
-    // Start as soon as the section is active — NOT gated on lensVisible(), which
-    // can be transiently false right after activation (the section subtree is
-    // content-visibility:hidden until it reflows). The loop waits for the lens
-    // to become measurable, then sizes + draws.
+    // The section can be active before the lens has measurable dimensions.
     if (!sectionActive()) return;
     if (prefersReducedMotion) {
       requestAnimationFrame(() => { if (sectionActive() && lensVisible()) renderStaticFrame(); });
@@ -271,9 +245,9 @@ function initAltarEye(sectionId) {
   }
   function onHover(card) {
     hoveredCard = card;
-    tdil = 1.15;                              // a touch more open when attending
+    tdil = 1.15;
     const dir = dirToCard(card);
-    tgx = clamp(dir.x, -1, 1) * R * 0.11;     // look toward the card
+    tgx = clamp(dir.x, -1, 1) * R * 0.11;
     tgy = clamp(dir.y, -1, 1) * R * 0.11;
     mode = 'engaged';
     ensureLoop();
@@ -303,8 +277,8 @@ function initAltarEye(sectionId) {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!sectionActive()) return;
-      if (!lensVisible()) { stop(); return; } // e.g. shrunk to <=900px (lens hidden)
-      ensureLoop();                            // the loop re-sizes itself
+      if (!lensVisible()) { stop(); return; }
+      ensureLoop();
     }, 180);
   });
 

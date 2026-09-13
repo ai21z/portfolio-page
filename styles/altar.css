@@ -72,13 +72,9 @@
   transform: translate(-50%, -50%);
 }
 
-/* The examining lens — a convex glass loupe with a faint graticule, sitting
-   where the old portrait/sigil "core" used to be. The scattered specimen
-   papers are read under it. Decorative only (the .core wrapper is aria-hidden). */
 .altar-lens {
   position: relative;
-  /* Sized to sit inside the clear channel between the four corner specimens
-     so it never collides with a card; the soft aura gives it extra presence. */
+  /* Leave room between the lens and the corner cards. */
   width: min(19dvh, 22vw);
   aspect-ratio: 1;
   border-radius: 50%;
@@ -102,7 +98,6 @@
     0 14px 40px rgba(0,0,0,0.5);
 }
 
-/* Outer aura — gently breathes, and brightens when a specimen is examined */
 .altar-lens::before {
   content: '';
   position: absolute;
@@ -121,8 +116,7 @@
   pointer-events: none;
 }
 
-/* Living-culture scrying canvas — injected by altar-culture.js as the first
-   child so the colony renders UNDER the glass/reticle/glint spans. */
+/* Keep the canvas underneath the glass. */
 .lens-scry {
   position: absolute;
   inset: 0;
@@ -132,9 +126,7 @@
   pointer-events: none;
 }
 
-/* Oracle's Eye canvas (About) — injected by altar-eye.js under the glass
-   spans. The live eye is always visible while About is active (a faint
-   idle iris); it eases its own state in-canvas, so no CSS opacity gate. */
+/* The canvas controls its own opacity. */
 .lens-eye {
   position: absolute;
   inset: 0;
@@ -154,8 +146,6 @@
   mix-blend-mode: screen;
 }
 
-/* Loupe framing: a faint inner limbal ring (::after). The center crosshair
-   was removed — with a living iris/colony under the glass it only competed. */
 
 .lens-reticle::after {
   content: '';
@@ -201,32 +191,31 @@
   position: absolute;
   width: 36%;
   max-height: 45%;
-  
+
   /* Container queries: font sizes use cqi (% of card width) so they
      scale with the card itself, not the browser viewport/zoom */
   container-type: inline-size;
 
   /* Scaling factor for decorative geometry: always 1 (no JS writes --k) */
   --k: 1;
-  
+
   /* Padding variables (base values in px) */
   --pad-top: 14px;
   --pad-right: 16px;
   --pad-bottom: 16px;
   --pad-left: 30px; /* Extra left padding for spiral holes */
-  padding: calc(var(--pad-top) * var(--k)) calc(var(--pad-right) * var(--k)) 
+  padding: calc(var(--pad-top) * var(--k)) calc(var(--pad-right) * var(--k))
            calc(var(--pad-bottom) * var(--k)) calc(var(--pad-left) * var(--k));
-  
+
   color: var(--paper-ink);
-  
-  /* Ruled line spacing — scales with container width so lines match font size */
+
   --rule-gap: clamp(19px, 7.5cqi, 32px);
   --rule-thickness: 1px;
 
   /* Border radius variables (base values in px) */
   --br-tl-h: 8px; --br-tr-h: 3px; --br-br-h: 12px; --br-bl-h: 5px;
   --br-tl-v: 5px; --br-tr-v: 10px; --br-br-v: 7px; --br-bl-v: 15px;
-  
+
   /* Spiral holes variables */
   --hole-left: 16px;
   --hole-width: 14px;
@@ -259,9 +248,9 @@
   --after-speck-a: 8px;
   --after-speck-b: 6px;
   --after-speck-c: 10px;
-  
+
   /* Aged paper texture - matches contact form */
-  background: 
+  background:
     /* Subtle horizontal lines */
     repeating-linear-gradient(
       0deg,
@@ -306,18 +295,16 @@
       #DFD5B5 80%,
       #D5CBB0 100%
     );
-  
+
   border: none;
   /* Wrinkled, worn edges - scaled by --k */
-  border-radius: 
+  border-radius:
     calc(var(--br-tl-h) * var(--k)) calc(var(--br-tr-h) * var(--k))
     calc(var(--br-br-h) * var(--k)) calc(var(--br-bl-h) * var(--k)) /
     calc(var(--br-tl-v) * var(--k)) calc(var(--br-tr-v) * var(--k))
     calc(var(--br-br-v) * var(--k)) calc(var(--br-bl-v) * var(--k));
-  
-  /* Interior aging + a thin lit top edge so the sheet reads as a real,
-     thick page. The outer lift lives in `filter` below, because clip-path
-     (the torn edges) would clip an outer box-shadow away. */
+
+  /* Use filter for the outer shadow because clip-path clips box shadows. */
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.22),
     inset 0 0 calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
@@ -328,17 +315,17 @@
 
   /* Irregular paper edges */
   clip-path: polygon(
-    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
-    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%,
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%,
     65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
     100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
     75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
     35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
   );
-  
+
   overflow: hidden;
   position: absolute;
-  
+
   /* Compose transforms so we never lose the base translate */
   --rot: 0deg;
   --base-transform: rotate(var(--rot));
@@ -355,7 +342,7 @@
   left: calc(var(--hole-left) * var(--k));
   width: calc(var(--hole-width) * var(--k));
   height: 100%;
-  background-image: 
+  background-image:
     /* Individual holes - circular with inner shadow */
     radial-gradient(circle at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 45%, transparent 50%),
     radial-gradient(circle at center, #0B0B0C 0%, #0B0B0C 40%, transparent 41%);
@@ -377,35 +364,35 @@
     /* Large irregular coffee stains with spills */
   radial-gradient(ellipse calc(var(--after-large-rx) * var(--k)) calc(var(--after-large-ry) * var(--k)) at 82% 18%, rgba(101, 67, 33, 0.35) 0%, rgba(101, 67, 33, 0.2) 35%, transparent 60%),
   radial-gradient(ellipse calc(var(--after-medium-rx) * var(--k)) calc(var(--after-medium-ry) * var(--k)) at 85% 16%, rgba(101, 67, 33, 0.28) 0%, transparent 55%),
-    
+
     /* Medium irregular stains */
   radial-gradient(ellipse calc(var(--after-mid2-rx) * var(--k)) calc(var(--after-mid2-ry) * var(--k)) at 22% 28%, rgba(101, 67, 33, 0.3) 0%, rgba(101, 67, 33, 0.15) 40%, transparent 65%),
-    
+
     /* Small random spatter marks */
   radial-gradient(ellipse calc(var(--after-small-rx) * var(--k)) calc(var(--after-small-ry) * var(--k)) at 42% 15%, rgba(101, 67, 33, 0.22) 0%, transparent 65%),
   radial-gradient(circle calc(var(--after-circle-a) * var(--k)) at 58% 25%, rgba(101, 67, 33, 0.18) 0%, transparent 70%),
   radial-gradient(ellipse calc(var(--after-ellipse-c-rx) * var(--k)) calc(var(--after-ellipse-c-ry) * var(--k)) at 35% 48%, rgba(101, 67, 33, 0.2) 0%, transparent 68%),
   radial-gradient(circle calc(var(--after-circle-b) * var(--k)) at 68% 55%, rgba(101, 67, 33, 0.19) 0%, transparent 72%),
-    
+
     /* Tiny speckles */
   radial-gradient(circle calc(var(--after-speck-a) * var(--k)) at 25% 18%, rgba(101, 67, 33, 0.25) 0%, transparent 80%),
   radial-gradient(circle calc(var(--after-speck-b) * var(--k)) at 55% 38%, rgba(101, 67, 33, 0.22) 0%, transparent 85%),
   radial-gradient(circle calc(var(--after-speck-c) * var(--k)) at 65% 68%, rgba(101, 67, 33, 0.2) 0%, transparent 80%),
-    
+
     /* Edge wear */
     linear-gradient(to right, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%),
     linear-gradient(to left, rgba(101, 67, 33, 0.2) 0%, rgba(101, 67, 33, 0.06) 4%, transparent 8%),
     linear-gradient(to bottom, rgba(101, 67, 33, 0.22) 0%, rgba(101, 67, 33, 0.05) 5%, transparent 10%),
     linear-gradient(to top, rgba(101, 67, 33, 0.25) 0%, rgba(101, 67, 33, 0.08) 6%, transparent 12%);
   pointer-events: none;
-  border-radius: 
+  border-radius:
     calc(var(--br-tl-h) * var(--k)) calc(var(--br-tr-h) * var(--k))
     calc(var(--br-br-h) * var(--k)) calc(var(--br-bl-h) * var(--k)) /
     calc(var(--br-tl-v) * var(--k)) calc(var(--br-tr-v) * var(--k))
     calc(var(--br-br-v) * var(--k)) calc(var(--br-bl-v) * var(--k));
   clip-path: polygon(
-    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%, 
-    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%, 
+    0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%,
+    25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%,
     65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, 85% 0.8%, 90% 1%, 95% 0.5%, 98% 1%, 100% 2%,
     100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
     75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
@@ -414,7 +401,6 @@
 }
 
 .slab:hover:not(.paper-open) {
-  /* Lift off the altar and partly straighten the tilt — "pick me up to read" */
   transform: translateY(calc(-6px * var(--k))) rotate(calc(var(--rot) * 0.4)) scale(1.035);
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.3),
@@ -428,7 +414,7 @@
 
 .has-paper-open-global .slab:hover:not(.paper-open) {
   transform: var(--base-transform);
-  box-shadow: 
+  box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.5),
     inset 0 0 120px rgba(101, 67, 33, 0.3),
     inset -20px 0 40px rgba(101, 67, 33, 0.2);
@@ -441,7 +427,6 @@
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
   color: var(--paper-ink);
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
-  /* cqi = % of container (card) inline-size — immune to browser zoom changes */
   font-size: clamp(13.5px, 5cqi, 21px);
   position: relative;
   z-index: 1;
@@ -464,11 +449,7 @@
   z-index: 1;
 }
 
-/* The "What I value / Recent work" and "Systems Thinking" (11 tech chips)
-   cards carry the most text; with the raised readability floors they need a
-   little more height than the default 45% so their last items aren't clipped
-   (.slab is overflow:hidden). Desktop only, the <=900px blocks make every
-   card scroll/auto-height anyway. */
+/* Text-heavy cards need extra height to avoid clipping. */
 @media (min-width: 901px) {
   .slab-expertise,
   .slab-systems {
@@ -575,15 +556,7 @@
   z-index: 1;
 }
 
-/* ── Short desktop / laptop viewports: scale the specimen cards down to fit ──
-   The altar is min(92dvh, 88vw), so on a short laptop screen (e.g. a MacBook after
-   the menu bar + browser chrome) little vertical room is left, yet the content-tall
-   cards (the 11-chip Skills card, the What-I-value card) want many rows and tower
-   over their siblings. --k is the sanctioned decorative-geometry scale knob
-   (padding / margins / gaps / ruled lines) and the type uses cqi, so we lower BOTH
-   together — the four cards shrink as a unit and fit, improving balance without a
-   re-layout. Mirrors the hero's short-viewport pattern (components.css). Desktop /
-   fine-pointer only; the <=900px vertical-flow block below is untouched. */
+/* Scale both text and spacing on short desktop screens. */
 @media (min-width: 901px) and (max-height: 940px) and (pointer: fine) {
   .slab { --k: 0.86; }
   .slab h2, .slab h3 { font-size: clamp(11.5px, 4.3cqi, 20px); }
@@ -606,19 +579,19 @@
   --tech-pad-v: 3px;
   --tech-pad-h: 7px;
   padding: calc(var(--tech-pad-v) * var(--k)) calc(var(--tech-pad-h) * var(--k));
-  
+
   /* Pencil ink color - no background fill */
   background: transparent;
   color: #3a342e;
-  
+
   /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;
   border: calc(var(--tech-border) * var(--k)) solid rgba(60, 48, 38, 0.85);
   border-radius: 0;
-  
+
   font-weight: 400;
   letter-spacing: 0.03em;
-  
+
   /* Slightly crooked box to kill the "UI" feeling */
   transform: translateY(0.5px) rotate(-0.4deg) skewX(0.4deg);
   transition: transform 100ms ease, border-color 100ms ease;
@@ -630,7 +603,7 @@
   inset: -2px -3px;
   border: 1px solid rgba(60, 48, 38, 0.45);
   pointer-events: none;
-  
+
   /* Static "tremble" effect */
   transform: translate(1.2px, 0.8px) rotate(0.9deg) skewX(-0.6deg);
 }
@@ -771,10 +744,7 @@
 }
 
 .nav-suppressed #bg-front-img {
-  /* Dimmed behind the cards but still visible. The old 0.35 / brightness(0.7) over the
-     lighten blend went fully invisible on colour-managed macOS P3 displays (the network the
-     user reported "not showing"); with the screen blend (inherited from the base rule) a small
-     lift keeps it subdued behind content yet actually present on every display. */
+  /* Keep enough brightness for the network on color-managed displays. */
   opacity: 0.44 !important;
   filter: contrast(1.15) brightness(0.82);
 }
@@ -829,9 +799,7 @@
   }
 }
 
-/* Flow layout for phones, portrait/square tablets, and any touch tablet.
-   Matches the landing trigger in layout.css so the corner-pinned slabs
-   collapse to a centered vertical stack on tablets too. */
+/* Keep this breakpoint aligned with layout.css. */
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),
        (max-width: 1366px) and (pointer: coarse) {
@@ -854,9 +822,7 @@
     position: static !important;
     inset: auto !important;
 
-    /* Size to the container (not 100vw): the altar sits inset from the section edge, so a
-       viewport-width card overflowed and margin:auto could not centre it. Leave room for the
-       rotated corners so the tilt does not clip. */
+    /* Use container width and leave room for the rotated corners. */
     --tilt-bleed: 24px;
     width: calc(100% - var(--tilt-bleed)) !important;
     max-width: 540px !important;
@@ -927,9 +893,7 @@
     position: static !important;
     inset: auto !important;
 
-    /* Size to the container (not 100vw): the altar sits inset from the section edge, so a
-       viewport-width card overflowed and margin:auto could not centre it. Leave room for the
-       rotated corners so the tilt does not clip. */
+    /* Use container width and leave room for the rotated corners. */
     --tilt-bleed: 24px;
     width: calc(100% - var(--tilt-bleed)) !important;
     max-width: 540px !important;
@@ -990,24 +954,17 @@
     transform: none;
     clip-path: none;
   }
-  
+
   .altar::after {
     animation: none;
   }
-  
+
   .spore animateMotion,
   .spore mpath {
     display: none;
   }
 }
 
-/* ============================================================
-   Properly grimy, hand-drawn aged paper — additive over the original
-   pencil-sketch cards (#skills / #about). Grubbier paper + an SVG grime
-   layer (sketchy cross-hatch, ink smudges, cracks, specks; roughened by
-   displacement so it reads hand-drawn, not photographic). Delete this
-   block + artifacts/textures/handgrime.svg to restore the clean paper.
-   ============================================================ */
 /* target .slab.paper globally (not #skills/#about) so the override follows a card when
    openPaper() reparents it into the body-level overlay (the zoomed view) */
 .slab.paper {

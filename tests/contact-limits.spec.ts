@@ -15,10 +15,6 @@ function match(re: RegExp, text: string, label: string): [number, number] {
   return [Number(m[1]), Number(m[2])];
 }
 
-// The contact form validates lengths twice: once in the browser module
-// (js/contact.js) and once in the Cloudflare Pages Function (functions/api/
-// contact.js). They have no shared import path, so this guards against the two
-// silently drifting apart.
 test('contact form length limits agree between client and server', () => {
   const client = readText('js/contact.js');
   const server = readText('functions/api/contact.js');

@@ -5,6 +5,7 @@ const useExternalBaseURL = Boolean(process.env.BASE_URL || process.env.PLAYWRIGH
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: '**/unit/**',
   timeout: 30_000,
   expect: {
     timeout: 5_000

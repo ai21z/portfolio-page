@@ -33,28 +33,4 @@ export const PROJECTS = [
     glowIntensity: 0.3,
     pulseSpeed: 0.5
   }
-  
-  // Future projects (2-4 maximum with current design):
-  // Add new projects here with staggered initialAngle values
-  // Recommended angles:
-  //   2 projects: [0°, 180°]
-  //   3 projects: [0°, 120°, 240°]
-  //   4 projects: [0°, 90°, 180°, 270°]
-  //
-  // Example:
-  // {
-  //   id: 'project-2',
-  //   name: 'Second Project',
-  //   description: '...',
-  //   tech: ['React', 'TypeScript', 'Node.js'],
-  //   github: 'https://github.com/...',
-  //   initialAngle: 120,
-  //   orbitRadius: 1.65,
-  //   orbitTilt: -8,
-  //   rotationSpeed: 4.0,
-  //   color: [0.95, 0.55, 0.25],
-  //   moonRadius: 0.18,
-  //   glowIntensity: 0.3,
-  //   pulseSpeed: 0.5
-  // }
 ];

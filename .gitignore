@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 
 # Python cache
 __pycache__/
@@ -17,14 +16,20 @@ Thumbs.db
 .vscode/
 .idea/
 .wrangler/
+.claude/
+.codex/
+.env
+.env.*
+.dev.vars
+.dev.vars.*
 
-
-# Build outputs (if any)
+# Build outputs
 dist/
 build/
 
 # Test outputs
 test-results/
+playwright-report/
 artifacts/audit-screenshots/
 artifacts/browser-use-manual/
 artifacts/manual-test/
@@ -38,8 +43,9 @@ yarn-debug.log*
 yarn-error.log*
 .vercel
 
-# Private documentation (contains sensitive setup info)
+# Private notes
 docs/local/
+docs/superpowers/
 
 # Cleanup tracking (temporary)
 CLEANUP-PENDING.md

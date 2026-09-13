@@ -48,7 +48,7 @@ test('large runtime images have WebP variants referenced by the app', () => {
 
   expect(html).toContain('bg_base.webp');
   expect(html).toContain('myOminousGreenPortrait.webp');
-  expect(html).toContain('no-bg-seal-sigil.webp');
+  expect(html).toContain('no-bg-seal-sigil-512.webp');
   expect(globe).toContain('ominus-earth.webp');
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
@@ -62,7 +62,6 @@ test('below-the-fold feature modules are lazy-loaded by section', () => {
 
   expect(html).not.toContain('src="./js/blog-network-webgl.js"');
   expect(html).not.toContain('src="./js/work-globe-webgl.js"');
-  // version-tolerant: matches both bare and ?v= cache-busted dynamic imports
   expect(app).toContain("import('./blog-network-webgl.js");
   expect(app).toContain("import('./work-globe-webgl.js");
 });
@@ -165,6 +164,12 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   expect(legacyMatches).toEqual([]);
 });
 
+test('responsive images stay smaller than their full-size sources', () => {
+  expect(sizeOf('myOminousGreenPortrait-480.webp')).toBeLessThan(90_000);
+  expect(sizeOf('myOminousGreenPortrait-800.webp')).toBeLessThan(sizeOf('myOminousGreenPortrait.webp') * 0.6);
+  expect(sizeOf('artifacts/sigil/no-bg-seal-sigil-512.webp')).toBeLessThan(80_000);
+});
+
 test('public discovery files identify the canonical portfolio URL', () => {
   const robots = readText('robots.txt');
   const sitemap = readText('sitemap.xml');
@@ -224,7 +229,8 @@ test('repository documentation matches the Cloudflare Pages deployment', () => {
 
   expect(readme).toContain('[zounarakis.com](https://zounarakis.com)');
   expect(readme).toContain('Cloudflare Pages Functions');
-  expect(readme).toContain('npx wrangler pages deploy . --project-name personal-webpage --branch master');
+  expect(readme).toContain('wrangler pages deploy dist --project-name personal-webpage --branch master');
+  expect(readme).not.toContain('pages deploy . --');
   expect(readme).toContain('functions/');
   expect(readme).not.toContain('Vercel');
 });

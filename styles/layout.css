@@ -3,8 +3,8 @@
 .stage{
   position:fixed;
   inset:0;
-  width:100%; 
-  min-height:100dvh; 
+  width:100%;
+  min-height:100dvh;
   overflow-y:auto;
   overflow-x:hidden;
   opacity:0;
@@ -76,7 +76,7 @@
 
 .grid{
   position:relative; z-index:2;
-  display:grid; 
+  display:grid;
   grid-template-columns: repeat(12, 1fr);
   grid-template-rows: 1fr auto auto auto 1fr auto;
   gap: 0;
@@ -126,22 +126,13 @@
   }
 }
 
-/* Vertical-flow layout. Fires for phones (<=900), portrait/square tablets up to
-   1199 (catches iPad Pro 12.9 portrait at 1024x1366), and any touch device up to
-   1366 in either orientation (catches landscape tablets, e.g. 11" Android).
-   Real desktops keep the wide grid below: they are pointer:fine and landscape. */
+/* Match the compact query used by JavaScript. */
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),
        (max-width: 1366px) and (pointer: coarse) {
   .grid{
     grid-template-columns: 1fr;
-    /* Vertical rhythm: content-sized tracks + center the cohesive group, so the slack
-       no longer dumps into one ~490px band below the intro. The whole cluster (sigils,
-       name, portrait, intro, footer) sits centered with balanced breathing above and
-       below, instead of clinging to the top. "safe" falls back to top alignment if
-       content ever exceeds the viewport (short/landscape tablets scroll, never clip).
-       Phones (<=900px) use navigation.css:339's 7-track template with a 1fr spacer,
-       which keeps this align-content inert there, so the phone layout is unchanged. */
+    /* Safe centering falls back to top alignment when content exceeds the viewport. */
     grid-template-rows: auto auto auto auto auto auto;
     align-content: safe center;
     gap: calc(var(--gap) * 2);
@@ -149,26 +140,26 @@
     padding-top: max(var(--gap), env(safe-area-inset-top, 0)); /* Safe area for notch */
     text-align: center; /* Center all text on mobile */
   }
-  
+
   .living-sigils {
     grid-column: 1;
     grid-row: 1; /* Place bubbles in first row */
     justify-self: center; /* Let the nav size to its content and center itself */
   }
-  
-  
+
+
   .name {
     grid-column: 1 / -1 !important;
     place-self: start center !important;
     display: block;
     margin: 0 auto;
     text-align: center !important;
-    white-space: normal !important;        
-    inline-size: clamp(14ch, 92vw, 20ch); 
-    text-wrap: balance;                    
+    white-space: normal !important;
+    inline-size: clamp(14ch, 92vw, 20ch);
+    text-wrap: balance;
   }
-  
-  
+
+
   .portrait-wrap {
     grid-column: 1 / -1 !important;
     place-self: center !important;          /* align-self + justify-self */
@@ -177,7 +168,7 @@
     justify-content: center;                 /* horizontal center */
     margin: calc(var(--gap) * 1.5) auto;
   }
-  
+
   .portrait {
     display: block;
     margin-inline: auto;                     /* center inside wrapper */
@@ -186,7 +177,7 @@
     height: auto;
     filter: brightness(1.15) !important;
   }
-  
+
   .text-column{
     grid-column: 1;
     grid-row: 4; /* Text follows portrait */
@@ -196,7 +187,7 @@
     gap: calc(var(--gap) * 1.5);
     max-width: 90vw; /* Prevent text from hitting edges */
   }
-  
+
   .tape{
     max-width: 100%;
     text-align: center;
@@ -204,7 +195,7 @@
     overflow-wrap: break-word;
     hyphens: auto;
   }
-  
+
   .foot{
     grid-row: 6; /* Shift footer to row 6 */
     flex-direction: column;
@@ -216,31 +207,31 @@
     padding: var(--gap) var(--gap-small) var(--gap-small) var(--gap-small); /* Add padding to prevent cutoff */
     font-size: 14px; /* Slightly smaller on mobile */
   }
-  
+
   .foot > * {
     text-align: center;
     width: 100%;
     margin: 0 auto;
   }
-  
+
   .foot small {
     display: block;
     text-align: center;
     width: 100%;
     line-height: 1.6;
   }
-  
+
   .foot-coords {
     display: block;
     text-align: center;
     width: 100%;
     font-size: 12px; /* Smaller coords on mobile */
   }
-  
+
   .footer-sigil {
     height: 3em; /* Smaller sigil on mobile */
   }
-  
+
   .foot::after {
     font-size: 9px;
   }
@@ -253,7 +244,7 @@
   .network-node-label{
     font-size:11px;
   }
-  
+
 }
 
 @media (max-width: 360px) {
@@ -272,15 +263,15 @@
   .grid {
     gap: var(--gap); /* Tighter row gaps on narrow screens */
   }
-  
+
   .portrait {
     max-width: min(240px, 85vw); /* Smallest size for Galaxy S8/Fold */
   }
-  
+
   .name {
     font-size: clamp(28px, 8vw, 36px); /* Slightly smaller on ultra-narrow */
   }
-  
+
   .text-column {
     font-size: 15px; /* Slightly smaller body text */
   }
@@ -310,12 +301,12 @@
     padding-top: max(var(--gap-small), env(safe-area-inset-top, 0));
     gap: var(--gap);
   }
-  
+
   .text-column {
     max-width: 95vw; /* Use more width on tiny screens */
     gap: var(--gap);
   }
-  
+
   .foot {
     padding: var(--gap-small);
     font-size: 13px;
@@ -331,7 +322,7 @@
     min-height: 44px;
     padding-inline: 4px;
   }
-  
+
 }
 
 /* === Mobile fixes ======================================================= */

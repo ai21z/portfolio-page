@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#0B0B0C" />
   <link rel="canonical" href="https://zounarakis.com/" />
   <link rel="sitemap" type="application/xml" href="https://zounarakis.com/sitemap.xml" />
-  
+
   <!-- Open Graph -->
   <meta property="og:title" content="Aris Zounarakis | Software Engineer in Barcelona" />
   <meta property="og:description" content="Aris Zounarakis is a Barcelona based software engineer at ADP working on global HCM/payroll systems across full stack product and platform tooling." />
@@ -68,31 +68,28 @@
     ]
   }
   </script>
-  
+
   <!-- Icons -->
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="./icons/favicon-48.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-180.png" />
   <link rel="mask-icon" href="./icons/pinned-tab.svg" color="#0B0B0C" />
-  
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="./manifest.json" />
-  
+
   <!-- Preload critical resources -->
   <link rel="preload" href="./styles/main.css?v=20260632" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
-  <!-- The portrait is the LCP element. Preload it so its fetch starts at the top of the document
-       instead of after CSS + body parse (~520 lines down) — the main cause of the slow mobile LCP.
-       The URL must match the <source>/<img> exactly (same ?v=20260631 token) so it dedupes. -->
-  <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=20260631" type="image/webp" fetchpriority="high" />
-  <link rel="preload" as="image" href="./artifacts/sigil/no-bg-seal-sigil.webp" />
+  <!-- Match the portrait source so the preload is reused. -->
+  <link rel="preload" as="image" href="./myOminousGreenPortrait-800.webp" media="(max-width: 900px)" imagesrcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v=20260631 1024w" imagesizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=20260631" media="(min-width: 901px)" type="image/webp" fetchpriority="high" />
 
   <link rel="stylesheet" href="./styles/main.css?v=20260632" />
   <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260501-graphics" />
 
-  <!-- Threshold (opening gateway + graphics-reload cover). Critical + inline so
-       the veil paints before anything else; lifted by the inline script below. -->
+  <!-- Inline the loading cover so it paints before the page. -->
   <style>
     .threshold{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;pointer-events:none;
       background:radial-gradient(120% 90% at 50% 44%,rgba(22,40,36,0.42),transparent 58%),
@@ -109,7 +106,7 @@
     @keyframes thr-grow{to{stroke-dashoffset:0}}
     .threshold__seal{position:absolute;inset:17%;background:center/contain no-repeat;
       background-image:url("./artifacts/sigil/no-bg-seal-sigil.png");
-      background-image:image-set(url("./artifacts/sigil/no-bg-seal-sigil.webp") type("image/webp"),url("./artifacts/sigil/no-bg-seal-sigil.png") type("image/png"));
+      background-image:image-set(url("./artifacts/sigil/no-bg-seal-sigil-512.webp") type("image/webp"),url("./artifacts/sigil/no-bg-seal-sigil.png") type("image/png"));
       opacity:0;filter:contrast(1.08) brightness(0.96);animation:thr-etch 900ms ease forwards 150ms}
     @keyframes thr-etch{to{opacity:0.92}}
     @media (prefers-reduced-motion:reduce){
@@ -122,9 +119,6 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
-  <!-- Threshold: a brief opening on load; also covers the graphics-profile reload.
-       The "loading" is the culture waking: mycelial filaments grow inward and
-       anastomose onto the seal (which etches in), then the veil lifts. -->
   <div class="threshold" id="threshold" aria-hidden="true">
     <div class="threshold__plate">
       <svg class="threshold__svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
@@ -153,9 +147,7 @@
       var MIN = 650, CAP = 1200, lifted = false;
       function done() { el.classList.add('threshold--done'); el.removeEventListener('transitionend', done); }
       function lift() { if (lifted) return; lifted = true; el.classList.add('threshold--lifted'); el.addEventListener('transitionend', done); setTimeout(done, 900); }
-      // Lift shortly after the DOM is ready (not window.load, which waits on all
-      // images) so the opening is brief; the veil is pointer-events:none so it
-      // never blocks interaction. CAP is an absolute backstop.
+      // Do not wait for images before revealing the page.
       function schedule() { setTimeout(lift, MIN); }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule); else schedule();
       setTimeout(lift, CAP);
@@ -173,11 +165,11 @@
       <img id="bg-front-img" src="./artifacts/bg_base.png" alt="" width="1920" height="1080" decoding="async" fetchpriority="low" />
     </picture>
   </div>
-  
+
   <!-- Canvases: spores + reveal (split for performance) -->
   <canvas id="spore-canvas" aria-hidden="true"></canvas>
   <canvas id="reveal-canvas" aria-hidden="true"></canvas>
-  
+
   <!-- Network Navigation Nodes (rendered via JS with smart placement) -->
   <div id="network-nav" role="navigation" aria-label="Main navigation"></div>
 
@@ -245,19 +237,19 @@
             <filter id="spore-comet-fx" x="-300%" y="-300%" width="700%" height="700%">
               <!-- Create directional motion blur (horizontal tail) -->
               <feGaussianBlur in="SourceAlpha" stdDeviation="8 2" result="blur-tail" />
-              
+
               <!-- Color the tail electric teal/cyan -->
               <feFlood flood-color="rgba(63,255,159,0.8)" result="teal-color" />
               <feComposite in="teal-color" in2="blur-tail" operator="in" result="teal-tail" />
-              
+
               <!-- Add cyan/blue tint -->
               <feFlood flood-color="rgba(143,180,255,0.6)" result="cyan-color" />
               <feGaussianBlur in="SourceAlpha" stdDeviation="5 1.5" result="blur-mid" />
               <feComposite in="cyan-color" in2="blur-mid" operator="in" result="cyan-glow" />
-              
+
               <!-- Sharp spore core with glow -->
               <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="core-glow" />
-              
+
               <!-- Stack: tail (back) → mid glow → core glow → sharp core (front) -->
               <feMerge>
                 <feMergeNode in="teal-tail" />
@@ -313,7 +305,7 @@
           <circle class="burst-spore burst-right-8" cx="380" cy="40" r="2" fill="rgba(63,255,159,0.88)" />
 
           <!-- thin entangled tendrils - now converging on hubs -->
-          
+
           <!-- Left hub convergence - all tendrils meet at x:20, y:40 -->
           <path
             d="M 20 40 C 38 33, 52 48, 70 42 C 88 37, 105 45, 122 40"
@@ -322,7 +314,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 20 40 C 50 26, 95 55, 140 38 C 175 25, 210 42, 240 35"
             stroke="rgba(143,180,255,0.16)"
@@ -330,7 +322,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 20 40 C 55 22, 88 50, 128 35 C 165 22, 200 38, 235 28"
             stroke="rgba(63,255,159,0.12)"
@@ -338,7 +330,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 20 40 C 45 52, 82 38, 122 48 C 158 58, 195 44, 230 52"
             stroke="rgba(143,180,255,0.13)"
@@ -346,7 +338,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 20 40 C 62 48, 98 34, 138 45 C 175 55, 210 42, 245 50"
             stroke="rgba(63,255,159,0.11)"
@@ -354,7 +346,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 20 40 C 48 30, 75 46, 108 32 C 142 20, 178 36, 215 28"
             stroke="rgba(143,180,255,0.10)"
@@ -371,7 +363,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 240 45 C 280 32, 320 52, 350 38 C 365 32, 380 40, 380 40"
             stroke="rgba(63,255,159,0.16)"
@@ -379,7 +371,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 250 28 C 288 20, 325 35, 355 28 C 368 25, 380 40, 380 40"
             stroke="rgba(143,180,255,0.12)"
@@ -387,7 +379,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 245 52 C 285 58, 325 45, 358 52 C 370 55, 380 40, 380 40"
             stroke="rgba(63,255,159,0.13)"
@@ -395,7 +387,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 255 48 C 295 55, 332 42, 362 48 C 372 50, 380 40, 380 40"
             stroke="rgba(143,180,255,0.11)"
@@ -403,7 +395,7 @@
             stroke-linecap="round"
             fill="none"
             filter="url(#myco-tendril-fx)" />
-          
+
           <path
             d="M 265 32 C 300 24, 335 38, 360 32 C 370 30, 380 40, 380 40"
             stroke="rgba(63,255,159,0.10)"
@@ -452,16 +444,16 @@
           <circle class="spore-travel spore-left-1" r="1.8" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-left-2" r="1.6" fill="rgba(143,180,255,0.75)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-left-3" r="2.0" fill="rgba(63,255,159,0.8)" filter="url(#spore-comet-fx)" />
-          
+
           <!-- traveling spores - LOWER RAIL (from right) -->
           <circle class="spore-travel spore-right-1" r="1.7" fill="rgba(143,180,255,0.8)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-right-2" r="1.9" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-right-3" r="1.6" fill="rgba(143,180,255,0.75)" filter="url(#spore-comet-fx)" />
-          
+
           <!-- traveling spores - UPPER RAIL (from left) -->
           <circle class="spore-travel spore-upper-left-1" r="1.7" fill="rgba(143,180,255,0.85)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-upper-left-2" r="1.8" fill="rgba(63,255,159,0.8)" filter="url(#spore-comet-fx)" />
-          
+
           <!-- traveling spores - UPPER RAIL (from right) -->
           <circle class="spore-travel spore-upper-right-1" r="1.8" fill="rgba(63,255,159,0.85)" filter="url(#spore-comet-fx)" />
           <circle class="spore-travel spore-upper-right-2" r="1.6" fill="rgba(143,180,255,0.8)" filter="url(#spore-comet-fx)" />
@@ -476,7 +468,7 @@
                   aria-controls="necro-menu"
                   aria-expanded="false">
             <picture>
-              <source srcset="./artifacts/sigil/no-bg-seal-sigil.webp" type="image/webp" />
+              <source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" />
               <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" width="1024" height="1024" decoding="async" />
             </picture>
             <svg class="myco-sigil-label" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
@@ -506,7 +498,7 @@
         <svg class="sigil-vine" viewBox="0 0 4 100" preserveAspectRatio="none" aria-hidden="true">
           <path d="M2,0 Q1,25 2,50 Q3,75 2,100" stroke="rgba(63,255,159,0.15)" stroke-width="0.5" fill="none"/>
         </svg>
-        
+
         <!-- Vial 1: GitHub -->
         <a href="https://github.com/ai21z" class="sigil-vial" aria-label="GitHub" target="_blank" rel="me noopener noreferrer">
           <div class="vial-container">
@@ -519,7 +511,7 @@
             </div>
           </div>
         </a>
-        
+
         <!-- Vial 2: LinkedIn -->
         <a href="https://www.linkedin.com/in/vissarion-aris-zounarakis/" class="sigil-vial" aria-label="LinkedIn" target="_blank" rel="me noopener noreferrer">
           <div class="vial-container">
@@ -532,7 +524,7 @@
             </div>
           </div>
         </a>
-        
+
         <!-- Vial 3: Email -->
         <a href="mailto:aris@zounarakis.com" class="sigil-vial" aria-label="Email">
           <div class="vial-container">
@@ -545,7 +537,7 @@
             </div>
           </div>
         </a>
-        
+
         <!-- Vial 4: Resume Download (PDF) -->
         <a href="./artifacts/resume/Vissarion_Aris_Zounarakis_Software_Engineer_Resume.pdf"
            class="sigil-vial"
@@ -582,6 +574,7 @@
       <!-- Portrait -->
       <figure class="portrait-wrap">
         <picture>
+          <source media="(max-width: 900px)" srcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v=20260631 1024w" sizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" />
           <source srcset="./myOminousGreenPortrait.webp?v=20260631" type="image/webp" />
           <img src="./myOminousGreenPortrait.png?v=20260631" alt="Aris Zounarakis portrait" class="portrait" width="380" height="380" decoding="async" fetchpriority="high" />
         </picture>
@@ -597,11 +590,11 @@
       <!-- Footer (grid row 4) -->
       <footer class="foot" aria-label="Footer">
         <small>
-            Lovecrafted by · <picture><source srcset="./artifacts/sigil/no-bg-seal-sigil.webp" type="image/webp" /><img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" loading="lazy" decoding="async" /></picture> · Aris Zounarakis 2026 · <a href="mailto:aris@zounarakis.com" aria-label="Email Aris" style="color: var(--necrotic);">email me</a>
+            Lovecrafted by · <picture><source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" /><img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" loading="lazy" decoding="async" /></picture> · Aris Zounarakis 2026 · <a href="mailto:aris@zounarakis.com" aria-label="Email Aris" style="color: var(--necrotic);">email me</a>
         </small>
         <span class="foot-coords">41.3874° N, 2.1686° E</span>
       </footer>
-      
+
       <!-- Portrait particle effect (desktop only) -->
       <script type="module" src="./js/portrait-particles.js"></script>
     </section>
@@ -662,7 +655,6 @@
         </circle>
       </svg>
 
-      <!-- Examining lens — the altar centerpiece (specimens are read under it) -->
       <div class="core" aria-hidden="true">
         <div class="altar-lens">
           <span class="lens-glass"></span>
@@ -760,7 +752,6 @@
         </circle>
       </svg>
 
-      <!-- Examining lens — the altar centerpiece (specimens are read under it) -->
       <div class="core" aria-hidden="true">
         <div class="altar-lens">
           <span class="lens-glass"></span>
@@ -829,7 +820,6 @@
     </div>
   </section>
 
-  <!-- (Now section removed; its content lives on the Work globe + timeline) -->
 
   <!-- SECTION: BLOG (Mycelium Network - Petri Dish) -->
   <section id="blog" class="stage blog-screen blog-stage panel-screen" data-section="blog" data-mode="map" aria-label="Blog" tabindex="-1">
@@ -841,12 +831,12 @@
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
       <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
     </nav>
-    
+
     <!-- Intro Caption -->
     <div class="blog-intro-caption" aria-hidden="true">
       <strong>Petri Dish</strong>. A living network. Hover rim labels or hubs to preview, click to enter.
     </div>
-    
+
     <!-- Necrographic Memorandum (Desktop - aged notebook paper style) -->
     <aside class="blog-memorandum" aria-label="Hub descriptions">
       <div class="blog-memo-header">
@@ -871,10 +861,10 @@
         </li>
       </ul>
     </aside>
-    
+
     <!-- SR-only status for hover announcements -->
     <div id="hub-status" class="sr-only" aria-live="polite"></div>
-    
+
     <!-- Mobile Specimen Grid (only visible on mobile ≤900px) -->
     <div class="blog-mobile">
       <div class="blog-specimen-grid">
@@ -911,7 +901,7 @@
         </a>
       </div>
     </div>
-    
+
     <!-- Dish-first map container (desktop only) -->
     <div id="blog-map" class="blog-map">
       <!-- WebGL Canvas (base layer, z:20) -->
@@ -919,14 +909,14 @@
         <!-- Fallback for browsers without WebGL2 -->
         <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the blog network visualization.</p>
       </canvas>
-      
+
       <!-- Petri dish overlay (visual only, z:30) -->
       <svg id="dish" class="dish" aria-hidden="true"></svg>
-      
+
       <!-- Rim labels (clickable, z:40) -->
       <div id="dish-labels" class="dish-labels" aria-label="Blog categories"></div>
     </div>
-    
+
     <!-- Category View (hidden by default) -->
     <div id="blog-category-view" class="blog-category-view category-panel" hidden>
       <!-- Top Navigation Bar -->
@@ -947,7 +937,7 @@
       </div>
       <div id="blog-category-content" class="blog-category-content"></div>
     </div>
-    
+
     <!-- Article View (hidden by default) -->
     <div id="blog-article-view" class="blog-article-view category-panel" hidden>
       <!-- Top Navigation Bar -->
@@ -963,46 +953,44 @@
         <button class="blog-nav-link" data-hub="convergence">Convergence</button>
       </nav>
       <button id="btn-map-article" class="blog-map-btn" aria-label="Go back">Back</button>
-      
+
       <article id="blog-article-content" class="blog-article-content"></article>
     </div>
-    
+
     <!-- Article Scroll Navigation (outside article-view to fix position:fixed with backdrop-filter) -->
     <nav class="article-scroll-nav" aria-label="Article scroll navigation">
-      <!-- Inline SVG chevrons (not Unicode arrows): U+2BED/U+1F805/U+1F807/U+2BEF have no glyph
-           in the macOS monospace font fallback and rendered as .notdef tofu. SVG is font-independent
-           and inherits the button's green via stroke="currentColor". -->
+      <!-- SVG arrows avoid missing glyphs in macOS font fallbacks. -->
       <button class="scroll-nav-btn" data-action="top" aria-label="Scroll to top"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 8 4.5 12 8.5"/><path d="M4 12.5 8 8.5 12 12.5"/></svg></button>
       <button class="scroll-nav-btn" data-action="up" aria-label="Scroll up"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 6.5 12 10.5"/></svg></button>
       <button class="scroll-nav-btn" data-action="down" aria-label="Scroll down"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5 8 9.5 12 5.5"/></svg></button>
       <button class="scroll-nav-btn" data-action="bottom" aria-label="Scroll to bottom"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5 8 7.5 12 3.5"/><path d="M4 7.5 8 11.5 12 7.5"/></svg></button>
     </nav>
-    
+
     <!-- Memorandum Hover Interactions -->
     <script type="module">
       // Memorandum items trigger same hover effects as petri dish
       document.querySelectorAll('.blog-memo-item').forEach(item => {
         const hubId = item.dataset.hub;
-        
+
         item.addEventListener('mouseenter', () => {
-          window.dispatchEvent(new CustomEvent('blog:hover', { 
-            detail: { hubId, source: 'memo' } 
+          window.dispatchEvent(new CustomEvent('blog:hover', {
+            detail: { hubId, source: 'memo' }
           }));
         });
-        
+
         item.addEventListener('mouseleave', () => {
-          window.dispatchEvent(new CustomEvent('blog:hover-off', { 
-            detail: { source: 'memo' } 
+          window.dispatchEvent(new CustomEvent('blog:hover-off', {
+            detail: { source: 'memo' }
           }));
         });
-        
+
         item.addEventListener('click', () => {
-          window.dispatchEvent(new CustomEvent('blog:navigate', { 
-            detail: { hubId } 
+          window.dispatchEvent(new CustomEvent('blog:navigate', {
+            detail: { hubId }
           }));
         });
       });
-      
+
       // Sync memorandum highlight with petri dish hover
       window.addEventListener('blog:hover', (e) => {
         const { hubId } = e.detail;
@@ -1010,7 +998,7 @@
           item.classList.toggle('highlight', item.dataset.hub === hubId);
         });
       });
-      
+
       window.addEventListener('blog:hover-off', () => {
         document.querySelectorAll('.blog-memo-item').forEach(item => {
           item.classList.remove('highlight');
@@ -1021,53 +1009,6 @@
 
   <!-- SECTION: RESUME (Space-Time Spiral Timeline) - DISABLED FOR NOW -->
   <!-- TODO: Re-enable later by uncommenting this section and re-enabling imports in main.css/app.js -->
-  <!--
-  <section id="resume" class="stage resume-screen" data-section="resume" aria-label="Resume" tabindex="-1">
-    <button class="resume-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    
-    <div class="resume-mycelium-universe" aria-hidden="true">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-        <defs>
-          <pattern id="mycelium-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M0,10 Q5,5 10,10 T20,10" stroke="rgba(45,212,175,0.08)" fill="none" stroke-width="0.5"/>
-            <path d="M10,0 Q5,5 10,10 T10,20" stroke="rgba(45,212,175,0.08)" fill="none" stroke-width="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="100" height="100" fill="url(#mycelium-pattern)"/>
-      </svg>
-    </div>
-
-    <div class="resume-particles" aria-hidden="true"></div>
-
-    <div class="resume-container">
-      <div class="resume-spiral-field">
-        
-        <div class="career-spiral" data-career="environmental">
-          <svg class="spiral-canvas" aria-label="Environmental career timeline"></svg>
-        </div>
-
-        <div class="career-spiral" data-career="ui-i18n">
-          <svg class="spiral-canvas" aria-label="UI and internationalization career timeline"></svg>
-        </div>
-
-        <div class="career-spiral" data-career="developer">
-          <svg class="spiral-canvas" aria-label="Software development career timeline"></svg>
-        </div>
-
-        <div class="career-spiral" data-career="music">
-          <svg class="spiral-canvas" aria-label="Music career timeline"></svg>
-        </div>
-
-        <div class="resume-nexus">
-          <div class="resume-nexus-text">
-            Aris<br>Zounarakis<br>
-            <small style="opacity:0.6">Four Paths</small>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-  -->
 
   <!-- SECTION: WORK (Mycelial Globe) -->
   <section id="work" class="stage work-globe-screen panel-screen" data-section="work" aria-label="Work Experience" tabindex="-1">
@@ -1079,16 +1020,13 @@
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
       <a href="#contact" class="section-nav-link" data-section="contact">Contact</a>
     </nav>
-    
+
     <div class="work-globe-container">
       <canvas id="work-globe-canvas">
         <!-- Fallback for browsers without WebGL2 -->
         <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the globe visualization.</p>
       </canvas>
-      
-      <!-- Desktop: interactive career core-sample (the rail). The cone/moon/seal legend
-           lives in its header, so it absorbs the old memorandum. Rendered by
-           js/work-timeline.js from js/work-globe/data/timeline.js. -->
+
       <aside class="work-rail" aria-label="Career timeline"></aside>
 
       <!-- Mobile HUD: Auto-Writer Log -->
@@ -1100,9 +1038,7 @@
       </div>
     </div>
 
-    <!-- Accessible text equivalent of the globe (populated from the same data
-         by js/work-globe/work-index.js): screen-reader/keyboard access always,
-         and the real visible fallback when WebGL2 is unavailable. -->
+    <!-- Keep work content available without WebGL. -->
     <div id="work-index" class="work-index" aria-label="Work history and projects (text)"></div>
   </section>
 
@@ -1120,11 +1056,11 @@
       <!-- Blood-red wax seal at top center -->
       <div class="wax-seal" aria-hidden="true">
         <picture>
-          <source srcset="./artifacts/sigil/no-bg-seal-sigil.webp" type="image/webp" />
+          <source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" />
           <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" class="seal-sigil" loading="lazy" decoding="async" />
         </picture>
       </div>
-      
+
       <!-- Canvas for mycelium network animation -->
 
       <!-- Contact Form -->
@@ -1154,12 +1090,12 @@
         <!-- Email Field -->
         <div class="notebook-field">
           <label for="email" class="notebook-label">Your Email</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="notebook-input" 
-            required 
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="notebook-input"
+            required
             placeholder="your.email@example.com"
           />
           <div class="validation-msg"></div>
@@ -1168,12 +1104,12 @@
         <!-- Subject Field -->
         <div class="notebook-field">
           <label for="subject" class="notebook-label">Subject</label>
-          <input 
-            type="text" 
-            id="subject" 
-            name="subject" 
-            class="notebook-input" 
-            required 
+          <input
+            type="text"
+            id="subject"
+            name="subject"
+            class="notebook-input"
+            required
             placeholder="Subject or topic"
             minlength="5"
             maxlength="60"
@@ -1184,11 +1120,11 @@
         <!-- Message Field -->
         <div class="notebook-field">
           <label for="message" class="notebook-label">Message</label>
-          <textarea 
-            id="message" 
-            name="message" 
-            class="notebook-textarea" 
-            required 
+          <textarea
+            id="message"
+            name="message"
+            class="notebook-textarea"
+            required
             placeholder="Share your thoughts..."
             minlength="10"
             maxlength="350"
@@ -1265,14 +1201,13 @@
       document.dispatchEvent(new CustomEvent('turnstile-loaded'));
     };
 
-    /* Navigation safety-net — runs in ALL browsers even if ES modules fail.
-       If app.js loads normally, it sets window.__appBooted and this code is inert. */
+    /* Keep navigation working if the module fails to load. */
     (function () {
       var VALID = ['about','skills','work','blog','contact'];
       var INTRO_ID = 'main';
 
       function activateFromHash() {
-        if (window.__appBooted) return;          // app.js took over — bail out
+        if (window.__appBooted) return;
         var hash = location.hash.slice(1);
         var stages = document.querySelectorAll('.stage');
         if (VALID.indexOf(hash) !== -1) {
@@ -1295,7 +1230,6 @@
 
       window.addEventListener('hashchange', activateFromHash);
 
-      // Also handle close (×) buttons — navigate to empty hash
       document.addEventListener('click', function (e) {
         if (window.__appBooted) return;
         var btn = e.target.closest
@@ -1309,13 +1243,9 @@
       });
     })();
   </script>
-  <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=__turnstileOnLoad"></script>
   <script type="module" src="./js/app.js?v=20260711"></script>
-  <!-- Accessible text equivalent of the Work globe (renders into #work-index) -->
   <script type="module" src="./js/work-globe/work-index.js?v=20260711"></script>
-  <!-- "Living Culture" scrying animation inside the Skills altar lens -->
   <script type="module" src="./js/altar-culture.js"></script>
-  <!-- Oracle's Eye bloom (Phase 0) inside the About altar lens -->
   <script type="module" src="./js/altar-eye.js"></script>
 </body>
 </html>

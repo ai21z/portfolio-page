@@ -48,19 +48,17 @@ test.describe('Work career rail', () => {
     await gotoWork(page, DESKTOP);
     await expect(page.locator('.work-rail')).toBeVisible();
     await expect(page.locator('.work-rail-title')).toHaveText('Timeline');
-    // the legend lives in the boxed panel
     await expect(page.locator('.work-rail-key-row')).toHaveText(['place', 'project', 'credential']);
     await page.waitForSelector('.rail-node');
 
     const ids = await page.locator('.rail-node').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).dataset.id));
     expect(ids.length).toBe(18);
-    expect(ids[0]).toBe('adp'); // present sits at the surface
-    expect(ids[ids.length - 1]).toBe('beng'); // bedrock
+    expect(ids[0]).toBe('adp');
+    expect(ids[ids.length - 1]).toBe('beng');
 
     expect(await page.locator('.rail-node--work').count()).toBeGreaterThanOrEqual(3);
     expect(await page.locator('.rail-node--project').count()).toBe(2);
-    // credentials are the majority, shown as the lighter stratum
     expect(await page.locator('.rail-node--cert').count()).toBeGreaterThanOrEqual(8);
   });
 
@@ -89,7 +87,6 @@ test.describe('Work career rail', () => {
     await adp.hover();
     await expect(note).toHaveClass(/is-visible/);
 
-    // A click drives the globe and keeps the dot highlighted, but must NOT pin the note open.
     await adp.click();
     await page.mouse.move(1240, 760);
     await expect(note).not.toHaveClass(/is-visible/);
@@ -114,7 +111,6 @@ test.describe('Work career rail', () => {
     expect(await select('netcompany')).toEqual({ id: 'netcompany', target: { kind: 'location', id: 'greece' } });
     expect(await select('talos')).toEqual({ id: 'talos', target: { kind: 'moon', id: 'talos-cli' } });
     expect(await select('true-rolls')).toEqual({ id: 'true-rolls', target: { kind: 'moon', id: 'true-rolls' } });
-    // a credential is note-only: no globe event fires
     expect(await select('cert-oci-foundations')).toBeNull();
 
     expect(pageErrors).toEqual([]);
@@ -123,9 +119,7 @@ test.describe('Work career rail', () => {
   test('re-sorts by type, then back to year (Year and Type are the only modes)', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');
-    // default "year" layout is a flat chronology, no cluster labels
     await expect(page.locator('.rail-group')).toHaveCount(0);
-    // the Place sort was removed: only Year and Type remain
     await expect(page.locator('.work-rail-mode')).toHaveText(['Year', 'Type']);
 
     await page.locator('.work-rail-mode', { hasText: 'Type' }).click();
@@ -148,7 +142,6 @@ test.describe('Work career rail', () => {
     await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
     await expect(page.locator('.work-rail')).toBeVisible();
 
-    // tap a place -> centered card with an X and a "see on the globe" action
     await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').click();
     const card = page.locator('.work-card-backdrop');
     await expect(card).toHaveClass(/is-open/);
@@ -157,17 +150,15 @@ test.describe('Work career rail', () => {
     await page.locator('.work-card-close').click();
     await expect(card).toBeHidden();
 
-    // a credential card carries no globe action
     await page.locator('.rail-node[data-id="cert-blockchain"] .rail-dot-btn').click();
     await expect(page.locator('.work-card-title')).toHaveText('Blockchain Specialization');
     await expect(page.locator('.work-card-globe')).toHaveCount(0);
     await page.locator('.work-card-close').click();
 
-    // toggle to the globe: rail hides, the canvas carries the section
     await page.locator('.work-view-btn[data-view="globe"]').click();
     await expect(page.locator('#work')).toHaveClass(/work-view-globe/);
     await expect(page.locator('.work-rail')).toBeHidden();
-    // canvas carries the section now (it renders under real WebGL; headless falls back to 1x1)
+    // Headless WebGL can fall back to a 1x1 canvas.
     await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
   });
 

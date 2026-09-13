@@ -4,12 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "check": "git diff --check && npm run test:unit && npm run build",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "deploy": "npm run check && wrangler pages deploy dist --project-name personal-webpage --branch master",
     "generate-icons": "node generate-icons.js",
     "generate-og": "node generate-og.js",
     "generate:network-lite": "node scripts/generate-network-lite.mjs",
     "generate:webp-assets": "node scripts/generate-webp-assets.mjs",
     "generate:perf-assets": "npm run generate:network-lite && npm run generate:webp-assets",
-    "preview": "http-server . -p 4173 -a 127.0.0.1",
+    "preview": "npm run build && http-server dist -p 4173 -a 127.0.0.1",
     "test:e2e": "playwright test",
     "clean:audit": "node scripts/clean-browser-audit.mjs",
     "test:audit": "node scripts/run-browser-audit.mjs",
@@ -18,8 +22,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "esbuild": "0.28.1",
     "http-server": "^14.1.1",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "wrangler": "^4.131.1"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.7",

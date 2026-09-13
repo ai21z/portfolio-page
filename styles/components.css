@@ -12,8 +12,8 @@
   white-space: nowrap; /* Desktop: single line */
   overflow: hidden;
   text-overflow: ellipsis; /* Fallback if override fails */
-  background: linear-gradient(115deg, 
-    var(--bone) 0%, 
+  background: linear-gradient(115deg,
+    var(--bone) 0%,
     rgba(230,227,216,0.9) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -36,13 +36,12 @@
 
 @keyframes fadeInPortrait {
   from {
-    /* Start from a creditable opacity (not 0) so Chromium counts the portrait toward LCP the
-       moment it paints, instead of withholding credit while the slow fade lifts it off zero. */
+    /* Start above zero opacity so the first portrait paint counts toward LCP. */
     opacity: 0.3;
     transform: translateY(-10px) scale(0.95);
   }
-  to { 
-    opacity: 1; 
+  to {
+    opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
@@ -102,8 +101,8 @@
   top: 0;
   width: 2px;
   height: 48px;
-  background: linear-gradient(to bottom, 
-    var(--spectral) 0%, 
+  background: linear-gradient(to bottom,
+    var(--spectral) 0%,
     transparent 100%);
   opacity: 0;
   animation: fadeIn 2s cubic-bezier(0.16, 1, 0.3, 1) 1.8s forwards;
@@ -126,7 +125,7 @@
   opacity:.95;
 }
 
-.foot{ 
+.foot{
   grid-column: 1 / -1;
   grid-row: 6;
   display: flex;
@@ -173,14 +172,11 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-  /* Kill all animations; show final states */
   .tape, .text-column::before{
     animation: none;
     max-width: var(--tape-w);
     opacity: 0.95;
   }
-  /* Show the portrait immediately at full opacity (no fade) — respects the motion preference
-     and gives reduced-motion users the fastest possible LCP. */
   .portrait-wrap{ animation: none; opacity: 1 !important; }
 }
 
@@ -214,11 +210,7 @@
 
 .living-sigils {
   position: absolute;
-  /* Hug the grid's left edge, but never cross the viewport edge (body is
-     overflow-x:hidden). The old fixed -90px pushed the rail off-screen
-     between ~1201-1439px — including 1366px, the most common laptop width.
-     This keeps -90px whenever there's room and clamps to ~16px from the
-     edge when the side margin gets tight. */
+  /* Clamp the rail offset so it cannot cross the viewport edge. */
   left: max(-90px, calc(16px - (100vw - clamp(1200px, 72vw, 1600px)) / 2));
   top: 20%;
   transform: translateY(0);
@@ -233,9 +225,7 @@
   .name {
     font-size: clamp(36px, 4.2vw, 48px);
     line-height: 1.04;
-    /* Shrink the title box to its text so the now-visible nav labels
-       (rest opacity raised in navigation.css) don't register as overlapping
-       the title's empty trailing space on short, wide laptops. */
+    /* Fit the title box to its text so navigation has room. */
     justify-self: start;
     width: fit-content;
     max-width: 100%;
@@ -355,7 +345,7 @@
   transform: translate(-50%, -50%);
   width: 52px;
   height: 52px;
-  background: 
+  background:
     /* PRIMARY HIGHLIGHT - Bright specular reflection from sigil (right side, upper) */
     radial-gradient(ellipse 20px 25px at 70% 30%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 30%, transparent 65%),
     /* SECONDARY HIGHLIGHT - Softer glow around main highlight */
@@ -377,7 +367,7 @@
   overflow: visible;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  box-shadow: 
+  box-shadow:
     /* INNER DEPTH - 3D concave surface */
     inset -6px 6px 12px rgba(255, 255, 255, 0.08),
     inset 8px -8px 16px rgba(0, 0, 0, 0.6),
@@ -390,7 +380,7 @@
 
 .sigil-vial:hover .vial-glass {
   border-color: rgba(143, 180, 255, 0.6);
-  background: 
+  background:
     /* INTENSIFIED PRIMARY HIGHLIGHT */
     radial-gradient(ellipse 20px 25px at 70% 30%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 30%, transparent 65%),
     /* STRONGER SECONDARY HIGHLIGHT */
@@ -407,7 +397,7 @@
     radial-gradient(circle at 50% 50%, rgba(var(--necrotic-rgb), 0.2) 0%, rgba(var(--necrotic-rgb), 0.1) 40%, transparent 70%),
     /* BASE */
     radial-gradient(circle at 40% 40%, rgba(19,20,23,0.85) 0%, rgba(11,11,12,0.95) 100%);
-  box-shadow: 
+  box-shadow:
     /* ENHANCED INNER DEPTH */
     inset -8px 8px 16px rgba(255, 255, 255, 0.12),
     inset 10px -10px 20px rgba(0, 0, 0, 0.7),
@@ -421,7 +411,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: 
+  background:
     radial-gradient(circle at 50% 50%, rgba(var(--necrotic-rgb), 0.08) 0%, rgba(var(--necrotic-rgb), 0.04) 25%, transparent 50%),
     radial-gradient(circle at 35% 35%, rgba(var(--necrotic-rgb), 0.05) 0%, transparent 40%),
     radial-gradient(circle at 65% 65%, rgba(143, 180, 255, 0.03) 0%, transparent 40%),
@@ -431,11 +421,11 @@
 }
 
 @keyframes matterSwirl {
-  0%, 100% { 
+  0%, 100% {
     transform: scale(1) rotate(0deg);
     opacity: 0.9;
   }
-  50% { 
+  50% {
     transform: scale(1.05) rotate(180deg);
     opacity: 0.75;
   }
@@ -450,7 +440,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: 
+  background:
     radial-gradient(circle at 50% 50%, rgba(var(--necrotic-rgb), 0.2) 0%, transparent 35%),
     radial-gradient(ellipse at 30% 50%, rgba(143, 180, 255, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 70% 50%, rgba(var(--necrotic-rgb), 0.12) 0%, transparent 50%),
@@ -495,7 +485,7 @@
 .sigil-vial:hover .vial-icon {
   color: rgba(180, 210, 230, 1);
   opacity: 1;
-  filter: 
+  filter:
     drop-shadow(0 0 8px rgba(143, 180, 255, 0.6))
     drop-shadow(0 0 6px rgba(var(--necrotic-rgb), 0.5));
   transform: translate(-50%, -50%) scale(1.1);
@@ -678,7 +668,7 @@
     height: 28px !important;
     color: rgba(105, 160, 160, 0.85) !important;
     opacity: 1 !important;
-    filter: 
+    filter:
       drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7))
       drop-shadow(0 0 1px rgba(105, 160, 160, 0.2))
       contrast(1.15)
@@ -700,7 +690,7 @@
 
   .sigil-vial:hover .vial-icon,
   .vial-split-bubble:hover .vial-icon {
-    filter: 
+    filter:
       drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7))
       drop-shadow(0 0 2px rgba(105, 160, 160, 0.3))
       contrast(1.2)
@@ -732,7 +722,7 @@
     display: none !important;
   }
 
-  .name { 
+  .name {
     margin: 0 auto 0 auto !important; /* Top spacing + horizontal centering */
   }
 }

@@ -39,7 +39,7 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
     };
   });
 
-  await page.setViewportSize({ width: 390, height: 844 }); // mobile: specimen links are real <a href="#blog/..">
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/index.html#blog');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForFunction(() => document.getElementById('blog')?.classList.contains('active-section'), { timeout: 8000 });
@@ -53,7 +53,7 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   const histLen = () => page.evaluate(() => history.length);
 
   const len0 = await histLen();
-  await page.locator('.specimen-slide.slide-craft').click(); // -> #blog/craft
+  await page.locator('.specimen-slide.slide-craft').click();
   await page.waitForTimeout(350);
   const atCraft = await mode();
   const len1 = await histLen();
@@ -67,14 +67,11 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   const afterForward = await mode();
 
   expect(errors).toEqual([]);
-  // entering the hub adds exactly ONE history entry (no double-push)
   expect(len1 - len0).toBe(1);
   expect(atCraft.hash).toBe('#blog/craft');
   expect(atCraft.blogMode).toBe('category');
-  // Back -> map
   expect(afterBack.hash === '#blog' || afterBack.hash === '').toBe(true);
   expect(afterBack.blogMode).toBe('map');
-  // Forward still works (was destroyed before the fix) -> category again
   expect(afterForward.hash).toBe('#blog/craft');
   expect(afterForward.blogMode).toBe('category');
 });

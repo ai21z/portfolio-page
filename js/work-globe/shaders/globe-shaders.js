@@ -65,7 +65,7 @@ void main() {
   }
   
   // Lambert lighting: balanced ambient + diffuse
-  // NOTE: this lightDir is duplicated in moon-shaders.js — keep the two in sync.
+  // Keep this lightDir aligned with moon-shaders.js.
   vec3 lightDir = normalize(vec3(0.5, 0.3, 0.5));
   float diffuse = max(dot(normalize(vNormal), lightDir), 0.0);
   float ambient = 0.15;  // brighter overall

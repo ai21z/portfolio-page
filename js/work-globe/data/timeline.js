@@ -1,12 +1,4 @@
-// Career core-sample: every milestone the Work rail renders, newest (surface) first.
-//
-// type     'work'    cone  -> focuses a globe location  (Earth turns, pin ignites)
-//          'project' moon  -> frames a globe moon        (camera eases over, others dim)
-//          'cert'    seal  -> bubble only, globe idle     (degrees + certifications)
-// target   { kind: 'location' | 'moon', id } drives the globe on click; null = bubble only.
-// sortKey  most-recent year of activity (present roles use a future value so they top the
-//          column). The rail renders in descending sortKey order; the array is already sorted.
-// dates    the label shown on the node, kept as a real range so "when I started" stays visible.
+// Current roles use a future sortKey to stay above completed work.
 
 export const TIMELINE = [
   {

@@ -1,8 +1,3 @@
-/* Work career rail: the interactive "core sample" (js/work-timeline.js).
-   A scrollable vertical spine of dotted nodes on the left of the Work globe.
-   Necrographic: textured dark, bone text, one teal cool glow, amber as the rare warm
-   focal. Certs sit as a lighter stratum so roles and projects stay the focal beats. */
-
 .work-rail {
   position: absolute;
   left: 40px;
@@ -414,10 +409,6 @@
   }
 }
 
-/* ============================================================
-   Compact (tablet + mobile): toggle between the timeline and the globe.
-   Desktop (> 900px) shows both side by side and the toggle stays hidden.
-   ============================================================ */
 
 .work-view-toggle {
   display: none;
@@ -602,7 +593,7 @@
     margin-bottom: 9px;
   }
 
-  /* no hover note on touch; a tap opens the modal card instead */
+  /* Touch uses a modal card instead of a hover note. */
   .work-note {
     display: none;
   }

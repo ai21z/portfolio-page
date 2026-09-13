@@ -35,7 +35,7 @@ let workPinSystem = null;
 let dataStreamSystem = null;
 let moonOrbitSystem = null;
 let projectionMatrix, viewMatrix, modelMatrix;
-let cameraDistance = 3.5; // camera Z, set at init (isMobile ? 6 : 3.5); read by the render passes for uCameraPos
+let cameraDistance = 3.5; // Camera Z is shared by the render passes.
 let rotation = { x: 0, y: 0 };
 let rotationVelocity = { x: 0, y: 0 };
 let isDragging = false;
@@ -161,7 +161,7 @@ let texturesReady = false;
 
 /**
  * Cache uniform locations for a program to avoid getUniformLocation calls every frame.
- * @param {WebGLProgram} program 
+ * @param {WebGLProgram} program
  * @param {string} programKey - Unique key for this program's cache
  * @param {string[]} uniformNames - Array of uniform names to cache
  */
@@ -178,7 +178,7 @@ function initWorkGlobe() {
     console.error('[Work Globe] Canvas not found');
     return;
   }
-  
+
   const firefox = isFirefox();
   const budget = getGraphicsBudget('work-globe');
   const context = requestProtectedWebGL2Context(canvas, {
@@ -232,21 +232,21 @@ function initWorkGlobe() {
     normal: 1,
     uv: 2
   });
-  
+
   myceliumProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_FRAGMENT_SHADER, {
     position: 0,
     normal: 1,
     uv: 2,
     age: 3
   });
-  
+
   myceliumCoreProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_CORE_FRAGMENT_SHADER, {
     position: 0,
     normal: 1,
     uv: 2,
     age: 3
   });
-  
+
   sporeProgram = createProgram(gl, PARTICLE_VERTEX_SHADER, PARTICLE_FRAGMENT_SHADER, {
     position: 0,
     velocity: 1,
@@ -254,7 +254,7 @@ function initWorkGlobe() {
     size: 3,
     phase: 4
   });
-  
+
   pinProgram = createProgram(gl, PIN_VERTEX_SHADER, PIN_FRAGMENT_SHADER, {
     position: 0,
     normal: 1,
@@ -263,24 +263,24 @@ function initWorkGlobe() {
     instanceHeight: 4,
     instancePhase: 5
   });
-  
+
   dataStreamProgram = createProgram(gl, DATA_STREAM_VERTEX_SHADER, DATA_STREAM_FRAGMENT_SHADER, {
     position: 0,
     life: 1,
     phase: 2
   });
-  
+
   moonProgram = createProgram(gl, MOON_VERTEX_SHADER, MOON_FRAGMENT_SHADER, {
     position: 0,
     normal: 1,
     uv: 2
   });
-  
+
   textBillboardProgram = createProgram(gl, TEXT_BILLBOARD_VERTEX_SHADER, TEXT_BILLBOARD_FRAGMENT_SHADER, {
     aPosition: 0,
     aUv: 1
   });
-  
+
   if (!textBillboardProgram) {
     console.error('[Work Globe] Failed to create text billboard shader program!');
   }
@@ -296,7 +296,7 @@ function initWorkGlobe() {
 
   const sphere = createSphereGeometry(1.0, quality.sphereDetail, quality.sphereDetail);
   sphereVertexCount = sphere.indices.length;
-  
+
   const imageToSpherical = (x, y) => {
     const u = 1.0 - (x / 1536.0); // Flip U to match sphere UV
     const v = y / 1024.0;
@@ -304,12 +304,12 @@ function initWorkGlobe() {
     const lat = (0.5 - v) * Math.PI;          // -π/2 to π/2
     return { lat, lon };
   };
-  
+
   const myceliumSeeds = [
     imageToSpherical(777, 330),  // Greece (Pin A)
     imageToSpherical(689, 310)   // Barcelona (Pin B)
   ];
-  
+
   // Add fewer random land seeds for cleaner look
   for (let i = 0; i < quality.randomMyceliumSeeds; i++) {
     myceliumSeeds.push({
@@ -317,7 +317,7 @@ function initWorkGlobe() {
       lon: (Math.random() - 0.5) * Math.PI * 2     // ±180 degrees
     });
   }
-  
+
   const mycelium = createMyceliumHyphae(1.0, myceliumSeeds, {
     stepSize: 0.008,
     minLength: quality.myceliumMinLength,
@@ -328,7 +328,7 @@ function initWorkGlobe() {
     widthNode: 0.016,
     tubeSegments: quality.myceliumTubeSegments
   });
-  
+
   myceliumVertexCount = mycelium.indices.length;
 
   globeVAO = gl.createVertexArray();
@@ -357,51 +357,51 @@ function initWorkGlobe() {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, sphere.indices, gl.STATIC_DRAW);
 
   gl.bindVertexArray(null);
-  
+
   myceliumVAO = gl.createVertexArray();
   gl.bindVertexArray(myceliumVAO);
-  
+
   const myceliumPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumPositionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-  
+
   const myceliumNormalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumNormalBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.normals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(1);
   gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
-  
+
   const myceliumUvBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumUvBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.uvs, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(2);
   gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
-  
+
   const myceliumAgeBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, myceliumAgeBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, mycelium.ages, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(3);
   gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 0, 0);
-  
+
   const myceliumIndexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, myceliumIndexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mycelium.indices, gl.STATIC_DRAW);
-  
+
   gl.bindVertexArray(null);
-  
+
   sporeSystem = new SporeSystem(gl, quality.sporeParticles);
-  
+
   const pinGeometry = createPinGeometry(0.02, 1.0, quality.pinSegments);
   workPinSystem = new WorkPinSystem(gl, WORK_LOCATIONS, pinGeometry);
-  
+
   dataStreamSystem = new DataStreamSystem(gl, quality.dataParticles);
-  
+
   moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS, { sphereDetail: quality.moonDetail });
 
   cameraDistance = isMobile ? 6 : 3.5;
-  
+
   projectionMatrix = mat4.perspective(
     Math.PI / 4,
     canvas.width / canvas.height,
@@ -435,12 +435,12 @@ function initWorkGlobe() {
     ...textureOptions,
     fallbackUrl: './artifacts/work-page/ominus-earth.png'
   });
-  
+
   fogTexture = loadTexture(gl, './artifacts/work-page/ominus-fog-cloud.webp', {
     ...textureOptions,
     fallbackUrl: './artifacts/work-page/ominus-fog-cloud.png'
   });
-  
+
   lightningTexture = loadTexture(gl, './artifacts/work-page/lightning.webp', {
     ...textureOptions,
     fallbackUrl: './artifacts/work-page/lightning.png'
@@ -450,24 +450,24 @@ function initWorkGlobe() {
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerUp);
-  
+
   let touchStartTime = 0;
   let touchStartPos = { x: 0, y: 0 };
-  
+
   boundTouchStartHandler = (e) => {
     touchStartTime = Date.now();
     const touch = e.touches[0];
     touchStartPos = { x: touch.clientX, y: touch.clientY };
   };
-  
+
   boundTouchEndHandler = (e) => {
     const touchDuration = Date.now() - touchStartTime;
     const touch = e.changedTouches[0];
     const moveDistance = Math.sqrt(
-      Math.pow(touch.clientX - touchStartPos.x, 2) + 
+      Math.pow(touch.clientX - touchStartPos.x, 2) +
       Math.pow(touch.clientY - touchStartPos.y, 2)
     );
-    
+
     // If it's a quick tap (< 200ms) and minimal movement (< 10px), treat as tap
     if (touchDuration < 200 && moveDistance < 10) {
       const tappedPin = checkPinHover(touch.clientX, touch.clientY, true);
@@ -477,16 +477,16 @@ function initWorkGlobe() {
       }
     }
   };
-  
+
   canvas.addEventListener('touchstart', boundTouchStartHandler, { passive: true });
   canvas.addEventListener('touchend', boundTouchEndHandler, { passive: true });
-  
+
   boundResizeHandler = () => {
     updateMobileState();
     resizeCanvas();
   };
   window.addEventListener('resize', boundResizeHandler);
-  
+
   // Listen for DPR changes dispatched by app.js (event-driven, no polling)
   let lastDPR = currentDPR();
   boundDprHandler = () => {
@@ -533,7 +533,7 @@ function render(deltaTime) {
   }
 
   time += deltaTime * 0.6;
-  
+
   // Additional safeguard - if time becomes NaN, reset it
   if (isNaN(time)) {
     console.warn('[Work Globe] Time became NaN, resetting to 0');
@@ -573,12 +573,12 @@ function render(deltaTime) {
 
   gl.depthMask(true);
   gl.disable(gl.BLEND);
-  
+
   if (!globeProgram || !globeVAO) {
     console.error('[Render Error] Missing globe resources:', { globeProgram: !!globeProgram, globeVAO: !!globeVAO });
     return;
   }
-  
+
   gl.useProgram(globeProgram);
   gl.bindVertexArray(globeVAO);
 
@@ -588,7 +588,7 @@ function render(deltaTime) {
   gl.uniformMatrix4fv(globeUniforms.uView, false, viewMatrix);
   gl.uniformMatrix4fv(globeUniforms.uModel, false, modelMatrix);
   gl.uniform1f(globeUniforms.uTime, time);
-  
+
   if (texturesReady && earthTexture) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, earthTexture);
@@ -597,14 +597,14 @@ function render(deltaTime) {
   } else {
     gl.uniform1i(globeUniforms.uUseDaymap, 0);
   }
-  
+
   gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
 
   // Atmosphere (back-face)
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.depthMask(false); // Don't write depth for atmosphere glow
-  
+
   gl.useProgram(atmosphereProgram);
   gl.cullFace(gl.FRONT);
   gl.enable(gl.CULL_FACE);
@@ -617,21 +617,21 @@ function render(deltaTime) {
   gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
 
   gl.disable(gl.CULL_FACE);
-  
+
   // Mycelium Hyphae - Body Pass
   if (myceliumProgram && myceliumVAO && myceliumVertexCount > 0) {
     myceliumGrowthTime += deltaTime * 50; // Growth speed in units/second (~5-6 seconds to fully reveal)
-    
+
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(false); // Don't write depth - sit on surface
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
-    
+
     gl.useProgram(myceliumProgram);
     gl.bindVertexArray(myceliumVAO);
-    
+
     const mycUniforms = uniformCache.mycelium;
     gl.uniformMatrix4fv(mycUniforms.uProjection, false, projectionMatrix);
     gl.uniformMatrix4fv(mycUniforms.uView, false, viewMatrix);
@@ -643,19 +643,19 @@ function render(deltaTime) {
     gl.uniform1f(mycUniforms.uCoreGain, 0.0); // No core in body pass
     gl.uniform1f(mycUniforms.uGrowthTime, myceliumGrowthTime);
     gl.uniform1f(mycUniforms.uOpacityNoise, 0.025); // 2.5% opacity variation
-    
+
     gl.drawElements(gl.TRIANGLES, myceliumVertexCount, gl.UNSIGNED_SHORT, 0);
   }
-  
+
   // Mycelium Core - Additive Pass
   if (myceliumCoreProgram && myceliumVAO && myceliumVertexCount > 0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive for core glint
     gl.depthMask(false);
-    
+
     gl.useProgram(myceliumCoreProgram);
     gl.bindVertexArray(myceliumVAO);
-    
+
     const coreUniforms = uniformCache.myceliumCore;
     gl.uniformMatrix4fv(coreUniforms.uProjection, false, projectionMatrix);
     gl.uniformMatrix4fv(coreUniforms.uView, false, viewMatrix);
@@ -664,83 +664,83 @@ function render(deltaTime) {
     gl.uniform3f(coreUniforms.uCoreColor, NECRO_GREEN[0], NECRO_GREEN[1], NECRO_GREEN[2]); // Decay-green glint - memorable!
     gl.uniform1f(coreUniforms.uCoreGain, 0.15); // Slightly brighter for visibility
     gl.uniform1f(coreUniforms.uGrowthTime, myceliumGrowthTime);
-    
+
     gl.drawElements(gl.TRIANGLES, myceliumVertexCount, gl.UNSIGNED_SHORT, 0);
   }
-  
+
   // Fog Layer
   if (texturesReady && fogTexture) {
     gl.depthMask(false); // Don't write depth
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
+
     gl.useProgram(fogProgram);
     gl.bindVertexArray(globeVAO);
-    
+
     // Scale model matrix slightly to sit above surface - reuse pre-allocated array
     scaleModelAboveSurface(scaledModelFog, modelMatrix);
-    
+
     const fogUniforms = uniformCache.fog;
     gl.uniformMatrix4fv(fogUniforms.uProjection, false, projectionMatrix);
     gl.uniformMatrix4fv(fogUniforms.uView, false, viewMatrix);
     gl.uniformMatrix4fv(fogUniforms.uModel, false, scaledModelFog);
-    
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, fogTexture);
     gl.uniform1i(fogUniforms.uFogTex, 1);
-    
+
     gl.uniform3f(fogUniforms.uFogTint, 0.15, 0.22, 0.20); // Lighter, more subtle green
     gl.uniform1f(fogUniforms.uFogStrength, 0.20); // Reduced from 0.35 - much more transparent
     gl.uniform2f(fogUniforms.uFogScroll, 0.002, 0.0007);
     gl.uniform1f(fogUniforms.uTime, time);
-    
+
     gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
   }
-  
+
   // Lightning Layer
   if (texturesReady && lightningTexture) {
     gl.depthMask(false); // Don't write depth
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
-    
+
     gl.useProgram(lightningProgram);
     gl.bindVertexArray(globeVAO);
-    
+
     // Use same scaled model as fog - reuse pre-allocated array
     scaleModelAboveSurface(scaledModelLightning, modelMatrix);
-    
+
     const lightningUniforms = uniformCache.lightning;
     gl.uniformMatrix4fv(lightningUniforms.uProjection, false, projectionMatrix);
     gl.uniformMatrix4fv(lightningUniforms.uView, false, viewMatrix);
     gl.uniformMatrix4fv(lightningUniforms.uModel, false, scaledModelLightning);
-    
+
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, lightningTexture);
     gl.uniform1i(lightningUniforms.uLightningTex, 2);
-    
+
     gl.uniform3f(lightningUniforms.uLightningColor, 0.35, 0.70, 0.60); // Softer teal
     gl.uniform1f(lightningUniforms.uLightningGain, 0.50); // Reduced from 0.9 - much more subtle
     gl.uniform2f(lightningUniforms.uLightningScroll, 0.005, -0.001);
     gl.uniform1f(lightningUniforms.uTime, time);
     gl.uniform1f(lightningUniforms.uFlickerFreq, 0.5);
     gl.uniform1f(lightningUniforms.uFlickerDuty, 0.04);
-    
+
     gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
   }
-  
+
   if (sporeSystem) {
     const lightningTime = time;
     const slowPulse = Math.sin(lightningTime * 0.5 * 2.0 * Math.PI) * 0.5 + 0.5; // 0.5Hz
     const strobePhase = (lightningTime * 2.0) % 1.0;
     const strobe = strobePhase < 0.04 ? 1.0 : 0.0; // 4% duty cycle
     const lightningIntensity = slowPulse * (0.3 + strobe * 0.7);
-    
+
     sporeSystem.update(deltaTime, lightningIntensity);
   }
-  
+
   if (workPinSystem) {
     workPinSystem.update(deltaTime, time);
-    
+
     if (sporeSystem) {
       const orbitals = workPinSystem.getOrbitalParticles(time);
       if (orbitals.length > 0) {
@@ -748,18 +748,18 @@ function render(deltaTime) {
       }
     }
   }
-  
+
   if (moonOrbitSystem) {
     moonOrbitSystem.update(deltaTime);
   }
-  
+
   if (sporeProgram && sporeSystem && sporeSystem.activeParticles > 0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive for glow
     gl.depthMask(false);
-    
+
     gl.useProgram(sporeProgram);
-    
+
     const sporeUniforms = uniformCache.spore;
     gl.uniformMatrix4fv(sporeUniforms.uProjection, false, projectionMatrix);
     gl.uniformMatrix4fv(sporeUniforms.uView, false, viewMatrix);
@@ -767,36 +767,36 @@ function render(deltaTime) {
     gl.uniform1f(sporeUniforms.uTime, time);
     gl.uniform3f(sporeUniforms.uSporeColor, NECRO_GREEN[0], NECRO_GREEN[1], NECRO_GREEN[2]);
     gl.uniform3f(sporeUniforms.uEmberColor, 0.784, 1.0, 0.863); // Ember color #C8FFDC
-    
+
     sporeSystem.render(sporeProgram);
   }
-  
+
   if (pinProgram && workPinSystem) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(true);
     gl.enable(gl.DEPTH_TEST);
-    
+
     gl.useProgram(pinProgram);
-    
+
     const cameraPos = [0, 0, cameraDistance];
     workPinSystem.render(pinProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
-    
+
     workPinSystem.renderText(textBillboardProgram, projectionMatrix, viewMatrix);
   }
-  
+
   if (moonProgram && moonOrbitSystem) {
     gl.disable(gl.BLEND); // Solid object, no blending needed
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(true);
-    
+
     const cameraPos = [0, 0, cameraDistance];
     moonOrbitSystem.render(moonProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
   }
-  
+
   if (dataStreamSystem) {
     dataStreamSystem.update(deltaTime); // Use actual delta time
-    
+
     // Emit streams from hovered pins
     if (workPinSystem && workPinSystem.hoveredPin) {
       const pin = workPinSystem.pins.find(p => p.key === workPinSystem.hoveredPin);
@@ -812,16 +812,16 @@ function render(deltaTime) {
       dataStreamSystem.stopEmission();
     }
   }
-  
+
   if (dataStreamProgram && dataStreamSystem && dataStreamSystem.activeParticles > 0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.depthMask(false);
-    
+
     gl.useProgram(dataStreamProgram);
     dataStreamSystem.render(dataStreamProgram, projectionMatrix, viewMatrix, modelMatrix, time);
   }
-  
+
   gl.depthMask(true);
   gl.disable(gl.BLEND);
   gl.bindVertexArray(null);
@@ -832,7 +832,7 @@ function animate(timestamp) {
     animationFrameId = null;
     return;
   }
-  
+
   if (lastFrameTime === 0) {
     lastFrameTime = timestamp;
     render(0.016); // First frame uses assumed 60fps
@@ -849,7 +849,7 @@ function animate(timestamp) {
   const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
   reportFrameSample('work-globe', timestamp - lastFrameTime);
   lastFrameTime = timestamp;
-  
+
   render(deltaTime);
   animationFrameId = requestAnimationFrame(animate);
 }
@@ -860,7 +860,7 @@ function onPointerDown(e) {
   autoRotate = false;
   lastPointerPos = { x: e.clientX, y: e.clientY };
   canvas.style.cursor = 'grabbing';
-  
+
   clickStartPos = { x: e.clientX, y: e.clientY };
   clickStartTime = Date.now();
 }
@@ -871,7 +871,7 @@ function onPointerMove(e) {
   const projectPanel = document.querySelector('.project-panel');
   const cardIsVisible = (infoBubble && infoBubble.classList.contains('visible')) ||
                        (projectPanel && projectPanel.classList.contains('visible'));
-  
+
   let cursorState = 'grab';
 
   // Check moon hover (even when not dragging) - visual feedback only
@@ -900,7 +900,7 @@ function onPointerMove(e) {
   if (!isDragging) {
     canvas.style.cursor = cursorState;
   }
-  
+
   if (!isDragging) return;
   markWorkGlobeActivity();
 
@@ -968,15 +968,15 @@ function isOccludedByGlobe(worldPos, viewMatrix) {
 
 function checkClickWithDepth(mouseX, mouseY) {
   if (!projectionMatrix || !viewMatrix || !modelMatrix) return null;
-  
+
   // Convert mouse to NDC
   const rect = canvas.getBoundingClientRect();
   const ndcX = ((mouseX - rect.left) / rect.width) * 2 - 1;
   const ndcY = -((mouseY - rect.top) / rect.height) * 2 + 1;
-  
+
   const clickableCandidates = [];
   let occludedCount = 0;
-  
+
   // Check moon(s)
   if (moonOrbitSystem) {
     const moon = moonOrbitSystem.getMoonAtPosition(ndcX, ndcY, projectionMatrix, viewMatrix, modelMatrix);
@@ -987,17 +987,17 @@ function checkClickWithDepth(mouseX, mouseY) {
         // Check if moon is occluded by globe
         const modelPos = mat4.transformPoint(modelMatrix, moonWorldPos);
         const isOccluded = isOccludedByGlobe(modelPos, viewMatrix);
-        
+
         if (isOccluded) {
           occludedCount++;
         } else {
           // Transform to clip space to get depth
           const viewPos = mat4.transformPoint(viewMatrix, modelPos);
           const clipPos = mat4.transformPoint(projectionMatrix, viewPos);
-          
+
           // transformPoint already returns normalized device coordinates
           const depth = clipPos[2];
-          
+
           clickableCandidates.push({
             type: 'moon',
             object: moon,
@@ -1008,11 +1008,11 @@ function checkClickWithDepth(mouseX, mouseY) {
       }
     }
   }
-  
+
   // Check pins with click radius (0.15, same as hover)
   if (workPinSystem) {
     const CLICK_RADIUS = 0.15; // Increased from 0.08 to make clicking easier
-    
+
     workPinSystem.pins.forEach(pin => {
       // Project pin position to screen space
       const worldPos = [
@@ -1020,29 +1020,29 @@ function checkClickWithDepth(mouseX, mouseY) {
         pin.basePos[1] * 1.1,
         pin.basePos[2] * 1.1
       ];
-      
+
       // Manual MVP transform
       const modelPos = mat4.transformPoint(modelMatrix, worldPos);
-      
+
       // Check if pin is occluded by globe
       const isOccluded = isOccludedByGlobe(modelPos, viewMatrix);
-      
+
       if (isOccluded) {
         occludedCount++;
       } else {
         const viewPos = mat4.transformPoint(viewMatrix, modelPos);
         const clipPos = mat4.transformPoint(projectionMatrix, viewPos);
-        
+
         const pinNdcX = clipPos[0];
         const pinNdcY = clipPos[1];
         const depth = clipPos[2];
-        
+
         // Check if behind camera
         if (clipPos[3] < 0) return;
-        
+
         // Distance to mouse in screen space
         const screenDist = Math.sqrt((pinNdcX - ndcX) ** 2 + (pinNdcY - ndcY) ** 2);
-        
+
         if (screenDist < CLICK_RADIUS) {
           clickableCandidates.push({
             type: 'pin',
@@ -1054,31 +1054,31 @@ function checkClickWithDepth(mouseX, mouseY) {
       }
     });
   }
-  
+
   // Sort by depth (closest first) - LOWER depth = closer to camera
   clickableCandidates.sort((a, b) => a.depth - b.depth);
-  
+
   // Return the closest object in 3D space
   if (clickableCandidates.length > 0) {
     const winner = clickableCandidates[0];
     return winner;
   }
-  
+
   return null;
 }
 
 function checkPinHover(mouseX, mouseY, showInfo = false) {
   if (!workPinSystem) return null;
-  
+
   // Convert mouse to NDC
   const rect = canvas.getBoundingClientRect();
   const x = ((mouseX - rect.left) / rect.width) * 2 - 1;
   const y = -((mouseY - rect.top) / rect.height) * 2 + 1;
-  
+
   // Hover radius (0.15, same as click)
   let closestPin = null;
   let closestDist = 0.15; // Hover radius in NDC space (15% of screen width)
-  
+
   workPinSystem.pins.forEach(pin => {
     // Project pin position to screen space
     const worldPos = [
@@ -1086,33 +1086,33 @@ function checkPinHover(mouseX, mouseY, showInfo = false) {
       pin.basePos[1] * 1.1,
       pin.basePos[2] * 1.1
     ];
-    
+
     // Manual MVP transform
     const modelPos = mat4.transformPoint(modelMatrix, worldPos);
     const viewPos = mat4.transformPoint(viewMatrix, modelPos);
     const clipPos = mat4.transformPoint(projectionMatrix, viewPos);
-    
+
     // transformPoint already performed the perspective divide
     const ndcX = clipPos[0];
     const ndcY = clipPos[1];
-    
+
     // Check if behind camera
     if (clipPos[3] < 0) return;
-    
+
     const dist = Math.sqrt((ndcX - x) ** 2 + (ndcY - y) ** 2);
-    
+
     if (dist < closestDist) {
       closestDist = dist;
       closestPin = pin;
     }
   });
-  
+
   workPinSystem.pins.forEach(pin => {
     pin.hovered = (pin === closestPin);
   });
-  
+
   workPinSystem.hoveredPin = closestPin ? closestPin.key : null;
-  
+
   if (showInfo && closestPin) {
     showLocationInfo(closestPin);
   }
@@ -1126,7 +1126,7 @@ function showLocationInfo(pin) {
     infoBubble = document.createElement('div');
     infoBubble.className = 'work-location-info';
     document.body.appendChild(infoBubble);
-    
+
     // Add click handler to close when clicking outside (desktop only)
     if (!isMobile) {
       boundLocationOutsideClickHandler = (e) => {
@@ -1146,10 +1146,10 @@ function showLocationInfo(pin) {
   // Country flags instead of generic icons
   const countryFlags = { greece: '🇬🇷', spain: '🇪🇸' };
   const icon = countryFlags[pin.key] || '🏛️';
-  
+
   // Build content with close button (unified style)
   let html = '<button class="close-btn" aria-label="Close">✕</button>';
-  
+
   html += `
     <div class="work-location-header">
       <span class="work-location-icon">${icon}</span>
@@ -1171,7 +1171,7 @@ function showLocationInfo(pin) {
   });
 
   infoBubble.innerHTML = html;
-  
+
   // Wire up close button (for both desktop and mobile)
   const closeBtn = infoBubble.querySelector('.close-btn');
   if (closeBtn) {
@@ -1180,7 +1180,7 @@ function showLocationInfo(pin) {
       hideLocationInfo();
     });
   }
-  
+
   // Add mobile-specific class for different positioning
   if (isMobile) {
     infoBubble.classList.add('mobile');
@@ -1198,7 +1198,7 @@ function showLocationInfo(pin) {
     infoBubble.style.top = '50%';
     infoBubble.style.bottom = 'auto';
   }
-  
+
   // Show with animation
   requestAnimationFrame(() => {
     infoBubble.classList.add('visible');
@@ -1215,13 +1215,13 @@ function hideLocationInfo() {
 function showProjectPanel(moon) {
   // Hide any existing work location info
   hideLocationInfo();
-  
+
   let projectPanel = document.querySelector('.project-panel');
   if (!projectPanel) {
     projectPanel = document.createElement('div');
     projectPanel.className = 'project-panel necrographic-card';
     document.body.appendChild(projectPanel);
-    
+
     // Add click handler to close when clicking outside (desktop only)
     if (!isMobile) {
       boundProjectOutsideClickHandler = (e) => {
@@ -1235,12 +1235,12 @@ function showProjectPanel(moon) {
       document.addEventListener('click', boundProjectOutsideClickHandler);
     }
   }
-  
+
   const project = moon.project;
-  
+
   // Build content
   let html = '<button class="close-btn" aria-label="Close">✕</button>';
-  
+
   html += `
     <div class="project-header">
       <h3>${project.name}</h3>
@@ -1253,9 +1253,9 @@ function showProjectPanel(moon) {
       View on GitHub →
     </a>` : `<span class="github-link github-link--soon">${project.soon || 'Public release soon'}</span>`}
   `;
-  
+
   projectPanel.innerHTML = html;
-  
+
   // Wire up close button
   const closeBtn = projectPanel.querySelector('.close-btn');
   if (closeBtn) {
@@ -1264,17 +1264,17 @@ function showProjectPanel(moon) {
       hideProjectPanel();
     });
   }
-  
+
   // Pause moon orbit
   moonOrbitSystem.pauseMoon(moon, true);
-  
+
   // Add mobile-specific class
   if (isMobile) {
     projectPanel.classList.add('mobile');
   } else {
     projectPanel.classList.remove('mobile');
   }
-  
+
   // Position
   if (isMobile) {
     projectPanel.style.left = '50%';
@@ -1285,11 +1285,11 @@ function showProjectPanel(moon) {
     projectPanel.style.top = '50%';
     projectPanel.style.bottom = 'auto';
   }
-  
+
   // Clear any inline transform so CSS classes control it
   projectPanel.style.transform = '';
   projectPanel.style.position = 'fixed'; // Ensure fixed positioning
-  
+
   // Show with animation
   requestAnimationFrame(() => {
     projectPanel.classList.add('visible');
@@ -1300,7 +1300,7 @@ function hideProjectPanel() {
   const projectPanel = document.querySelector('.project-panel');
   if (projectPanel) {
     projectPanel.classList.remove('visible');
-    
+
     // Resume moon orbit
     if (moonOrbitSystem) {
       moonOrbitSystem.pauseAll(false);
@@ -1400,7 +1400,7 @@ function focusMoon(id) {
   const moon = moonOrbitSystem.moons.find((m) => m.project && m.project.id === id);
   if (!moon) return;
   markWorkGlobeActivity();
-  // freeze the orbit so the moon stays readable; lift the focused moon, dim the rest
+  // Freeze the focused orbit so the moon stays readable.
   moonOrbitSystem.moons.forEach((m) => {
     m.paused = true;
     m.targetScale = (m === moon) ? 1.25 : 0.45;
@@ -1417,7 +1417,7 @@ function onTimelineSelect(e) {
   else if (detail.target.kind === 'moon') focusMoon(detail.target.id);
 }
 
-// Pause rendering while the compact timeline view covers the globe; resume on toggle/resize.
+// Pause while the compact timeline covers the globe.
 function onWorkViewChange(e) {
   const view = e && e.detail && e.detail.view;
   const compact = isCompact();
@@ -1439,29 +1439,29 @@ function onPointerUp(e) {
   const wasDragging = isDragging;
   isDragging = false;
   canvas.style.cursor = 'grab';
-  
+
   // Calculate if this was a click or a drag
   if (clickStartTime) {
     const clickDuration = Date.now() - clickStartTime;
     const moveDistance = Math.sqrt(
-      Math.pow(e.clientX - clickStartPos.x, 2) + 
+      Math.pow(e.clientX - clickStartPos.x, 2) +
       Math.pow(e.clientY - clickStartPos.y, 2)
     );
-    
+
     // If it's a quick click (< 200ms) and minimal movement (< 10px), treat as click
     const isClick = clickDuration < 200 && moveDistance < 10;
-    
+
     if (isClick) {
       // Don't check if any card/panel is visible
       const infoBubble = document.querySelector('.work-location-info');
       const projectPanel = document.querySelector('.project-panel');
-      const cardIsVisible = (infoBubble && infoBubble.classList.contains('visible')) || 
+      const cardIsVisible = (infoBubble && infoBubble.classList.contains('visible')) ||
                            (projectPanel && projectPanel.classList.contains('visible'));
-      
+
       if (!cardIsVisible) {
         // Check ALL clickable objects and select the closest one in 3D space
         const clickResult = checkClickWithDepth(e.clientX, e.clientY);
-        
+
         if (clickResult) {
           if (clickResult.type === 'moon') {
             showProjectPanel(clickResult.object);
@@ -1472,9 +1472,9 @@ function onPointerUp(e) {
       }
     }
   }
-  
+
   clickStartTime = 0;
-  
+
   // Re-enable auto-rotate after 3 seconds of no interaction
   setTimeout(() => {
     if (!isDragging && Math.abs(rotationVelocity.x) < 0.001) {
@@ -1498,7 +1498,7 @@ function resizeCanvas() {
   const container = canvas.parentElement;
   const width = container.clientWidth;
   const height = container.clientHeight;
-  
+
   // Check if container has valid dimensions
   if (width === 0 || height === 0) {
     console.warn(`[Work Globe] Container has invalid dimensions: ${width}×${height} - skipping resize`);
@@ -1510,7 +1510,7 @@ function resizeCanvas() {
     }, 100);
     return;
   }
-  
+
   const dpr = currentDPR(); // Dynamic DPR
 
   canvas.width = Math.floor(width * dpr);
@@ -1553,11 +1553,11 @@ function cleanupWorkGlobe() {
     if (dataStreamProgram) gl.deleteProgram(dataStreamProgram);
     if (textBillboardProgram) gl.deleteProgram(textBillboardProgram);
     if (moonProgram) gl.deleteProgram(moonProgram);
-    
+
     // Delete VAOs
     if (globeVAO) gl.deleteVertexArray(globeVAO);
     if (myceliumVAO) gl.deleteVertexArray(myceliumVAO);
-    
+
     // Delete textures
     if (earthTexture) {
       cancelTextureLoad(earthTexture);
@@ -1606,10 +1606,10 @@ function cleanupWorkGlobe() {
   if (boundProjectOutsideClickHandler) {
     document.removeEventListener('click', boundProjectOutsideClickHandler);
   }
-  
+
   hideLocationInfo();
   hideProjectPanel();
-  
+
   const infoBubble = document.querySelector('.work-location-info');
   if (infoBubble) {
     infoBubble.remove();
@@ -1663,7 +1663,7 @@ function cleanupWorkGlobe() {
   boundProjectOutsideClickHandler = null;
   autoWriterTimeoutId = null;
   lastWorkActivityAt = 0;
-  globeViewActive = true; // known-good default; init re-derives it from the work-view class
+  globeViewActive = true; // Recomputed from the view class during init.
 }
 
 function autoInit() {
@@ -1677,7 +1677,7 @@ function autoInit() {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
         const hasActiveClass = workSection.classList.contains('active-section');
-        
+
         if (hasActiveClass && !gl) {
           // Section just became active and globe not initialized
           initWorkGlobe();
@@ -1694,7 +1694,7 @@ function autoInit() {
   // Rebuild the scene in place when the user picks a new graphics profile while
   // Work is active. The globe bakes particle/geometry budgets at init, so
   // without this a profile switch had no visible effect until a full reload.
-  // Only react to explicit profile switches (reason 'profile'); ignore the
+  // React only to explicit profile switches. Ignore the
   // runtime auto-downgrade/promote events (which would thrash the rebuild).
   let profileReinitTimer = null;
   window.addEventListener('graphics:profile-change', (e) => {
@@ -1748,15 +1748,15 @@ function initAutoWriter() {
       icon: ""
     }
   ];
-  
+
   let msgIndex = 0;
   let charIndex = 0;
   let isDeleting = false;
   let typeSpeed = 60;
-  
+
   function type() {
     const currentMsg = messages[msgIndex];
-    
+
     if (iconZone) {
       iconZone.innerHTML = currentMsg.icon ? `<div class="${currentMsg.icon}"></div>` : '';
     }
@@ -1770,7 +1770,7 @@ function initAutoWriter() {
       charIndex++;
       typeSpeed = 60;
     }
-    
+
     if (!isDeleting && charIndex === currentMsg.text.length) {
       isDeleting = true;
       typeSpeed = 2500; // Pause at end
@@ -1779,9 +1779,9 @@ function initAutoWriter() {
       msgIndex = (msgIndex + 1) % messages.length;
       typeSpeed = 500; // Pause before next
     }
-    
+
     autoWriterTimeoutId = setTimeout(type, typeSpeed);
   }
-  
+
   type();
 }

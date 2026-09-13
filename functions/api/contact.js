@@ -3,7 +3,6 @@ import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
 import { z } from 'zod';
 
-// Schema validation
 const CONTACT_SCHEMA = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email().max(320),
@@ -14,9 +13,8 @@ const CONTACT_SCHEMA = z.object({
 });
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-const MAX_BODY_SIZE = 16 * 1024; // 16KB
+const MAX_BODY_SIZE = 16 * 1024;
 
-// Helper: create JSON response
 function jsonResponse(status, payload) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -27,7 +25,6 @@ function jsonResponse(status, payload) {
   });
 }
 
-// Helper: verify Turnstile token
 async function verifyTurnstile(token, ipAddress, secret) {
   if (!secret) {
     throw new Error('TURNSTILE_NOT_CONFIGURED');
@@ -52,25 +49,22 @@ async function verifyTurnstile(token, ipAddress, secret) {
   return await response.json();
 }
 
-// Helper: sanitize single-line text
 function sanitizeLine(value) {
   return (value || '')
-    .replace(/[\x00-\x1F\x7F]/g, '') // strip control chars
+    .replace(/[\x00-\x1F\x7F]/g, '')
     .replace(/[\r\n]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-// Helper: sanitize multi-line message
 function sanitizeMessage(value) {
   return (value || '')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // strip control chars except \t\n\r
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Keep tabs and line breaks.
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .trim();
 }
 
-// Helper: escape HTML
 function escapeHtml(value) {
   return (value || '')
     .replace(/&/g, '&amp;')
@@ -80,39 +74,34 @@ function escapeHtml(value) {
     .replace(/'/g, '&#x27;');
 }
 
-// Main handler for POST /api/contact
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // Get client IP from Cloudflare header
   const ipAddress = request.headers.get('cf-connecting-ip') || '';
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
-  // Check content length
   const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
   if (contentLength > MAX_BODY_SIZE) {
     return jsonResponse(413, { error: 'Payload too large' });
   }
 
-  // Read and parse body
   let rawBody = '';
   try {
     rawBody = await request.text();
     if (rawBody.length > MAX_BODY_SIZE) {
       return jsonResponse(413, { error: 'Payload too large' });
     }
-  } catch (error) {
+  } catch {
     return jsonResponse(400, { error: 'Unable to read request body' });
   }
 
   let parsed;
   try {
     parsed = JSON.parse(rawBody || '{}');
-  } catch (error) {
+  } catch {
     return jsonResponse(400, { error: 'Invalid JSON payload' });
   }
 
-  // Validate schema
   const validation = CONTACT_SCHEMA.safeParse(parsed);
   if (!validation.success) {
     return jsonResponse(422, { error: 'Invalid contact request' });
@@ -120,15 +109,14 @@ export async function onRequestPost(context) {
 
   const data = validation.data;
 
-  // Honeypot check - silently accept but don't send
+  // Do not tell bots which field caught them.
   if (data.honeypot) {
-    console.info('[contact] honeypot triggered — discarding payload');
+    console.info('[contact] honeypot triggered. Discarding payload.');
     return jsonResponse(200, { success: true });
   }
 
-  // Rate limiting (optional - only if Upstash configured)
   const redisConfigured = Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
-  
+
   if (redisConfigured) {
     try {
       const redis = new Redis({
@@ -157,12 +145,11 @@ export async function onRequestPost(context) {
         }
       }
     } catch (error) {
-      // Rate limiting failed - log but continue (graceful degradation)
+      // Keep contact available if Redis is down.
       console.warn('[contact] rate limiter unavailable, proceeding without rate limit:', error.message);
     }
   }
 
-  // Turnstile verification
   try {
     const turnstile = await verifyTurnstile(data.turnstileToken, ipAddress, env.TURNSTILE_SECRET_KEY);
     if (!turnstile.success) {
@@ -176,7 +163,6 @@ export async function onRequestPost(context) {
     return jsonResponse(502, { error: 'Verification service unavailable. Please retry later.' });
   }
 
-  // Email configuration
   const resendApiKey = env.RESEND_API_KEY;
   const resendFrom = env.CONTACT_FROM_EMAIL;
   const resendTo = (env.CONTACT_TARGET_EMAIL || '')
@@ -189,12 +175,10 @@ export async function onRequestPost(context) {
     return jsonResponse(500, { error: 'Contact service misconfigured. Please try again later.' });
   }
 
-  // Sanitize inputs
   const safeName = sanitizeLine(data.name);
   const safeSubject = sanitizeLine(data.subject);
   const safeMessage = sanitizeMessage(data.message);
 
-  // Build email content
   const htmlBody = `
     <h2 style="margin:0 0 12px 0;">New contact form submission</h2>
     <p style="margin:0 0 8px 0;"><strong>From:</strong> ${escapeHtml(safeName)}</p>
@@ -219,10 +203,9 @@ export async function onRequestPost(context) {
     `User-Agent: ${userAgent}`
   ].join('\n');
 
-  // Send email via Resend
   try {
     const resend = new Resend(resendApiKey);
-    await resend.emails.send({
+    const { data: sent, error } = await resend.emails.send({
       from: resendFrom,
       to: resendTo,
       subject: `[Portfolio] ${safeSubject}`,
@@ -230,6 +213,10 @@ export async function onRequestPost(context) {
       html: htmlBody,
       text: textBody
     });
+    // Resend can return an error without throwing.
+    if (error || typeof sent?.id !== 'string' || !sent.id.trim()) {
+      throw new Error(error?.name || 'EMAIL_NOT_ACCEPTED');
+    }
   } catch (error) {
     console.error('[contact] email delivery failed', error);
     return jsonResponse(502, { error: 'Failed to deliver message. Please try again later.' });
@@ -238,7 +225,6 @@ export async function onRequestPost(context) {
   return jsonResponse(200, { success: true });
 }
 
-// Handle non-POST methods
 export async function onRequest(context) {
   if (context.request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {

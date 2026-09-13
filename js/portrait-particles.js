@@ -60,7 +60,7 @@ const CONFIG = {
 
   CANVAS_PAD: 850,          // legacy reference / minimum fallback
   CANVAS_PAD_MIN: 200,      // floor per side so idle particles always have breathing room
-  CANVAS_MAX_BUF: (FIREFOX ? 3072 : 4096) * (FIREFOX ? 3072 : 4096), // max buffer pixels – DPR is reduced to stay within budget
+  CANVAS_MAX_BUF: (FIREFOX ? 3072 : 4096) * (FIREFOX ? 3072 : 4096), // Cap buffer pixels by reducing DPR.
 
   // Streaming
   STREAM_STRENGTH: 0.45,
@@ -416,9 +416,9 @@ class PortraitParticles {
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'portrait-particles-canvas';
     this.canvas.setAttribute('aria-hidden', 'true');
-    
+
     // CSS variables for positioning are set by resize()
-    
+
     this.wrapper.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d', { alpha: true });
     this.resize();
@@ -511,7 +511,7 @@ class PortraitParticles {
       height: cssH
     });
 
-    // Cap buffer size to limit memory; reduce DPR instead of CSS coverage
+    // Reduce DPR rather than clipping the canvas.
     const maxBuf = Math.min(CONFIG.CANVAS_MAX_BUF, budget.maxCanvasPixels);
     const estBuf = Math.round(cssW * this.dpr) * Math.round(cssH * this.dpr);
     if (estBuf > maxBuf) {
@@ -635,17 +635,17 @@ class PortraitParticles {
   sampleSigil() {
     const sigil = new Image();
     sigil.crossOrigin = 'anonymous';
-    
+
     sigil.onload = () => {
       const offscreen = document.createElement('canvas');
       const ctx = offscreen.getContext('2d');
       const imgW = sigil.naturalWidth;
       const imgH = sigil.naturalHeight;
-      
+
       offscreen.width = imgW;
       offscreen.height = imgH;
       ctx.drawImage(sigil, 0, 0, imgW, imgH);
-      
+
       let imageData;
       try {
         imageData = ctx.getImageData(0, 0, imgW, imgH);
@@ -653,30 +653,30 @@ class PortraitParticles {
         console.warn('[particles] Sigil CORS error:', e);
         return;
       }
-      
+
       const data = imageData.data;
       const scaleX = imgW / this.width;
       const scaleY = imgH / this.height;
-      
+
       let sigilCount = 0;
       for (const p of this.particles) {
         const sx = Math.floor(p.homeX * scaleX);
         const sy = Math.floor(p.homeY * scaleY);
-        
+
         if (sx >= 0 && sx < imgW && sy >= 0 && sy < imgH) {
           const i = (sy * imgW + sx) * 4;
           const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
           const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-          
+
           if (brightness > CONFIG.SIGIL_BRIGHTNESS_THRESHOLD && a > 100) {
             p.isSigil = true;
             sigilCount++;
           }
         }
       }
-      
+
     };
-    
+
     sigil.onerror = () => {
       if (sigil.src.endsWith('/AZ-01.webp') || sigil.src.endsWith('AZ-01.webp')) {
         sigil.src = CONFIG.SIGIL_FALLBACK_PATH;
@@ -921,7 +921,7 @@ class PortraitParticles {
     const streamTargetX = hasStream ? this.streamTarget.x : 0;
     const streamTargetY = hasStream ? this.streamTarget.y : 0;
     const streamTime = hasStream ? (now - this.streamStartTime) : 0;
-    
+
     const hasConstellation = this.constellationLevel > 0.01;
 
     // Pre-compute all damping powers once per frame (avoids Math.pow per particle)
@@ -941,11 +941,11 @@ class PortraitParticles {
       if (isColoredParticle && cursorInside) particleSpring = 0;
 
       const isDust = p.binIndex >= 4;
-      
+
       if (hasStream && isDust) {
         particleSpring *= (1 - this.streamLevel * CONFIG.STREAM_SPRING_CUT);
       }
-      
+
       let isWaitingToReform = false;
       let isActivelyReforming = false;
 
@@ -968,7 +968,7 @@ class PortraitParticles {
           }
         }
       }
-      
+
       if (hasConstellation) {
         if (p.isSigil) {
           particleSpring = CONFIG.CONSTELLATION_SPRING + (springK - CONFIG.CONSTELLATION_SPRING) * (1 - this.constellationLevel);
@@ -1017,7 +1017,7 @@ class PortraitParticles {
           const dx = streamTargetX - p.x;
           const dy = streamTargetY - p.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          
+
           const tierRoll = (p.seed % 100) / 100;
           let speedMult;
           if (tierRoll < 0.3) {
@@ -1029,7 +1029,7 @@ class PortraitParticles {
           }
 
           const inBurstPhase = particleStreamTime < CONFIG.STREAM_BURST_DURATION_MS;
-          
+
           if (dist > 1) {
             const nx = dx / dist;
             const ny = dy / dist;
@@ -1064,7 +1064,7 @@ class PortraitParticles {
           }
         }
       }
-      
+
       if (isActivelyReforming && this.reformStreamTarget) {
         const distToHome = Math.sqrt(homeDistX * homeDistX + homeDistY * homeDistY);
         const streamDx = this.reformStreamTarget.x - p.x;
@@ -1073,7 +1073,7 @@ class PortraitParticles {
 
         const normDelay = this.reformNormalizedDelays ? this.reformNormalizedDelays[i] : 0.5;
         const speedMult = CONFIG.STREAM_SPEED_FAST - normDelay * (CONFIG.STREAM_SPEED_FAST - CONFIG.STREAM_SPEED_SLOW);
-        
+
         if (distToStream > CONFIG.REFORM_STREAM_PHASE_DIST) {
           if (distToStream > 5) {
             const nx = streamDx / distToStream;
@@ -1103,14 +1103,14 @@ class PortraitParticles {
           const dx = p.x - centerX;
           const dy = p.y - centerY;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (dist > 1) {
             const nx = dx / dist;
             const ny = dy / dist;
             forceX += nx * CONFIG.CONSTELLATION_SCATTER * this.constellationLevel;
             forceY += ny * CONFIG.CONSTELLATION_SCATTER * this.constellationLevel;
           }
-          
+
           const spiralStrength = 0.08 * this.constellationLevel;
           forceX += dy / (dist + 50) * spiralStrength;
           forceY -= dx / (dist + 50) * spiralStrength;
@@ -1319,7 +1319,7 @@ class PortraitParticles {
       }
     }
   }
-  
+
   setStreamTargetVp(vpX, vpY) {
     if (!this.initialized || !this.wrapper) return;
     if (!portraitBudget().allowPortraitStreaming) {
@@ -1346,7 +1346,7 @@ class PortraitParticles {
 
     this.setStreamTarget(localX, localY);
   }
-  
+
   clearStream() {
     if (this.streamTarget) {
       this.lastStreamTarget = { ...this.streamTarget };
@@ -1358,7 +1358,7 @@ class PortraitParticles {
     this.streamTarget = null;
     this.streamLaunchDelays = null;
   }
-  
+
   calculateReformDelays() {
     const particles = this.particles;
     const len = particles.length;
@@ -1378,7 +1378,7 @@ class PortraitParticles {
       }
     }
   }
-  
+
   // === CONSTELLATION API ===
 
   toggleConstellation() {

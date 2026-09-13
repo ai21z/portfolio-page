@@ -1,7 +1,4 @@
-/* Main stylesheet imports.
-   Every child carries the same ?v as this file so a cache-bust on main.css
-   also busts the children (a bare @import is served from stale cache after a
-   deploy). Bump this token (and main.css's link in index.html) together. */
+/* Keep imported stylesheet versions aligned with the main.css link in index.html. */
 
 @import 'base.css?v=20260632';
 @import 'canvas.css?v=20260632';

@@ -1,7 +1,3 @@
-/* Necrography — Aris Zounarakis
- * Navigation system with mycelium background and spark animations
- */
-
 // Signal to inline bootstrap that the ES-module loaded successfully
 window.__appBooted = true;
 document.documentElement.classList.add('js-ready');
@@ -112,7 +108,6 @@ function initGraphicsActivityListeners() {
 
 initGraphicsActivityListeners();
 
-// Mycelium geometry (exported from Python)
 let myceliumReadyPromise = null;
 let navStreamsWired = false;
 let blogNetworkModulePromise = null;
@@ -169,7 +164,6 @@ function ensureMyceliumReady() {
   return myceliumReadyPromise;
 }
 
-// HUD rendering
 function initHUD() {
   if (!hudCanvas) {
     const canvas = document.createElement('canvas');
@@ -183,7 +177,6 @@ function initHUD() {
   hudCanvas.height = window.innerHeight;
 }
 
-// HUD: white anchor, cyan route, green live position
 function renderHUD() {
   if (!hudEnabled) return;
   if (!hudCtx) initHUD();
@@ -192,12 +185,12 @@ function renderHUD() {
 
   for (const [id, pt] of Object.entries(NAV_COORDS)) {
     const [tx, ty] = toViewport(pt.x, pt.y);
-    
+
     hudCtx.fillStyle = '#fff';
     hudCtx.beginPath();
     hudCtx.arc(tx, ty, 4, 0, Math.PI * 2);
     hudCtx.fill();
-    
+
     hudCtx.fillStyle = '#fff';
     hudCtx.font = '10px monospace';
     hudCtx.fillText(`${id} anchor`, tx + 8, ty - 8);
@@ -220,12 +213,12 @@ function renderHUD() {
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
-      
+
       hudCtx.fillStyle = '#0f0';
       hudCtx.beginPath();
       hudCtx.arc(cx, cy, 3, 0, Math.PI * 2);
       hudCtx.fill();
-      
+
       hudCtx.fillStyle = '#0f0';
       hudCtx.fillText(`live (${Math.round(cx)},${Math.round(cy)})`, cx + 8, cy + 16);
 
@@ -238,14 +231,14 @@ function renderHUD() {
           const dy = y1 - y0;
           const len = Math.hypot(dx, dy);
           if (len < 1e-6) continue;
-          
+
           const t = Math.max(0, Math.min(1, ((cx - x0) * dx + (cy - y0) * dy) / (len * len)));
           const projX = x0 + t * dx;
           const projY = y0 + t * dy;
           const dist = Math.hypot(cx - projX, cy - projY);
           minDist = Math.min(minDist, dist);
         }
-        
+
         if (minDist > 8) {
           console.warn(`[LOCKED-ROUTE] HUD: ${id} label is ${minDist.toFixed(1)}px off its route (should be <8px)`);
         }
@@ -266,7 +259,6 @@ function toggleHUD() {
   }
 }
 
-// Canvas init
 if (!sparkCanvas) {
   const canvas = document.createElement('canvas');
   canvas.id = 'spark-canvas';
@@ -279,7 +271,7 @@ if (sporeCanvas) {
   setSporeCtx(sporeCanvas.getContext('2d'));
 }
 
-// Pre-rendered spore glow sprite — avoids expensive runtime shadowBlur
+// Reuse the glow sprite to avoid shadowBlur on every frame.
 const _SPORE_GLOW_SIZE = 32;
 const _sporeGlowCanvas = document.createElement('canvas');
 _sporeGlowCanvas.width = _SPORE_GLOW_SIZE;
@@ -293,7 +285,6 @@ _sgGrad.addColorStop(1, 'rgba(122,174,138,0)');
 _sgCtx.fillStyle = _sgGrad;
 _sgCtx.fillRect(0, 0, _SPORE_GLOW_SIZE, _SPORE_GLOW_SIZE);
 
-// Spark animation loop — only runs when intro is active
 let _sparkRafId = null;
 let _sporeRafId = null;
 
@@ -305,10 +296,8 @@ function sparkLoopHasWork() {
 }
 
 function sparkLoopWrapper(ts) {
-  // Only run sparks/labels when intro section is active
   const introActive = _introStage?.classList.contains('active-section');
   if (!introActive || document.hidden) {
-    // Clear canvases and stop the loop
     releaseCanvasBacking(sparkCanvas, sparkCtx);
     _sparkRafId = null;
     return;
@@ -404,15 +393,14 @@ function resizeAll() {
     return { ...anim, projPts, cum, len, s };
   }).filter(Boolean));
 
-// Reproject routes on resize
   for (const [id, route] of Object.entries(LOCKED_ROUTES)) {
     const projPts = projectXY(route.imgPts);
     const cum = cumulativeLengths(projPts);
     const len = cum[cum.length - 1];
-    
+
     const sRatio = route.len > 0 ? route.s / route.len : 0.5;
     const sHomeRatio = route.len > 0 ? route.sHome / route.len : 0.5;
-    
+
     route.projPts = projPts;
     route.cum = cum;
     route.len = len;
@@ -424,21 +412,19 @@ function resizeAll() {
 
 }
 
-// Init after background loads
 function initAfterImageLoad() {
   if (!bgImg) {
     console.error('bgImg element not found!');
     return;
   }
-  
-  // Compute cover using naturalWidth/naturalHeight
+
   if (!computeCoverFromImage()) {
     console.error('Failed to compute cover from image');
     return;
   }
-  
-  computeNavOffsets(); // Compute offsets with proper base dimensions
-  
+
+  computeNavOffsets();
+
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
   wireNavigationStreams();
 
@@ -451,7 +437,6 @@ function initAfterImageLoad() {
   }
 }
 
-// Gate init on image load
 if (bgImg) {
   if (!bgImg.complete) {
     bgImg.addEventListener('load', initAfterImageLoad, { once: true });
@@ -465,12 +450,10 @@ if (bgImg) {
   console.error('#bg-front-img element not found in DOM');
 }
 
-// Throttled resize
 const resizeAllThrottled = throttle(resizeAll, 150);
 window.addEventListener('resize', resizeAllThrottled, { passive: true });
 window.addEventListener('orientationchange', resizeAllThrottled, { passive: true });
 
-// Ritual toggle (sigil)
 function toggleRitualFromSigil(el){
   setRitualActive(!ritualActive);
   if (!GRAPH) {
@@ -482,7 +465,7 @@ function toggleRitualFromSigil(el){
       }
     });
   }
-  
+
   const img = el.querySelector('img#sigil');
   if (img) {
     img.style.transform = `rotate(${ritualActive ? 180 : 0}deg)`;
@@ -501,24 +484,24 @@ function toggleRitualFromSigil(el){
   } else {
     stopRitualMotion();
     detachFollowerSparks();
-    sendLightningHome(); // one quick, zippy home ping per nav
+    sendLightningHome();
   }
-  
+
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
 function wireSigilToggle(){
   const sigil = document.querySelector('.network-sigil-node');
   const sigilImg = sigil ? sigil.querySelector('img#sigil') : null;
-  
+
   if (!sigil) {
-    console.warn('.network-sigil-node not found — toggle will not work');
+    console.warn('.network-sigil-node not found. Toggle will not work.');
     return;
   }
   if (!sigilImg) {
-    console.warn('img#sigil not found inside .network-sigil-node — rotation will not work');
+    console.warn('img#sigil not found inside .network-sigil-node. Rotation will not work.');
   }
-  
+
   sigil.addEventListener('click', () => toggleRitualFromSigil(sigil));
   sigil.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Enter'){
@@ -536,14 +519,14 @@ function attachFollowerSparks(){
   }
   setFollowerSparks(sparks);
 }
-function detachFollowerSparks(){ 
+function detachFollowerSparks(){
   setFollowerSparks([]);
 }
 
 function sendLightningHome(){
   for (const [id] of Object.entries(LOCKED_ROUTES)){
     if (id === 'intro') continue;
-    startSpark('intro', id, 900); // quick home ping
+    startSpark('intro', id, 900);
   }
   ensureSparkLoop();
 }
@@ -551,27 +534,25 @@ function sendLightningHome(){
 function startRitualMotion(){
   for (const route of Object.values(LOCKED_ROUTES)){
     if (!route) continue;
-    
+
     const distToMin = Math.abs(route.s - route.sMin);
     const distToMax = Math.abs(route.s - route.sMax);
-    
+
     if (distToMin < distToMax) {
-      route.dir = 1; // Start moving toward sMax
+      route.dir = 1;
     } else {
-      route.dir = -1; // Start moving toward sMin
+      route.dir = -1;
     }
   }
 }
 
 function stopRitualMotion(){
-  // Reset routes to home position
   for (const route of Object.values(LOCKED_ROUTES)){
     if (!route) continue;
     route.s = route.sHome;
   }
 }
 
-// Ambient spores
 
 function createSpores() {
   if (!sporeCanvas || !sporeCtx) return;
@@ -619,12 +600,10 @@ function drawSpores(ts) {
     const scalePulse = 0.8 + 0.4 * (Math.sin(ts * 0.0015 + s.scalePhase) + 1) / 2;
     const radius = s.r * scalePulse;
 
-    // Use pre-rendered glow sprite instead of shadowBlur
-    const glowDiam = radius * 6; // Sprite covers glow area
+    const glowDiam = radius * 6;
     c.globalAlpha = s.a * pulse;
     c.drawImage(_sporeGlowCanvas, s.x - glowDiam / 2, s.y - glowDiam / 2, glowDiam, glowDiam);
 
-    // Bright core dot
     c.globalAlpha = s.a * pulse * 0.8;
     c.fillStyle = 'rgba(200,255,220,1)';
     c.beginPath();
@@ -645,7 +624,6 @@ function sporeLoopHasWork() {
 function sporeLoop(ts) {
   const introActive = _introStage?.classList.contains('active-section');
   if (!introActive || document.hidden || !sporeLoopHasWork()) {
-    // Clear and stop loop — will restart when section becomes active
     releaseCanvasBacking(sporeCanvas, sporeCtx);
     _sporeRafId = null;
     return;
@@ -670,30 +648,28 @@ function ensureSporeLoop() {
   }
 }
 
-// Send sparks to current label positions
 function ritualCatchUp() {
   if (prefersReducedMotion) return;
-  
+
   let delay = 0;
   for (const id of Object.keys(LOCKED_ROUTES)) {
     const route = LOCKED_ROUTES[id];
     if (!route) continue;
-    
+
     const imgPoint = imgPointAtRoute(route, route.s);
     if (!imgPoint) continue;
 
     const [imgX, imgY] = imgPoint;
-    
+
     setTimeout(() => {
       startSparkToPoint('intro', imgX, imgY, 750);
       ensureSparkLoop();
     }, delay);
-    
+
     delay += 60 + Math.random() * 40;
   }
 }
 
-// Init network and navigation
 async function initNetworkAndNav() {
   if (!MYC_MAP) return;
 
@@ -720,10 +696,9 @@ async function initNetworkAndNav() {
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
-// Blog hub controls
 function initBlogControls() {
   populateBlogCounts();
-  
+
   document.querySelectorAll('.blog-memo-item[data-hub]').forEach(item => {
     if (item.__blogMemoBound) return;
     item.__blogMemoBound = true;
@@ -744,35 +719,34 @@ function initBlogControls() {
       }
     });
   });
-  
+
   window.addEventListener('blog:navigate', (e) => {
     const { hubId } = e.detail;
     if (hubId) {
       enterHub(hubId);
     }
   });
-  
+
   document.addEventListener('mouseover', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      window.dispatchEvent(new CustomEvent('blog:hover', { 
+      window.dispatchEvent(new CustomEvent('blog:hover', {
         detail: { hubId, source: 'rim-label' }
       }));
     }
   });
-  
+
   document.addEventListener('mouseout', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
       const hubId = arcBtn.dataset.hub;
-      window.dispatchEvent(new CustomEvent('blog:hover-off', { 
+      window.dispatchEvent(new CustomEvent('blog:hover-off', {
         detail: { hubId }
       }));
     }
   });
-  
-  // Sync arc-btn highlight when hub points are hovered (bidirectional)
+
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
     if (source === 'hub-point' && hubId) {
@@ -780,7 +754,7 @@ function initBlogControls() {
       if (arcBtn) arcBtn.classList.add('hovered');
     }
   });
-  
+
   window.addEventListener('blog:hover-off', (e) => {
     const { hubId, source } = e.detail;
     if (source === 'hub-point' && hubId) {
@@ -788,7 +762,7 @@ function initBlogControls() {
       if (arcBtn) arcBtn.classList.remove('hovered');
     }
   });
-  
+
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub) {
@@ -796,7 +770,7 @@ function initBlogControls() {
       enterHub(hubId);
     }
   });
-  
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const arcBtn = e.target.closest('.arc-btn');
@@ -807,14 +781,14 @@ function initBlogControls() {
       }
     }
   });
-  
+
   const btnMap = document.getElementById('btn-map');
   if (btnMap) {
     btnMap.addEventListener('click', () => {
       exitToMap();
     });
   }
-  
+
   const hubStatus = document.getElementById('hub-status');
   const HUB_INFO = {
     craft: { title: 'CRAFT', desc: 'Tools, code, and making by hand' },
@@ -822,7 +796,7 @@ function initBlogControls() {
     codex: { title: 'CODEX', desc: 'Engineering notes and debugging journals' },
     convergence: { title: 'CONVERGENCE', desc: 'Where disciplines meet' }
   };
-  
+
   const tooltip = document.createElement('div');
   tooltip.className = 'blog-hub-tooltip';
   tooltip.innerHTML = `
@@ -830,22 +804,22 @@ function initBlogControls() {
     <span class="blog-hub-tooltip-description"></span>
   `;
   document.querySelector('#blog').appendChild(tooltip);
-  
+
   const tooltipTitle = tooltip.querySelector('.blog-hub-tooltip-title');
   const tooltipDesc = tooltip.querySelector('.blog-hub-tooltip-description');
-  
+
   window.addEventListener('blog:hover', (e) => {
     const { hubId } = e.detail;
     if (hubStatus && hubId && HUB_INFO[hubId]) {
       const info = HUB_INFO[hubId];
       hubStatus.textContent = `Preview: ${info.title}. ${info.desc}.`;
-      
+
       tooltipTitle.textContent = info.title;
       tooltipDesc.textContent = info.desc;
       tooltip.classList.add('visible');
     }
   });
-  
+
   window.addEventListener('blog:hover-off', () => {
     if (hubStatus) {
       hubStatus.textContent = '';
@@ -854,7 +828,6 @@ function initBlogControls() {
   });
 }
 
-// Blog category and article navigation
 
 function updateBlogNavActive(hubId) {
   document.querySelectorAll('.blog-nav-link').forEach(link => {
@@ -887,27 +860,27 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
   if (!hubId || hubId === 'source') {
     return;
   }
-  
+
   const blogSection = document.getElementById('blog');
   if (blogSection) {
     blogSection.dataset.mode = 'category';
-    blogSection.classList.add('in-category'); // drives category-mode CSS
+    blogSection.classList.add('in-category');
   }
-  
+
   const dishLabels = document.getElementById('dish-labels');
   if (dishLabels) {
     dishLabels.style.display = 'none';
   }
-  
+
   updateBlogNavActive(hubId);
-  
+
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     categoryView.setAttribute('data-category', hubId);
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
   }
-  
+
   if (historyMode === 'push') {
     history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
   }
@@ -921,14 +894,14 @@ function resetBlogMapState({ updateHistory = false } = {}) {
     blogSection.dataset.mode = 'map';
     blogSection.classList.remove('in-category');
   }
-  
+
   const dishLabels = document.getElementById('dish-labels');
   if (dishLabels) {
     dishLabels.style.display = '';
   }
-  
+
   updateBlogNavActive(null);
-  
+
   const categoryView = document.getElementById('blog-category-view');
   const articleView = document.getElementById('blog-article-view');
   if (categoryView) categoryView.setAttribute('hidden', '');
@@ -949,7 +922,7 @@ let ARTICLES_REGISTRY = null;
 
 async function loadArticlesRegistry() {
   if (ARTICLES_REGISTRY) return ARTICLES_REGISTRY;
-  
+
   try {
     const res = await fetch('./blog/articles.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -965,21 +938,19 @@ async function loadArticlesRegistry() {
 async function populateBlogCounts() {
   const registry = await loadArticlesRegistry();
   const hubs = ['craft', 'cosmos', 'codex', 'convergence'];
-  
+
   hubs.forEach(hub => {
     const count = (registry[hub] || []).length;
     const countText = count > 0 ? `(${count})` : '';
-    
+
     const memoCount = document.querySelector(`.blog-memo-count[data-hub="${hub}"]`);
     if (memoCount) memoCount.textContent = countText;
-    
+
     const specCount = document.querySelector(`.specimen-count[data-hub="${hub}"]`);
     if (specCount) specCount.textContent = countText;
   });
 }
 
-// Escape user-facing strings before interpolation into innerHTML / attributes.
-// Covers text content and double-quoted attribute values (e.g. aria-label).
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -993,13 +964,13 @@ async function loadCategoryContent(hubId) {
   const content = document.getElementById('blog-category-content');
   const titleEl = document.getElementById('blog-category-title');
   if (!content) return;
-  
+
   const registry = await loadArticlesRegistry();
   const articles = registry[hubId] || [];
   const hubTitle = hubId.toUpperCase();
-  
+
   if (titleEl) titleEl.textContent = hubTitle;
-  
+
   content.innerHTML = `
     ${articles.length === 0 ? '<p class="blog-empty-state">No articles yet. Check back soon!</p>' : ''}
     <div class="blog-article-list">
@@ -1012,13 +983,13 @@ async function loadCategoryContent(hubId) {
       `).join('')}
     </div>
   `;
-  
+
   content.querySelectorAll('.blog-article-item').forEach(item => {
     const articleId = item.dataset.article;
     const activateArticle = () => {
       enterBlogArticle(hubId, articleId);
     };
-    
+
     item.addEventListener('click', activateArticle);
     item.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -1029,22 +1000,21 @@ async function loadCategoryContent(hubId) {
   });
 }
 
-// Article scroll navigation
 function initArticleScrollNav() {
   const scrollNav = document.querySelector('.article-scroll-nav');
   if (!scrollNav) return;
-  
+
   const articleView = document.getElementById('blog-article-view');
   const articleContent = document.getElementById('blog-article-content');
   if (!articleView || !articleContent) return;
-  
-  const SCROLL_AMOUNT = 300; // ~10 lines
-  const THRESHOLD = 400; // ~15 lines - show/hide threshold
-  
+
+  const SCROLL_AMOUNT = 300;
+  const THRESHOLD = 400;
+
   scrollNav.querySelectorAll('.scroll-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
-      
+
       switch (action) {
         case 'top':
           articleView.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1061,28 +1031,28 @@ function initArticleScrollNav() {
       }
     });
   });
-  
+
   const updateScrollNav = () => {
     const isArticleVisible = !articleView.hidden && articleView.offsetParent !== null;
     if (!isArticleVisible) {
       scrollNav.classList.remove('visible');
       return;
     }
-    
+
     const scrollTop = articleView.scrollTop;
     const scrollHeight = articleView.scrollHeight;
     const clientHeight = articleView.clientHeight;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    
+
     const pastTop = scrollTop > THRESHOLD;
     const beforeEnd = distanceFromBottom > THRESHOLD;
     const shouldShow = pastTop && beforeEnd;
-    
+
     scrollNav.classList.toggle('visible', shouldShow);
   };
-  
+
   articleView.addEventListener('scroll', updateScrollNav);
-  
+
   const observer = new MutationObserver(() => {
     if (!articleView.hidden) {
       articleView.scrollTop = 0;
@@ -1090,7 +1060,7 @@ function initArticleScrollNav() {
     updateScrollNav();
   });
   observer.observe(articleView, { attributes: true, attributeFilter: ['hidden'] });
-  
+
   updateScrollNav();
 }
 
@@ -1099,15 +1069,15 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
   if (categoryView) {
     categoryView.setAttribute('hidden', '');
   }
-  
+
   updateBlogNavActive(hubId);
-  
+
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
     articleView.removeAttribute('hidden');
     loadArticleContent(hubId, articleId);
   }
-  
+
   if (historyMode === 'push') {
     history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
   }
@@ -1115,9 +1085,9 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
 
 function exitBlogArticle() {
   document.getElementById('blog-category-view')?.removeAttribute('hidden');
-  
+
   document.getElementById('blog-article-view')?.setAttribute('hidden', '');
-  
+
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     const hubId = history.state?.hubId || 'craft';
@@ -1128,9 +1098,9 @@ function exitBlogArticle() {
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
   if (!content) return;
-  
+
   const path = `./blog/${hubId}/${articleId}.html`;
-  
+
   fetch(path)
     .then(res => {
       if (!res.ok) {
@@ -1144,7 +1114,7 @@ function loadArticleContent(hubId, articleId) {
       const article = doc.querySelector('.article-container');
       if (article) {
         content.innerHTML = article.innerHTML;
-        
+
         setupArticleNavigation(content, hubId);
       } else {
         content.innerHTML = '<p>Article not found.</p>';
@@ -1173,7 +1143,7 @@ function setupArticleNavigation(container, hubId) {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const href = link.getAttribute('href');
-      
+
       if (href.includes('#blog?hub=') || href.includes('#blog/')) {
         exitBlogArticle();
       } else if (href.includes('#blog')) {
@@ -1181,7 +1151,7 @@ function setupArticleNavigation(container, hubId) {
       }
     });
   });
-  
+
   const backButton = container.querySelector('.back-button');
   if (backButton) {
     backButton.addEventListener('click', (e) => {
@@ -1224,7 +1194,6 @@ function closeTransientUi() {
     .forEach(el => el.classList.remove('visible'));
 }
 
-// Section visibility with effects
 function showSectionWithEffects(sectionName, options = {}) {
   closeTransientUi();
   setGraphicsSection(sectionName);
@@ -1232,7 +1201,11 @@ function showSectionWithEffects(sectionName, options = {}) {
   showSection(sectionName, options);
   releaseInactiveFeatureCanvasBuffers(sectionName);
   ensureSectionModule(sectionName);
-  
+
+  window.dispatchEvent(new CustomEvent('contact:visible', {
+    detail: { visible: sectionName === 'contact' }
+  }));
+
   const isBlogVisible = sectionName === 'blog';
   if (isBlogVisible) {
     resetBlogMapState();
@@ -1242,7 +1215,6 @@ function showSectionWithEffects(sectionName, options = {}) {
     detail: { visible: isBlogVisible }
   }));
 
-  // Restart intro-only loops when navigating back to intro
   if (sectionName === 'intro') {
     restoreIntroCanvasBuffers();
     ensureSparkLoop();
@@ -1326,7 +1298,6 @@ function wireNavigationStreams() {
 window.addEventListener('DOMContentLoaded', async () => {
   wireNavigationStreams();
 
-  // Social icons: stream on hover
   const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
   socialIcons.forEach(icon => {
     icon.addEventListener('pointerenter', () => {
@@ -1336,7 +1307,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       const vpY = rect.top + rect.height / 2;
       startStream(vpX, vpY);
     });
-    
+
     icon.addEventListener('pointerleave', () => {
       stopStream();
     });
@@ -1347,7 +1318,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const hash = window.location.hash.slice(1);
-  
+
   if (hash.startsWith('blog/')) {
     const parts = hash.split('/');
     const hubId = parts[1];
@@ -1374,11 +1345,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'H') toggleHUD();
-    
+
     if (e.key === 'Escape') {
       const articleView = document.getElementById('blog-article-view');
       const categoryView = document.getElementById('blog-category-view');
-      
+
       if (articleView && !articleView.hasAttribute('hidden')) {
         exitBlogArticle();
       } else if (categoryView && !categoryView.hasAttribute('hidden')) {
@@ -1399,12 +1370,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
-  
+
   initBlogControls();
-  
+
   document.getElementById('btn-map-category')?.addEventListener('click', exitToMap);
   document.getElementById('btn-map-article')?.addEventListener('click', exitToMap);
-  
+
   document.querySelectorAll('.blog-nav-link').forEach(link => {
     link.addEventListener('click', () => {
       const hubId = link.dataset.hub;
@@ -1415,11 +1386,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
-  
+
   initArticleScrollNav();
 });
 
-// Mobile menu
 const sigilBtn = document.getElementById('myco-sigil-btn');
 const menuDlg  = document.getElementById('necro-menu');
 
@@ -1449,7 +1419,6 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   });
 }
 
-// Post-load layout
 window.addEventListener('load', () => {
   if (COVER.ready) {
     computeCoverFromImage();
@@ -1457,72 +1426,66 @@ window.addEventListener('load', () => {
     layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
     if (hudEnabled) renderHUD();
   }
-  
+
   initHubToIcons();
 });
 
-// Glitch text effect
 const glitchElements = document.querySelectorAll('.glitch-text');
 glitchElements.forEach(el => {
   el.setAttribute('data-text', el.textContent);
 });
 
-// Simple particle effect
 function simpleParticles(x, y) {
   if (prefersReducedMotion) return;
-  
+
   const layer = document.createElement('div');
   Object.assign(layer.style, {
-    position:'absolute', 
-    inset:0, 
-    overflow:'hidden', 
+    position:'absolute',
+    inset:0,
+    overflow:'hidden',
     pointerEvents:'none',
     zIndex:999
   });
   document.body.appendChild(layer);
-  
+
   const count = 12;
   for (let i=0; i<count; i++){
     const particle = document.createElement('span');
     const angle = (Math.PI * 2) * (i / count);
     const distance = 50 + Math.random() * 30;
     const size = 3;
-    
+
     Object.assign(particle.style, {
       position:'absolute',
-      left: x + 'px', 
+      left: x + 'px',
       top: y + 'px',
-      width: size + 'px', 
+      width: size + 'px',
       height: size + 'px',
       borderRadius:'50%',
       background:'rgba(230,227,216,.7)',
       transform:'translate(-50%,-50%)',
       transition:'transform .5s ease-out, opacity .5s ease-out'
     });
-    
+
     layer.appendChild(particle);
-    
+
     requestAnimationFrame(() => {
       particle.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
       particle.style.opacity = '0';
     });
   }
-  
+
   setTimeout(() => layer.remove(), 600);
 }
 
-// Hash change (back/forward)
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.slice(1);
-  
-  // Blog has three history states: #blog (map), #blog/<hub> (category),
-  // #blog/<hub>/<article> (article). Back/Forward drives this, so NEVER push or
-  // replace history here — the hash is already correct (pushing would duplicate
-  // the entry and destroy the Forward stack).
+
+  // History already changed. Pushing here would break Back and Forward.
   if (hash === 'blog' || hash.startsWith('blog/')) {
     const parts = hash.split('/');
-    const hubId = parts[1]; // craft, cosmos, convergence, codex
-    const articleId = parts[2]; // optional article slug
+    const hubId = parts[1];
+    const articleId = parts[2];
 
     showSectionWithEffects('blog', { historyMode: 'none' });
 
@@ -1531,7 +1494,7 @@ window.addEventListener('hashchange', () => {
     } else if (hubId) {
       scheduleBlogHashAction(() => enterHub(hubId, { historyMode: 'none' }));
     } else {
-      scheduleBlogHashAction(() => resetBlogMapState()); // back to the dish map
+      scheduleBlogHashAction(() => resetBlogMapState());
     }
     return;
   }
@@ -1546,7 +1509,6 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-// Back button (altar screens)
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="go-intro"]');
   if (!btn) return;
@@ -1554,7 +1516,6 @@ document.addEventListener('click', (e) => {
   showSectionWithEffects('intro', { historyMode: 'push' });
 });
 
-// Section navigation
 document.addEventListener('click', (e) => {
   const link = e.target.closest('.section-nav-link');
   if (!link) return;
@@ -1565,13 +1526,11 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Paper focus is a DESKTOP-only interaction; compact (phones AND tablets) use the
-// tap-to-front blur toggle below instead. Keyed on the shared compact trigger so the
-// JS interaction can never drift from the CSS layout.
+// Keep the interaction breakpoint aligned with the compact CSS layout.
 const mqCompact = window.matchMedia(COMPACT_MQ);
 if (!mqCompact.matches) {
-  initAboutPaperFocus();       // desktop only
-  initSkillsPaperFocus();      // desktop only
+  initAboutPaperFocus();
+  initSkillsPaperFocus();
 }
 
 function aboutMobileInertify() {
@@ -1611,7 +1570,6 @@ function clearFront(scope) {
   }
 }
 
-// Mobile (<=900px) blur toggle: tap a specimen card to bring it to front, blurring the rest.
 function bindAltarFrontToggle(altarSel) {
   const mqMobile = window.matchMedia(COMPACT_MQ);
 
@@ -1623,7 +1581,6 @@ function bindAltarFrontToggle(altarSel) {
     altar.addEventListener('click', (e) => {
       const card = e.target.closest('.slab.paper');
 
-      // Clicked the background -> clear everything (no blur)
       if (!card) {
         clearFront(altar);
         return;
@@ -1632,7 +1589,6 @@ function bindAltarFrontToggle(altarSel) {
       // Don't toggle when clicking real controls inside the card
       if (e.target.closest('a,button,[role="button"]')) return;
 
-      // Toggle front: if card is already front -> clear; else set it front
       const isFront = card.classList.contains('is-front');
       altar.querySelectorAll('.slab.paper.is-front')
            .forEach(el => el.classList.remove('is-front'));
@@ -1660,7 +1616,6 @@ function bindAltarFrontToggle(altarSel) {
 bindAltarFrontToggle('#about .altar');
 bindAltarFrontToggle('#skills .altar');
 
-// [AA-FIX] Watch for DPR changes via matchMedia (event-driven, no polling)
 let lastDPR = window.devicePixelRatio || 1;
 function watchDPR() {
   const mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
@@ -1668,9 +1623,7 @@ function watchDPR() {
     const currentDPR = window.devicePixelRatio || 1;
     if (currentDPR !== lastDPR) {
       lastDPR = currentDPR;
-      // Dispatch an event other modules can listen to
       window.dispatchEvent(new CustomEvent('dpr-changed', { detail: { dpr: currentDPR } }));
-      // If a card is open, recompute its position
       const openCard = document.querySelector('.paper-open');
       if (openCard) {
         const r = openCard.getBoundingClientRect();
@@ -1690,7 +1643,6 @@ function watchDPR() {
 }
 watchDPR();
 
-// Pause/resume intro loops when tab visibility changes
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     const introActive = _introStage?.classList.contains('active-section');
@@ -1737,12 +1689,12 @@ function initPaperFocusForSection(sectionId){
     return;
   }
   section.__paperFocusBound = true;
-  
+
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
     if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
     ensurePaperCloseButton(p, closePaper);
-    
+
     p.addEventListener('click', (event) => {
       if (isCompact()) return;
       if (event.target.closest('.paper-card-close')) return;
@@ -1754,7 +1706,7 @@ function initPaperFocusForSection(sectionId){
     });
     p.addEventListener('keydown', (e) => {
       if (isCompact()) return;
-      
+
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (p.classList.contains('paper-open')) {
@@ -1765,10 +1717,10 @@ function initPaperFocusForSection(sectionId){
       }
     });
   });
-  
+
   backdrop.addEventListener('click', closePaper);
   document.addEventListener('ui:close-overlays', (event) => closePaper(event.detail || { immediate: true }));
-  
+
   function onEsc(e){ if (e.key === 'Escape') closePaper(); }
 
   function ensurePaperCloseButton(el, close) {
@@ -1785,23 +1737,22 @@ function initPaperFocusForSection(sectionId){
     });
     el.appendChild(closeButton);
   }
-  
+
   function openPaper(el){
     if (document.body.classList.contains('has-paper-open-global')) return;
     const r = el.getBoundingClientRect();
     const computed = getComputedStyle(el);
-    
+
     const ipx = (n) => Math.round(Number(n) || 0);
-    
-    // Capture the REAL content height (scrollHeight) before clipping
-    // The closed-state max-height clips content; we need the full height for the open state
+
+    // Measure the full content before max-height clips it.
     const realContentH = Math.max(el.scrollHeight, r.height);
-    
+
     const placeholder = document.createElement('div');
     placeholder.className = el.className.replace('paper-open', '') + ' paper-placeholder';
     placeholder.style.visibility = 'hidden';
     placeholder.style.pointerEvents = 'none';
-    
+
     el.__portal = { parent: el.parentNode, placeholder: placeholder };
     el.__portal.parent.insertBefore(placeholder, el);
     document.body.appendChild(el);
@@ -1811,11 +1762,11 @@ function initPaperFocusForSection(sectionId){
     el.style.top  = `${r.top}px`;
     el.style.width  = `${r.width}px`;
     el.style.height = `${realContentH}px`;
-    
+
     el.style.setProperty('--open-tx', '0px');
     el.style.setProperty('--open-ty', '0px');
     el.style.setProperty('--open-scale', '1');
-    
+
     const vw = window.innerWidth, vh = window.innerHeight;
     const cx = r.left + r.width/2, cy = r.top + realContentH/2;
     const tx = ipx((vw/2) - cx);
@@ -1823,41 +1774,41 @@ function initPaperFocusForSection(sectionId){
     const fitW = (vw * 0.86) / r.width;
     const fitH = (vh * 0.80) / realContentH;
     const scale = Math.min(fitW, fitH, 2.4);
-    
+
     const targetW = ipx(r.width * scale);
     const targetH = ipx(realContentH * scale);
     el.style.setProperty('--open-w', `${targetW}px`);
     el.style.setProperty('--open-h', `${targetH}px`);
-    
+
     requestAnimationFrame(() => {
       el.style.setProperty('--open-tx', `${tx}px`);
       el.style.setProperty('--open-ty', `${ty}px`);
       el.style.setProperty('--open-scale', `${scale}`);
     });
-    
+
     // Demote from compositor after transition for better AA
     let settled = false;
     const applySettle = () => {
       if (settled) return;
       settled = true;
-      
+
       el.classList.add('paper-open--settled');
-      
+
       el.style.willChange = 'auto';
       el.style.backfaceVisibility = 'visible';
-      
+
       void el.offsetHeight;
     };
-    
+
     const onEnd = (e) => {
       if (e.propertyName !== 'transform') return;
       el.removeEventListener('transitionend', onEnd);
       applySettle();
     };
     el.addEventListener('transitionend', onEnd, { once: true });
-    
+
     setTimeout(applySettle, 350);
-    
+
     el.setAttribute('role','dialog');
     el.setAttribute('aria-modal','true');
     document.body.classList.add('has-paper-open-global');
@@ -1889,6 +1840,3 @@ function initPaperFocusForSection(sectionId){
     document.removeEventListener('keydown', onEsc);
   }
 }
-
-// (Removed the disabled "ritual background" subsystem: SIGNALS canvas,
-// lightning/spore pulse engine and sigil helpers — all functionally dead.)

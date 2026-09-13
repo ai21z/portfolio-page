@@ -1,20 +1,11 @@
-// Accessible text equivalent of the Work globe.
-//
-// The globe renders all employment + project content into pointer-only canvas
-// popups, so keyboard users, screen-reader users, and anyone whose WebGL2
-// context fails got nothing. This renders the same data as a real DOM list
-// (headings, text, github links) into #work-index, generated from the single
-// source of truth so it can never drift from the globe. It is visually hidden
-// by default (the globe stays the visual), but exposed to assistive tech,
-// reachable by keyboard, revealed on focus, and shown as the genuine fallback
-// when the WebGL scene is unavailable.
+// Share the globe data with keyboard users and the no-WebGL fallback.
 
 import { WORK_LOCATIONS } from './data/work-locations.js?v=20260711';
 import { PROJECTS } from './data/projects.js?v=20260711';
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
-  Object.assign(node, props); // textContent/className/href are properties → auto-escaped
+  Object.assign(node, props);
   for (const child of children) if (child != null) node.append(child);
   return node;
 }

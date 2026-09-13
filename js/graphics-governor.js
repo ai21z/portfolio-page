@@ -151,6 +151,9 @@ function probeWebGL2Capability() {
     majorPerformanceCaveat: webgl2 && !webgl2PerformanceOk,
     rendererCategory: readRendererCategory(normalContext || caveatContext)
   };
+  for (const gl of [normalContext, caveatContext]) {
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  }
   return webglCapabilityProbe;
 }
 
@@ -173,10 +176,7 @@ function hardwareClass({ hardwareConcurrency, deviceMemory, rendererCategory }) 
   return 'capable';
 }
 
-// Capability is derived from matchMedia / UA / viewport / WebGL probes that only change on
-// resize, dpr, motion-preference or connection changes. getGraphicsBudget() runs every frame
-// (so systems pick up runtime auto-downgrades via the effective profile), so memoize the
-// expensive capability detection and invalidate it only on those events.
+// Cache capability probes until the viewport, connection, or preferences change.
 let _capabilityCache = null;
 function invalidateGraphicsCapability() { _capabilityCache = null; }
 if (typeof window !== 'undefined') {
@@ -192,14 +192,22 @@ function getGraphicsCapability() {
   const deviceMemory = readCoarseNumber(navigator.deviceMemory);
   const engine = browserEngine();
   const viewport = viewportClass();
-  const webgl = probeWebGL2Capability();
+  // Defer GPU startup unless a 3D section or an explicit desktop quality choice needs it.
+  const needsWebGL = currentSection === 'work' || currentSection === 'blog'
+    || (!isMobileViewport() && rank(selectedProfile) > rank('balanced'));
+  const webgl = webglCapabilityProbe || (needsWebGL ? probeWebGL2Capability() : {
+    webgl2: null,
+    webgl2PerformanceOk: null,
+    majorPerformanceCaveat: false,
+    rendererCategory: 'unknown'
+  });
   const reducedMotion = prefersReducedMotion();
   const saveData = saveDataEnabled();
   const reasons = [];
 
   if (reducedMotion) reasons.push('reduced-motion');
   if (saveData) reasons.push('save-data');
-  if (!webgl.webgl2) reasons.push('no-webgl2');
+  if (webgl.webgl2 === false) reasons.push('no-webgl2');
   if (webgl.majorPerformanceCaveat) reasons.push('major-performance-caveat');
   if (hardwareConcurrency !== null && hardwareConcurrency <= 2) reasons.push('low-hardware-concurrency');
   if (deviceMemory !== null && deviceMemory <= 2) reasons.push('low-device-memory');
@@ -212,12 +220,7 @@ function getGraphicsCapability() {
   });
 
   let recommendedProfile = 'balanced';
-  // A failed failIfMajorPerformanceCaveat probe is NOT a reliable "weak GPU" signal: Apple
-  // Silicon (M1/M2) under ANGLE-Metal / WebKit raises the caveat despite being plenty capable,
-  // which used to force Quiet (particleScale:0) and kill the ambient particles on Macs. Genuinely
-  // weak GPUs are still caught by 'software-renderer' + the 'weak' hardware class, and the
-  // per-frame runtime auto-downgrade backstops anything that actually struggles -- so we no longer
-  // force Quiet on the caveat alone ('major-performance-caveat' stays in `reasons` for telemetry).
+  // The performance-caveat probe can fail on capable Macs. Do not force Quiet from it alone.
   const quietReasons = new Set([
     'reduced-motion',
     'save-data',
@@ -507,9 +510,7 @@ function wireControl() {
     button.addEventListener('click', () => {
       const profile = button.getAttribute('data-graphics-profile');
       setMenuOpen(false);
-      // A deliberate profile change does a FULL RELOAD behind the threshold veil,
-      // so every scene re-initialises cleanly from the new budget. (Automatic
-      // runtime downgrades stay live — they must not reload mid-experience.)
+      // Reload on explicit profile changes, never on automatic downgrades.
       if (!profile || profile === selectedProfile) return;
       writeStoredProfile(profile);
       if (typeof window.__showThreshold === 'function') window.__showThreshold();
@@ -705,6 +706,7 @@ export function setGraphicsProfile(profile, options = {}) {
   if (!validProfile(profile)) return;
   const nextProfile = normalizeSelectableProfile(profile);
   selectedProfile = nextProfile;
+  invalidateGraphicsCapability();
   downgradeSteps = 0;
   if (options.persist !== false) writeStoredProfile(nextProfile);
   updateDocumentState('profile');
@@ -719,9 +721,7 @@ export function markGraphicsActivity(reason = 'activity', durationMs = 700) {
 export function reportFrameSample(systemName, deltaMs) {
   const now = performance.now();
   frameSamples.push({ systemName, deltaMs, at: now });
-  // Collect a sample every frame (cheap push), but only run the prune/adjust + overlay a
-  // couple of times a second. Auto-downgrade reasons about 10s windows, so per-frame
-  // filter()+spread churn bought nothing.
+  // Sample every frame but adjust the budget only a few times per second.
   if (now - lastFrameAdjustAt >= 500) {
     lastFrameAdjustAt = now;
     maybeAdjustFromFrames(now);
@@ -731,6 +731,9 @@ export function reportFrameSample(systemName, deltaMs) {
 
 export function setGraphicsSection(sectionName) {
   currentSection = sectionName || 'intro';
+  if (!webglCapabilityProbe && (currentSection === 'work' || currentSection === 'blog')) {
+    invalidateGraphicsCapability();
+  }
   updateDocumentState('section');
 }
 

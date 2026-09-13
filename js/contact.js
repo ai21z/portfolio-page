@@ -1,5 +1,3 @@
-// Contact form controller
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUBJECT_LIMIT = { min: 5, max: 60 };
 const MESSAGE_LIMIT = { min: 10, max: 350 };
@@ -19,12 +17,17 @@ class NotebookContact {
     this.turnstileToken = '';
     this.turnstileRequired = true;
     this.turnstileFeedbackEnabled = false;
+    this.verificationStarted = false;
+    this.visibilityListener = (event) => {
+      if (event.detail?.visible) this.startVerification();
+    };
     this.formDisabled = false;
     this.isSubmitting = false;
     this.submitListener = (event) => this.handleSubmit(event);
   }
 
   init() {
+    if (this.form) return;
     this.form = document.getElementById('contact-form');
     if (!this.form) return;
 
@@ -48,13 +51,8 @@ class NotebookContact {
     this.updateSubmitState();
 
     if (this.turnstileRequired) {
-      this.waitForTurnstile()
-        .then(() => this.mountTurnstile())
-        .catch(() => {
-          this.formDisabled = true;
-          this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
-          this.updateSubmitState();
-        });
+      window.addEventListener('contact:visible', this.visibilityListener);
+      if (this.form.closest('.active-section')) this.startVerification();
     } else {
       this.formDisabled = true;
       this.showStatus('Verification widget is not configured. Contact form is disabled.', 'error');
@@ -63,6 +61,18 @@ class NotebookContact {
         this.submitBtn.disabled = true;
       }
     }
+  }
+
+  startVerification() {
+    if (!this.turnstileRequired || this.verificationStarted) return;
+    this.verificationStarted = true;
+    this.waitForTurnstile()
+      .then(() => this.mountTurnstile())
+      .catch(() => {
+        this.formDisabled = true;
+        this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
+        this.updateSubmitState();
+      });
   }
 
   wireFieldValidation() {
@@ -159,7 +169,7 @@ class NotebookContact {
     if (!this.charCountEl || !this.inputs.message) return;
     const length = this.inputs.message.value.length;
     this.charCountEl.textContent = `${length}/${MESSAGE_LIMIT.max}`;
-    // #5A5040 (label sepia) meets AA on the aged paper; red only when over the limit
+    // Keep the counter readable against the paper.
     const color = length > MESSAGE_LIMIT.max ? '#8B0000' : '#5A5040';
     this.charCountEl.style.color = color;
   }
@@ -306,21 +316,39 @@ class NotebookContact {
     }
 
     return new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => {
-        document.removeEventListener('turnstile-loaded', onLoad);
-        reject(new Error('Turnstile timed out'));
-      }, 8000);
-
-      const onLoad = () => {
+      let script = document.getElementById('turnstile-script');
+      const cleanup = () => {
         window.clearTimeout(timeout);
+        document.removeEventListener('turnstile-loaded', onLoad);
+        script?.removeEventListener('error', onError);
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error('Turnstile unavailable'));
+      };
+      const onLoad = () => {
+        cleanup();
         if (window.turnstile && typeof window.turnstile.render === 'function') {
           resolve();
         } else {
           reject(new Error('Turnstile unavailable'));
         }
       };
-
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error('Turnstile timed out'));
+      }, 8000);
       document.addEventListener('turnstile-loaded', onLoad, { once: true });
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__turnstileOnLoad';
+        script.async = true;
+        script.addEventListener('error', onError, { once: true });
+        document.head.appendChild(script);
+      } else {
+        script.addEventListener('error', onError, { once: true });
+      }
     });
   }
 
@@ -377,6 +405,7 @@ class NotebookContact {
 
   destroy() {
     if (!this.form) return;
+    window.removeEventListener('contact:visible', this.visibilityListener);
     this.form.removeEventListener('submit', this.submitListener);
     if (this.turnstileWidgetId && window.turnstile && typeof window.turnstile.remove === 'function') {
       window.turnstile.remove(this.turnstileWidgetId);

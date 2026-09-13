@@ -20,7 +20,7 @@ import { projectXY } from './viewport.js';
 
 const loggedPathFailures = new Set();
 
-// Pre-rendered glow sprite — avoids expensive runtime shadowBlur
+// Reuse the glow sprite to avoid shadowBlur on every frame.
 const GLOW_SIZE = 64;
 const _glowCanvas = document.createElement('canvas');
 _glowCanvas.width = GLOW_SIZE;
@@ -45,7 +45,7 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
 
   let idA = NODE_IDS[fromKey];
   let idB = NODE_IDS[toKey];
-  
+
   if (idA == null || idB == null || idA < 0 || idB < 0) {
     for (const [id, pt] of Object.entries(NAV_COORDS)) {
       NODE_IDS[id] = GRAPH.nearestId(pt.x, pt.y, 80, 24);
@@ -112,7 +112,7 @@ export function drawSparks(dt, pointAtRoute) {
     sparkCtx.lineCap = 'round';
     sparkCtx.lineJoin = 'round';
 
-    // Layer 1: wide outer glow (no shadowBlur — layered strokes create glow naturally)
+    // Layered strokes provide the outer glow.
     sparkCtx.strokeStyle = 'rgba(143,180,255,0.2)';
     sparkCtx.lineWidth = 8;
     sparkCtx.beginPath();
@@ -150,7 +150,7 @@ export function drawSparks(dt, pointAtRoute) {
     for (const f of followerSparks){
       const route = LOCKED_ROUTES[f.id];
       if (!route || !route.projPts || route.projPts.length < 2) continue;
-      
+
       const head = pointAtRoute(route, route.s);
 
       // Follower spark: pre-rendered glow sprite at multiple sizes for layered glow
@@ -168,10 +168,10 @@ export function drawSparks(dt, pointAtRoute) {
 
 export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
   if (prefersReducedMotion || !GRAPH) return;
-  
+
   const fromId = NODE_IDS[fromKey];
   if (fromId == null || fromId < 0) return;
-  
+
   const toId = GRAPH.nearestId(imgX, imgY, 96, 24);
   if (toId == null || toId < 0) {
     const key = `nonode:${imgX.toFixed(0)},${imgY.toFixed(0)}`;
@@ -181,16 +181,16 @@ export function startSparkToPoint(fromKey, imgX, imgY, speed = 750) {
     }
     return;
   }
-  
+
   const solved = aStarPath(fromId, toId, GRAPH, PATH_CACHE);
   if (!solved || solved.length < 2) return;
-  
+
   const imgPts = solved.map(p => ({ x: p.x, y: p.y }));
   const projPts = projectXY(imgPts);
   const cum = cumulativeLengths(projPts);
   const len = cum[cum.length - 1];
   if (!len) return;
-  
+
   ACTIVE_ANIMS.push({
     imgPts, projPts, cum, len,
     s: 0, v: speed

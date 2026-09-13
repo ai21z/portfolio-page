@@ -33,8 +33,11 @@ The build bundles and minifies `styles/main.css`. Edit the source stylesheets an
 ```bash
 npx playwright install
 npm run check
-npm run test:e2e
+npm run check:dependencies
+npm run test:e2e -- --grep-invert "browser audit|records Contact first-entry"
 ```
+
+The static preview does not run the contact Function or apply edge headers. `npm run check` includes an isolated compiled Pages integration with synthetic bindings and blocked unexpected outbound requests. It does not send real mail. Heavy profiling is separate from these correctness checks.
 
 ## Project Layout
 
@@ -67,21 +70,31 @@ npm run check
 
 Only files listed in `scripts/public-files.json` are copied into `dist/`. Add new public assets there explicitly. Local notes, tests, editor settings, source resumes, and backend code are not static assets. The build clears stale output and rejects symlinks. The Pages middleware enforces the same list, including for cached files. Keep the font license with the public font files.
 
-Production deployments target the existing Cloudflare Pages project:
+Production publishing requires a clean master checkout and the full reviewed commit:
 
 ```bash
-npm run deploy
+npm run deploy -- --commit <full-reviewed-commit>
 ```
 
-This runs the checks, rebuilds `dist/`, and deploys that directory with `wrangler pages deploy dist --project-name personal-webpage --branch master`. Never deploy the repository root. Wrangler bundles `functions/` separately from the static assets.
+Preview publishing uses `npm run deploy:preview -- --commit <full-reviewed-commit>` from a clean non-master branch. Both paths build fresh output, run unit, Pages-runtime and browser checks, then recheck the source and output before invoking the uploader. The receipt includes the branch, commit and hashes covering tracked source and the public output. Functions and middleware are part of the source hash. Never deploy the repository root.
+
+Stop any existing preview on port 4173 before publishing so the browser checks own their server. A failed check prevents this entry point from uploading. This local guard does not prevent an account owner from invoking Wrangler separately. Commits and production publishing still require a deliberate review.
 
 For Cloudflare Git builds, set the build command to `npm run build` and the output directory to `dist`. A local `.gitignore` does not control what a direct upload publishes.
 
 The contact Function expects its production secrets and service configuration in Cloudflare. Values are intentionally not stored in this repository.
 
+The form keeps unsuccessful drafts in the page and a retry identifier in session storage. It uses bounded requests and Resend idempotency without automatic sending retries. Provider acceptance is not a delivery receipt. Exact allowed Turnstile hostnames can be set with `CONTACT_ALLOWED_HOSTNAMES`, defaulting to `zounarakis.com`. Preview configuration must be explicit.
+
+The build generates CSP hashes from the public HTML. Scripts allow the same origin, those exact inline hashes and the Turnstile origin. Inline styles remain allowed for the existing artwork and dynamic positioning. The browser tests exercise report-only and enforcement through Cloudflare's local Pages asset handler. No reporting collector is configured.
+
 The `www.zounarakis.com` hostname must be attached to this Pages project, with its DNS record pointing to the project's Pages hostname. The middleware redirects GET and HEAD requests to `https://zounarakis.com` with a 301. Other methods use a 308 to preserve the request body. Both keep the path and query string. Hostname redirects cannot use Pages `_redirects`. See [Cloudflare redirect support](https://developers.cloudflare.com/pages/configuration/redirects/).
 
 After deployment, check that private paths such as `/docs/local/BLOG-GUIDE.md`, `/.claude/launch.json`, `/tests/contact-form.spec.ts`, and `/package.json` return 404. Verify that `https://www.zounarakis.com/?source=check` redirects to `https://zounarakis.com/?source=check`.
+
+## Maintenance
+
+Review dependency advisories and changelogs before updates, retain the lockfile, then run the checks and inspect the preview. The workflow pins checkout, setup-node and upload-artifact to reviewed release commits. When updating an action, verify the upstream release and tag commit, update its pin and version comment together, and review the resulting CI run. No dependency bot or automatic publishing workflow is enabled here.
 
 ## Ownership
 

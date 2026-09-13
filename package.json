@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-site.mjs",
-    "check": "git diff --check && npm run test:unit && npm run build",
+    "check": "git diff --check && npm run test:unit && npm run build && npm run test:integration",
     "test:unit": "node --test tests/unit/*.test.mjs",
-    "deploy": "npm run check && wrangler pages deploy dist --project-name personal-webpage --branch master",
+    "test:integration": "node --test tests/integration/*.test.mjs",
+    "check:dependencies": "npm audit --audit-level=moderate",
+    "deploy": "node scripts/deploy-site.mjs production",
+    "deploy:preview": "node scripts/deploy-site.mjs preview",
     "generate-icons": "node generate-icons.js",
     "generate-og": "node generate-og.js",
     "generate:network-lite": "node scripts/generate-network-lite.mjs",
@@ -21,10 +24,10 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.56.1",
     "esbuild": "0.28.1",
     "http-server": "^14.1.1",
-    "@axe-core/playwright": "^4.13.0",
     "parse5": "^8.0.1",
     "sharp": "^0.35.4",
     "wrangler": "^4.131.1"

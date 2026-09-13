@@ -1,4 +1,5 @@
-// Social icons floating animation
+import { getGraphicsBudget } from './graphics-governor.js';
+import { compactMediaQuery, isCompact } from './compact.js';
 
 class SocialIconsAnimation {
   constructor() {
@@ -25,6 +26,7 @@ class SocialIconsAnimation {
   }
 
   setup() {
+    if (this.icons.length) return;
     const iconElements = document.querySelectorAll('.sigil-vial:not(.sigil-vial-split)');
     
     if (!iconElements.length) {
@@ -61,7 +63,7 @@ class SocialIconsAnimation {
 
     this.setupSplitBubble();
 
-    this.start();
+    this.syncPlayback();
   }
 
   setupSplitBubble() {
@@ -141,6 +143,16 @@ class SocialIconsAnimation {
     this.animate();
   }
 
+  syncPlayback() {
+    this.isSectionVisible = Boolean(document.querySelector('.stage[data-section="intro"].active-section'));
+    if (!document.hidden && this.isSectionVisible && !isCompact() && !getGraphicsBudget('social-icons').quiet) {
+      this.start();
+    } else {
+      this.stop();
+      this.icons.forEach(icon => { icon.element.style.transform = ''; });
+    }
+  }
+
   stop() {
     this.isActive = false;
     if (this.animationFrameId) {
@@ -157,9 +169,8 @@ class SocialIconsAnimation {
     const dt = this.lastTimestamp ? Math.min((timestamp - this.lastTimestamp) / 1000, 0.1) : 0.016;
     this.lastTimestamp = timestamp;
 
-    // Skip work if section is not visible (but keep loop alive for quick resume)
     if (!this.isSectionVisible) {
-      this.animationFrameId = requestAnimationFrame((ts) => this.animate(ts));
+      this.stop();
       return;
     }
 
@@ -225,32 +236,20 @@ class SocialIconsAnimation {
   }
 }
 
-// Initialize on page load
 const socialIconsAnimation = new SocialIconsAnimation();
 socialIconsAnimation.init();
 
-// Handle page visibility changes to pause when tab is hidden
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    socialIconsAnimation.stop();
-  } else {
-    socialIconsAnimation.start();
-  }
-});
+document.addEventListener('visibilitychange', () => socialIconsAnimation.syncPlayback());
+window.addEventListener('graphics:profile-change', () => socialIconsAnimation.syncPlayback());
+compactMediaQuery().addEventListener('change', () => socialIconsAnimation.syncPlayback());
 
-// Gate animation to intro section visibility (icons only visible there)
 const _introStageForIcons = document.querySelector('.stage[data-section="intro"]');
 if (_introStageForIcons) {
   const obs = new MutationObserver(() => {
-    socialIconsAnimation.isSectionVisible = _introStageForIcons.classList.contains('active-section');
+    socialIconsAnimation.syncPlayback();
   });
   obs.observe(_introStageForIcons, { attributes: true, attributeFilter: ['class'] });
   socialIconsAnimation.isSectionVisible = _introStageForIcons.classList.contains('active-section');
-}
-
-// Respect prefers-reduced-motion
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  socialIconsAnimation.destroy();
 }
 
 export default socialIconsAnimation;

@@ -7,10 +7,16 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
     '/js/graphics-governor.js', '/js/work-timeline.js',
     '/js/work-globe-webgl.js', '/js/work-globe/work-index.js'
   ]);
+  const mobileChanged = new Set([
+    '/js/app.js', '/js/graphics-governor.js', '/js/social-icons-animation.js',
+    '/js/hub-to-icons.js', '/styles/graphics-controls.css'
+  ]);
   const requests: URL[] = [];
   const stale: string[] = [];
   await stubVerification(page);
-  await page.route(url => changed.has(url.pathname) && url.searchParams.get('v') !== '20260913', route => {
+  await page.route(url => mobileChanged.has(url.pathname)
+    ? url.searchParams.get('v') !== '20260913-mobile'
+    : changed.has(url.pathname) && url.searchParams.get('v') !== '20260913', route => {
     stale.push(route.request().url());
     return route.fulfill({ contentType: 'application/javascript', body: 'throw new Error("Stale release asset");' });
   });
@@ -24,7 +30,8 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   await page.evaluate(() => { location.hash = 'contact'; });
   await expect(page.locator('#contact')).toHaveClass(/active-section/);
   await expect(page.locator('.contact-email')).toBeVisible();
-  for (const pathname of ['/js/contact.js', '/js/navigation.js', '/js/graphics-governor.js']) {
+  for (const pathname of ['/js/contact.js', '/js/navigation.js', '/js/graphics-governor.js',
+    '/js/social-icons-animation.js', '/js/hub-to-icons.js']) {
     expect(requests.filter(url => url.pathname === pathname)).toHaveLength(1);
   }
   expect(requests.some(url => url.pathname === '/js/contact-attempt.js')).toBe(true);

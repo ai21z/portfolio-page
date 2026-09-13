@@ -1,3 +1,24 @@
+@media (max-width: 760px), (pointer: coarse) {
+  .threshold { display: none !important; }
+  .spore-travel, .burst-spore, .hub-spore { display: none !important; }
+  .portrait-wrap { opacity: 1 !important; transform: none !important; }
+  .portrait-wrap, .spore-hub, .spore-travel, .burst-spore,
+  .myco-sigil::before, .myco-sigil::after, .myco-sigil-wrapper::before,
+  .work-globe-container::before { animation: none !important; }
+}
+
+html[data-graphics-effective-profile="quiet"] :is(.spore-travel, .burst-spore, .hub-spore) {
+  display: none !important;
+}
+
+html[data-graphics-effective-profile="quiet"] .spore-hub,
+html[data-graphics-effective-profile="quiet"] .myco-sigil::before,
+html[data-graphics-effective-profile="quiet"] .myco-sigil::after,
+html[data-graphics-effective-profile="quiet"] .myco-sigil-wrapper::before,
+.stage:not(.active-section) .work-globe-container::before {
+  animation: none !important;
+}
+
 .graphics-control {
   position: fixed;
   right: max(14px, env(safe-area-inset-right));

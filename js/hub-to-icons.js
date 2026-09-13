@@ -1,15 +1,29 @@
-// Spore burst from hubs to social icons
+import { getGraphicsBudget } from './graphics-governor.js';
+import { compactMediaQuery, isCompact } from './compact.js';
 
 export function initHubToIcons() {
   const mycoRail = document.querySelector('.myco-rail');
   const mycoStrip = document.querySelector('.myco-strip');
   const socialIcons = document.querySelectorAll('.living-sigils .sigil-vial');
   const hubElements = document.querySelectorAll('.spore-hub');
+  if (mycoStrip?.__hubToIconsBound) return;
   
   if (!mycoRail || !mycoStrip || !socialIcons.length || !hubElements.length) {
     console.warn('[Hub-to-Icons] Missing required elements');
     return;
   }
+
+  mycoStrip.__hubToIconsBound = true;
+  const timers = new Set();
+  const particles = new Set();
+  let running = false;
+  const schedule = (callback, delay) => {
+    const timer = setTimeout(() => {
+      timers.delete(timer);
+      if (running) callback();
+    }, delay);
+    timers.add(timer);
+  };
 
   const hubs = [
     { x: 20, y: 40, side: 'left' },
@@ -44,7 +58,7 @@ export function initHubToIcons() {
     
     icon.style.setProperty('--spore-glow-color', sporeColor);
     
-    setTimeout(() => {
+    schedule(() => {
       icon.classList.remove('spore-hit');
       icon.style.removeProperty('--spore-glow-color');
     }, 1200);
@@ -64,6 +78,7 @@ export function initHubToIcons() {
     spore.style.setProperty('--spore-color', color);
     
     document.body.appendChild(spore);
+    particles.add(spore);
     
     const dx = targetX - startX;
     const dy = targetY - startY;
@@ -78,14 +93,15 @@ export function initHubToIcons() {
     spore.style.setProperty('--start-y', `${startY}px`);
     
     requestAnimationFrame(() => {
-      spore.classList.add('flying');
+      if (running && spore.isConnected) spore.classList.add('flying');
     });
     
-    setTimeout(() => {
+    schedule(() => {
       if (targetIcon) {
         glowIcon(targetIcon, color);
       }
       spore.remove();
+      particles.delete(spore);
     }, duration * 1000);
   };
 
@@ -98,7 +114,7 @@ export function initHubToIcons() {
       const sporeCount = 2;
       
       for (let i = 0; i < sporeCount; i++) {
-        setTimeout(() => {
+        schedule(() => {
           createSpore(hubPage.x, hubPage.y, iconCenter.x, iconCenter.y, icon);
         }, index * 80 + i * 40);
       }
@@ -125,7 +141,7 @@ export function initHubToIcons() {
   };
   
   const scheduleBurst = (hubIndex, delay) => {
-    setTimeout(() => {
+    schedule(() => {
       burstFromHub(hubIndex);
     }, delay);
   };
@@ -138,16 +154,42 @@ export function initHubToIcons() {
     
     scheduleBurst(1, BURST_TIMING + HUB_OFFSET);
     
-    setTimeout(() => {
+    schedule(() => {
       pauseHubAnimations();
       
       const cooldown = COOLDOWN_MIN + Math.random() * (COOLDOWN_MAX - COOLDOWN_MIN);
       
-      setTimeout(() => {
+      schedule(() => {
         runCycle();
       }, cooldown);
     }, CYCLE_DURATION);
   };
   
-  runCycle();
+  const syncPlayback = () => {
+    const active = !document.hidden && !isCompact()
+      && !getGraphicsBudget('hub-to-icons').quiet
+      && document.querySelector('.stage[data-section="intro"].active-section');
+    if (Boolean(active) === running) return;
+    running = Boolean(active);
+    if (running) {
+      runCycle();
+      return;
+    }
+    timers.forEach(clearTimeout);
+    timers.clear();
+    particles.forEach(particle => particle.remove());
+    particles.clear();
+    socialIcons.forEach(icon => {
+      icon.classList.remove('spore-hit');
+      icon.style.removeProperty('--spore-glow-color');
+    });
+    pauseHubAnimations();
+  };
+
+  document.addEventListener('visibilitychange', syncPlayback);
+  window.addEventListener('graphics:profile-change', syncPlayback);
+  compactMediaQuery().addEventListener('change', syncPlayback);
+  const intro = document.querySelector('.stage[data-section="intro"]');
+  if (intro) new MutationObserver(syncPlayback).observe(intro, { attributes: true, attributeFilter: ['class'] });
+  syncPlayback();
 }

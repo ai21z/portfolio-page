@@ -363,6 +363,10 @@ function releaseInactiveFeatureCanvasBuffers(activeSectionName) {
 }
 
 function restoreIntroCanvasBuffers() {
+  if (getGraphicsBudget('intro-spores').quiet) {
+    releaseIntroCanvasBuffers();
+    return;
+  }
   if (!COVER.ready) return;
   sizeCanvas(sparkCanvas, { systemName: 'intro-sparks' });
   sizeCanvas(sporeCanvas, { systemName: 'intro-spores' });

@@ -14,7 +14,7 @@ test('mobile startup skips WebGL probes and contact verification', async ({ page
     } as typeof getContext;
   });
   await page.goto('/index.html');
-  await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', /balanced|quiet/);
+  await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
   await expect(page.locator('#threshold')).toBeHidden();
   expect(await page.evaluate(() => (window as any).__webglRequests)).toBe(0);
   expect(requests.filter(url => url.includes('challenges.cloudflare.com'))).toEqual([]);
@@ -26,6 +26,79 @@ test('mobile startup skips WebGL probes and contact verification', async ({ page
   await page.evaluate(() => { location.hash = 'work'; });
   await expect(page.locator('#work')).toHaveClass(/active-section/);
   await expect.poll(() => page.evaluate(() => (window as any).__webglRequests)).toBeGreaterThan(0);
+});
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1024, height: 768 }]) {
+  test(`touch startup stays quiet with a saved Full setting at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => localStorage.setItem('aris.graphicsProfile', 'full'));
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/index.html');
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+    await expect(page.locator('#threshold')).toBeHidden();
+    const state = await page.evaluate(async () => {
+      const { default: icons } = await import('/js/social-icons-animation.js');
+      icons.init();
+      return {
+        iconCount: icons.icons.length,
+        expectedCount: document.querySelectorAll('.sigil-vial:not(.sigil-vial-split)').length,
+        iconsRunning: icons.isActive,
+        canvases: ['spore-canvas', 'reveal-canvas'].map(id => {
+          const canvas = document.getElementById(id) as HTMLCanvasElement;
+          return canvas.width * canvas.height;
+        }),
+        portraitLoaded: (document.querySelector('.portrait') as HTMLImageElement).naturalWidth > 0,
+        animatedDecorations: document.getAnimations().filter(animation =>
+          animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity).length
+      };
+    });
+    expect(state.iconCount).toBe(state.expectedCount);
+    expect(state.iconsRunning).toBe(false);
+    expect(state.canvases).toEqual([1, 1]);
+    expect(state.portraitLoaded).toBe(true);
+    expect(state.animatedDecorations).toBe(0);
+    await page.clock.install();
+    await page.clock.fastForward(30_000);
+    await expect(page.locator('.hub-spore')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Open menu', exact: true }).click();
+    await expect(page.locator('#necro-menu')).toBeVisible();
+    await page.locator('#necro-menu [data-nav-open="about"]').click();
+    await expect(page.locator('#about')).toHaveClass(/active-section/);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('desktop social animation initializes only once and stops in Quiet', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.goto('/index.html');
+    await expect(page.locator('#threshold')).toBeHidden();
+    const state = await page.evaluate(async () => {
+      const { default: icons } = await import('/js/social-icons-animation.js');
+      const governor = await import('/js/graphics-governor.js');
+      icons.init();
+      icons.init();
+      const count = icons.icons.length;
+      const expected = document.querySelectorAll('.sigil-vial:not(.sigil-vial-split)').length;
+      governor.setGraphicsProfile('quiet', { persist: false });
+      const stopped = !icons.isActive && icons.animationFrameId === null;
+      governor.setGraphicsProfile('balanced', { persist: false });
+      return { count, expected, stopped, resumed: icons.isActive };
+    });
+    expect(state.count).toBe(state.expected);
+    expect(state.stopped).toBe(true);
+    expect(state.resumed).toBe(true);
+    await page.clock.install();
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsProfile('quiet', { persist: false });
+    });
+    await page.clock.fastForward(30_000);
+    await expect(page.locator('.hub-spore')).toHaveCount(0);
+  } finally {
+    await page.close();
+  }
 });
 
 test('contact loads and mounts verification once after opening', async ({ page }) => {

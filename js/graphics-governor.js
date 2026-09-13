@@ -55,7 +55,7 @@ const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
 let initialized = false;
-let selectedProfile = normalizeSelectableProfile(readStoredProfile() || 'balanced');
+let selectedProfile = normalizeSelectableProfile(readStoredProfile() || (isMobileViewport() ? 'quiet' : 'balanced'));
 let effectiveProfile = selectedProfile;
 let downgradeSteps = 0;
 let movementRegressionUntil = 0;
@@ -207,6 +207,7 @@ function getGraphicsCapability() {
 
   if (reducedMotion) reasons.push('reduced-motion');
   if (saveData) reasons.push('save-data');
+  if (viewport === 'mobile') reasons.push('mobile');
   if (webgl.webgl2 === false) reasons.push('no-webgl2');
   if (webgl.majorPerformanceCaveat) reasons.push('major-performance-caveat');
   if (hardwareConcurrency !== null && hardwareConcurrency <= 2) reasons.push('low-hardware-concurrency');
@@ -224,6 +225,7 @@ function getGraphicsCapability() {
   const quietReasons = new Set([
     'reduced-motion',
     'save-data',
+    'mobile',
     'no-webgl2',
     'software-renderer'
   ]);
@@ -751,5 +753,6 @@ export function initGraphicsGovernor() {
   wireControl();
   initReducedMotionListener();
   initDebugOverlay();
+  window.addEventListener('resize', () => updateDocumentState('viewport'), { passive: true });
   updateDocumentState('init');
 }

@@ -1,3 +1,5 @@
+import { ContactAttempt } from './contact-attempt.js';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUBJECT_LIMIT = { min: 5, max: 60 };
 const MESSAGE_LIMIT = { min: 10, max: 350 };
@@ -16,7 +18,6 @@ class NotebookContact {
     this.turnstileWidgetId = null;
     this.turnstileToken = '';
     this.turnstileRequired = true;
-    this.turnstileFeedbackEnabled = false;
     this.verificationStarted = false;
     this.visibilityListener = (event) => {
       if (event.detail?.visible) this.startVerification();
@@ -30,6 +31,9 @@ class NotebookContact {
     if (this.form) return;
     this.form = document.getElementById('contact-form');
     if (!this.form) return;
+    let storage;
+    try { storage = window.sessionStorage; } catch {}
+    this.attempt = new ContactAttempt(storage);
 
     this.inputs.name = this.form.querySelector('#name');
     this.inputs.email = this.form.querySelector('#email');
@@ -176,67 +180,55 @@ class NotebookContact {
 
   async handleSubmit(event) {
     event.preventDefault();
-    if (this.isSubmitting) return;
-
-    const valid = this.validateAll();
-    if (!valid) {
+    if (this.isSubmitting || this.formDisabled) return;
+    if (!this.validateAll()) {
       this.showStatus('Please fix the highlighted fields before sending.', 'error');
+      this.form.querySelector('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    if (this.turnstileRequired && !this.turnstileToken) {
+      this.showDirectEmailStatus('Complete verification before sending, or');
       return;
     }
 
-    if (this.turnstileRequired && !this.turnstileToken) {
-      this.turnstileFeedbackEnabled = true;
-      if (window.turnstile && this.turnstileWidgetId) {
-        this.showStatus('Verifying you are human…', 'info');
-        if (typeof window.turnstile.execute === 'function') {
-          window.turnstile.execute(this.turnstileWidgetId);
-        }
-        const maxWait = 5000;
-        const startTime = Date.now();
-        while (!this.turnstileToken && (Date.now() - startTime) < maxWait) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        if (!this.turnstileToken) {
-          this.showStatus('Verification timed out. Please refresh and try again.', 'error');
-          return;
-        }
-      } else {
-        this.showStatus('Verification widget unavailable. Please refresh the page.', 'error');
-        return;
-      }
-    }
-
-    const payload = this.buildPayload();
-
     this.isSubmitting = true;
+    this.hasSubmissionResult = false;
     this.setSubmittingState(true);
-    this.showStatus('Sending your message…', 'info');
-
+    this.showStatus('Sending your message...', 'info');
+    const controller = new AbortController();
+    this.submissionController = controller;
+    const timer = window.setTimeout(() => controller.abort(), 30000);
+    let requestStarted = false;
     try {
+      const payload = this.buildPayload();
+      Object.assign(payload, await this.attempt.forPayload(payload));
+      controller.signal.throwIfAborted();
+      requestStarted = true;
       const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
-
       const result = await this.parseJson(response);
-
-      if (!response.ok || !result?.success) {
-        const message = result?.error || 'Unable to send message right now. Please try again later.';
-        throw new Error(message);
+      if (!response.ok || !result?.success || result.state !== 'accepted') {
+        const message = result?.error || 'The result could not be confirmed. Your message may already have been accepted.';
+        this.showDirectEmailStatus(message + ' You can');
+        return;
       }
-
-      this.showStatus('Message sent. I will reply soon.', 'success');
+      this.showStatus('Message accepted. Thank you for getting in touch.', 'success');
       this.form.reset();
+      this.attempt.clear();
       this.updateCharCount();
-      this.resetTurnstile();
     } catch (error) {
-      this.showStatus(error?.message || 'Something went wrong. Please try again.', 'error');
-      this.resetTurnstile();
+      this.showDirectEmailStatus(requestStarted
+        ? 'The result could not be confirmed. Your message may already have been accepted. You can retry unchanged content or'
+        : error.message || 'This attempt could not start. Please');
     } finally {
+      window.clearTimeout(timer);
+      this.submissionController = null;
+      this.hasSubmissionResult = true;
+      this.resetTurnstile();
       this.isSubmitting = false;
       this.setSubmittingState(false);
       this.updateSubmitState();
@@ -258,6 +250,9 @@ class NotebookContact {
   }
 
   setSubmittingState(state) {
+    for (const key of ['name', 'email', 'subject', 'message']) {
+      if (this.inputs[key]) this.inputs[key].readOnly = state;
+    }
     if (!this.submitBtn) return;
 
     if (state) {
@@ -367,7 +362,7 @@ class NotebookContact {
         callback: (token) => {
           this.turnstileToken = token;
           this.formDisabled = false;
-          if (this.statusEl?.classList.contains('error')) {
+          if (!this.hasSubmissionResult && this.statusEl?.classList.contains('error')) {
             this.showStatus('', 'info');
           }
           this.updateSubmitState();
@@ -375,13 +370,15 @@ class NotebookContact {
         'error-callback': () => {
           this.turnstileToken = '';
           this.formDisabled = true;
-          this.showDirectEmailStatus('Verification could not complete. Please refresh the page or', 'error');
+          if (!this.isSubmitting && !this.hasSubmissionResult) {
+            this.showDirectEmailStatus('Verification could not complete. Please refresh the page or', 'error');
+          }
           this.updateSubmitState();
         },
         'expired-callback': () => {
           this.turnstileToken = '';
           this.updateSubmitState();
-          if (this.turnstileFeedbackEnabled || this.isSubmitting || !this.turnstileToken) {
+          if (!this.isSubmitting && !this.hasSubmissionResult) {
             this.showStatus('Verification expired. Complete the challenge again.', 'error');
           }
         }
@@ -399,12 +396,12 @@ class NotebookContact {
       window.turnstile.reset(this.turnstileWidgetId);
     }
     this.turnstileToken = '';
-    this.turnstileFeedbackEnabled = false;
     this.updateSubmitState();
   }
 
   destroy() {
     if (!this.form) return;
+    this.submissionController?.abort();
     window.removeEventListener('contact:visible', this.visibilityListener);
     this.form.removeEventListener('submit', this.submitListener);
     if (this.turnstileWidgetId && window.turnstile && typeof window.turnstile.remove === 'function') {

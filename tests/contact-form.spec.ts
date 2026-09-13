@@ -58,7 +58,7 @@ test.describe('Contact form', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ success: true })
+        body: JSON.stringify({ success: true, state: 'accepted' })
       });
     });
 
@@ -79,7 +79,8 @@ test.describe('Contact form', () => {
 
     await page.getByRole('button', { name: /send message/i }).click();
 
-    await expect(page.locator('[data-status]')).toHaveText(/message sent/i);
+    await expect(page.locator('[data-status]')).toHaveText(/message accepted/i);
+    await expect(page.getByLabel('Message')).toHaveValue('');
   });
 
   test('shows backend error feedback when API responds with failure', async ({ page }) => {
@@ -143,7 +144,7 @@ test.describe('Contact form', () => {
     await page.getByLabel('Message').fill('This message must remain available after a failed send.');
     await page.getByRole('button', { name: /send message/i }).click();
 
-    await expect(page.locator('[data-status]')).toHaveText('Failed to deliver message. Please try again later.');
+    await expect(page.locator('[data-status]')).toContainText('Failed to deliver message. Please try again later.');
     await expect(page.locator('[data-status]')).toHaveClass(/error/);
     await expect(page.getByLabel('Your Name')).toHaveValue('Test Visitor');
     await expect(page.getByLabel('Your Email')).toHaveValue('visitor@example.test');

@@ -45,6 +45,7 @@
   "js/contact.js",
   "js/graph.js",
   "js/graphics-governor.js",
+  "js/contact-attempt.js",
   "js/hub-to-icons.js",
   "js/navigation.js",
   "js/portrait-particles.js",

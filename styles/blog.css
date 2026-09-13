@@ -90,7 +90,7 @@
 .blog-reading-links {
   display: grid;
   gap: 12px;
-  margin: 20px 8px 0;
+  margin: 0 8px 20px;
   font-size: 12px;
   line-height: 1.5;
   letter-spacing: 0;
@@ -121,6 +121,7 @@
 }
 
 .blog-memo-item {
+  text-decoration: none;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1293,12 +1294,9 @@
   font-family: var(--font-body);
 }
 
-.article-container .breadcrumb a {
-  color: var(--ember);
-  text-decoration: none;
-}
-
-.article-container .breadcrumb a:hover {
+.article-container .breadcrumb a,
+.blog-article-content .breadcrumb a {
+  color: var(--necrotic);
   text-decoration: underline;
 }
 

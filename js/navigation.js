@@ -58,6 +58,7 @@ export function showSection(sectionName, options = {}) {
   sections.forEach(s => {
     const shouldBeActive = s.dataset.section === sectionName;
     s.classList.toggle('active-section', shouldBeActive);
+    s.inert = !shouldBeActive;
   });
   
   document.querySelectorAll('.network-node-label, .network-sigil-node').forEach(label =>
@@ -96,9 +97,7 @@ export function showSection(sectionName, options = {}) {
   document.body.classList.toggle('nav-suppressed', shouldSuppressNav);
 
   if (activeSection && activeSection.getAttribute('tabindex') === '-1') {
-    setTimeout(() => {
-      activeSection.focus({ preventScroll: true });
-    }, 100);
+    activeSection.focus({ preventScroll: true });
   }
   
   updateSectionNavActive(sectionName);

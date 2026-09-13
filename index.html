@@ -119,6 +119,14 @@
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
+  <nav class="essential-nav" aria-label="Portfolio navigation">
+    <a href="#main">Home</a>
+    <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#work">Work</a>
+    <a href="#blog">Writing</a>
+    <a href="#contact">Contact</a>
+  </nav>
 
   <div class="threshold" id="threshold" aria-hidden="true">
     <div class="threshold__plate">
@@ -175,7 +183,7 @@
   <div id="network-nav" role="navigation" aria-label="Main navigation"></div>
 
   <!-- SECTION: INTRO -->
-  <main id="main" class="stage active-section" data-section="intro" aria-label="Intro">
+  <main id="main" class="stage active-section" data-section="intro" aria-label="Intro" tabindex="-1">
     <!-- Ambient photographic fungus (very dim) -->
     <div class="fungi-ambient" aria-hidden="true"></div>
 
@@ -586,6 +594,7 @@
         <p class="tape" aria-live="polite">
           I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I work on global HCM and payroll systems, mostly across full stack product and platform tooling. Outside work, it is tinkering, music, side projects, and a cold one. If you like it here, cheers!
         </p>
+        <nav class="selected-projects" aria-label="Selected projects"><!-- selected-project-links --></nav>
       </div>
 
       <!-- Footer (grid row 4) -->
@@ -843,28 +852,28 @@
       <div class="blog-memo-header">
         <span class="blog-memo-title">Field Notes</span>
       </div>
-      <ul class="blog-memo-list">
-        <li class="blog-memo-item" data-hub="craft">
-          <span class="blog-memo-hub">Craft <span class="blog-memo-count" data-hub="craft"></span></span>
-          <span class="blog-memo-desc">Build notes and process. How I made things, what I tried, what worked, what didn't.</span>
-        </li>
-        <li class="blog-memo-item" data-hub="cosmos">
-          <span class="blog-memo-hub">Cosmos <span class="blog-memo-count" data-hub="cosmos"></span></span>
-          <span class="blog-memo-desc">Ideas and big-picture thinking. Mental models, opinions, and reflections about tech, AI, and life.</span>
-        </li>
-        <li class="blog-memo-item" data-hub="codex">
-          <span class="blog-memo-hub">Codex <span class="blog-memo-count" data-hub="codex"></span></span>
-          <span class="blog-memo-desc">Reference material. Checklists, guides, patterns, and notes meant to be reused.</span>
-        </li>
-        <li class="blog-memo-item" data-hub="convergence">
-          <span class="blog-memo-hub">Convergence <span class="blog-memo-count" data-hub="convergence"></span></span>
-          <span class="blog-memo-desc">Synthesis and lessons. Retrospectives and posts that connect multiple topics into one takeaway.</span>
-        </li>
-      </ul>
       <nav class="blog-reading-links" aria-label="Published articles">
         <a href="/blog/cosmos/first-year-software-engineer">My 1st Year as a Software Engineer: Lessons Learned</a>
         <a href="/blog/codex/fail-fast-learn-faster">Fail Fast, Learn Faster - Instinct, on Purpose</a>
       </nav>
+      <ul class="blog-memo-list">
+        <li><a class="blog-memo-item" data-hub="craft" href="#blog/craft">
+          <span class="blog-memo-hub">Craft <span class="blog-memo-count" data-hub="craft"></span></span>
+          <span class="blog-memo-desc">Build notes and process. How I made things, what I tried, what worked, what didn't.</span>
+        </a></li>
+        <li><a class="blog-memo-item" data-hub="cosmos" href="#blog/cosmos">
+          <span class="blog-memo-hub">Cosmos <span class="blog-memo-count" data-hub="cosmos"></span></span>
+          <span class="blog-memo-desc">Ideas and big-picture thinking. Mental models, opinions, and reflections about tech, AI, and life.</span>
+        </a></li>
+        <li><a class="blog-memo-item" data-hub="codex" href="#blog/codex">
+          <span class="blog-memo-hub">Codex <span class="blog-memo-count" data-hub="codex"></span></span>
+          <span class="blog-memo-desc">Reference material. Checklists, guides, patterns, and notes meant to be reused.</span>
+        </a></li>
+        <li><a class="blog-memo-item" data-hub="convergence" href="#blog/convergence">
+          <span class="blog-memo-hub">Convergence <span class="blog-memo-count" data-hub="convergence"></span></span>
+          <span class="blog-memo-desc">Synthesis and lessons. Retrospectives and posts that connect multiple topics into one takeaway.</span>
+        </a></li>
+      </ul>
     </aside>
 
     <!-- SR-only status for hover announcements -->
@@ -872,6 +881,10 @@
 
     <!-- Mobile Specimen Grid (only visible on mobile ≤900px) -->
     <div class="blog-mobile">
+      <nav class="published-writing" aria-label="Published writing">
+        <a href="/blog/codex/fail-fast-learn-faster" data-article-id="fail-fast-learn-faster" data-category="codex">Fail Fast, Learn Faster</a>
+        <a href="/blog/cosmos/first-year-software-engineer" data-article-id="first-year-software-engineer" data-category="cosmos">My 1st Year as a Software Engineer</a>
+      </nav>
       <div class="blog-specimen-grid">
         <a class="specimen-slide slide-craft" href="#blog/craft" data-specimen="CRF-001" aria-label="Craft. Process, patterns, and disciplined practice">
           <div class="specimen-orb" aria-hidden="true"></div>
@@ -919,7 +932,7 @@
       <svg id="dish" class="dish" aria-hidden="true"></svg>
 
       <!-- Rim labels (clickable, z:40) -->
-      <div id="dish-labels" class="dish-labels" aria-label="Blog categories"></div>
+      <nav id="dish-labels" class="dish-labels" aria-label="Blog categories"></nav>
     </div>
 
     <!-- Category View (hidden by default) -->
@@ -1044,7 +1057,7 @@
     </div>
 
     <!-- Keep work content available without WebGL. -->
-    <div id="work-index" class="work-index" aria-label="Work history and projects (text)"></div>
+    <div id="work-index" class="work-index" aria-label="Work history and projects (text)"><!-- work-index-content --></div>
   </section>
 
   <!-- SECTION: CONTACT -->
@@ -1071,6 +1084,7 @@
       <!-- Contact Form -->
       <form id="contact-form" class="notebook-form" novalidate>
         <h2 class="notebook-header">Get in Touch</h2>
+        <a class="contact-email" href="mailto:aris@zounarakis.com">aris@zounarakis.com</a>
         <p class="notebook-subheader notebook-quote">&ldquo;Alone we can do so little, together we can do so much.&rdquo;</p>
         <p class="notebook-cite">Helen Keller</p>
 
@@ -1084,7 +1098,6 @@
             name="name"
             class="notebook-input"
             required
-        <a class="contact-email" href="mailto:aris@zounarakis.com">aris@zounarakis.com</a>
             placeholder="How should I address you?"
             minlength="2"
             maxlength="80"
@@ -1214,7 +1227,7 @@
 
       function activateFromHash() {
         if (window.__appBooted) return;
-        var hash = location.hash.slice(1);
+        var hash = location.hash.slice(1).split(/[/?]/)[0];
         var stages = document.querySelectorAll('.stage');
         if (VALID.indexOf(hash) !== -1) {
           for (var i = 0; i < stages.length; i++) {
@@ -1235,6 +1248,7 @@
       }
 
       window.addEventListener('hashchange', activateFromHash);
+      activateFromHash();
 
       document.addEventListener('click', function (e) {
         if (window.__appBooted) return;

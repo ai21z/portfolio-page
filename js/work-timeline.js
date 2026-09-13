@@ -235,11 +235,9 @@ export function initWorkTimeline() {
     document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view } }));
   }
 
-  const backdrop = el('div', 'work-card-backdrop');
+  const backdrop = el('dialog', 'work-card-backdrop');
   backdrop.hidden = true;
   const card = el('div', 'work-card');
-  card.setAttribute('role', 'dialog');
-  card.setAttribute('aria-modal', 'true');
   const cardClose = el('button', 'work-card-close');
   cardClose.type = 'button';
   cardClose.setAttribute('aria-label', 'Close');
@@ -249,8 +247,8 @@ export function initWorkTimeline() {
   card.appendChild(cardBody);
   backdrop.appendChild(card);
 
-  let cardTrigger = null; // the rail button that opened the card, to restore focus on close
-  let cardCloseTimer = 0;
+  let cardTrigger = null;
+  let cardOpenFrame = 0;
 
   function openCard(node, triggerEl) {
     cardTrigger = triggerEl || null;
@@ -269,22 +267,22 @@ export function initWorkTimeline() {
         document.dispatchEvent(new CustomEvent('work-timeline:select', { detail: { id: node.id, target } }));
       });
     }
-    if (cardCloseTimer) { clearTimeout(cardCloseTimer); cardCloseTimer = 0; }
+    backdrop.setAttribute('aria-label', node.title);
     backdrop.hidden = false;
-    if (workSection) workSection.setAttribute('aria-hidden', 'true');
-    requestAnimationFrame(() => backdrop.classList.add('is-open'));
+    if (!backdrop.open) backdrop.showModal();
+    cancelAnimationFrame(cardOpenFrame);
+    cardOpenFrame = requestAnimationFrame(() => backdrop.classList.add('is-open'));
     cardClose.focus();
   }
 
   function closeCard(opts) {
     if (backdrop.hidden) return;
     const restoreFocus = !opts || opts.restoreFocus !== false;
+    cancelAnimationFrame(cardOpenFrame);
     backdrop.classList.remove('is-open');
-    if (workSection) workSection.removeAttribute('aria-hidden');
-    if (cardCloseTimer) clearTimeout(cardCloseTimer);
-    if (reducedMotion) backdrop.hidden = true;
-    else cardCloseTimer = window.setTimeout(() => { backdrop.hidden = true; }, 200);
-    if (restoreFocus && cardTrigger && typeof cardTrigger.focus === 'function') cardTrigger.focus();
+    backdrop.close();
+    backdrop.hidden = true;
+    if (restoreFocus && workSection?.classList.contains('active-section')) cardTrigger?.focus();
     cardTrigger = null;
   }
 
@@ -293,6 +291,7 @@ export function initWorkTimeline() {
   }
 
   cardClose.addEventListener('click', () => closeCard());
+  backdrop.addEventListener('cancel', event => { event.preventDefault(); closeCard(); });
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCard(); });
   // Escape + a Tab focus-trap, scoped to the open card so keyboard/AT users can't reach the
   // covered rail behind the backdrop.

@@ -288,24 +288,24 @@ test('paper cards expose text-only X buttons and keep re-click close', async ({ 
   const firstPaper = page.locator('#about .paper').first();
   await expect(firstPaper).toBeVisible();
   await firstPaper.click();
-  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
-  await expect(page.locator('body > .paper.paper-open .paper-card-close')).toBeVisible();
+  await expect(page.locator('.paper-modal .paper-open')).toBeVisible();
+  await expect(page.locator('.paper-modal .paper-open .paper-card-close')).toBeVisible();
 
-  const closeStyle = await textOnlyCloseStyle(page, 'body > .paper.paper-open .paper-card-close');
+  const closeStyle = await textOnlyCloseStyle(page, '.paper-modal .paper-open .paper-card-close');
   expect(closeStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)');
   expect(closeStyle.borderTopStyle).toBe('none');
   expect(closeStyle.borderTopWidth).toBe('0px');
   expect(closeStyle.borderRadius).toBe('0px');
-  expect(closeStyle.width).toBeLessThanOrEqual(30);
-  expect(closeStyle.height).toBeLessThanOrEqual(30);
+  expect(closeStyle.width).toBeGreaterThanOrEqual(24);
+  expect(closeStyle.height).toBeGreaterThanOrEqual(24);
 
-  await page.locator('body > .paper.paper-open .paper-card-close').click();
-  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+  await page.locator('.paper-modal .paper-open .paper-card-close').click();
+  await expect(page.locator('.paper-modal .paper-open')).toHaveCount(0);
 
   await page.locator('#about .paper').first().click();
-  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
-  await page.locator('body > .paper.paper-open').click({ force: true });
-  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+  await expect(page.locator('.paper-modal .paper-open')).toBeVisible();
+  await page.locator('.paper-modal .paper-open').click({ force: true });
+  await expect(page.locator('.paper-modal .paper-open')).toHaveCount(0);
 });
 
 test('page close and section navigation close child overlays', async ({ page }) => {
@@ -315,10 +315,10 @@ test('page close and section navigation close child overlays', async ({ page }) 
   await waitForActiveSection(page, 'about');
 
   await page.locator('#about .paper').first().click();
-  await expect(page.locator('body > .paper.paper-open')).toBeVisible();
-  await page.locator('#about .section-nav-link[data-section="skills"]').click();
+  await expect(page.locator('.paper-modal .paper-open')).toBeVisible();
+  await page.evaluate(() => { location.hash = 'skills'; });
   await waitForActiveSection(page, 'skills');
-  await expect(page.locator('body > .paper.paper-open')).toHaveCount(0);
+  await expect(page.locator('.paper-modal .paper-open')).toHaveCount(0);
   await expect(page.locator('body')).not.toHaveClass(/has-paper-open-global/);
 
   await page.evaluate(() => {

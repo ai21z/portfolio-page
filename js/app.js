@@ -703,20 +703,11 @@ function initBlogControls() {
     if (item.__blogMemoBound) return;
     item.__blogMemoBound = true;
     const hubId = item.dataset.hub;
-    item.tabIndex = 0;
-    item.setAttribute('role', 'button');
     item.setAttribute('aria-label', `Open ${hubId} blog category`);
-
-    const activateMemoHub = () => {
+    item.addEventListener('click', event => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
       if (hubId) enterHub(hubId);
-    };
-
-    item.addEventListener('click', activateMemoHub);
-    item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        activateMemoHub();
-      }
     });
   });
 
@@ -1546,28 +1537,28 @@ if (!mqCompact.matches) {
   initSkillsPaperFocus();
 }
 
-function aboutMobileInertify() {
-  const papers = document.querySelectorAll('#about [data-paper]');
+function disableCompactCardFocus() {
+  const papers = document.querySelectorAll('#about [data-paper], #skills [data-paper]');
   papers.forEach(el => {
     if (el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
-    el.setAttribute('aria-disabled', 'true');
+    el.removeAttribute('aria-disabled');
   });
 }
 
-function aboutRestoreFocusForWide() {
-  const papers = document.querySelectorAll('#about [data-paper]');
+function restoreWideCardFocus() {
+  const papers = document.querySelectorAll('#about [data-paper], #skills [data-paper]');
   papers.forEach(el => {
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     el.removeAttribute('aria-disabled');
   });
 }
 
-if (mqCompact.matches) aboutMobileInertify(); else aboutRestoreFocusForWide();
+if (mqCompact.matches) disableCompactCardFocus(); else restoreWideCardFocus();
 mqCompact.addEventListener('change', e => {
   if (e.matches) {
-    aboutMobileInertify();
+    disableCompactCardFocus();
   } else {
-    aboutRestoreFocusForWide();
+    restoreWideCardFocus();
     initAboutPaperFocus();
     initSkillsPaperFocus();
   }
@@ -1702,6 +1693,7 @@ function initPaperFocusForSection(sectionId){
     return;
   }
   section.__paperFocusBound = true;
+  let activePaper = null;
 
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
@@ -1710,7 +1702,7 @@ function initPaperFocusForSection(sectionId){
 
     p.addEventListener('click', (event) => {
       if (isCompact()) return;
-      if (event.target.closest('.paper-card-close')) return;
+      if (event.target.closest('a, button, input, textarea, select')) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
       } else {
@@ -1719,6 +1711,7 @@ function initPaperFocusForSection(sectionId){
     });
     p.addEventListener('keydown', (e) => {
       if (isCompact()) return;
+      if (e.target !== p) return;
 
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -1733,8 +1726,7 @@ function initPaperFocusForSection(sectionId){
 
   backdrop.addEventListener('click', closePaper);
   document.addEventListener('ui:close-overlays', (event) => closePaper(event.detail || { immediate: true }));
-
-  function onEsc(e){ if (e.key === 'Escape') closePaper(); }
+  window.addEventListener('resize', () => closePaper({ immediate: true }));
 
   function ensurePaperCloseButton(el, close) {
     if (el.querySelector('.paper-card-close')) return;
@@ -1754,7 +1746,6 @@ function initPaperFocusForSection(sectionId){
   function openPaper(el){
     if (document.body.classList.contains('has-paper-open-global')) return;
     const r = el.getBoundingClientRect();
-    const computed = getComputedStyle(el);
 
     const ipx = (n) => Math.round(Number(n) || 0);
 
@@ -1768,7 +1759,27 @@ function initPaperFocusForSection(sectionId){
 
     el.__portal = { parent: el.parentNode, placeholder: placeholder };
     el.__portal.parent.insertBefore(placeholder, el);
-    document.body.appendChild(el);
+    const dialog = document.createElement('dialog');
+    dialog.className = 'paper-modal';
+    dialog.setAttribute('aria-label', el.querySelector('h2, h3, h4')?.textContent.trim() || `${sectionId} detail`);
+    document.body.appendChild(dialog);
+    dialog.appendChild(el);
+    const visit = { el, dialog, closing: false };
+    activePaper = visit;
+    dialog.addEventListener('cancel', event => { event.preventDefault(); closePaper(); });
+    dialog.addEventListener('close', () => closePaper({ immediate: true }));
+    dialog.addEventListener('click', event => { if (event.target === dialog) closePaper(); });
+    dialog.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const stops = [el, ...el.querySelectorAll('a[href], button, input, textarea, select, [tabindex]')]
+        .filter(node => node.tabIndex >= 0 && !node.disabled && node.getClientRects().length);
+      const next = event.shiftKey ? stops.at(-1) : stops[0];
+      if ((event.shiftKey && document.activeElement === stops[0]) ||
+          (!event.shiftKey && document.activeElement === stops.at(-1))) {
+        event.preventDefault();
+        next.focus();
+      }
+    });
     el.classList.add('paper-open');
     el.style.position = 'fixed';
     el.style.left = `${r.left}px`;
@@ -1793,7 +1804,8 @@ function initPaperFocusForSection(sectionId){
     el.style.setProperty('--open-w', `${targetW}px`);
     el.style.setProperty('--open-h', `${targetH}px`);
 
-    requestAnimationFrame(() => {
+    visit.frame = requestAnimationFrame(() => {
+      if (activePaper !== visit || visit.closing) return;
       el.style.setProperty('--open-tx', `${tx}px`);
       el.style.setProperty('--open-ty', `${ty}px`);
       el.style.setProperty('--open-scale', `${scale}`);
@@ -1802,7 +1814,7 @@ function initPaperFocusForSection(sectionId){
     // Demote from compositor after transition for better AA
     let settled = false;
     const applySettle = () => {
-      if (settled) return;
+      if (settled || activePaper !== visit || visit.closing) return;
       settled = true;
 
       el.classList.add('paper-open--settled');
@@ -1820,36 +1832,53 @@ function initPaperFocusForSection(sectionId){
     };
     el.addEventListener('transitionend', onEnd, { once: true });
 
-    setTimeout(applySettle, 350);
+    visit.settleTimer = setTimeout(applySettle, 350);
+    visit.onEnd = onEnd;
 
-    el.setAttribute('role','dialog');
-    el.setAttribute('aria-modal','true');
     document.body.classList.add('has-paper-open-global');
-    requestAnimationFrame(() => el.focus({ preventScroll:true }));
-    document.addEventListener('keydown', onEsc);
+    dialog.showModal();
+    el.focus({ preventScroll:true });
     document.body.classList.remove('hovering-paper');
   }
 
   function closePaper(options = {}){
-    const openEl = document.querySelector('.paper-open');
-    if (openEl){
+    const visit = activePaper;
+    if (!visit || (visit.closing && !options.immediate)) return;
+    if (visit.onCleanup) {
+      visit.el.removeEventListener('transitionend', visit.onCleanup);
+      clearTimeout(visit.cleanupTimer);
+    }
+    visit.closing = true;
+    const openEl = visit.el;
+    {
       openEl.classList.remove('paper-open--settled');
       openEl.style.willChange = 'transform';
       openEl.style.setProperty('--open-tx','0px');
       openEl.style.setProperty('--open-ty','0px');
       openEl.style.setProperty('--open-scale','1');
       const cleanup = () => {
+        if (activePaper !== visit) return;
+        activePaper = null;
+        cancelAnimationFrame(visit.frame);
+        clearTimeout(visit.settleTimer);
+        clearTimeout(visit.cleanupTimer);
+        openEl.removeEventListener('transitionend', visit.onEnd);
+        openEl.removeEventListener('transitionend', visit.onCleanup);
+        visit.dialog.close();
         restorePaperElement(openEl);
-        openEl.removeEventListener('transitionend', cleanup);
+        visit.dialog.remove();
+        document.body.classList.remove('has-paper-open-global');
+        if (!options.immediate && section.classList.contains('active-section') && openEl.getClientRects().length) {
+          openEl.focus({ preventScroll: true });
+        }
       };
+      visit.onCleanup = cleanup;
       if (options.immediate) {
         cleanup();
       } else {
         openEl.addEventListener('transitionend', cleanup);
-        setTimeout(cleanup, 360);
+        visit.cleanupTimer = setTimeout(cleanup, 360);
       }
     }
-    document.body.classList.remove('has-paper-open-global');
-    document.removeEventListener('keydown', onEsc);
   }
 }

@@ -5,16 +5,18 @@ const useExternalBaseURL = Boolean(process.env.BASE_URL || process.env.PLAYWRIGH
 
 export default defineConfig({
   testDir: './tests',
-  testIgnore: '**/unit/**',
+  testIgnore: ['**/unit/**', '**/integration/**'],
   timeout: 30_000,
   expect: {
     timeout: 5_000
   },
   retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 2 : 4,
   reporter: process.env.CI ? 'github' : [['list']],
   use: {
     baseURL,
-    trace: 'on-first-retry'
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure'
   },
   webServer: useExternalBaseURL ? undefined : {
     command: 'npm run preview',

@@ -43,7 +43,7 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   await page.goto('/index.html#blog');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForFunction(() => document.getElementById('blog')?.classList.contains('active-section'), { timeout: 8000 });
-  await page.waitForTimeout(300);
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'map');
 
   const mode = () => page.evaluate(() => ({
     hash: location.hash,
@@ -54,16 +54,16 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
 
   const len0 = await histLen();
   await page.locator('.specimen-slide.slide-craft').click();
-  await page.waitForTimeout(350);
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
   const atCraft = await mode();
   const len1 = await histLen();
 
   await page.goBack();
-  await page.waitForTimeout(350);
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'map');
   const afterBack = await mode();
 
   await page.goForward();
-  await page.waitForTimeout(350);
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
   const afterForward = await mode();
 
   expect(errors).toEqual([]);

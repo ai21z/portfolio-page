@@ -347,7 +347,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.5);
+  color: rgba(var(--decay-green-rgb), 0.7);
 }
 
 .work-note-title {
@@ -418,6 +418,13 @@
 .work-card-backdrop {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  box-sizing: border-box;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -433,6 +440,8 @@
 .work-card-backdrop.is-open {
   opacity: 1;
 }
+
+.work-card-backdrop::backdrop { background: transparent; }
 
 .work-card-backdrop[hidden] {
   display: none;
@@ -479,8 +488,9 @@
 .work-card-close:hover,
 .work-card-close:focus-visible {
   color: #f0f4ef;
-  outline: none;
 }
+
+.work-card-close:focus-visible { outline: 2px solid #b9efd3; outline-offset: 2px; }
 
 .work-card-title {
   font-size: 1.15rem;

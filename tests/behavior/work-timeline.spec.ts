@@ -42,6 +42,31 @@ async function gotoWork(page, viewport: { width: number; height: number }) {
 test.describe('Work career rail', () => {
   test.beforeEach(async ({ page }) => {
     await routeTurnstile(page);
+    await page.addInitScript(() => {
+      (window as any).__railEvents = [];
+      for (const type of ['pointerover', 'pointerout', 'click', 'focusin', 'focusout']) {
+        document.addEventListener(type, event => {
+          const target = event.target instanceof Element ? event.target.closest('.rail-node') : null;
+          if (!target) return;
+          const rect = target.getBoundingClientRect();
+          const events = (window as any).__railEvents;
+          events.push({ type, id: target.getAttribute('data-id'), time: performance.now(), rect: rect.toJSON() });
+          if (events.length > 64) events.shift();
+        }, true);
+      }
+    });
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return;
+    const diagnostic = await page.evaluate(() => ({
+      events: (window as any).__railEvents,
+      rail: document.querySelector('.work-rail')?.getBoundingClientRect().toJSON(),
+      note: document.querySelector('.work-note')?.getBoundingClientRect().toJSON(),
+      noteClass: document.querySelector('.work-note')?.className,
+      active: document.activeElement?.outerHTML.slice(0, 500)
+    }));
+    await testInfo.attach('rail-events.json', { body: JSON.stringify(diagnostic, null, 2), contentType: 'application/json' });
   });
 
   test('renders the full chronology, newest first, with three node types', async ({ page }) => {

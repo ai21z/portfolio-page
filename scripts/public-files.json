@@ -80,6 +80,7 @@
   "js/work-globe/work-index.js",
   "js/work-timeline.js",
   "manifest.json",
+  "js/work-globe/work-index-content.js",
   "myOminousGreenPortrait.png",
   "myOminousGreenPortrait.webp",
   "myOminousGreenPortrait-480.webp",
@@ -96,6 +97,7 @@
   "styles/graphics-controls.css",
   "styles/layout.css",
   "styles/main.css",
+  "styles/fallback.css",
   "styles/navigation.css",
   "styles/work-timeline.css",
   "styles/work.css"

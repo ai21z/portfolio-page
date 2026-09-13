@@ -1148,6 +1148,9 @@ body.has-paper-open-global #network-nav {
 }
 
 .section-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   font-family: "Special Elite", monospace;
   font-size: 13px;
   font-weight: 400;

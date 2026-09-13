@@ -520,6 +520,13 @@ function wireControl() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
+    if (menu?.contains(document.activeElement)) toggle?.focus();
+    if (help?.contains(document.activeElement)) info?.focus();
+    setHelpOpen(false);
+    setMenuOpen(false);
+  });
+
+  document.addEventListener('ui:close-overlays', () => {
     setHelpOpen(false);
     setMenuOpen(false);
   });

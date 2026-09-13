@@ -2,6 +2,8 @@ import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } fr
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
+import { renderProjectLinks, renderWorkIndex } from '../js/work-globe/work-index-content.js';
+import { appendContentSecurity } from './content-security.mjs';
 
 const repoRoot = fileURLToPath(new URL('../', import.meta.url));
 const manifestPath = new URL('./public-files.json', import.meta.url);
@@ -88,7 +90,7 @@ async function bundleStyles(root) {
   return result.outputFiles[0].contents;
 }
 
-export async function buildSite(root = repoRoot) {
+export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
   root = await realpath(root);
   validateManifest(publicFiles);
   for (const file of publicFiles) await assertRegularFile(root, file);
@@ -107,7 +109,18 @@ export async function buildSite(root = repoRoot) {
     await mkdir(path.dirname(destination), { recursive: true });
     await copyFile(path.join(root, file), destination);
   }
+  const homePath = path.join(output, 'index.html');
+  const home = await readFile(homePath, 'utf8');
+  await writeFile(homePath, home
+    .replace('<!-- work-index-content -->', renderWorkIndex())
+    .replace('<!-- selected-project-links -->', renderProjectLinks()));
   await writeFile(path.join(output, 'styles/main.css'), styles);
+  const htmlPages = [];
+  for (const file of publicFiles.filter(file => file.endsWith('.html'))) {
+    htmlPages.push(await readFile(path.join(output, file), 'utf8'));
+  }
+  const headersPath = path.join(output, '_headers');
+  await writeFile(headersPath, appendContentSecurity(await readFile(headersPath, 'utf8'), htmlPages, cspMode));
   const files = await verifyPublicSite(output);
   console.log(`Built ${files.length} public files in dist`);
   return output;

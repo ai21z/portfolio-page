@@ -123,14 +123,14 @@ function ensureSectionModule(sectionName) {
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260711').catch((err) => {
+    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260913').catch((err) => {
       workGlobeModulePromise = null;
       console.warn('work globe module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20260711')
+    workTimelineModulePromise = import('./work-timeline.js?v=20260913')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;

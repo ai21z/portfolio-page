@@ -1,4 +1,4 @@
-import { TIMELINE } from './work-globe/data/timeline.js?v=20260711';
+import { TIMELINE } from './work-globe/data/timeline.js?v=20260913';
 import { isCompact } from './compact.js';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };

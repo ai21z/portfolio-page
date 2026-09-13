@@ -45,5 +45,8 @@ export async function onRequest(context) {
   if (headers.get('Content-Type')?.includes('application/json')) {
     headers.set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
   }
+  if (response.status === 200 && headers.get('Content-Type')?.includes('text/html')) {
+    headers.set('Cache-Control', 'no-cache');
+  }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

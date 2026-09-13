@@ -58,6 +58,17 @@ test('acceptance requires a provider ID and keeps routing and safe headers', asy
   assert.ok(!emails[0].key.includes(payload.email));
 });
 
+test('an older open form gets a refresh message without sending', async t => {
+  const { emails } = services(t);
+  const { submissionId, submissionCreatedAt, ...legacy } = payload;
+  const response = await onRequestPost({ request: request(legacy), env });
+  assert.equal(response.status, 422);
+  const body = await response.json();
+  assert.equal(body.state, 'not_sent');
+  assert.match(body.error, /Keep your draft and reload/);
+  assert.equal(emails.length, 0);
+});
+
 for (const status of [401, 403, 422, 429, 500]) {
   test('classifies provider ' + status + ' without exposing its diagnostic', async t => {
     const { logs } = services(t, { send: () => Response.json({ name: 'validation_error', message: 'private detail' }, { status }) });

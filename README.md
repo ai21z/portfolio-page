@@ -80,6 +80,10 @@ Preview publishing uses `npm run deploy:preview -- --commit <full-reviewed-commi
 
 Stop any existing preview on port 4173 before publishing so the browser checks own their server. A failed check prevents this entry point from uploading. This local guard does not prevent an account owner from invoking Wrangler separately. Commits and production publishing still require a deliberate review.
 
+When a shell consumes npm's argument separator, use `node scripts/deploy-site.mjs production --commit <full-reviewed-commit>` to invoke the same guard directly.
+
+HTML responses require revalidation. Keep the stylesheet and Work module versions aligned when releasing changes. The homepage import map versions shared contact, navigation and graphics modules without creating duplicate module instances.
+
 For Cloudflare Git builds, set the build command to `npm run build` and the output directory to `dist`. A local `.gitignore` does not control what a direct upload publishes.
 
 The contact Function expects its production secrets and service configuration in Cloudflare. Values are intentionally not stored in this repository.

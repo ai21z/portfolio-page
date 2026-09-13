@@ -1,5 +1,5 @@
-import { WORK_LOCATIONS } from './data/work-locations.js?v=20260711';
-import { PROJECTS } from './data/projects.js?v=20260711';
+import { WORK_LOCATIONS } from './data/work-locations.js?v=20260913';
+import { PROJECTS } from './data/projects.js?v=20260913';
 
 function escape(value) {
   return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);

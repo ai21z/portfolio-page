@@ -140,6 +140,9 @@ export function createContactHandler({ budget = BUDGET, makeLimiter = createLimi
         });
       }
 
+      if (parsed && typeof parsed === 'object' && !('submissionId' in parsed)) {
+        return reply(422, { state: 'not_sent', error: 'This form is out of date. Keep your draft and reload the page, or email me directly.' });
+      }
       const validation = CONTACT_SCHEMA.safeParse(parsed);
       if (!validation.success) return reply(422, { state: 'not_sent', error: 'Invalid contact request.' });
       const data = validation.data;

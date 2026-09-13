@@ -31,7 +31,16 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] }
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          firefoxUserPrefs: {
+            // 6 enables a fine pointer and hover for headless desktop runs.
+            'ui.primaryPointerCapabilities': 6,
+            'ui.allPointerCapabilities': 6
+          }
+        }
+      }
     },
     {
       name: 'webkit',

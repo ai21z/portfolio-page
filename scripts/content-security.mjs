@@ -20,11 +20,11 @@ export function contentSecurityPolicy(htmlPages) {
   for (const html of htmlPages) visit(parse(html));
   return [
     "default-src 'self'",
-    "script-src 'self' https://challenges.cloudflare.com " + [...hashes].sort().join(' '),
+    "script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com " + [...hashes].sort().join(' '),
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self' https://challenges.cloudflare.com",
+    "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com",
     "frame-src https://challenges.cloudflare.com",
     "worker-src 'none'",
     "object-src 'none'",

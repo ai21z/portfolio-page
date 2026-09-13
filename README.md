@@ -90,7 +90,7 @@ The contact Function expects its production secrets and service configuration in
 
 The form keeps unsuccessful drafts in the page and a retry identifier in session storage. It uses bounded requests and Resend idempotency without automatic sending retries. Provider acceptance is not a delivery receipt. Exact allowed Turnstile hostnames can be set with `CONTACT_ALLOWED_HOSTNAMES`, defaulting to `zounarakis.com`. Preview configuration must be explicit.
 
-The build generates CSP hashes from the public HTML. Scripts allow the same origin, those exact inline hashes and the Turnstile origin. Inline styles remain allowed for the existing artwork and dynamic positioning. The browser tests exercise report-only and enforcement through Cloudflare's local Pages asset handler. No reporting collector is configured.
+The build generates CSP hashes from the public HTML. Scripts allow the same origin, those exact inline hashes, Turnstile and the existing Cloudflare Web Analytics beacon. Its collection endpoint is allowed separately. Inline styles remain allowed for the existing artwork and dynamic positioning. The browser tests exercise report-only and enforcement through Cloudflare's local Pages asset handler. No CSP reporting collector is configured.
 
 The `www.zounarakis.com` hostname must be attached to this Pages project, with its DNS record pointing to the project's Pages hostname. The middleware redirects GET and HEAD requests to `https://zounarakis.com` with a 301. Other methods use a 308 to preserve the request body. Both keep the path and query string. Hostname redirects cannot use Pages `_redirects`. See [Cloudflare redirect support](https://developers.cloudflare.com/pages/configuration/redirects/).
 

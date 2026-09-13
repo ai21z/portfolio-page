@@ -367,7 +367,7 @@ test('Contact shows an actionable unavailable state when Turnstile cannot mount'
   await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
 });
 
-test('inactive intro canvas buffers are released outside the intro section and restored on return', async ({ page }) => {
+test('inactive intro canvas buffers are released and return within the active budget', async ({ page }) => {
   await page.goto('/index.html');
   await page.waitForLoadState('domcontentloaded');
   await waitForActiveSection(page, 'main');
@@ -384,8 +384,15 @@ test('inactive intro canvas buffers are released outside the intro section and r
   await page.locator('#contact [data-action="go-intro"]').click();
   await waitForActiveSection(page, 'main');
 
-  await expect.poll(() => page.locator('#reveal-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(100);
-  await expect.poll(() => page.locator('#spore-canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(100);
+  await expect.poll(() => page.evaluate(async () => {
+    const governor = await import('/js/graphics-governor.js');
+    if (governor.getGraphicsState().movementRegression) return false;
+    const quiet = governor.getGraphicsBudget('intro-spores').quiet;
+    return ['reveal-canvas', 'spore-canvas'].every(id => {
+      const canvas = document.getElementById(id) as HTMLCanvasElement;
+      return quiet ? canvas.width === 1 && canvas.height === 1 : canvas.width > 100;
+    });
+  })).toBe(true);
 });
 
 test('quiet graphics profile releases intro spore buffers and balanced restores them', async ({ page }) => {

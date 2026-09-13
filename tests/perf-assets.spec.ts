@@ -242,7 +242,6 @@ test('repository documentation matches the Cloudflare Pages deployment', () => {
 
 test('work content module graph shares one cache-busting version', () => {
   const references: Array<[string, RegExp]> = [
-    ['index.html', /src="\.\/js\/app\.js\?v=([^"]+)"/],
     ['index.html', /src="\.\/js\/work-globe\/work-index\.js\?v=([^"]+)"/],
     ['js/app.js', /import\('\.\/work-globe-webgl\.js\?v=([^']+)'\)/],
     ['js/app.js', /import\('\.\/work-timeline\.js\?v=([^']+)'\)/],

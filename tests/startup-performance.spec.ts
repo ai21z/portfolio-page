@@ -101,6 +101,34 @@ test('desktop social animation initializes only once and stops in Quiet', async 
   }
 });
 
+test('reading graphics state preserves the recovery notification', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.clock.install();
+    await page.goto('/index.html');
+    await expect(page.locator('#threshold')).toBeHidden();
+    await page.clock.fastForward(2000);
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsProfile('balanced', { persist: false });
+      (window as any).__recoveryEvents = [];
+      window.addEventListener('graphics:profile-change', (event: CustomEvent) => {
+        (window as any).__recoveryEvents.push(event.detail.effectiveProfile);
+      });
+      governor.markGraphicsActivity('test', 700);
+    });
+    await page.clock.fastForward(710);
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.getGraphicsState();
+    });
+    await page.clock.fastForward(60);
+    expect(await page.evaluate(() => (window as any).__recoveryEvents)).toContain('balanced');
+  } finally {
+    await page.close();
+  }
+});
+
 test('contact loads and mounts verification once after opening', async ({ page }) => {
   let loads = 0;
   await page.route('https://challenges.cloudflare.com/**', route => {

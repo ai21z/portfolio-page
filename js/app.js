@@ -840,6 +840,14 @@ function updateBlogNavActive(hubId) {
 }
 
 let pendingBlogHashTimer = null;
+let articleRequest = null;
+
+function getNavigationHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash.startsWith('blog?')) return hash;
+  const hub = new URLSearchParams(hash.slice(5)).get('hub');
+  return ['craft', 'cosmos', 'codex', 'convergence'].includes(hub) ? `blog/${hub}` : 'blog';
+}
 
 function clearPendingBlogHashAction() {
   if (pendingBlogHashTimer) {
@@ -860,6 +868,9 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
   if (!hubId || hubId === 'source') {
     return;
   }
+
+  articleRequest?.abort();
+  document.getElementById('blog-article-view')?.setAttribute('hidden', '');
 
   const blogSection = document.getElementById('blog');
   if (blogSection) {
@@ -888,6 +899,7 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
 
 function resetBlogMapState({ updateHistory = false } = {}) {
   clearPendingBlogHashAction();
+  articleRequest?.abort();
 
   const blogSection = document.getElementById('blog');
   if (blogSection) {
@@ -966,6 +978,7 @@ async function loadCategoryContent(hubId) {
   if (!content) return;
 
   const registry = await loadArticlesRegistry();
+  if (document.getElementById('blog-category-view')?.dataset.category !== hubId) return;
   const articles = registry[hubId] || [];
   const hubTitle = hubId.toUpperCase();
 
@@ -975,27 +988,21 @@ async function loadCategoryContent(hubId) {
     ${articles.length === 0 ? '<p class="blog-empty-state">No articles yet. Check back soon!</p>' : ''}
     <div class="blog-article-list">
       ${articles.map(a => `
-        <div class="blog-article-item" data-article="${escapeHtml(a.id)}" tabindex="0" role="button" aria-label="Read ${escapeHtml(a.title)}">
+        <a class="blog-article-item" href="/blog/${encodeURIComponent(hubId)}/${encodeURIComponent(a.id)}" data-article="${escapeHtml(a.id)}" aria-label="Read ${escapeHtml(a.title)}">
           <h3>${escapeHtml(a.title)}</h3>
           <div class="meta">${escapeHtml(a.date)}</div>
           <div class="excerpt">${escapeHtml(a.excerpt)}</div>
-        </div>
+        </a>
       `).join('')}
     </div>
   `;
 
   content.querySelectorAll('.blog-article-item').forEach(item => {
     const articleId = item.dataset.article;
-    const activateArticle = () => {
+    item.addEventListener('click', (event) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
       enterBlogArticle(hubId, articleId);
-    };
-
-    item.addEventListener('click', activateArticle);
-    item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        activateArticle();
-      }
     });
   });
 }
@@ -1065,6 +1072,7 @@ function initArticleScrollNav() {
 }
 
 function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
+  enterHub(hubId, { historyMode: 'none' });
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     categoryView.setAttribute('hidden', '');
@@ -1074,6 +1082,7 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
 
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
+    articleView.dataset.hub = hubId;
     articleView.removeAttribute('hidden');
     loadArticleContent(hubId, articleId);
   }
@@ -1084,24 +1093,21 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
 }
 
 function exitBlogArticle() {
-  document.getElementById('blog-category-view')?.removeAttribute('hidden');
-
-  document.getElementById('blog-article-view')?.setAttribute('hidden', '');
-
-  const categoryView = document.getElementById('blog-category-view');
-  if (categoryView) {
-    const hubId = history.state?.hubId || 'craft';
-    history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
-  }
+  const hubId = document.getElementById('blog-article-view')?.dataset.hub;
+  if (hubId) enterHub(hubId);
 }
 
 function loadArticleContent(hubId, articleId) {
   const content = document.getElementById('blog-article-content');
   if (!content) return;
 
-  const path = `./blog/${hubId}/${articleId}.html`;
+  articleRequest?.abort();
+  articleRequest = new AbortController();
+  const { signal } = articleRequest;
+  const path = `/blog/${encodeURIComponent(hubId)}/${encodeURIComponent(articleId)}`;
+  content.textContent = 'Loading article...';
 
-  fetch(path)
+  fetch(path, { signal })
     .then(res => {
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -1109,38 +1115,44 @@ function loadArticleContent(hubId, articleId) {
       return res.text();
     })
     .then(html => {
+      if (signal.aborted) return;
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const article = doc.querySelector('.article-container');
       if (article) {
+        // Keep media and links relative to the article, not the reader.
+        article.querySelectorAll('[src], [href], [poster]').forEach(element => {
+          for (const attribute of ['src', 'href', 'poster']) {
+            const value = element.getAttribute(attribute);
+            if (value && !value.startsWith('#')) {
+              element.setAttribute(attribute, new URL(value, new URL(path, location.origin)).href);
+            }
+          }
+        });
         content.innerHTML = article.innerHTML;
 
-        setupArticleNavigation(content, hubId);
+        setupArticleNavigation(content);
       } else {
         content.innerHTML = '<p>Article not found.</p>';
       }
     })
     .catch(err => {
+      if (signal.aborted) return;
       console.error('[Blog Nav] Failed to load article:', err);
-      content.innerHTML = `
-        <div style="padding: 40px; text-align: center;">
-          <p style="color: rgba(201, 194, 179, 0.7); margin-bottom: 16px;">Failed to load article.</p>
-          <p style="color: rgba(201, 194, 179, 0.5); font-size: 0.9em;">
-            ${err.message || 'Network error'}<br>
-            <small>Path: ./blog/${hubId}/${articleId}.html</small>
-          </p>
-          <p style="color: rgba(201, 194, 179, 0.4); font-size: 0.85em; margin-top: 24px;">
-            Note: This page requires a local server (e.g., <code>npx serve</code> or VS Code Live Server)
-          </p>
-        </div>
-      `;
+      content.textContent = 'This article could not be loaded. Please try again.';
     });
 }
 
-function setupArticleNavigation(container, hubId) {
+function setupArticleNavigation(container) {
+  container.querySelector('.go-top-link')?.addEventListener('click', event => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    container.closest('.blog-article-view')?.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'instant' : 'smooth' });
+  });
   const breadcrumbLinks = container.querySelectorAll('.breadcrumb a');
   breadcrumbLinks.forEach(link => {
     link.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
       const href = link.getAttribute('href');
 
@@ -1155,6 +1167,7 @@ function setupArticleNavigation(container, hubId) {
   const backButton = container.querySelector('.back-button');
   if (backButton) {
     backButton.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
       exitBlogArticle();
     });
@@ -1317,7 +1330,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     void ensureMyceliumReady();
   }
 
-  const hash = window.location.hash.slice(1);
+  const hash = getNavigationHash();
 
   if (hash.startsWith('blog/')) {
     const parts = hash.split('/');
@@ -1479,7 +1492,7 @@ function simpleParticles(x, y) {
 }
 
 window.addEventListener('hashchange', () => {
-  const hash = window.location.hash.slice(1);
+  const hash = getNavigationHash();
 
   // History already changed. Pushing here would break Back and Forward.
   if (hash === 'blog' || hash.startsWith('blog/')) {

@@ -2,6 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://zounarakis.com/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-09-13</lastmod>
+  </url>
+  <url>
+    <loc>https://zounarakis.com/blog/cosmos/first-year-software-engineer</loc>
+  </url>
+  <url>
+    <loc>https://zounarakis.com/blog/codex/fail-fast-learn-faster</loc>
   </url>
 </urlset>

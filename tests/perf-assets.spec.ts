@@ -178,7 +178,7 @@ test('public discovery files identify the canonical portfolio URL', () => {
   expect(robots).toContain('Allow: /');
   expect(robots).toContain('Sitemap: https://zounarakis.com/sitemap.xml');
   expect(sitemap).toContain('<loc>https://zounarakis.com/</loc>');
-  expect(sitemap).toContain('<lastmod>2026-07-11</lastmod>');
+  expect(sitemap).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
   expect(sitemap).not.toContain('personal-webpage-20m.pages.dev');
 });
 

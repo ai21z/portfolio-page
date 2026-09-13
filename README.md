@@ -51,6 +51,12 @@ dist/               Generated public site, excluded from Git
 docs/local/         Private deployment notes, excluded from Git
 ```
 
+## Articles
+
+Each article has a standalone HTML page with an extensionless canonical URL, search metadata, and an Aris Zounarakis author byline. The in-page reader keeps the existing hash links working. Its Permalink opens the standalone page for sharing.
+
+When adding an article, update `blog/articles.json`, the published article links in `index.html`, `sitemap.xml`, and `scripts/public-files.json`. Keep publication dates accurate. Add a sitemap `lastmod` only when the content change date is known. Run `npx playwright test tests/seo.spec.ts` to check discovery, metadata, and navigation.
+
 ## Deployment
 
 Build and inspect the public site before deploying:

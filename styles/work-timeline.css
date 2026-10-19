@@ -533,8 +533,10 @@
 .work-card-globe:hover,
 .work-card-globe:focus-visible {
   background: rgba(240, 180, 106, 0.16);
-  outline: none;
 }
+
+/* The tint alone changes by about 1.2:1, so focus also gets the outline the close button uses */
+.work-card-globe:focus-visible { outline: 2px solid #b9efd3; outline-offset: 2px; }
 
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),

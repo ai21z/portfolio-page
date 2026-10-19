@@ -390,9 +390,12 @@ body:has(#contact.stage.active-section) .dish-labels {
   top: -1px; /* Fine-tune alignment */
 }
 
-.notebook-input:focus,
-.notebook-textarea:focus {
-  color: #1A1510; /* Slightly darker on focus */
+/* The fields have no border, so focus is shown with a dashed ink outline, the same mark as the
+   links. The old darker-text cue was about 1.2:1 from the normal ink, too faint to see. */
+.notebook-input:focus-visible,
+.notebook-textarea:focus-visible {
+  outline: 1px dashed var(--paper-ink);
+  outline-offset: 4px;
 }
 
 /* Placeholders read as hints through the italic; the browser's default grey failed on the paper */

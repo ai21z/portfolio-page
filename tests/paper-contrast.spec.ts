@@ -61,8 +61,10 @@ async function collectRuns(page: Page, container: string, index: number): Promis
     // Returns the covering element's name, or '' when the text itself is on top.
     const coverOf = (rect: DOMRect) => {
       const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      if (hit && root.contains(hit)) return '';
-      return hit ? `${hit.tagName.toLowerCase()}#${hit.id}.${String(hit.className).trim().split(/\s+/).join('.')}` : 'nothing';
+      // No hit means the centre is past the viewport edge: off-screen, not covered. The visible part
+      // is still measured, since the screenshot only holds what is on screen.
+      if (!hit || root.contains(hit)) return '';
+      return `${hit.tagName.toLowerCase()}#${hit.id}.${String(hit.className).trim().split(/\s+/).join('.')}`;
     };
     const isLarge = (style: CSSStyleDeclaration) => {
       const size = parseFloat(style.fontSize);
@@ -136,9 +138,16 @@ async function measure(page: Page, runs: Run[]) {
       results.push({ label: run.label, coveredBy: run.coveredBy });
       continue;
     }
-    const samples: { l: number; rgb: [number, number, number] }[] = [];
-    for (const rect of run.rects) {
-      const x0 = Math.max(0, Math.ceil(rect.x)), x1 = Math.min(info.width, Math.floor(rect.x + rect.w));
+    // Each line on its own: pooling a paragraph lets its lighter lines dilute the darkest one,
+    // and the last line of a card usually sits on its darkest paper.
+    run.rects.forEach((rect, line) => {
+      const label = run.rects.length > 1 ? `${run.label} [line ${line + 1}]` : run.label;
+      const samples: { l: number; rgb: [number, number, number] }[] = [];
+      // A lone glyph that wrapped onto its own line (a bracket, say) holds too little paper to judge,
+      // so sample about one em of paper. A wrapped fragment starts its line, so extend rightward into
+      // the text column, not left into the spiral-hole margin, whose dark rims would skew the result.
+      const w = Math.max(rect.w, rect.h), left = rect.x;
+      const x0 = Math.max(0, Math.ceil(left)), x1 = Math.min(info.width, Math.floor(left + w));
       const y0 = Math.max(0, Math.ceil(rect.y)), y1 = Math.min(info.height, Math.floor(rect.y + rect.h));
       for (let y = y0; y < y1; y++) {
         for (let x = x0; x < x1; x++) {
@@ -148,19 +157,19 @@ async function measure(page: Page, runs: Run[]) {
           if (l >= NOT_PAPER_LUMINANCE) samples.push({ l, rgb });
         }
       }
-    }
-    if (samples.length < 20) {
-      // Too little paper under this line to judge it. Report it rather than let it pass unseen.
-      results.push({ label: run.label, unmeasured: samples.length });
-      continue;
-    }
-    samples.sort((a, b) => a.l - b.l);
-    const background = samples[Math.floor(samples.length * BACKGROUND_PERCENTILE)].rgb;
-    const [r, g, b, a] = run.color;
-    const ink = [r * a + background[0] * (1 - a), g * a + background[1] * (1 - a), b * a + background[2] * (1 - a)] as const;
-    const ratio = contrast(luminance(...ink), luminance(...background));
-    const required = run.large ? 3 : 4.5;
-    results.push({ label: run.label, ratio: Math.round(ratio * 100) / 100, required, background: `rgb(${background.join(',')})` });
+      if (samples.length < 20) {
+        // Too little paper under this line to judge it. Report it rather than let it pass unseen.
+        results.push({ label, unmeasured: samples.length });
+        return;
+      }
+      samples.sort((a, b) => a.l - b.l);
+      const background = samples[Math.floor(samples.length * BACKGROUND_PERCENTILE)].rgb;
+      const [r, g, b, a] = run.color;
+      const ink = [r * a + background[0] * (1 - a), g * a + background[1] * (1 - a), b * a + background[2] * (1 - a)] as const;
+      const ratio = contrast(luminance(...ink), luminance(...background));
+      const required = run.large ? 3 : 4.5;
+      results.push({ label, ratio: Math.round(ratio * 100) / 100, required, background: `rgb(${background.join(',')})` });
+    });
   }
   return results;
 }
@@ -195,10 +204,11 @@ async function measureSurface(page: Page, testInfo: TestInfo, container: string,
   return all;
 }
 
-// Phone, the short-desktop card tier (height <= 940px) and the full-size desktop tier.
+// Phone, both short-desktop card tiers (height <= 940px and <= 760px) and the full-size desktop tier.
 const VIEWPORTS = [
   { width: 390, height: 844 },
   { width: 1366, height: 844 },
+  { width: 1366, height: 700 },
   { width: 1920, height: 1080 }
 ];
 
@@ -214,7 +224,8 @@ for (const { width, height } of VIEWPORTS) {
       await page.goto('/index.html#' + section);
       await expect(page.locator('html')).toHaveClass(/js-ready/);
       await expect(page.locator('#' + section)).toHaveClass(/active-section/);
-      const results = await measureSurface(page, testInfo, container, { hover: width > 900 && container.includes('.slab') });
+      // Hover at every width: touch screens keep the hover style after a tap in the compact layout.
+      const results = await measureSurface(page, testInfo, container, { hover: container.includes('.slab') });
       expect(results.length).toBeGreaterThan(0);
       expect(results.filter(r => r.coveredBy), 'text hidden under another element').toEqual([]);
       expect(results.filter(r => r.unmeasured !== undefined), 'text with too little paper under it to measure').toEqual([]);

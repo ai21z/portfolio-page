@@ -119,6 +119,7 @@ async function measure(page: Page, runs: Run[]) {
   const hide = await page.addStyleTag({
     content: `*, *::before, *::after, ::placeholder {
       color: transparent !important; -webkit-text-fill-color: transparent !important;
+      text-decoration-color: transparent !important;
       text-shadow: none !important; caret-color: transparent !important;
       border-color: transparent !important; outline-color: transparent !important; }`
   });

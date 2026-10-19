@@ -307,10 +307,12 @@
     calc(var(--br-tl-v) * var(--k)) calc(var(--br-tr-v) * var(--k))
     calc(var(--br-br-v) * var(--k)) calc(var(--br-bl-v) * var(--k));
 
-  /* Use filter for the outer shadow because clip-path clips box shadows. */
+  /* Use filter for the outer shadow because clip-path clips box shadows.
+     The wide inset is offset downward so the aging gathers at the top edge, where lines
+     have contrast to spare, and stays off the last line of each card, the tightest one. */
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.22),
-    inset 0 0 calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
+    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
     inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.2);
   filter:
     drop-shadow(0 calc(10px * var(--k)) calc(16px * var(--k)) rgba(0, 0, 0, 0.5))
@@ -407,7 +409,7 @@
   transform: translateY(calc(-6px * var(--k))) rotate(calc(var(--rot) * 0.4)) scale(1.035);
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.3),
-    inset 0 0 calc(120px * var(--k)) rgba(101, 67, 33, 0.35),
+    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.35),
     inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.25);
   filter:
     drop-shadow(0 calc(22px * var(--k)) calc(34px * var(--k)) rgba(0, 0, 0, 0.6))
@@ -419,7 +421,7 @@
   transform: var(--base-transform);
   box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.5),
-    inset 0 0 120px rgba(101, 67, 33, 0.3),
+    inset 0 36px 120px rgba(101, 67, 33, 0.3),
     inset -20px 0 40px rgba(101, 67, 33, 0.2);
   pointer-events: none;
 }
@@ -1004,9 +1006,9 @@
 .slab.paper {
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.3) 0%, rgba(92,72,46,0.16) 34%, transparent 64%),
-    radial-gradient(ellipse 50% 45% at 96% 112%, rgba(42,30,15,0.2) 0%, transparent 60%),
-    radial-gradient(ellipse 45% 45% at -10% 100%, rgba(48,34,17,0.2) 0%, transparent 62%),
-    radial-gradient(ellipse 72% 82% at 50% 48%, transparent 58%, rgba(38,28,15,0.16) 100%),
+    radial-gradient(ellipse 50% 45% at 96% 120%, rgba(42,30,15,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 45% at -10% 110%, rgba(48,34,17,0.2) 0%, transparent 62%),
+    radial-gradient(ellipse 72% 82% at 50% 58%, transparent 58%, rgba(38,28,15,0.16) 100%),
     repeating-linear-gradient(0deg, transparent,
       transparent calc(var(--rule-gap) * var(--k)),
       rgba(80, 60, 38, 0.1) calc(var(--rule-gap) * var(--k)),

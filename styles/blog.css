@@ -108,7 +108,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(201, 194, 179, 0.5);
+  color: rgba(201, 194, 179, 0.72); /* 6.1:1 on the abyss; 0.5 gave 3.5:1 */
 }
 
 .blog-memo-list {
@@ -394,7 +394,7 @@
 }
 
 .zoom-arc-label {
-  fill: rgba(180, 160, 130, 0.5); /* Dimmer than hub labels */
+  fill: rgba(180, 160, 130, 0.8); /* Dimmer than hub labels, still 5.3:1 on the abyss */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
   font-weight: 400;
   letter-spacing: 0.2em;
@@ -1390,7 +1390,7 @@
 }
 
 .article-container .article-content a {
-  color: var(--ember);
+  color: #d6603f; /* lighter ember: --ember is 4.0:1 on the abyss at body size, this is 5.3:1 */
   text-decoration: underline;
   text-underline-offset: 2px;
 }

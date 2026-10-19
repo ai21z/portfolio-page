@@ -1154,7 +1154,7 @@ body.has-paper-open-global #network-nav {
   font-family: "Special Elite", monospace;
   font-size: 13px;
   font-weight: 400;
-  color: rgba(230, 227, 216, 0.5);
+  color: rgba(230, 227, 216, 0.62); /* 6.2:1 on the abyss; 0.5 gave 4.4:1 */
   text-decoration: none;
   letter-spacing: 0.04em;
   text-shadow:

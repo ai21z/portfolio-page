@@ -163,11 +163,10 @@
 }
 
 .foot-coords {
-  opacity: 0.75;
   font-feature-settings: 'tnum' 1;
   font-size: 13px;
   letter-spacing: 0.03em;
-  color: rgba(230, 227, 216, 0.5);
+  color: rgba(230, 227, 216, 0.6); /* 5.9:1 on the abyss; was 0.5 at 75% opacity, 2.9:1 */
   display: block; /* Make it block level for easier centering */
 }
 

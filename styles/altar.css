@@ -208,6 +208,9 @@
            calc(var(--pad-bottom) * var(--k)) calc(var(--pad-left) * var(--k));
 
   color: var(--paper-ink);
+  /* Near-black ink: the kraft, stains and grime below leave too little room for a lighter one
+     (tests/paper-contrast.spec.ts measures every line against the rendered paper). */
+  --slab-ink: #1d170f;
 
   --rule-gap: clamp(19px, 7.5cqi, 32px);
   --rule-thickness: 1px;
@@ -425,7 +428,7 @@
 .slab h3 {
   --h-margin-bottom: 6px;
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
-  color: var(--paper-ink);
+  color: var(--slab-ink);
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
   font-size: clamp(13.5px, 5cqi, 21px);
   position: relative;
@@ -437,9 +440,20 @@
   /* cqi: proportional to card width, not viewport */
   font-size: clamp(12px, 4.3cqi, 16px);
   line-height: 1.42;
-  color: #3A3530;
+  color: var(--slab-ink);
   position: relative;
   z-index: 1;
+}
+
+/* Links inside running text: ink like the text, told apart by the underline, not by colour */
+.slab p a {
+  color: var(--slab-ink);
+  text-decoration: underline dashed rgba(101, 67, 33, 0.7);
+  text-underline-offset: 0.18em;
+}
+
+.slab p a:hover {
+  text-decoration-style: solid;
 }
 
 .slab ul {
@@ -474,22 +488,24 @@
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
   font-size: clamp(11px, 3.9cqi, 15px);
-  color: #3A3530;
+  color: var(--slab-ink);
 }
 
+/* Key labels keep their quieter look through the italic, since a lighter ink fails on the kraft */
 .kv li span:first-child {
-  color: #5A5040;
+  color: var(--slab-ink);
+  font-style: italic;
 }
 
 .kv a {
-  color: var(--paper-ink);
+  color: var(--slab-ink);
   text-decoration: none;
-  border-bottom: 1px dashed rgba(101, 67, 33, 0.4);
+  border-bottom: 1px dashed rgba(101, 67, 33, 0.7);
 }
 
 .kv a:hover {
-  color: #654321;
-  border-bottom-color: #654321;
+  border-bottom-style: solid;
+  border-bottom-color: var(--slab-ink);
 }
 
 .slab-about {
@@ -582,7 +598,7 @@
 
   /* Pencil ink color - no background fill */
   background: transparent;
-  color: #3a342e;
+  color: var(--slab-ink);
 
   /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;
@@ -982,18 +998,20 @@
 }
 
 /* target .slab.paper globally (not #skills/#about) so the override follows a card when
-   openPaper() reparents it into the body-level overlay (the zoomed view) */
+   openPaper() reparents it into the body-level overlay (the zoomed view).
+   Lighter kraft and softer stains than the first grime pass (2026-06-16): text runs to the
+   bottom of each card, so the corner stains and the vignette sat under it at about 1.4-2:1. */
 .slab.paper {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.5) 0%, rgba(92,72,46,0.3) 34%, transparent 64%),
-    radial-gradient(ellipse 60% 60% at 92% 108%, rgba(42,30,15,0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at -8% 95%, rgba(48,34,17,0.5) 0%, transparent 62%),
-    radial-gradient(ellipse 72% 82% at 50% 48%, transparent 40%, rgba(38,28,15,0.34) 100%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.3) 0%, rgba(92,72,46,0.16) 34%, transparent 64%),
+    radial-gradient(ellipse 50% 45% at 96% 112%, rgba(42,30,15,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 45% at -10% 100%, rgba(48,34,17,0.2) 0%, transparent 62%),
+    radial-gradient(ellipse 72% 82% at 50% 48%, transparent 58%, rgba(38,28,15,0.16) 100%),
     repeating-linear-gradient(0deg, transparent,
       transparent calc(var(--rule-gap) * var(--k)),
       rgba(80, 60, 38, 0.1) calc(var(--rule-gap) * var(--k)),
       rgba(80, 60, 38, 0.1) calc((var(--rule-gap) + var(--rule-thickness)) * var(--k))),
-    linear-gradient(155deg, #b3a37e 0%, #a08f6a 45%, #8a7a56 80%, #756645 100%) !important;
+    linear-gradient(155deg, #d1c19b 0%, #c4b28b 45%, #b8a57e 80%, #ab9873 100%) !important;
 }
 
 /* the hand-drawn grime (dirt specks + soft smudges, no lines), multiplied onto the paper */
@@ -1004,7 +1022,7 @@
   z-index: 0 !important;
   background: url('../artifacts/textures/handgrime.svg?v=20260631') repeat !important;
   background-size: 420px 420px !important;
-  opacity: 0.85 !important;
+  opacity: 0.6 !important;
   mix-blend-mode: multiply !important;
   pointer-events: none !important;
 }

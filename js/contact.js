@@ -173,9 +173,8 @@ class NotebookContact {
     if (!this.charCountEl || !this.inputs.message) return;
     const length = this.inputs.message.value.length;
     this.charCountEl.textContent = `${length}/${MESSAGE_LIMIT.max}`;
-    // Keep the counter readable against the paper.
-    const color = length > MESSAGE_LIMIT.max ? '#8B0000' : '#5A5040';
-    this.charCountEl.style.color = color;
+    // Colours live in contact.css, where they are checked against the paper.
+    this.charCountEl.classList.toggle('over-limit', length > MESSAGE_LIMIT.max);
   }
 
   async handleSubmit(event) {

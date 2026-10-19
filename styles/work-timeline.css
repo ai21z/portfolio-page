@@ -107,7 +107,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.45);
+  color: rgba(var(--decay-green-rgb), 0.62); /* 6.1:1; 0.45 gave 3.7:1 */
   animation: railGroupIn 0.4s ease both;
 }
 
@@ -256,7 +256,7 @@
 .rail-node-year {
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  color: rgba(170, 195, 184, 0.6);
+  color: rgba(170, 195, 184, 0.75); /* 6.2:1; 0.6 gave 4.3:1 */
 }
 
 .rail-node-title {
@@ -375,7 +375,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(150, 170, 160, 0.45);
+  color: rgba(150, 170, 160, 0.8); /* 5.4:1; 0.45 gave 2.5:1 */
   margin-top: 9px;
 }
 

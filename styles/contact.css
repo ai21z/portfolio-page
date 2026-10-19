@@ -279,6 +279,17 @@ body:has(#contact.stage.active-section) .dish-labels {
   color: var(--notebook-error);
 }
 
+/* The "email me directly" fallback link: ink like its message, told apart by the underline */
+.form-status a {
+  color: inherit;
+  text-decoration: underline dashed rgba(101, 67, 33, 0.7);
+  text-underline-offset: 0.18em;
+}
+
+.form-status a:hover {
+  text-decoration-style: solid;
+}
+
 .form-controls {
   display: flex;
   flex-wrap: wrap;

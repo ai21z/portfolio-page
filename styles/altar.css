@@ -493,10 +493,12 @@
   color: var(--slab-ink);
 }
 
-/* Key labels keep their quieter look through the italic, since a lighter ink fails on the kraft */
+/* Key labels are set apart the way a typist would: capitals and spacing at full ink. A lighter
+   ink fails on the kraft, and Special Elite has no italic, so italic was a synthesized slant. */
 .kv li span:first-child {
   color: var(--slab-ink);
-  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .kv a {

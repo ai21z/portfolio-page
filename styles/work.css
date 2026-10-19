@@ -255,7 +255,7 @@
 
 .work-period {
   font-size: 10px;
-  color: #3a332b; /* 5.8:1 even on the stained paper; the 70% ink gave 2.7-3.5:1 */
+  color: var(--paper-ink); /* the 70% ink gave 2.7-3.5:1 on the stained paper */
   letter-spacing: 0.05em;
   margin-bottom: 6px;
 }

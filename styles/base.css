@@ -6,7 +6,11 @@
   --decay-green: #3FFF9F;
   --decay-green-rgb: 63, 255, 159;   /* channels for rgba(var(--decay-green-rgb), a) */
   --necrotic-rgb: 122, 174, 138;     /* channels for rgba(var(--necrotic-rgb), a) */
-  --paper-ink: #2A251F;  /* aged-paper text ink (altar/contact/work) */
+  /* The one ink for text on aged paper (altar/contact/work). The kraft, stains and grime leave
+     no room for a lighter secondary ink (tests/paper-contrast.spec.ts measures the rendered
+     paper), so hierarchy comes from type: capitals, size and spacing, not tone. */
+  --paper-ink: #1d170f;
+  --paper-ink-hint: #43392b;  /* form placeholders only */
 
   /* Per-hub accent colors (keys are JS-produced: craft/cosmos/codex/convergence) */
   --hub-craft: #3da88a;

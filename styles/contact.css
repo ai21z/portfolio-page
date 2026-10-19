@@ -254,17 +254,16 @@ body:has(#contact.stage.active-section) .dish-labels {
   z-index: 2;
 }
 
-/* Secondary notebook text. #5A5040 and lighter fell to 2-4:1 over the coffee stains
-   (tests/paper-contrast.spec.ts measures the rendered paper). */
+/* Secondary notebook text uses the same --paper-ink as everything else: #5A5040 and lighter fell
+   to 2-4:1 over the coffee stains (tests/paper-contrast.spec.ts measures the rendered paper). */
 .notebook-page {
-  --notebook-ink-soft: #261e14;
   --notebook-error: #700000;
 }
 
 .form-status {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
   min-height: 1.2rem;
   margin-bottom: 1.1rem;
   letter-spacing: 0.3px;
@@ -309,7 +308,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 .turnstile-placeholder {
   font-family: 'Special Elite', monospace;
   font-size: 0.8rem;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
 }
 
 .honeypot-trap {
@@ -335,7 +334,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 .notebook-subheader {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
   text-align: center;
   margin-bottom: 1.5rem;
   line-height: 32px; /* Align with notebook lines */
@@ -351,7 +350,7 @@ body:has(#contact.stage.active-section) .dish-labels {
   font-size: 0.7rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
   text-align: center;
   line-height: 32px; /* drop to the next ruled line */
   margin: 0 0 1.5rem;
@@ -366,7 +365,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 .notebook-label {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
   display: block;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
@@ -399,7 +398,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 /* Placeholders read as hints through the italic; the browser's default grey failed on the paper */
 .notebook-input::placeholder,
 .notebook-textarea::placeholder {
-  color: #43392b;
+  color: var(--paper-ink-hint);
   font-style: italic;
   opacity: 1;
 }
@@ -424,7 +423,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 .char-count {
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
-  color: var(--notebook-ink-soft);
+  color: var(--paper-ink);
 }
 
 .char-count.over-limit {
@@ -543,7 +542,6 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 .notebook-submit:hover {
-  color: #1A1510;
   transform: translateY(-1px);
 }
 

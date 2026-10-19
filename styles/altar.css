@@ -208,9 +208,6 @@
            calc(var(--pad-bottom) * var(--k)) calc(var(--pad-left) * var(--k));
 
   color: var(--paper-ink);
-  /* Near-black ink: the kraft, stains and grime below leave too little room for a lighter one
-     (tests/paper-contrast.spec.ts measures every line against the rendered paper). */
-  --slab-ink: #1d170f;
 
   --rule-gap: clamp(19px, 7.5cqi, 32px);
   --rule-thickness: 1px;
@@ -430,7 +427,7 @@
 .slab h3 {
   --h-margin-bottom: 6px;
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
-  color: var(--slab-ink);
+  color: var(--paper-ink);
   text-shadow: calc(1px * var(--k)) calc(1px * var(--k)) calc(2px * var(--k)) rgba(0, 0, 0, 0.1);
   font-size: clamp(13.5px, 5cqi, 21px);
   position: relative;
@@ -442,14 +439,14 @@
   /* cqi: proportional to card width, not viewport */
   font-size: clamp(12px, 4.3cqi, 16px);
   line-height: 1.42;
-  color: var(--slab-ink);
+  color: var(--paper-ink);
   position: relative;
   z-index: 1;
 }
 
 /* Links inside running text: ink like the text, told apart by the underline, not by colour */
 .slab p a {
-  color: var(--slab-ink);
+  color: var(--paper-ink);
   text-decoration: underline dashed rgba(101, 67, 33, 0.7);
   text-underline-offset: 0.18em;
 }
@@ -490,26 +487,26 @@
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
   font-size: clamp(11px, 3.9cqi, 15px);
-  color: var(--slab-ink);
+  color: var(--paper-ink);
 }
 
 /* Key labels are set apart the way a typist would: capitals and spacing at full ink. A lighter
    ink fails on the kraft, and Special Elite has no italic, so italic was a synthesized slant. */
 .kv li span:first-child {
-  color: var(--slab-ink);
+  color: var(--paper-ink);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .kv a {
-  color: var(--slab-ink);
+  color: var(--paper-ink);
   text-decoration: none;
   border-bottom: 1px dashed rgba(101, 67, 33, 0.7);
 }
 
 .kv a:hover {
   border-bottom-style: solid;
-  border-bottom-color: var(--slab-ink);
+  border-bottom-color: var(--paper-ink);
 }
 
 .slab-about {
@@ -602,7 +599,7 @@
 
   /* Pencil ink color - no background fill */
   background: transparent;
-  color: var(--slab-ink);
+  color: var(--paper-ink);
 
   /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;

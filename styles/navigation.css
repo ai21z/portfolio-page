@@ -982,8 +982,10 @@ body.has-paper-open-global #network-nav {
   mix-blend-mode: screen;
 }
 
+/* The letters are the only visible sign that the sigil opens a menu (the SVG is aria-hidden).
+   0.88 fill under the label's 0.8 opacity gives about 5:1 on the void; 0.34 gave 1.7:1. */
 .myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 0.34);
+  fill: rgba(143, 180, 255, 0.88);
   font: 400 10px/1 var(--font-display, "Special Elite", monospace);
   text-anchor: middle;
   dominant-baseline: central;
@@ -996,7 +998,7 @@ body.has-paper-open-global #network-nav {
 .myco-sigil-label .menu-arc-dot,
 .myco-sigil-label .menu-arc-burger {
   fill: none;
-  color: rgba(var(--decay-green-rgb), 0.34);
+  color: rgba(var(--decay-green-rgb), 0.62); /* about 4.3:1, above the 3:1 icons need; 0.34 gave 2:1 */
   stroke: currentColor;
   stroke-width: 1.4;
   stroke-linecap: round;
@@ -1018,12 +1020,12 @@ body.has-paper-open-global #network-nav {
 }
 
 .myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 0.42);
+  fill: rgba(143, 180, 255, 1);
 }
 
 .myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-dot,
 .myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-burger {
-  color: rgba(var(--decay-green-rgb), 0.42);
+  color: rgba(var(--decay-green-rgb), 0.8);
 }
 
 .myco-sigil picture{

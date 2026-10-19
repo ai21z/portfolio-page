@@ -3,6 +3,7 @@
   /* Dark Horror Palette - High contrast with eerie accents */
   --abyss:#0B0B0C; --void:#08090A;
   --bone:#E6E3D8; --spectral:#8FB4FF; --necrotic:#7AAE8A; --ember:#C24A2E;
+  --ember-text: #d6603f;  /* ember for small text on the abyss: --ember is 4.1:1 there, this is 5.3:1 */
   --decay-green: #3FFF9F;
   --decay-green-rgb: 63, 255, 159;   /* channels for rgba(var(--decay-green-rgb), a) */
   --necrotic-rgb: 122, 174, 138;     /* channels for rgba(var(--necrotic-rgb), a) */

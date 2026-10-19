@@ -747,7 +747,7 @@
 .blog-map-btn:focus {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-map-btn:focus-visible {
@@ -786,7 +786,7 @@
 
 .blog-nav-link:hover,
 .blog-nav-link:focus {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-nav-link:focus-visible {
@@ -1390,7 +1390,7 @@
 }
 
 .article-container .article-content a {
-  color: #d6603f; /* lighter ember: --ember is 4.0:1 on the abyss at body size, this is 5.3:1 */
+  color: var(--ember-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1444,7 +1444,7 @@
 
 .article-container .article-content ol li::before {
   content: counter(item) ".";
-  color: var(--ember);
+  color: var(--ember-text);
   font-weight: 600;
   position: absolute;
   left: -24px;
@@ -1477,7 +1477,7 @@
 .article-container .back-button:hover {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .article-container .back-button:focus-visible {
@@ -1496,7 +1496,7 @@
 }
 
 .article-container .go-top-link:hover {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .article-meta a,
@@ -1601,7 +1601,7 @@ body > .article-container {
 .blog-article-content .back-button:hover {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-article-content .go-top-link {
@@ -1615,7 +1615,7 @@ body > .article-container {
 }
 
 .blog-article-content .go-top-link:hover {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 @media (max-width: 700px),

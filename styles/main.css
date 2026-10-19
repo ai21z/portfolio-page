@@ -1,13 +1,13 @@
 /* Keep imported stylesheet versions aligned with the main.css link in index.html. */
 
-@import 'base.css?v=20260632';
-@import 'canvas.css?v=20260632';
-@import 'navigation.css?v=20260632';
-@import 'layout.css?v=20260632';
-@import 'components.css?v=20260632';
-@import 'contact.css?v=20260632';
-@import 'altar.css?v=20260632';
-@import 'work.css?v=20260632';
-@import 'work-timeline.css?v=20260632';
-@import 'blog.css?v=20260632';
+@import 'base.css?v=20261019';
+@import 'canvas.css?v=20261019';
+@import 'navigation.css?v=20261019';
+@import 'layout.css?v=20261019';
+@import 'components.css?v=20261019';
+@import 'contact.css?v=20261019';
+@import 'altar.css?v=20261019';
+@import 'work.css?v=20261019';
+@import 'work-timeline.css?v=20261019';
+@import 'blog.css?v=20261019';
 @import 'fallback.css';

@@ -3,7 +3,7 @@ import { stubVerification } from './helpers/contact';
 
 test('release pages avoid stale scripts and styles and share one governor', async ({ page }) => {
   const changed = new Set([
-    '/styles/main.css', '/js/app.js', '/js/contact.js', '/js/navigation.js',
+    '/js/app.js', '/js/navigation.js',
     '/js/graphics-governor.js', '/js/work-timeline.js',
     '/js/work-globe-webgl.js', '/js/work-globe/work-index.js'
   ]);
@@ -11,12 +11,15 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
     '/js/app.js', '/js/graphics-governor.js', '/js/social-icons-animation.js',
     '/js/hub-to-icons.js', '/styles/graphics-controls.css'
   ]);
+  const contrastChanged = new Set(['/styles/main.css', '/js/contact.js']);
   const requests: URL[] = [];
   const stale: string[] = [];
   await stubVerification(page);
-  await page.route(url => mobileChanged.has(url.pathname)
-    ? url.searchParams.get('v') !== '20260913-mobile'
-    : changed.has(url.pathname) && url.searchParams.get('v') !== '20260913', route => {
+  await page.route(url => contrastChanged.has(url.pathname)
+    ? url.searchParams.get('v') !== '20261019'
+    : mobileChanged.has(url.pathname)
+      ? url.searchParams.get('v') !== '20260913-mobile'
+      : changed.has(url.pathname) && url.searchParams.get('v') !== '20260913', route => {
     stale.push(route.request().url());
     return route.fulfill({ contentType: 'application/javascript', body: 'throw new Error("Stale release asset");' });
   });
@@ -37,7 +40,7 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   expect(requests.some(url => url.pathname === '/js/contact-attempt.js')).toBe(true);
   for (const article of ['cosmos/first-year-software-engineer', 'codex/fail-fast-learn-faster']) {
     await page.goto('/blog/' + article);
-    await expect(page.locator('link[rel="stylesheet"]')).toHaveAttribute('href', '../../styles/main.css?v=20260913');
+    await expect(page.locator('link[rel="stylesheet"]')).toHaveAttribute('href', '../../styles/main.css?v=20261019');
   }
   expect(stale).toEqual([]);
 });

@@ -912,12 +912,10 @@ test.describe('browser audit', () => {
         configurable: true,
         get: () => ({ saveData: true })
       });
-      const originalMatchMedia = window.matchMedia.bind(window);
-      window.matchMedia = (query: string) => ({
-        ...originalMatchMedia(query),
-        matches: query.includes('prefers-reduced-motion') ? true : originalMatchMedia(query).matches
-      });
     });
+    // Real emulation, not a matchMedia fake: a spread MediaQueryList has no addEventListener,
+    // so modules that listen for changes threw at load and app.js never started.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
@@ -958,11 +956,20 @@ test.describe('browser audit', () => {
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
-    const state = await collectGraphicsGovernorState(page);
+    let state = await collectGraphicsGovernorState(page);
 
     if (browserName === 'firefox') {
+      // Firefox rejects Full, so with no explicit quality choice the landing page defers the
+      // WebGL probe and the software renderer is only seen once a 3D section opens.
       expect(state.profile).toBe('balanced');
+      expect(state.capability.reasons).not.toContain('software-renderer');
+      state = await page.evaluate(async () => {
+        const governor = await import('/js/graphics-governor.js');
+        governor.setGraphicsSection('work');
+        return governor.getGraphicsState();
+      });
     } else {
+      // An explicit Full choice probes the GPU immediately, even on the landing page.
       expect(state.profile).toBe('full');
     }
     expect(state.capability.recommendedProfile).toBe('quiet');
@@ -1011,7 +1018,7 @@ test.describe('browser audit', () => {
     expect(state.capability.reasons).toContain('firefox-conservative');
   });
 
-  test('graphics governor gives strong Chromium capability a rich recommendation without forcing Quiet', async ({ page, baseURL, browserName }) => {
+  test('graphics governor gives strong Chromium capability a rich recommendation once a 3D section probes the GPU', async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== 'chromium', 'The strong capability expectation is Chromium-specific.');
     test.setTimeout(60_000);
     await page.addInitScript(() => {
@@ -1021,9 +1028,20 @@ test.describe('browser audit', () => {
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
-    const state = await collectGraphicsGovernorState(page);
+    const landing = await collectGraphicsGovernorState(page);
 
-    expect(state.profile).toBe('balanced');
+    // The landing page defers the WebGL probe to keep startup light, so the GPU is still unknown.
+    expect(landing.profile).toBe('balanced');
+    expect(landing.capability.recommendedProfile).toBe('balanced');
+    expect(landing.capability.hardwareClass).toBe('capable');
+
+    // Entering a 3D section runs the deferred probe and upgrades the recommendation.
+    const state = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsSection('work');
+      return governor.getGraphicsState();
+    });
+
     expect(state.capability.recommendedProfile).toBe('rich');
     expect(state.capability.hardwareClass).toBe('strong');
     expect(profileRank(state.effectiveProfile)).toBeGreaterThanOrEqual(profileRank('balanced'));

@@ -308,10 +308,15 @@ test('a held-back tier is retried after the base dips and returns, and never whi
 test('a section module from a newer release reloads the page once, then only warns', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
   try {
-    // An open tab keeps its old governor, so a newer globe module importing a new export fails to link.
+    // An open tab keeps its old governor, so newer Work modules importing new exports fail to link.
+    // Two imports failing with different errors must not reload back and forth.
     await page.route('**/js/work-globe-webgl.js*', route => route.fulfill({
       contentType: 'application/javascript',
       body: "import { exportFromANewerRelease } from './graphics-governor.js'; export default exportFromANewerRelease;"
+    }));
+    await page.route('**/js/work-timeline.js*', route => route.fulfill({
+      contentType: 'application/javascript',
+      body: "import { anotherNewerExport } from './graphics-governor.js'; export const initWorkTimeline = anotherNewerExport;"
     }));
     // Firefox can restart a load still in progress, so count navigation requests rather than load events.
     let navigations = 0;

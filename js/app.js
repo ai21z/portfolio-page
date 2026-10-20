@@ -116,16 +116,19 @@ let workGlobeModulePromise = null;
 let workTimelineModulePromise = null;
 
 // A tab opened before a deploy keeps the old modules it already loaded. A section module fetched
-// later can import an export they lack, which fails to link as a SyntaxError. Reload once to pick
-// up the whole release. Network failures are TypeErrors and only warn.
+// later can import an export they lack, which fails to link as a SyntaxError. Reload to pick up
+// the whole release, at most once per tab every ten minutes, so two failing imports or a cached
+// stale copy cannot loop. Network failures are TypeErrors and only warn.
 function reloadOnceForRelease(err) {
   if (!(err instanceof SyntaxError)) return false;
   try {
-    if (sessionStorage.getItem('aris.releaseReload') === err.message) return false;
-    sessionStorage.setItem('aris.releaseReload', err.message);
+    const last = Number(sessionStorage.getItem('aris.releaseReload')) || 0;
+    if (Date.now() - last < 10 * 60_000) return false;
+    sessionStorage.setItem('aris.releaseReload', String(Date.now()));
   } catch {
     return false;
   }
+  if (typeof window.__showThreshold === 'function') window.__showThreshold();
   window.location.reload();
   return true;
 }

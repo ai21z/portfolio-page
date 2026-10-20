@@ -59,8 +59,10 @@ const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
 let initialized = false;
-let selectedProfile = normalizeSelectableProfile(readStoredProfile() || (isMobileViewport() ? 'quiet' : 'balanced'));
-let effectiveProfile = selectedProfile;
+const storedProfile = readStoredProfile();
+// Null until the visitor picks a profile. Until then the recommendation decides.
+let explicitProfile = storedProfile ? normalizeSelectableProfile(storedProfile) : null;
+let effectiveProfile = explicitProfile || (isMobileViewport() ? 'quiet' : 'balanced');
 let downgradeSteps = 0;
 let movementRegressionUntil = 0;
 let lastPromotionCheck = 0;
@@ -104,6 +106,8 @@ function classifyRenderer(renderer) {
   if (!value) return 'unknown';
   if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
   if (/(geforce|nvidia|rtx|gtx|radeon rx|radeon pro|quadro|arc\W|discrete)/i.test(value)) return 'discrete';
+  // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
+  if (/apple m\d/i.test(value)) return 'apple';
   if (/(intel|uhd|iris|apple m|apple gpu|radeon graphics|integrated)/i.test(value)) return 'integrated';
   return 'unknown';
 }
@@ -174,7 +178,7 @@ function hardwareClass({ hardwareConcurrency, deviceMemory, rendererCategory }) 
   }
   if ((hardwareConcurrency === null || hardwareConcurrency >= 8)
     && (deviceMemory === null || deviceMemory >= 8)
-    && rendererCategory === 'discrete') {
+    && (rendererCategory === 'discrete' || rendererCategory === 'apple')) {
     return 'strong';
   }
   return 'capable';
@@ -198,7 +202,7 @@ function getGraphicsCapability() {
   const viewport = viewportClass();
   // Defer GPU startup unless a 3D section or an explicit desktop quality choice needs it.
   const needsWebGL = currentSection === 'work' || currentSection === 'blog'
-    || (!isMobileViewport() && rank(selectedProfile) > rank('balanced'));
+    || (!isMobileViewport() && explicitProfile !== null && rank(explicitProfile) > rank('balanced'));
   const webgl = webglCapabilityProbe || (needsWebGL ? probeWebGL2Capability() : {
     webgl2: null,
     webgl2PerformanceOk: null,
@@ -246,9 +250,12 @@ function getGraphicsCapability() {
     recommendedProfile = 'balanced';
     if (classification === 'modest') reasons.push('modest-hardware');
     if (viewport !== 'desktop') reasons.push(viewport);
-  } else if (engine === 'chromium' && classification === 'strong' && webgl.webgl2PerformanceOk) {
+  } else if (engine === 'chromium') {
+    // The landing has no WebGL, so its GPU stays unprobed until a 3D section opens. An integrated
+    // GPU found then steps the recommendation down. The performance-caveat flag is ignored here
+    // too: software renderers already go Quiet and the flag has misfired on Apple silicon.
     recommendedProfile = 'rich';
-    reasons.push('strong-chromium-webgl');
+    reasons.push(classification === 'strong' ? 'strong-chromium-webgl' : 'capable-chromium');
   } else {
     reasons.push('standard-capability');
   }
@@ -295,7 +302,8 @@ function readStoredProfile() {
 
 function writeStoredProfile(profile) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, profile);
+    if (validProfile(profile)) window.localStorage.setItem(STORAGE_KEY, profile);
+    else window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Ignore private browsing/storage denial.
   }
@@ -337,13 +345,18 @@ function formatCapabilityReason(reason) {
   return labels[reason] || reason.replaceAll('-', ' ');
 }
 
+function selectedProfile() {
+  return explicitProfile || getGraphicsCapability().recommendedProfile;
+}
+
 function selectedProfileAllowsPortraitStreaming() {
-  return selectedProfile === 'rich' || selectedProfile === 'full';
+  const profile = selectedProfile();
+  return profile === 'rich' || profile === 'full';
 }
 
 function mergeBudget(profile, extras = {}) {
   return {
-    profile: selectedProfile,
+    profile: selectedProfile(),
     effectiveProfile: profile,
     ...PROFILE_BUDGETS[profile],
     ...extras
@@ -360,19 +373,14 @@ function ownerSectionForSystem(systemName) {
 function computeEffectiveProfile() {
   const capability = getGraphicsCapability();
 
+  // Reduced motion, save-data, phones, missing WebGL2 and software rendering always run Quiet.
   if (capability.recommendedProfile === 'quiet') return 'quiet';
 
-  let index = rank(selectedProfile);
-  if (rank(capability.recommendedProfile) <= rank('balanced')) {
-    index = Math.min(index, rank(capability.recommendedProfile));
-  }
+  // An explicit choice is honoured. The runtime frame check below still steps it down if frames slow.
+  let index = rank(selectedProfile());
 
   if (isFirefox() || isWebKit()) {
     index = Math.min(index, rank('balanced'));
-  }
-
-  if (isMobileViewport()) {
-    index = Math.min(index, rank(selectedProfile === 'full' ? 'rich' : 'balanced'));
   }
 
   // Movement pauses portrait streaming only. Dropping a tier mid-gesture reallocated every canvas.
@@ -385,7 +393,7 @@ function updateDocumentState(reason = 'state') {
   const changed = nextEffective !== effectiveProfile;
   effectiveProfile = nextEffective;
 
-  document.documentElement.dataset.graphicsProfile = selectedProfile;
+  document.documentElement.dataset.graphicsProfile = selectedProfile();
   document.documentElement.dataset.graphicsEffectiveProfile = effectiveProfile;
   document.documentElement.dataset.graphicsSection = currentSection;
   document.documentElement.dataset.graphicsReducedMotion = String(prefersReducedMotion());
@@ -411,15 +419,18 @@ function syncControl() {
   const root = document.querySelector('[data-graphics-control]');
   if (!root) return;
 
+  const state = getGraphicsState();
   const toggle = root.querySelector('.graphics-control__toggle');
   if (toggle) {
-    toggle.textContent = `Graphics: ${formatProfile(selectedProfile)}`;
+    // Name the tier actually running, and mark it when the governor overrode the visitor's choice.
+    const overridden = explicitProfile && state.effectiveProfile !== explicitProfile;
+    toggle.textContent = `Graphics: ${formatProfile(state.effectiveProfile)}${overridden ? ' (auto)' : ''}`;
   }
 
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
     const profile = button.getAttribute('data-graphics-profile');
     const unavailable = isFirefoxUnavailableProfile(profile);
-    const active = profile === selectedProfile;
+    const active = profile === (explicitProfile || 'auto');
     button.setAttribute('aria-pressed', String(active));
     button.toggleAttribute('disabled', unavailable);
     button.setAttribute('aria-disabled', String(unavailable));
@@ -430,7 +441,6 @@ function syncControl() {
     }
   });
 
-  const state = getGraphicsState();
   const status = root.querySelector('[data-graphics-help-status]');
   if (status) {
     const selectedSuffix = state.profile === state.capability.recommendedProfile
@@ -512,7 +522,7 @@ function wireControl() {
       const profile = button.getAttribute('data-graphics-profile');
       setMenuOpen(false);
       // Reload on explicit profile changes, never on automatic downgrades.
-      if (!profile || profile === selectedProfile) return;
+      if (!profile || profile === (explicitProfile || 'auto')) return;
       writeStoredProfile(profile);
       if (typeof window.__showThreshold === 'function') window.__showThreshold();
       window.location.reload();
@@ -607,7 +617,8 @@ export function getGraphicsState() {
   const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
   const effectiveProfile = computeEffectiveProfile();
   return {
-    profile: selectedProfile,
+    profile: selectedProfile(),
+    profileSource: explicitProfile ? 'user' : 'auto',
     effectiveProfile,
     capability: getGraphicsCapability(),
     currentSection,
@@ -716,13 +727,13 @@ export function getGraphicsBudget(systemName = 'default') {
   return budget;
 }
 
+// 'auto' clears the visitor's choice and hands the tier back to the recommendation.
 export function setGraphicsProfile(profile, options = {}) {
-  if (!validProfile(profile)) return;
-  const nextProfile = normalizeSelectableProfile(profile);
-  selectedProfile = nextProfile;
+  if (profile !== 'auto' && !validProfile(profile)) return;
+  explicitProfile = profile === 'auto' ? null : normalizeSelectableProfile(profile);
   invalidateGraphicsCapability();
   downgradeSteps = 0;
-  if (options.persist !== false) writeStoredProfile(nextProfile);
+  if (options.persist !== false) writeStoredProfile(explicitProfile || 'auto');
   updateDocumentState('profile');
 }
 

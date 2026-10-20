@@ -520,6 +520,23 @@ async function mockStrongWebGLCapability(page: Page) {
   });
 }
 
+async function mockIntegratedWebGLCapability(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+    Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+      if (contextId === 'webgl2') {
+        return {
+          getExtension: () => null,
+          getParameter: () => 'Intel(R) UHD Graphics 620'
+        } as unknown as WebGL2RenderingContext;
+      }
+      return originalGetContext.call(this, contextId, options);
+    };
+  });
+}
+
 async function mockUnavailableWebGL2(page: Page) {
   await page.addInitScript(() => {
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
@@ -1018,9 +1035,10 @@ test.describe('browser audit', () => {
     expect(state.capability.reasons).toContain('firefox-conservative');
   });
 
-  test('graphics governor gives strong Chromium capability a rich recommendation once a 3D section probes the GPU', async ({ page, baseURL, browserName }) => {
+  test('graphics governor defaults capable Chromium desktops to Rich and confirms it once a 3D section probes the GPU', async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== 'chromium', 'The strong capability expectation is Chromium-specific.');
     test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       window.localStorage.removeItem('aris.graphicsProfile');
     });
@@ -1030,12 +1048,16 @@ test.describe('browser audit', () => {
     await waitForGraphicsMovementStable(page);
     const landing = await collectGraphicsGovernorState(page);
 
-    // The landing page defers the WebGL probe to keep startup light, so the GPU is still unknown.
-    expect(landing.profile).toBe('balanced');
-    expect(landing.capability.recommendedProfile).toBe('balanced');
+    // The landing page defers the WebGL probe to keep startup light, so only CPU and memory are known.
+    expect(landing.profileSource).toBe('auto');
+    expect(landing.capability.webgl2).toBeNull();
     expect(landing.capability.hardwareClass).toBe('capable');
+    expect(landing.capability.recommendedProfile).toBe('rich');
+    expect(landing.profile).toBe('rich');
+    expect(landing.effectiveProfile).toBe('rich');
+    await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Rich');
 
-    // Entering a 3D section runs the deferred probe and upgrades the recommendation.
+    // Entering a 3D section runs the deferred probe and confirms the recommendation.
     const state = await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');
       governor.setGraphicsSection('work');
@@ -1044,7 +1066,70 @@ test.describe('browser audit', () => {
 
     expect(state.capability.recommendedProfile).toBe('rich');
     expect(state.capability.hardwareClass).toBe('strong');
-    expect(profileRank(state.effectiveProfile)).toBeGreaterThanOrEqual(profileRank('balanced'));
+    expect(state.effectiveProfile).toBe('rich');
+  });
+
+  test('graphics governor steps a capable desktop down to Balanced when the probe finds an integrated GPU', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Rich is a Chromium recommendation.');
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      window.localStorage.removeItem('aris.graphicsProfile');
+    });
+    await mockIntegratedWebGLCapability(page);
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsSection('work');
+      return governor.getGraphicsState();
+    });
+
+    expect(state.capability.rendererCategory).toBe('integrated');
+    expect(state.capability.recommendedProfile).toBe('balanced');
+    expect(state.effectiveProfile).toBe('balanced');
+  });
+
+  test('graphics control honours an explicit Rich choice, shows overrides, and returns to Auto', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName === 'firefox', 'Firefox only offers Quiet and Balanced.');
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      // Seed the choice once, so the reload after picking Auto shows what Auto stored.
+      if (!window.sessionStorage.getItem('seeded')) {
+        window.sessionStorage.setItem('seeded', '1');
+        window.localStorage.setItem('aris.graphicsProfile', 'rich');
+      }
+    });
+    // Integrated graphics recommend Balanced, which must not cap an explicit choice.
+    await mockIntegratedWebGLCapability(page);
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    let state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('user');
+    expect(state.capability.recommendedProfile).toBe('balanced');
+    if (browserName === 'chromium') {
+      expect(state.effectiveProfile).toBe('rich');
+      await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Rich');
+    } else {
+      // WebKit keeps its conservative cap and says so on the control.
+      expect(state.effectiveProfile).toBe('balanced');
+      await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Balanced (auto)');
+    }
+
+    await page.locator('.graphics-control__toggle').click();
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="rich"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="auto"]')).toHaveAttribute('aria-pressed', 'false');
+    const reloaded = page.waitForEvent('framenavigated');
+    await page.locator('#graphics-profile-menu [data-graphics-profile="auto"]').click();
+    await reloaded;
+    await page.waitForLoadState('domcontentloaded');
+    expect(await page.evaluate(() => window.localStorage.getItem('aris.graphicsProfile'))).toBeNull();
+    state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('auto');
+    expect(state.profile).toBe(state.capability.recommendedProfile);
   });
 
   test('WebGL-heavy sections request protected contexts before starting scenes', async ({ page, baseURL }) => {

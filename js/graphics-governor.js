@@ -543,12 +543,18 @@ function wireControl() {
   });
 }
 
+// A capped loop's own gap is not slowness: a 24 fps cap on 60 Hz waits 50 ms by design.
+// Slow means more than a vsync past the cap, and never under 50 ms.
+function isSlowFrame(sample) {
+  return sample.deltaMs > Math.max(50, (sample.intervalMs || 0) + 20);
+}
+
 function maybeAdjustFromFrames(now) {
   const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
   frameSamples.length = 0;
   frameSamples.push(...recent);
 
-  const slowFrames = recent.filter((sample) => sample.deltaMs > 50).length;
+  const slowFrames = recent.filter(isSlowFrame).length;
   const longFrames = recent.filter((sample) => sample.deltaMs > 100).length;
   if ((longFrames >= 5 || slowFrames >= 18) && downgradeSteps < 3) {
     downgradeSteps++;
@@ -559,7 +565,7 @@ function maybeAdjustFromFrames(now) {
   if (now - lastPromotionCheck < 20_000 || downgradeSteps <= 0) return;
   lastPromotionCheck = now;
 
-  const stable = recent.length >= 30 && recent.every((sample) => sample.deltaMs < 50);
+  const stable = recent.length >= 30 && !recent.some(isSlowFrame);
   if (stable) {
     downgradeSteps--;
     updateDocumentState('runtime-promotion');

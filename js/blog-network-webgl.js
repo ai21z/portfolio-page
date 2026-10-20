@@ -1318,11 +1318,15 @@ async function initBlogNetwork(){
   updateZoomIndicator(); // Set initial indicator to match default zoom
 
   canvas.addEventListener('wheel', (e) => {
+    // The rest of a wheel gesture that just stepped into Blog (js/navigation.js) is not a zoom.
+    if (!e.ctrlKey && document.documentElement.hasAttribute('data-wheel-step-tail')) return;
     const delta = e.deltaY > 0 ? 0.95 : 1.05;
     const nextZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
-    // At the zoom limit the wheel is left unhandled, so a fresh gesture can step to the next section.
-    if (nextZoom === userZoom) return;
+    // At the zoom limit a plain wheel is left to the page, so a fresh gesture can step to the next
+    // section. Pinch and ctrl+wheel stay with the dish, or the browser would zoom the whole page.
+    if (nextZoom === userZoom && !e.ctrlKey) return;
     e.preventDefault();
+    if (nextZoom === userZoom) return;
     userZoom = nextZoom;
     fit.scale = baseScale * userZoom;
     // Recalculate offsets to keep zoom centered

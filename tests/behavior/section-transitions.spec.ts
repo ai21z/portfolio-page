@@ -115,6 +115,18 @@ test('the sigil Blog covered fades in as Blog leaves instead of popping over it'
   expect(opacity).toBeLessThan(0.5);
 });
 
+test('leaving a deep-linked Contact keeps the sigil, which Contact never covered, steady', async ({ page }) => {
+  await page.goto('/index.html#contact');
+  await expect(page.locator('#contact')).toHaveClass(/active-section/);
+  await expect(page.locator('.network-sigil-node')).toBeAttached();
+  const opacity = await page.evaluate(async () => {
+    document.querySelector<HTMLElement>('#contact .section-nav-link[data-section="about"]')!.click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return Number(getComputedStyle(document.querySelector('.network-sigil-node')!).opacity);
+  });
+  expect(opacity).toBeGreaterThan(0.5);
+});
+
 test('with reduced motion a switch is immediate and the section leaves at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/index.html#about');

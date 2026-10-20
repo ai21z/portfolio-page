@@ -75,16 +75,27 @@ function leaveStage(stage, instant) {
   stage.__leaveTimer = window.setTimeout(() => finishLeaving(stage), STAGE_LEAVE_MS);
 }
 
-// The wheel scrolls whatever can scroll under the pointer, or the section's own list (Work's
-// timeline) from anywhere on it. A wheel gesture that starts with nothing to scroll in its
-// direction, and that nothing else consumed (the Blog dish zooms), steps to the previous or next
-// section instead. One gesture, trackpad inertia included, moves one section.
+// The wheel scrolls whatever can scroll under the pointer, or the section's own list from anywhere
+// on it (Work's timeline, or the section itself under the overlay nav). A wheel gesture that starts
+// with nothing to scroll in its direction, and that nothing else consumed (the Blog dish zooms),
+// steps to the previous or next section instead. One gesture, trackpad inertia included, moves one
+// section, and the rest of that gesture is left alone by the section it lands on.
 const WHEEL_ORDER = ['intro', 'about', 'skills', 'blog', 'work', 'contact'];
 const WHEEL_STEP_PX = 60;
 // A pause this long ends a gesture. Trackpad inertia keeps firing well inside it.
 const WHEEL_GESTURE_GAP_MS = 220;
 // Covers the cross-fade, so a step never lands on a section still fading in.
 const WHEEL_STEP_COOLDOWN_MS = 700;
+
+// Scroll positions as last seen. A fast wheel without scroll animation can carry a box to its end
+// before this listener runs, and that gesture still belongs to the box, not to a section step.
+const seenScrollTop = new WeakMap();
+if (typeof document !== 'undefined') {
+  document.addEventListener('scroll', (event) => {
+    const el = event.target === document ? document.scrollingElement : event.target;
+    if (el instanceof Element) seenScrollTop.set(el, el.scrollTop);
+  }, { capture: true, passive: true });
+}
 
 // The viewport takes html's overflow, or body's when html leaves it visible. Panel sections set
 // both to hidden, and then the document cannot scroll however tall it is.
@@ -99,11 +110,19 @@ function scrollableIn(el, direction) {
     && (direction > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0);
 }
 
+function isScroller(el, style) {
+  return el === document.scrollingElement ? viewportScrolls() : style.overflowY === 'auto' || style.overflowY === 'scroll';
+}
+
+function movedUnseen(el) {
+  const seen = seenScrollTop.get(el);
+  return seen !== undefined && seen !== el.scrollTop;
+}
+
 function canScrollFrom(target, direction) {
   for (let el = target instanceof Element ? target : null; el; el = el.parentElement) {
     const style = getComputedStyle(el);
-    const scroller = el === document.scrollingElement ? viewportScrolls() : style.overflowY === 'auto' || style.overflowY === 'scroll';
-    if (scroller && scrollableIn(el, direction)) return true;
+    if (isScroller(el, style) && (scrollableIn(el, direction) || movedUnseen(el))) return true;
     // A fixed section covers the viewport, so scrolling the document behind it shows nothing.
     // (Contact sits in the page flow, so the walk continues to the document there.)
     if (el.classList.contains('stage') && style.position === 'fixed') return false;
@@ -115,41 +134,110 @@ function canScrollFrom(target, direction) {
 // pointer over the globe too, and the wheel moves on only once the timeline has reached its end.
 const WHEEL_TARGETS = { work: '.work-rail-scroll' };
 
-function sectionWheelTarget(direction) {
+function sectionWheelTarget(target, direction) {
   const stage = document.querySelector('.stage.active-section');
-  const selector = WHEEL_TARGETS[stage?.dataset.section];
-  const el = selector ? stage.querySelector(selector) : null;
-  return el && el.getClientRects().length && scrollableIn(el, direction) ? el : null;
+  if (!stage) return null;
+  const selector = WHEEL_TARGETS[stage.dataset.section];
+  const list = selector ? stage.querySelector(selector) : null;
+  if (list && list.getClientRects().length && scrollableIn(list, direction)) return list;
+  // The overlay nav and the sigil sit outside the section, so a wheel over them scrolls the section.
+  if (!stage.contains(target) && isScroller(stage, getComputedStyle(stage)) && scrollableIn(stage, direction)) return stage;
+  return null;
 }
 
 function wheelStepBlocked() {
   const blog = document.getElementById('blog');
   return document.body.classList.contains('has-paper-open-global')
-    || Boolean(document.querySelector('dialog[open]'))
+    || Boolean(document.querySelector([
+      'dialog[open]',
+      '.work-location-info.visible',
+      '.project-panel.visible',
+      '#graphics-help-panel:not([hidden])',
+      '#graphics-profile-menu:not([hidden])'
+    ].join(',')))
     || Boolean(blog?.classList.contains('active-section') && blog.classList.contains('in-category'));
 }
 
+// A new trackpad swipe during the last one's inertia: the deltas had fallen to a trough just now,
+// and the new swipe's jump well above it. A swipe still speeding up has its lowest deltas first,
+// and a steady mouse spin never jumps, so neither counts. Only matters once the gesture stepped.
+function startsNewSwipe(gesture, size) {
+  const sizes = gesture.sizes;
+  if (!gesture.stepped || sizes.length < 10) return false;
+  const trough = Math.min(...sizes);
+  return sizes.slice(-3).includes(trough) && size > Math.max(4, trough * 3);
+}
+
 export function initWheelSteps(showSectionCallback) {
+  const root = document.documentElement;
   let gesture = null;
   let lastStepAt = -Infinity;
-  window.addEventListener('wheel', (event) => {
+  let pending = null;
+
+  const deltaOf = (event) => {
+    // Read the mode first: Firefox switches line-mode notches to pixels once a page reads a delta.
+    const mode = event.deltaMode;
     // Pinch zoom arrives as ctrl+wheel, and sideways swipes are not a request to move on.
-    if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    // Firefox can report a mouse notch as 3 lines. At 40 px a line it weighs what Chrome's 100 to
-    // 120 px notch does, so one notch steps in every browser.
-    const unit = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? window.innerHeight : 1;
-    const delta = event.deltaY * unit;
+    if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return 0;
+    // At 40 px a line, a 3-line Firefox notch weighs what a 100 to 120 px Chrome notch does.
+    return event.deltaY * (mode === 1 ? 40 : mode === 2 ? window.innerHeight : 1);
+  };
+
+  const step = (direction, at) => {
+    const index = WHEEL_ORDER.indexOf(document.querySelector('.stage.active-section')?.dataset.section);
+    const next = index < 0 ? null : WHEEL_ORDER[index + direction];
+    if (!next) return;
+    gesture.stepped = true;
+    lastStepAt = at;
+    // The rest of this gesture reaches the incoming section. Its handlers (the dish zoom) skip it.
+    root.dataset.wheelStepTail = '';
+    showSectionCallback(next, { historyMode: 'push' });
+  };
+
+  // A slow notch, or one at high browser zoom, can weigh less than the step distance. A short
+  // gesture of one or two notches that nothing handled still asks to move on. Notches dropped in
+  // the cooldown never counted towards distance, so they cannot fire here either.
+  const settle = (ended) => {
+    if (ended !== gesture) return;
+    delete root.dataset.wheelStepTail;
+    if (ended.stepped || ended.consumed || ended.drive || ended.events > 2 || ended.distance < 3) return;
+    const now = performance.now();
+    if (wheelStepBlocked() || now - lastStepAt < WHEEL_STEP_COOLDOWN_MS) return;
+    step(ended.direction, now);
+  };
+
+  // Capture phase: track the gesture before the target's own handlers see the event.
+  window.addEventListener('wheel', (event) => {
+    pending = null;
+    const delta = deltaOf(event);
     if (!delta) return;
+    const size = Math.abs(delta);
+    const direction = Math.sign(delta);
     // When the input happened, not when a busy page got to it, so a stalled frame cannot split
     // one gesture in two. Same clock as performance.now().
     const now = event.timeStamp || performance.now();
-    if (!gesture || now - gesture.lastAt > WHEEL_GESTURE_GAP_MS) {
-      const direction = Math.sign(delta);
+    if (!gesture || now - gesture.lastAt > WHEEL_GESTURE_GAP_MS || direction !== gesture.direction
+      || startsNewSwipe(gesture, size)) {
+      if (gesture) window.clearTimeout(gesture.endTimer);
+      delete root.dataset.wheelStepTail;
       const consumed = canScrollFrom(event.target, direction);
-      gesture = { direction, distance: 0, stepped: false, consumed, drive: consumed ? null : sectionWheelTarget(direction) };
+      const drive = consumed || wheelStepBlocked() ? null : sectionWheelTarget(event.target, direction);
+      gesture = { direction, distance: 0, events: 0, sizes: [], stepped: false, consumed, drive };
     }
     gesture.lastAt = now;
-    // Listeners on the target run first, so a handled wheel (the dish zoom) is already marked.
+    gesture.events += 1;
+    gesture.sizes.push(size);
+    if (gesture.sizes.length > 10) gesture.sizes.shift();
+    window.clearTimeout(gesture.endTimer);
+    gesture.endTimer = window.setTimeout(settle, WHEEL_GESTURE_GAP_MS, gesture);
+    pending = { event, delta, now };
+  }, { capture: true, passive: true });
+
+  // Bubble phase: decide once the target's handlers have had their say.
+  window.addEventListener('wheel', (event) => {
+    if (!pending || pending.event !== event) return;
+    const { delta, now } = pending;
+    pending = null;
     if (event.defaultPrevented) gesture.consumed = true;
     if (gesture.drive && !gesture.consumed) {
       // A running target, so fast notches add up while a smooth scroll is still in flight.
@@ -160,15 +248,10 @@ export function initWheelSteps(showSectionCallback) {
       return;
     }
     if (gesture.consumed || gesture.stepped || wheelStepBlocked()) return;
+    // A notch inside the cooldown is dropped, not saved up to fire later.
+    if (now - lastStepAt < WHEEL_STEP_COOLDOWN_MS) return;
     gesture.distance += Math.abs(delta);
-    if (gesture.distance < WHEEL_STEP_PX || now - lastStepAt < WHEEL_STEP_COOLDOWN_MS) return;
-    const current = document.querySelector('.stage.active-section')?.dataset.section;
-    const index = WHEEL_ORDER.indexOf(current);
-    const next = index < 0 ? null : WHEEL_ORDER[index + gesture.direction];
-    if (!next) return;
-    gesture.stepped = true;
-    lastStepAt = now;
-    showSectionCallback(next, { historyMode: 'push' });
+    if (gesture.distance >= WHEEL_STEP_PX) step(gesture.direction, now);
   }, { passive: true });
 }
 
@@ -215,7 +298,9 @@ export function showSection(sectionName, options = {}) {
   }
   
   const activeSection = document.querySelector(`.stage[data-section="${sectionName}"]`);
-  const isPanel = activeSection?.classList.contains('panel-screen') || 
+  // The wheel's "did this box just scroll" check needs a starting point for the section shown.
+  if (activeSection) seenScrollTop.set(activeSection, activeSection.scrollTop);
+  const isPanel = activeSection?.classList.contains('panel-screen') ||
                   activeSection?.classList.contains('altar-screen');
   document.documentElement.style.overflow = isPanel ? 'hidden' : '';
   document.body.style.overflow = isPanel ? 'hidden' : '';

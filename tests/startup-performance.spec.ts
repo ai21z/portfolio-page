@@ -101,29 +101,53 @@ test('desktop social animation initializes only once and stops in Quiet', async 
   }
 });
 
-test('reading graphics state preserves the recovery notification', async ({ browser }) => {
+test('movement keeps the graphics tier and real slowness still notifies after a state read', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
   try {
+    // Contact runs no sampled render loop, so only the frames reported here reach the governor.
     await page.clock.install();
-    await page.goto('/index.html');
-    await expect(page.locator('#threshold')).toBeHidden();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
     await page.clock.fastForward(2000);
     await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');
       governor.setGraphicsProfile('balanced', { persist: false });
-      (window as any).__recoveryEvents = [];
+      (window as any).__tierEvents = [];
+      (window as any).__dprEvents = 0;
       window.addEventListener('graphics:profile-change', (event: CustomEvent) => {
-        (window as any).__recoveryEvents.push(event.detail.effectiveProfile);
+        (window as any).__tierEvents.push(event.detail.effectiveProfile);
       });
+      window.addEventListener('dpr-changed', () => { (window as any).__dprEvents++; });
       governor.markGraphicsActivity('test', 700);
     });
-    await page.clock.fastForward(710);
-    await page.evaluate(async () => {
+    const during = await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');
-      governor.getGraphicsState();
+      return governor.getGraphicsState();
     });
-    await page.clock.fastForward(60);
-    expect(await page.evaluate(() => (window as any).__recoveryEvents)).toContain('balanced');
+    expect(during.movementRegression).toBe(true);
+    expect(during.effectiveProfile).toBe('balanced');
+    await page.clock.fastForward(760);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+    expect(await page.evaluate(() => (window as any).__dprEvents)).toBe(0);
+
+    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 1000 / 30);
+      governor.getGraphicsState();
+    }, [deltaMs, count]);
+
+    // One vsync past a 30 fps cap is jitter, not slowness.
+    await report(50.1, 30);
+    await page.clock.fastForward(600);
+    await report(50.1, 1);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+
+    // Two vsyncs past the cap is real slowness.
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual(['quiet']);
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
   } finally {
     await page.close();
   }

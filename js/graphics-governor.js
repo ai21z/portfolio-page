@@ -323,7 +323,6 @@ function recommendationReason(state) {
   if (state.firefox) return 'Firefox receives a safer WebGL budget';
   if (state.webkit) return 'WebKit receives a safer WebGL budget';
   if (state.mobile) return 'small or touch viewport';
-  if (state.movementRegression) return 'recent movement or long frames';
   if (state.downgradeSteps > 0) return 'recent long frames';
   if (state.profile !== state.effectiveProfile) return 'runtime capability budget';
   return 'standard browser settings';
@@ -376,12 +375,8 @@ function computeEffectiveProfile() {
     index = Math.min(index, rank(selectedProfile === 'full' ? 'rich' : 'balanced'));
   }
 
+  // Movement pauses portrait streaming only. Dropping a tier mid-gesture reallocated every canvas.
   index = Math.max(0, index - downgradeSteps);
-
-  if (performance.now() < movementRegressionUntil) {
-    index = Math.max(0, index - 1);
-  }
-
   return profileAt(index);
 }
 
@@ -731,10 +726,10 @@ export function setGraphicsProfile(profile, options = {}) {
   updateDocumentState('profile');
 }
 
+// The reason names the gesture at call sites. Movement only pauses portrait streaming,
+// which reads the budget every frame, so no state update or event is needed.
 export function markGraphicsActivity(reason = 'activity', durationMs = 700) {
   movementRegressionUntil = Math.max(movementRegressionUntil, performance.now() + durationMs);
-  updateDocumentState(reason);
-  window.setTimeout(() => updateDocumentState(`${reason}:settled`), durationMs + 40);
 }
 
 export function frameDue(elapsedMs, intervalMs) {

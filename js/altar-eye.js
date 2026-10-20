@@ -199,8 +199,13 @@ function initAltarEye(sectionId) {
   }
 
   function loop(ts) {
-    // Keep the loop alive during transient pauses so it can resume.
-    if (!sectionActive()) { release(); rafId = null; return; }
+    // Keep the loop alive during transient pauses so it can resume. A section fading out keeps
+    // its last frame and releases once the fade ends.
+    if (!sectionActive()) {
+      if (!section.classList.contains('stage-leaving')) release();
+      rafId = null;
+      return;
+    }
     if (document.hidden || paperOpen() || !lensVisible()) {
       lastTs = ts; // don't accumulate a huge dt across the pause
       rafId = requestAnimationFrame(loop);
@@ -230,9 +235,13 @@ function initAltarEye(sectionId) {
     rafId = requestAnimationFrame(loop);
   }
 
-  function stop() {
+  function pause() {
     if (rafId != null) cancelAnimationFrame(rafId);
     rafId = null;
+  }
+
+  function stop() {
+    pause();
     release();
   }
 
@@ -268,6 +277,8 @@ function initAltarEye(sectionId) {
 
   const mo = new MutationObserver(() => {
     if (sectionActive()) ensureLoop();
+    // A section fading out keeps its last frame. The class change that ends the fade stops it.
+    else if (section.classList.contains('stage-leaving')) pause();
     else stop();
   });
   mo.observe(section, { attributes: true, attributeFilter: ['class'] });

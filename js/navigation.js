@@ -53,12 +53,42 @@ export function computeNavOffsets(){
   }
 }
 
+// The outgoing section keeps painting while it fades out (styles/layout.css .stage-leaving), so a
+// switch overlaps the two views instead of cutting to an empty frame. Its modules release their
+// canvases on 'stage:left'. Matches the 450 ms fade with a little margin.
+const STAGE_LEAVE_MS = 500;
+
+function finishLeaving(stage) {
+  window.clearTimeout(stage.__leaveTimer);
+  stage.__leaveTimer = 0;
+  stage.classList.remove('stage-leaving');
+  stage.dispatchEvent(new CustomEvent('stage:left', { bubbles: true }));
+}
+
+function leaveStage(stage, instant) {
+  window.clearTimeout(stage.__leaveTimer);
+  if (instant || prefersReducedMotion) {
+    finishLeaving(stage);
+    return;
+  }
+  stage.classList.add('stage-leaving');
+  stage.__leaveTimer = window.setTimeout(() => finishLeaving(stage), STAGE_LEAVE_MS);
+}
+
 export function showSection(sectionName, options = {}) {
   const sections = document.querySelectorAll('.stage');
   sections.forEach(s => {
     const shouldBeActive = s.dataset.section === sectionName;
+    const wasActive = s.classList.contains('active-section');
+    if (shouldBeActive && s.classList.contains('stage-leaving')) {
+      // Returning before the fade ended: keep what is still drawn, never fire 'stage:left'.
+      window.clearTimeout(s.__leaveTimer);
+      s.__leaveTimer = 0;
+      s.classList.remove('stage-leaving');
+    }
     s.classList.toggle('active-section', shouldBeActive);
     s.inert = !shouldBeActive;
+    if (wasActive && !shouldBeActive) leaveStage(s, options.instant);
   });
   
   document.querySelectorAll('.network-node-label, .network-sigil-node').forEach(label =>

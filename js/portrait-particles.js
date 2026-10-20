@@ -710,11 +710,15 @@ class PortraitParticles {
           if (mutation.attributeName === 'class') {
             const isActive = introSection.classList.contains('active-section');
             if (isActive && this.isVisible && !this.running) this.start();
-            else if (!isActive) this.stop({ release: true });
+            else if (!isActive) this.stop({ release: !this.introLeaving() });
           }
         });
       });
       this.mutationObserver.observe(introSection, { attributes: true });
+      // While the landing fades out the particles hold their last frame. Release once it left.
+      introSection.addEventListener('stage:left', () => {
+        if (!introSection.classList.contains('active-section')) this.stop({ release: true, forceRelease: true });
+      });
     }
   }
 
@@ -805,7 +809,11 @@ class PortraitParticles {
     }
 
     if (this.shouldRun()) this.start();
-    else this.stop({ release: true });
+    else this.stop({ release: !this.introLeaving() });
+  }
+
+  introLeaving() {
+    return Boolean(document.querySelector('.stage[data-section="intro"]')?.classList.contains('stage-leaving'));
   }
 
   handleResize() {

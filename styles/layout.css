@@ -52,6 +52,13 @@
   content-visibility: visible;
 }
 
+/* The outgoing section keeps painting while it fades out under the incoming one, so a switch
+   never shows an empty frame. js/navigation.js removes the class after the fade. */
+.js-ready .stage.stage-leaving {
+  content-visibility: visible;
+  transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Custom scrollbar styling */
 .stage::-webkit-scrollbar{
   width:10px;

@@ -2,12 +2,11 @@ import { expect, test } from '@playwright/test';
 import { stubVerification } from './helpers/contact';
 
 test('release pages avoid stale scripts and styles and share one governor', async ({ page }) => {
-  const changed = new Set(['/js/navigation.js']);
   const mobileChanged = new Set([
     '/js/social-icons-animation.js', '/js/hub-to-icons.js', '/styles/graphics-controls.css'
   ]);
   const releaseChanged = new Set([
-    '/styles/main.css', '/js/contact.js', '/js/app.js', '/js/graphics-governor.js',
+    '/styles/main.css', '/js/contact.js', '/js/app.js', '/js/graphics-governor.js', '/js/navigation.js',
     '/js/work-globe-webgl.js', '/js/blog-network-webgl.js', '/js/work-timeline.js', '/js/work-globe/work-index.js',
     '/js/work-globe/work-index-content.js', '/js/work-globe/data/work-locations.js', '/js/work-globe/data/projects.js',
     '/js/work-globe/data/timeline.js', '/js/portrait-particles.js', '/js/altar-eye.js', '/js/altar-culture.js'
@@ -17,9 +16,7 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   await stubVerification(page);
   await page.route(url => releaseChanged.has(url.pathname)
     ? url.searchParams.get('v') !== '20261019'
-    : mobileChanged.has(url.pathname)
-      ? url.searchParams.get('v') !== '20260913-mobile'
-      : changed.has(url.pathname) && url.searchParams.get('v') !== '20260913', route => {
+    : mobileChanged.has(url.pathname) && url.searchParams.get('v') !== '20260913-mobile', route => {
     stale.push(route.request().url());
     return route.fulfill({ contentType: 'application/javascript', body: 'throw new Error("Stale release asset");' });
   });

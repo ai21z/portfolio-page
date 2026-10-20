@@ -491,10 +491,10 @@ function initWorkGlobe() {
   let lastDPR = currentDPR();
   boundDprHandler = () => {
     const dpr = currentDPR();
-    if (dpr !== lastDPR) {
-      lastDPR = dpr;
-      resizeCanvas();
-    }
+    // A resize clears the canvas. While Work fades out its last frame stays on screen instead.
+    if (dpr === lastDPR || !canvas?.closest('.active-section')) return;
+    lastDPR = dpr;
+    resizeCanvas();
   };
   window.addEventListener('dpr-changed', boundDprHandler);
 
@@ -1683,7 +1683,11 @@ function autoInit() {
         if (hasActiveClass && !gl) {
           // Section just became active and globe not initialized
           initWorkGlobe();
-        } else if (!hasActiveClass && gl) {
+        } else if (hasActiveClass && gl && !animationFrameId && globeViewActive) {
+          // Back before the fade-out ended: the scene is intact, so just resume it.
+          lastFrameTime = 0;
+          animationFrameId = requestAnimationFrame(animate);
+        } else if (!hasActiveClass && gl && !workSection.classList.contains('stage-leaving')) {
           // Section just became inactive and globe is initialized
           cleanupWorkGlobe();
         }
@@ -1692,6 +1696,10 @@ function autoInit() {
   });
 
   observer.observe(workSection, { attributes: true });
+  // While the section fades out the globe's last frame stays on screen. Tear down once it left.
+  workSection.addEventListener('stage:left', () => {
+    if (!workSection.classList.contains('active-section') && gl) cleanupWorkGlobe();
+  });
 
   // Rebuild the scene in place when the user picks a new graphics profile while
   // Work is active. The globe bakes particle/geometry budgets at init, so

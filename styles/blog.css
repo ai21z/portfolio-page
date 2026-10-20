@@ -13,11 +13,21 @@
   display: none;
 }
 
-.blog-screen.active-section {
+.blog-screen.active-section,
+.blog-screen.stage-leaving {
   display: block !important;
-  opacity: 1 !important;
+}
+
+.blog-screen.active-section {
+  opacity: 1;
   pointer-events: auto !important;
-  transition: none !important;
+}
+
+/* Fade in from display:none like the other sections. Older browsers show it at once. */
+@starting-style {
+  .blog-screen.active-section {
+    opacity: 0;
+  }
 }
 
 .blog-network-canvas {
@@ -27,6 +37,15 @@
   width: 100%;
   height: 100%;
   display: block;
+  /* Its WebGL context is opaque, so the canvas is black until a frame is drawn. Stay
+     transparent until then, so a first visit shows the background instead of a black frame. */
+  opacity: 0;
+}
+
+/* Fade in once drawn. Released canvases drop to transparent at once, never fading out black. */
+.blog-network-canvas.is-drawn {
+  opacity: 1;
+  transition: opacity 300ms ease-out;
 }
 
 .blog-intro-caption {

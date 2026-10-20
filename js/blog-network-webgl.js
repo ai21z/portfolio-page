@@ -433,10 +433,15 @@ async function initBlogNetwork(){
   let rafId = null;
   let clockRafId = null;
 
+  // The context is alpha:false, so an undrawn or released canvas is solid black. It stays
+  // transparent (styles/blog.css) until a frame is drawn into it.
+  let canvasDrawn = false;
   const releaseCanvasBuffer = () => {
     canvas.width = 1;
     canvas.height = 1;
     gl.viewport(0, 0, 1, 1);
+    canvasDrawn = false;
+    canvas.classList.remove('is-drawn');
   };
 
   const stopClockLoop = () => {
@@ -1141,7 +1146,9 @@ async function initBlogNetwork(){
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      if (running) fit = resize();
+      // A resize clears the canvas. A section fading out keeps its last frame, and startLoop
+      // resizes on the way back in.
+      if (running && canvas.closest('.active-section')) fit = resize();
     }
   });
 
@@ -1488,6 +1495,11 @@ async function initBlogNetwork(){
       }
     }
 
+    if (!canvasDrawn) {
+      canvasDrawn = true;
+      canvas.classList.add('is-drawn');
+    }
+
     if (running && !document.hidden) {
       rafId = requestAnimationFrame(loop);
     } else {
@@ -1505,13 +1517,13 @@ async function initBlogNetwork(){
       rafId = requestAnimationFrame(loop);
     }
   };
-  const stopLoop = () => {
+  const stopLoop = ({ keepFrame = false } = {}) => {
     if (rafId) {
       cancelAnimationFrame(rafId);
     }
     rafId = null;
     stopClockLoop();
-    releaseCanvasBuffer();
+    if (!keepFrame) releaseCanvasBuffer();
   };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
@@ -1519,9 +1531,13 @@ async function initBlogNetwork(){
       const isActive = blogStage.classList.contains('active-section');
       running = isActive;
       if (isActive) startLoop();
-      else stopLoop();
+      // While the section fades out its last frame stays on screen. 'stage:left' releases it.
+      else stopLoop({ keepFrame: blogStage.classList.contains('stage-leaving') });
     });
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
+    blogStage.addEventListener('stage:left', () => {
+      if (!blogStage.classList.contains('active-section')) releaseCanvasBuffer();
+    });
 
     // Initial check
     running = blogStage.classList.contains('active-section');

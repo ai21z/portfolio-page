@@ -362,14 +362,19 @@ function releaseIntroCanvasBuffers() {
   setLastSporeFrame(0);
 }
 
-function releaseInactiveFeatureCanvasBuffers(activeSectionName) {
-  if (activeSectionName !== 'work') {
-    releaseCanvasBacking(document.getElementById('work-globe-canvas'), null);
-  }
-  if (activeSectionName !== 'blog') {
-    releaseCanvasBacking(document.getElementById('blog-network-canvas'), null);
+// A section's canvases keep their last frame while it fades out, so only sections that are
+// neither shown nor still leaving give theirs up.
+function releaseInactiveFeatureCanvasBuffers() {
+  for (const [section, canvasId] of [['work', 'work-globe-canvas'], ['blog', 'blog-network-canvas']]) {
+    const stage = document.querySelector(`.stage[data-section="${section}"]`);
+    if (stage?.matches('.active-section, .stage-leaving')) continue;
+    const canvas = document.getElementById(canvasId);
+    releaseCanvasBacking(canvas, null);
+    canvas?.classList.remove('is-drawn');
   }
 }
+
+document.addEventListener('stage:left', releaseInactiveFeatureCanvasBuffers);
 
 function restoreIntroCanvasBuffers() {
   if (getGraphicsBudget('intro-spores').quiet) {
@@ -1213,10 +1218,12 @@ function closeTransientUi() {
 
 function showSectionWithEffects(sectionName, options = {}) {
   closeTransientUi();
+  // Switch the classes before the governor announces the new section, so canvases of the section
+  // fading out see it as inactive and keep their last frame instead of resizing (which clears them).
+  showSection(sectionName, options);
+  releaseInactiveFeatureCanvasBuffers();
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
-  showSection(sectionName, options);
-  releaseInactiveFeatureCanvasBuffers(sectionName);
   ensureSectionModule(sectionName);
 
   window.dispatchEvent(new CustomEvent('contact:visible', {
@@ -1342,7 +1349,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const articleId = parts[2];
 
     // Deep-link load: the hash is already correct, so don't touch history.
-    showSectionWithEffects('blog', { historyMode: 'none' });
+    showSectionWithEffects('blog', { historyMode: 'none', instant: true });
 
     if (articleId) {
       scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId, { historyMode: 'none' }));
@@ -1352,7 +1359,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
-    showSectionWithEffects(initialSection);
+    // Nothing has been seen yet on load, so the landing does not fade out behind the veil.
+    showSectionWithEffects(initialSection, { instant: true });
   }
 
   if (hudEnabled) {

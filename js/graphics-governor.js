@@ -120,12 +120,14 @@ function classifyRenderer(renderer) {
   const value = String(renderer || '').toLowerCase();
   if (!value) return 'unknown';
   if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
-  // Arc cards read "Arc(TM) A770 Graphics", "Arc(TM) Pro A60 Graphics" or "Arc(TM) B580 Graphics".
+  // Arc cards read "Arc(TM) A770 Graphics", "A750E", "A370M", "A310 LP", "Pro A40/A50" or "B580".
   // Integrated Arc reads "Arc(TM) Graphics" (Meteor Lake) or "Arc(TM) 140V GPU" (Lunar Lake).
   if (/intel.*\barc\b/i.test(value)) {
-    return /\barc(\(tm\))?\s+(pro\s+)?[ab]\d{2,3}m?\s+graphics/i.test(value) ? 'discrete' : 'integrated';
+    const card = /\barc(\(tm\))?\s+(pro\s+)?[ab]\d{2,3}[a-z]?(\/[ab]?\d{2,3})?(\s+lp)?\s+graphics/i;
+    return card.test(value) ? 'discrete' : 'integrated';
   }
-  if (/(geforce|nvidia|rtx|gtx|radeon\s*(\(tm\))?\s*(rx|pro)\b|quadro|discrete)/i.test(value)) return 'discrete';
+  // "Radeon(TM) RX Vega 11 Graphics" is a Raven Ridge APU. "RX Vega 56", "RX Vega M" and "RX 480" are cards.
+  if (/(geforce|nvidia|rtx|gtx|radeon\s*(\(tm\))?\s*(rx\b(?!\s+vega\s+\d{1,2}\s+graphics)|pro\b)|quadro|discrete)/i.test(value)) return 'discrete';
   // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
   if (/apple m\d/i.test(value)) return 'apple';
   // AMD APUs read "Radeon(TM) Graphics", "Radeon Vega 8 Graphics" or "Radeon 780M Graphics".

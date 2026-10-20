@@ -1486,7 +1486,7 @@ function onPointerUp(e) {
 // Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
   const container = canvas?.parentElement;
-  return cappedDpr(1.5, {
+  return cappedDpr(2, {
     systemName: 'work-globe',
     width: Math.max(1, container?.clientWidth || window.innerWidth),
     height: Math.max(1, container?.clientHeight || window.innerHeight)

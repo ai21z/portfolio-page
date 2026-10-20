@@ -30,7 +30,7 @@ const PAL = {
 
 function currentDPR() {
   const rect = q('#blog-network-canvas')?.getBoundingClientRect();
-  return cappedDpr(1.5, {
+  return cappedDpr(2, {
     systemName: 'blog-network',
     width: Math.max(1, rect?.width || window.innerWidth),
     height: Math.max(1, rect?.height || window.innerHeight)

@@ -59,6 +59,7 @@ import {
   layoutNavNodes,
   handleNavEnter,
   handleNavLeave,
+  initWheelSteps,
   updateMovingLabels
 } from './navigation.js';
 import {
@@ -1367,6 +1368,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     initHUD();
     renderHUD();
   }
+
+  initWheelSteps(showSectionWithEffects);
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {

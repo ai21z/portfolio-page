@@ -75,6 +75,101 @@ function leaveStage(stage, instant) {
   stage.__leaveTimer = window.setTimeout(() => finishLeaving(stage), STAGE_LEAVE_MS);
 }
 
+// The wheel scrolls whatever can scroll under the pointer, or the section's own list (Work's
+// timeline) from anywhere on it. A wheel gesture that starts with nothing to scroll in its
+// direction, and that nothing else consumed (the Blog dish zooms), steps to the previous or next
+// section instead. One gesture, trackpad inertia included, moves one section.
+const WHEEL_ORDER = ['intro', 'about', 'skills', 'blog', 'work', 'contact'];
+const WHEEL_STEP_PX = 60;
+// A pause this long ends a gesture. Trackpad inertia keeps firing well inside it.
+const WHEEL_GESTURE_GAP_MS = 220;
+// Covers the cross-fade, so a step never lands on a section still fading in.
+const WHEEL_STEP_COOLDOWN_MS = 700;
+
+// The viewport takes html's overflow, or body's when html leaves it visible. Panel sections set
+// both to hidden, and then the document cannot scroll however tall it is.
+function viewportScrolls() {
+  const html = getComputedStyle(document.documentElement).overflowY;
+  const overflow = html === 'visible' ? getComputedStyle(document.body).overflowY : html;
+  return overflow !== 'hidden' && overflow !== 'clip';
+}
+
+function scrollableIn(el, direction) {
+  return el.scrollHeight > el.clientHeight + 1
+    && (direction > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0);
+}
+
+function canScrollFrom(target, direction) {
+  for (let el = target instanceof Element ? target : null; el; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    const scroller = el === document.scrollingElement ? viewportScrolls() : style.overflowY === 'auto' || style.overflowY === 'scroll';
+    if (scroller && scrollableIn(el, direction)) return true;
+    // A fixed section covers the viewport, so scrolling the document behind it shows nothing.
+    // (Contact sits in the page flow, so the walk continues to the document there.)
+    if (el.classList.contains('stage') && style.position === 'fixed') return false;
+  }
+  return false;
+}
+
+// A section can name the list the wheel drives from anywhere on it. Work's timeline scrolls with the
+// pointer over the globe too, and the wheel moves on only once the timeline has reached its end.
+const WHEEL_TARGETS = { work: '.work-rail-scroll' };
+
+function sectionWheelTarget(direction) {
+  const stage = document.querySelector('.stage.active-section');
+  const selector = WHEEL_TARGETS[stage?.dataset.section];
+  const el = selector ? stage.querySelector(selector) : null;
+  return el && el.getClientRects().length && scrollableIn(el, direction) ? el : null;
+}
+
+function wheelStepBlocked() {
+  const blog = document.getElementById('blog');
+  return document.body.classList.contains('has-paper-open-global')
+    || Boolean(document.querySelector('dialog[open]'))
+    || Boolean(blog?.classList.contains('active-section') && blog.classList.contains('in-category'));
+}
+
+export function initWheelSteps(showSectionCallback) {
+  let gesture = null;
+  let lastStepAt = -Infinity;
+  window.addEventListener('wheel', (event) => {
+    // Pinch zoom arrives as ctrl+wheel, and sideways swipes are not a request to move on.
+    if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+    const delta = event.deltaY * unit;
+    if (!delta) return;
+    // When the input happened, not when a busy page got to it, so a stalled frame cannot split
+    // one gesture in two. Same clock as performance.now().
+    const now = event.timeStamp || performance.now();
+    if (!gesture || now - gesture.lastAt > WHEEL_GESTURE_GAP_MS) {
+      const direction = Math.sign(delta);
+      const consumed = canScrollFrom(event.target, direction);
+      gesture = { direction, distance: 0, stepped: false, consumed, drive: consumed ? null : sectionWheelTarget(direction) };
+    }
+    gesture.lastAt = now;
+    // Listeners on the target run first, so a handled wheel (the dish zoom) is already marked.
+    if (event.defaultPrevented) gesture.consumed = true;
+    if (gesture.drive && !gesture.consumed) {
+      // A running target, so fast notches add up while a smooth scroll is still in flight.
+      const el = gesture.drive;
+      const start = gesture.driveTop ?? el.scrollTop;
+      gesture.driveTop = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, start + delta));
+      el.scrollTo({ top: gesture.driveTop, behavior: prefersReducedMotion || Math.abs(delta) < 40 ? 'auto' : 'smooth' });
+      return;
+    }
+    if (gesture.consumed || gesture.stepped || wheelStepBlocked()) return;
+    gesture.distance += Math.abs(delta);
+    if (gesture.distance < WHEEL_STEP_PX || now - lastStepAt < WHEEL_STEP_COOLDOWN_MS) return;
+    const current = document.querySelector('.stage.active-section')?.dataset.section;
+    const index = WHEEL_ORDER.indexOf(current);
+    const next = index < 0 ? null : WHEEL_ORDER[index + gesture.direction];
+    if (!next) return;
+    gesture.stepped = true;
+    lastStepAt = now;
+    showSectionCallback(next, { historyMode: 'push' });
+  }, { passive: true });
+}
+
 export function showSection(sectionName, options = {}) {
   const sections = document.querySelectorAll('.stage');
   sections.forEach(s => {

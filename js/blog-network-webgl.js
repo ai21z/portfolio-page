@@ -1318,9 +1318,12 @@ async function initBlogNetwork(){
   updateZoomIndicator(); // Set initial indicator to match default zoom
 
   canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
     const delta = e.deltaY > 0 ? 0.95 : 1.05;
-    userZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
+    const nextZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
+    // At the zoom limit the wheel is left unhandled, so a fresh gesture can step to the next section.
+    if (nextZoom === userZoom) return;
+    e.preventDefault();
+    userZoom = nextZoom;
     fit.scale = baseScale * userZoom;
     // Recalculate offsets to keep zoom centered
     fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;

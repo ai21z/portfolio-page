@@ -464,6 +464,8 @@ class PortraitParticles {
     this.bufHeight = 1;
     this.dirtyPrev = null;
     this.dirtyCurr = null;
+    // A released canvas draws nothing, so the photo carries the portrait again until particles restart.
+    if (this.img) this.img.style.opacity = '';
     this.publishStats({ released: true });
   }
 

@@ -226,6 +226,28 @@ test('a slow burst costs one tier and the tier is retried with growing backoff',
   }
 });
 
+test('a section module from a newer release reloads the page once, then only warns', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    // An open tab keeps its old governor, so a newer globe module importing a new export fails to link.
+    await page.route('**/js/work-globe-webgl.js*', route => route.fulfill({
+      contentType: 'application/javascript',
+      body: "import { exportFromANewerRelease } from './graphics-governor.js'; export default exportFromANewerRelease;"
+    }));
+    // Firefox can restart a load still in progress, so count navigation requests rather than load events.
+    let navigations = 0;
+    page.on('request', request => { if (request.isNavigationRequest()) navigations++; });
+    const warnings: string[] = [];
+    page.on('console', message => { if (message.type() === 'warning') warnings.push(message.text()); });
+    await page.goto('/index.html#work');
+    await expect.poll(() => warnings.some(text => text.includes('work globe module unavailable')), { timeout: 15_000 }).toBe(true);
+    expect(navigations).toBe(2);
+    await expect(page.locator('#work')).toHaveClass(/active-section/);
+  } finally {
+    await page.close();
+  }
+});
+
 test('contact loads and mounts verification once after opening', async ({ page }) => {
   let loads = 0;
   await page.route('https://challenges.cloudflare.com/**', route => {

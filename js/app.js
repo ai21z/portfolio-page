@@ -115,10 +115,26 @@ let blogNetworkModulePromise = null;
 let workGlobeModulePromise = null;
 let workTimelineModulePromise = null;
 
+// A tab opened before a deploy keeps the old modules it already loaded. A section module fetched
+// later can import an export they lack, which fails to link as a SyntaxError. Reload once to pick
+// up the whole release. Network failures are TypeErrors and only warn.
+function reloadOnceForRelease(err) {
+  if (!(err instanceof SyntaxError)) return false;
+  try {
+    if (sessionStorage.getItem('aris.releaseReload') === err.message) return false;
+    sessionStorage.setItem('aris.releaseReload', err.message);
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
     blogNetworkModulePromise = import('./blog-network-webgl.js?v=20261019').catch((err) => {
       blogNetworkModulePromise = null;
+      if (reloadOnceForRelease(err)) return;
       console.warn('blog network module unavailable:', err);
     });
   }
@@ -126,6 +142,7 @@ function ensureSectionModule(sectionName) {
   if (sectionName === 'work' && !workGlobeModulePromise) {
     workGlobeModulePromise = import('./work-globe-webgl.js?v=20261019').catch((err) => {
       workGlobeModulePromise = null;
+      if (reloadOnceForRelease(err)) return;
       console.warn('work globe module unavailable:', err);
     });
   }
@@ -135,6 +152,7 @@ function ensureSectionModule(sectionName) {
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;
+        if (reloadOnceForRelease(err)) return;
         console.warn('work timeline module unavailable:', err);
       });
   }

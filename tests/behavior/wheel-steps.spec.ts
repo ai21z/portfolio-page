@@ -46,6 +46,16 @@ test('one wheel gesture moves one section, forward and back', async ({ page }) =
   expect(await active(page)).toBe('about');
 });
 
+test('one notch reported in lines, as Firefox can, steps like a notch in pixels', async ({ page }) => {
+  await open(page, '#about');
+  await page.evaluate(() => {
+    const target = document.elementFromPoint(700, 450) || document.body;
+    target.dispatchEvent(new WheelEvent('wheel', { deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE, bubbles: true, cancelable: true }));
+  });
+  await page.waitForTimeout(GESTURE_GAP_MS);
+  expect(await active(page)).toBe('skills');
+});
+
 test('a section that can still scroll keeps the gesture, and the edge passes it on', async ({ page }) => {
   await open(page, '');
   const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);

@@ -135,7 +135,9 @@ export function initWheelSteps(showSectionCallback) {
   window.addEventListener('wheel', (event) => {
     // Pinch zoom arrives as ctrl+wheel, and sideways swipes are not a request to move on.
     if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+    // Firefox can report a mouse notch as 3 lines. At 40 px a line it weighs what Chrome's 100 to
+    // 120 px notch does, so one notch steps in every browser.
+    const unit = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? window.innerHeight : 1;
     const delta = event.deltaY * unit;
     if (!delta) return;
     // When the input happened, not when a busy page got to it, so a stalled frame cannot split

@@ -131,7 +131,7 @@ function ensureSectionModule(sectionName) {
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20260913')
+    workTimelineModulePromise = import('./work-timeline.js?v=20261019')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;

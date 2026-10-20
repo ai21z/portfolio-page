@@ -126,7 +126,8 @@ test('movement keeps the graphics tier and real slowness still notifies after a 
     });
     expect(during.movementRegression).toBe(true);
     expect(during.effectiveProfile).toBe('balanced');
-    await page.clock.fastForward(760);
+    // Past the movement window and the settle time after the profile change.
+    await page.clock.fastForward(1100);
     expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
     expect(await page.evaluate(() => (window as any).__dprEvents)).toBe(0);
 
@@ -148,6 +149,72 @@ test('movement keeps the graphics tier and real slowness still notifies after a 
     await report(80, 1);
     expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual(['quiet']);
     await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  } finally {
+    await page.close();
+  }
+});
+
+test('a slow burst costs one tier and the tier is retried with growing backoff', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Auto reaches Rich only in Chromium.');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.addInitScript(() => {
+      localStorage.removeItem('aris.graphicsProfile');
+      Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+    });
+    // Contact runs no sampled render loop, so only the frames reported here reach the governor.
+    await page.clock.install();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    await page.clock.fastForward(2000);
+    await page.evaluate(() => {
+      (window as any).__tierEvents = [];
+      window.addEventListener('graphics:profile-change', (event: CustomEvent) => {
+        (window as any).__tierEvents.push(event.detail.effectiveProfile);
+      });
+    });
+    const events = () => page.evaluate(() => (window as any).__tierEvents);
+    const state = () => page.evaluate(async () => (await import('/js/graphics-governor.js')).getGraphicsState());
+    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 0);
+    }, [deltaMs, count]);
+    const burst = async () => {
+      await report(80, 20);
+      await page.clock.fastForward(600);
+      await report(80, 1);
+    };
+    expect((await state()).effectiveProfile).toBe('rich');
+
+    // Gaps over a second are pauses such as a hidden tab, not frames.
+    await report(5000, 6);
+    await page.clock.fastForward(600);
+    await report(16.7, 1);
+    expect(await events()).toEqual([]);
+
+    await burst();
+    expect(await events()).toEqual(['balanced']);
+    // The same burst is not counted twice, and the frames right after the change are not evidence.
+    await page.clock.fastForward(600);
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await events()).toEqual(['balanced']);
+
+    // With no sampled loop running, the stepped-down tier is retried after 20 s.
+    await page.clock.fastForward(20_000);
+    expect(await events()).toEqual(['balanced', 'rich']);
+
+    // Failing the retry doubles back down and the next retry waits 60 s instead of 20 s.
+    await page.clock.fastForward(1100);
+    await burst();
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
+    expect((await state()).failedPromotions).toBe(1);
+    await page.clock.fastForward(21_000);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
+    await page.clock.fastForward(40_000);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'rich']);
   } finally {
     await page.close();
   }

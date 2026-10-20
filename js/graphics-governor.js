@@ -55,6 +55,16 @@ const PROFILE_BUDGETS = {
 // Without slack the loop waits for a third vsync and alternates 33 and 50 ms frames.
 const FRAME_SLACK_MS = 4;
 
+// A gap this long is a pause (hidden tab, stopped loop), not a frame.
+const PAUSE_MS = 1000;
+// Frames right after a tier change carry its canvas reallocation, so they are not evidence.
+const SETTLE_MS = 1000;
+// A stepped-down tier is retried after 20 s, then 60 s, then 180 s, then no more this visit.
+const PROMOTION_DELAY_MS = 20_000;
+const MAX_FAILED_PROMOTIONS = 3;
+// A downgrade this soon after a retry counts as a failed retry.
+const PROMOTION_PROBATION_MS = 30_000;
+
 const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
@@ -63,9 +73,14 @@ const storedProfile = readStoredProfile();
 // Null until the visitor picks a profile. Until then the recommendation decides.
 let explicitProfile = storedProfile ? normalizeSelectableProfile(storedProfile) : null;
 let effectiveProfile = explicitProfile || (isMobileViewport() ? 'quiet' : 'balanced');
-let downgradeSteps = 0;
+// The highest tier recent frames allow. Held as a ceiling, not as steps, so a later lower
+// recommendation is not penalised twice.
+let runtimeCeiling = PROFILES.length - 1;
+let tierChangedAt = 0;
+let lastPromotionAt = -Infinity;
+let failedPromotions = 0;
+let promotionTimer = 0;
 let movementRegressionUntil = 0;
-let lastPromotionCheck = 0;
 let currentSection = 'intro';
 let debugOverlay = null;
 let webglCapabilityProbe = null;
@@ -371,22 +386,28 @@ function ownerSectionForSystem(systemName) {
   return null;
 }
 
-function computeEffectiveProfile() {
-  const capability = getGraphicsCapability();
-
+// The tier before runtime evidence.
+function baseProfileIndex() {
   // Reduced motion, save-data, phones, missing WebGL2 and software rendering always run Quiet.
-  if (capability.recommendedProfile === 'quiet') return 'quiet';
+  if (getGraphicsCapability().recommendedProfile === 'quiet') return 0;
 
-  // An explicit choice is honoured. The runtime frame check below still steps it down if frames slow.
+  // An explicit choice is honoured. The runtime ceiling still steps it down if frames slow.
   let index = rank(selectedProfile());
 
   if (isFirefox() || isWebKit()) {
     index = Math.min(index, rank('balanced'));
   }
+  return index;
+}
 
-  // Movement pauses portrait streaming only. Dropping a tier mid-gesture reallocated every canvas.
-  index = Math.max(0, index - downgradeSteps);
-  return profileAt(index);
+// Movement pauses portrait streaming only. Dropping a tier mid-gesture reallocated every canvas.
+function computeEffectiveProfile() {
+  return profileAt(Math.min(baseProfileIndex(), runtimeCeiling));
+}
+
+function runtimeSteps() {
+  const base = baseProfileIndex();
+  return base - Math.min(base, runtimeCeiling);
 }
 
 function updateDocumentState(reason = 'state') {
@@ -555,26 +576,51 @@ function isSlowFrame(sample) {
   return sample.deltaMs > Math.max(50, (sample.intervalMs || 0) + 20);
 }
 
+function recentFrameSamples(now) {
+  return frameSamples.filter((sample) => now - sample.at <= 10_000);
+}
+
+function setRuntimeCeiling(index, reason) {
+  runtimeCeiling = index;
+  tierChangedAt = performance.now();
+  // One burst costs one tier: the next decision needs fresh evidence from the new tier.
+  frameSamples.length = 0;
+  updateDocumentState(reason);
+  schedulePromotion(PROMOTION_DELAY_MS * 3 ** failedPromotions);
+}
+
+function schedulePromotion(delayMs) {
+  window.clearTimeout(promotionTimer);
+  promotionTimer = 0;
+  if (runtimeCeiling >= PROFILES.length - 1 || failedPromotions >= MAX_FAILED_PROMOTIONS) return;
+  promotionTimer = window.setTimeout(tryPromotion, delayMs);
+}
+
+function tryPromotion() {
+  promotionTimer = 0;
+  if (runtimeCeiling >= baseProfileIndex() || failedPromotions >= MAX_FAILED_PROMOTIONS) return;
+  const recent = recentFrameSamples(performance.now());
+  // Quiet stops the landing's only sampled loop, so silence must not block a retry.
+  const calm = recent.length === 0 || (recent.length >= 30 && !recent.some(isSlowFrame));
+  if (!calm) {
+    schedulePromotion(5_000);
+    return;
+  }
+  lastPromotionAt = performance.now();
+  setRuntimeCeiling(runtimeCeiling + 1, 'runtime-promotion');
+}
+
 function maybeAdjustFromFrames(now) {
-  const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
+  const recent = recentFrameSamples(now);
   frameSamples.length = 0;
   frameSamples.push(...recent);
 
   const slowFrames = recent.filter(isSlowFrame).length;
   const longFrames = recent.filter((sample) => sample.deltaMs > 100).length;
-  if ((longFrames >= 5 || slowFrames >= 18) && downgradeSteps < 3) {
-    downgradeSteps++;
-    updateDocumentState('runtime-downgrade');
-    return;
-  }
-
-  if (now - lastPromotionCheck < 20_000 || downgradeSteps <= 0) return;
-  lastPromotionCheck = now;
-
-  const stable = recent.length >= 30 && !recent.some(isSlowFrame);
-  if (stable) {
-    downgradeSteps--;
-    updateDocumentState('runtime-promotion');
+  const current = rank(computeEffectiveProfile());
+  if ((longFrames >= 5 || slowFrames >= 18) && current > 0) {
+    if (now - lastPromotionAt < PROMOTION_PROBATION_MS) failedPromotions++;
+    setRuntimeCeiling(current - 1, 'runtime-downgrade');
   }
 }
 
@@ -615,7 +661,7 @@ function updateDebugOverlay() {
 
 export function getGraphicsState() {
   const now = performance.now();
-  const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
+  const recent = recentFrameSamples(now);
   const effectiveProfile = computeEffectiveProfile();
   return {
     profile: selectedProfile(),
@@ -623,7 +669,8 @@ export function getGraphicsState() {
     effectiveProfile,
     capability: getGraphicsCapability(),
     currentSection,
-    downgradeSteps,
+    downgradeSteps: runtimeSteps(),
+    failedPromotions,
     movementRegression: now < movementRegressionUntil,
     reducedMotion: prefersReducedMotion(),
     saveData: saveDataEnabled(),
@@ -733,7 +780,13 @@ export function setGraphicsProfile(profile, options = {}) {
   if (profile !== 'auto' && !validProfile(profile)) return;
   explicitProfile = profile === 'auto' ? null : normalizeSelectableProfile(profile);
   invalidateGraphicsCapability();
-  downgradeSteps = 0;
+  runtimeCeiling = PROFILES.length - 1;
+  failedPromotions = 0;
+  lastPromotionAt = -Infinity;
+  tierChangedAt = performance.now();
+  frameSamples.length = 0;
+  window.clearTimeout(promotionTimer);
+  promotionTimer = 0;
   if (options.persist !== false) writeStoredProfile(explicitProfile || 'auto');
   updateDocumentState('profile');
 }
@@ -750,7 +803,9 @@ export function frameDue(elapsedMs, intervalMs) {
 
 export function reportFrameSample(systemName, deltaMs, intervalMs = 0) {
   const now = performance.now();
-  frameSamples.push({ systemName, deltaMs, intervalMs, at: now });
+  if (deltaMs < PAUSE_MS && now - tierChangedAt >= SETTLE_MS) {
+    frameSamples.push({ systemName, deltaMs, intervalMs, at: now });
+  }
   // Sample every frame but adjust the budget only a few times per second.
   if (now - lastFrameAdjustAt >= 500) {
     lastFrameAdjustAt = now;

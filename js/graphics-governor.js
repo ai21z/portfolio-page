@@ -575,9 +575,12 @@ function wireControl() {
     setMenuOpen(false);
   });
 
+  // A click anywhere else closes the menu as well as the help, so neither lingers (an open menu
+  // also holds back the wheel's section steps).
   document.addEventListener('pointerdown', (event) => {
     if (root.contains(event.target)) return;
     setHelpOpen(false);
+    setMenuOpen(false);
   });
 }
 

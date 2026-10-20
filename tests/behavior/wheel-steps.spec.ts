@@ -37,6 +37,24 @@ async function scrollBox(page: Page, selector: string, where: 'top' | 'end') {
   }, where === 'end');
 }
 
+// A timed stream of wheel deltas, 16 ms apart like a trackpad or a free-spinning wheel, each event
+// on whatever is under the pointer at that moment. Real spacing matters here, so callers run it in
+// Chromium only, where the page's timers keep it.
+async function stream(page: Page, deltas: number[], at = POINTER) {
+  await page.evaluate(async ({ list, x, y }) => {
+    for (const dy of list) {
+      (document.elementFromPoint(x, y) || document.body)
+        .dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }));
+      await new Promise((resolve) => setTimeout(resolve, 16));
+    }
+  }, { list: deltas, x: at.x, y: at.y });
+  await page.waitForTimeout(GESTURE_GAP_MS);
+}
+
+// A trackpad swipe: a short ramp up, then inertia decaying to 1 px.
+const swipe = (sign: number, events = 90) => Array.from({ length: events }, (_, i) =>
+  sign * Math.max(1, Math.round(40 * (i < 6 ? (i + 1) / 6 : Math.exp(-(i - 6) / 14)))));
+
 const active = (page: Page) => page.evaluate(() => document.querySelector('.stage.active-section')?.getAttribute('data-section'));
 
 async function openDish(page: Page) {
@@ -97,6 +115,35 @@ test('reversing the wheel steps the new way, never the way the gesture started',
   expect(await active(page)).toBe('about');
 });
 
+test('a steady stream with one merged spike still moves only one section', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // 1.6 s of a steady 15 px stream. Chrome merges queued wheels into one larger event when the page
+  // stalls, which shows up as one spike, here right after the step.
+  const deltas = Array.from({ length: 100 }, (_, i) => (i === 12 || i === 60 ? 113 : 15));
+  await stream(page, deltas);
+  expect(await active(page)).toBe('skills');
+});
+
+test('a second swipe started during the first one\'s inertia moves on again', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#skills');
+  await stream(page, [...swipe(-1), ...swipe(-1)]);
+  expect(await active(page)).toBe('intro');
+});
+
+test('a slow notch overtaken by a nav click does not move past the clicked section', async ({ page }) => {
+  await open(page, '#about');
+  await page.evaluate(async () => {
+    (document.elementFromPoint(700, 450) || document.body)
+      .dispatchEvent(new WheelEvent('wheel', { deltaY: 50, bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    document.querySelector<HTMLElement>('#about .section-nav-link[data-section="blog"]')!.click();
+  });
+  await page.waitForTimeout(GESTURE_GAP_MS + 200);
+  expect(await active(page)).toBe('blog');
+});
+
 test('a section that can still scroll keeps the gesture, and the edge passes it on', async ({ page }) => {
   await open(page, '');
   const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
@@ -142,6 +189,34 @@ test('over the landing nav the wheel scrolls the landing before it moves on', as
   await gesture(page, 120, 2, at);
   expect(await active(page)).toBe('intro');
   await expect.poll(() => page.locator('#main').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+});
+
+test('with reduced motion the landing scrolls at once under the wheel, without an animation', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, '');
+  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
+  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
+  await scrollBox(page, '#main', 'top');
+  const label = await page.locator('.network-node-label').first().boundingBox();
+  test.skip(!label, 'The network labels are not laid out in this viewport.');
+  const top = await page.evaluate(({ x, y }) => {
+    const target = document.elementFromPoint(x, y);
+    if (document.getElementById('main')!.contains(target)) return -1;
+    target!.dispatchEvent(new WheelEvent('wheel', { deltaY: 30, bubbles: true, cancelable: true }));
+    return document.getElementById('main')!.scrollTop;
+  }, { x: label!.x + label!.width / 2, y: label!.y + label!.height / 2 });
+  test.skip(top === -1, 'The label is not above the landing here.');
+  expect(top).toBeGreaterThan(20);
+});
+
+test('an open graphics menu closes on a click elsewhere and frees the wheel', async ({ page }) => {
+  await open(page, '#about');
+  await page.locator('.graphics-control__toggle').click();
+  await expect(page.locator('#graphics-profile-menu')).toBeVisible();
+  await page.mouse.click(720, 40);
+  await expect(page.locator('#graphics-profile-menu')).toBeHidden();
+  await gesture(page, 120);
+  expect(await active(page)).toBe('skills');
 });
 
 test('the last section stays put going down, and the first going up', async ({ page }) => {

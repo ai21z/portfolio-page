@@ -158,14 +158,23 @@ function wheelStepBlocked() {
     || Boolean(blog?.classList.contains('active-section') && blog.classList.contains('in-category'));
 }
 
-// A new trackpad swipe during the last one's inertia: the deltas had fallen to a trough just now,
-// and the new swipe's jump well above it. A swipe still speeding up has its lowest deltas first,
-// and a steady mouse spin never jumps, so neither counts. Only matters once the gesture stepped.
+// A new trackpad swipe during the last one's inertia: the stream had sunk to a low tail (the median
+// of its last three deltas small, absolutely or next to the window's peak) and now climbs well above
+// it for three events in a row. Chrome merges queued wheels into one larger event when the page
+// stalls, and a lone merged spike or a lone low reading must not split a stream, so one event never
+// does. Only matters once the gesture has stepped.
 function startsNewSwipe(gesture, size) {
   const sizes = gesture.sizes;
   if (!gesture.stepped || sizes.length < 10) return false;
-  const trough = Math.min(...sizes);
-  return sizes.slice(-3).includes(trough) && size > Math.max(4, trough * 3);
+  if (!gesture.rise) {
+    const tail = sizes.slice(-3).sort((a, b) => a - b)[1];
+    const lowTail = tail <= 3 || tail <= Math.max(...sizes) / 2;
+    if (lowTail && size > Math.max(4, tail * 3)) gesture.rise = { floor: Math.max(4, tail * 3), count: 1 };
+    return false;
+  }
+  if (size > gesture.rise.floor) gesture.rise.count += 1;
+  else gesture.rise = null;
+  return Boolean(gesture.rise && gesture.rise.count >= 3);
 }
 
 export function initWheelSteps(showSectionCallback) {
@@ -184,7 +193,7 @@ export function initWheelSteps(showSectionCallback) {
   };
 
   const step = (direction, at) => {
-    const index = WHEEL_ORDER.indexOf(document.querySelector('.stage.active-section')?.dataset.section);
+    const index = WHEEL_ORDER.indexOf(activeSection());
     const next = index < 0 ? null : WHEEL_ORDER[index + direction];
     if (!next) return;
     gesture.stepped = true;
@@ -194,16 +203,33 @@ export function initWheelSteps(showSectionCallback) {
     showSectionCallback(next, { historyMode: 'push' });
   };
 
+  const activeSection = () => document.querySelector('.stage.active-section')?.dataset.section;
+
   // A slow notch, or one at high browser zoom, can weigh less than the step distance. A short
   // gesture of one or two notches that nothing handled still asks to move on. Notches dropped in
-  // the cooldown never counted towards distance, so they cannot fire here either.
+  // the cooldown never counted towards distance, so they cannot fire here either, and a gesture
+  // overtaken by other navigation (a nav click, Back) is dropped. The step tail is left for the
+  // next gesture to clear: on a stalled page this wall-clock timer can run before the gesture's
+  // queued events are processed.
   const settle = (ended) => {
-    if (ended !== gesture) return;
-    delete root.dataset.wheelStepTail;
+    if (ended !== gesture || ended.section !== activeSection()) return;
     if (ended.stepped || ended.consumed || ended.drive || ended.events > 2 || ended.distance < 3) return;
     const now = performance.now();
     if (wheelStepBlocked() || now - lastStepAt < WHEEL_STEP_COOLDOWN_MS) return;
     step(ended.direction, now);
+  };
+
+  // Scrolls a driven box. Small trackpad deltas and reduced motion apply at once, whatever the
+  // box's own CSS scroll-behavior (every .stage is smooth).
+  const driveTo = (el, top, smooth) => {
+    if (smooth) {
+      el.scrollTo({ top, behavior: 'smooth' });
+      return;
+    }
+    const inline = el.style.scrollBehavior;
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = top;
+    el.style.scrollBehavior = inline;
   };
 
   // Capture phase: track the gesture before the target's own handlers see the event.
@@ -222,7 +248,7 @@ export function initWheelSteps(showSectionCallback) {
       delete root.dataset.wheelStepTail;
       const consumed = canScrollFrom(event.target, direction);
       const drive = consumed || wheelStepBlocked() ? null : sectionWheelTarget(event.target, direction);
-      gesture = { direction, distance: 0, events: 0, sizes: [], stepped: false, consumed, drive };
+      gesture = { direction, distance: 0, events: 0, sizes: [], stepped: false, consumed, drive, section: activeSection() };
     }
     gesture.lastAt = now;
     gesture.events += 1;
@@ -244,7 +270,7 @@ export function initWheelSteps(showSectionCallback) {
       const el = gesture.drive;
       const start = gesture.driveTop ?? el.scrollTop;
       gesture.driveTop = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, start + delta));
-      el.scrollTo({ top: gesture.driveTop, behavior: prefersReducedMotion || Math.abs(delta) < 40 ? 'auto' : 'smooth' });
+      driveTo(el, gesture.driveTop, !prefersReducedMotion && Math.abs(delta) >= 40);
       return;
     }
     if (gesture.consumed || gesture.stepped || wheelStepBlocked()) return;

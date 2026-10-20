@@ -20,6 +20,12 @@
   outline: none;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    scroll-behavior: auto;
+  }
+}
+
 .stage.active-section{
   opacity:1;
   pointer-events:auto;

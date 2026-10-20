@@ -62,8 +62,10 @@ const SETTLE_MS = 1000;
 // A stepped-down tier is retried after 20 s, then 60 s, then 180 s, then no more this visit.
 const PROMOTION_DELAY_MS = 20_000;
 const MAX_FAILED_PROMOTIONS = 3;
-// A downgrade this soon after a retry counts as a failed retry.
-const PROMOTION_PROBATION_MS = 30_000;
+// A retried tier is on probation until this much of its own frame time ran without a downgrade.
+// Counting frames, not wall time, keeps a retry made in silence (Contact, Quiet) on probation
+// until the visitor reaches a section that actually renders.
+const PROBATION_FRAME_MS = 10_000;
 
 const frameSamples = [];
 let lastFrameAdjustAt = 0;
@@ -77,7 +79,8 @@ let effectiveProfile = explicitProfile || (isMobileViewport() ? 'quiet' : 'balan
 // recommendation is not penalised twice.
 let runtimeCeiling = PROFILES.length - 1;
 let tierChangedAt = 0;
-let lastPromotionAt = -Infinity;
+let promotionOnProbation = false;
+let probationFrameMs = 0;
 let failedPromotions = 0;
 let promotionTimer = 0;
 let movementRegressionUntil = 0;
@@ -430,6 +433,7 @@ function updateDocumentState(reason = 'state') {
 
   syncControl();
   updateDebugOverlay();
+  armPromotionIfHeldBack();
 
   if (changed || reason === 'profile' || reason === 'section') {
     notifySubscribers(reason);
@@ -601,17 +605,32 @@ function schedulePromotion(delayMs) {
   promotionTimer = window.setTimeout(tryPromotion, delayMs);
 }
 
+// Called on every state update, so a retry that found the ceiling not binding (the base had
+// dropped for a narrow window or reduced motion) is armed again once the base rises above it.
+function armPromotionIfHeldBack() {
+  if (!promotionTimer && runtimeCeiling < baseProfileIndex()) {
+    schedulePromotion(PROMOTION_DELAY_MS * 3 ** failedPromotions);
+  }
+}
+
 function tryPromotion() {
   promotionTimer = 0;
   if (runtimeCeiling >= baseProfileIndex() || failedPromotions >= MAX_FAILED_PROMOTIONS) return;
+  // Retiering a hidden tab would reallocate canvases nobody sees.
+  if (document.hidden) {
+    schedulePromotion(5_000);
+    return;
+  }
   const recent = recentFrameSamples(performance.now());
-  // Quiet stops the landing's only sampled loop, so silence must not block a retry.
+  // Quiet stops the landing's only sampled loop, so silence must not block a retry. Probation
+  // then waits for real frames before the retry counts as passed.
   const calm = recent.length === 0 || (recent.length >= 30 && !recent.some(isSlowFrame));
   if (!calm) {
     schedulePromotion(5_000);
     return;
   }
-  lastPromotionAt = performance.now();
+  promotionOnProbation = true;
+  probationFrameMs = 0;
   setRuntimeCeiling(runtimeCeiling + 1, 'runtime-promotion');
 }
 
@@ -624,7 +643,9 @@ function maybeAdjustFromFrames(now) {
   const longFrames = recent.filter((sample) => sample.deltaMs > 100).length;
   const current = rank(computeEffectiveProfile());
   if ((longFrames >= 5 || slowFrames >= 18) && current > 0) {
-    if (now - lastPromotionAt < PROMOTION_PROBATION_MS) failedPromotions++;
+    // One failed retry counts once, however many steps the same slowdown then takes.
+    if (promotionOnProbation) failedPromotions++;
+    promotionOnProbation = false;
     setRuntimeCeiling(current - 1, 'runtime-downgrade');
   }
 }
@@ -787,7 +808,7 @@ export function setGraphicsProfile(profile, options = {}) {
   invalidateGraphicsCapability();
   runtimeCeiling = PROFILES.length - 1;
   failedPromotions = 0;
-  lastPromotionAt = -Infinity;
+  promotionOnProbation = false;
   tierChangedAt = performance.now();
   frameSamples.length = 0;
   window.clearTimeout(promotionTimer);
@@ -810,6 +831,10 @@ export function reportFrameSample(systemName, deltaMs, intervalMs = 0) {
   const now = performance.now();
   if (deltaMs < PAUSE_MS && now - tierChangedAt >= SETTLE_MS) {
     frameSamples.push({ systemName, deltaMs, intervalMs, at: now });
+    if (promotionOnProbation) {
+      probationFrameMs += deltaMs;
+      if (probationFrameMs >= PROBATION_FRAME_MS) promotionOnProbation = false;
+    }
   }
   // Sample every frame but adjust the budget only a few times per second.
   if (now - lastFrameAdjustAt >= 500) {

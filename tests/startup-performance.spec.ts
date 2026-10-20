@@ -241,15 +241,65 @@ test('a slow burst costs one tier and the tier is retried with growing backoff',
     await page.clock.fastForward(20_000);
     expect(await events()).toEqual(['balanced', 'rich']);
 
-    // Failing the retry doubles back down and the next retry waits 60 s instead of 20 s.
+    // Failing the retry steps back down and the next retry waits 60 s instead of 20 s. The same
+    // slowdown taking a second step still counts as one failed retry.
     await page.clock.fastForward(1100);
     await burst();
     expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
     expect((await state()).failedPromotions).toBe(1);
+    await page.clock.fastForward(1100);
+    await burst();
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet']);
+    expect((await state()).failedPromotions).toBe(1);
     await page.clock.fastForward(21_000);
-    expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet']);
     await page.clock.fastForward(40_000);
-    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'rich']);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet', 'balanced']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('a held-back tier is retried after the base dips and returns, and never while the tab is hidden', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Auto reaches Rich only in Chromium.');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.addInitScript(() => {
+      localStorage.removeItem('aris.graphicsProfile');
+      Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+      // Lets the test hide the tab without leaving the page.
+      let hidden = false;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+      (window as any).__setHidden = (value: boolean) => { hidden = value; };
+    });
+    await page.clock.install();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    await page.clock.fastForward(2000);
+    const effective = () => page.locator('html').getAttribute('data-graphics-effective-profile');
+    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 0);
+    }, [deltaMs, count]);
+    expect(await effective()).toBe('rich');
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await effective()).toBe('balanced');
+
+    // A narrow window lowers the base to Balanced, so the retry finds nothing held back.
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await page.clock.fastForward(20_500);
+    expect(await effective()).toBe('balanced');
+    // Restoring the width raises the base again, and the retry is armed again.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => (window as any).__setHidden(true));
+    await page.clock.fastForward(20_500);
+    expect(await effective()).toBe('balanced');
+    await page.evaluate(() => (window as any).__setHidden(false));
+    await page.clock.fastForward(5_500);
+    expect(await effective()).toBe('rich');
   } finally {
     await page.close();
   }

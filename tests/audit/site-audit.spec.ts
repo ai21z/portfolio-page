@@ -1149,7 +1149,27 @@ test.describe('browser audit', () => {
     expect(await page.evaluate(() => window.localStorage.getItem('aris.graphicsProfile'))).toBeNull();
     state = await collectGraphicsGovernorState(page);
     expect(state.profileSource).toBe('auto');
-    expect(state.profile).toBe(state.capability.recommendedProfile);
+    // Auto leaves the GPU unprobed on the landing: Chromium starts on Rich, WebKit on its Balanced cap.
+    const autoTier = browserName === 'chromium' ? 'rich' : 'balanced';
+    expect(state.effectiveProfile).toBe(autoTier);
+    await expect(page.locator('.graphics-control__toggle')).toHaveText(`Graphics: ${autoTier === 'rich' ? 'Rich' : 'Balanced'}`);
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="auto"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="rich"]')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Firefox offers Auto as an enabled, pressed default that runs Balanced', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'firefox', 'Firefox-specific graphics policy.');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => window.localStorage.removeItem('aris.graphicsProfile'));
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('auto');
+    expect(state.effectiveProfile).toBe('balanced');
+    await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Balanced');
+    const auto = page.locator('#graphics-profile-menu [data-graphics-profile="auto"]');
+    await expect(auto).toHaveAttribute('aria-pressed', 'true');
+    await expect(auto).toBeEnabled();
   });
 
   test('WebGL-heavy sections request protected contexts before starting scenes', async ({ page, baseURL }) => {
@@ -1390,6 +1410,8 @@ test.describe('browser audit', () => {
     } else {
       expect(activeStats.renderMode).toBe('imagedata');
     }
+    // While particles draw the portrait, the photo underneath is dimmed inline.
+    await expect.poll(() => page.locator('.portrait').evaluate((img: HTMLImageElement) => img.style.opacity)).not.toBe('');
 
     const contact = sections.find((section) => section.name === 'contact')!;
     await switchSection(page, contact);
@@ -1401,6 +1423,8 @@ test.describe('browser audit', () => {
 
     const inactiveStats = await collectPortraitParticleStats(page);
     expect(inactiveStats.running).toBe(false);
+    // A released canvas draws nothing, so the photo returns to its stylesheet opacity.
+    expect(await page.locator('.portrait').evaluate((img: HTMLImageElement) => img.style.opacity)).toBe('');
   });
 
   test('constrained engines apply stricter heavy-graphics budgets', async ({ page, baseURL, browserName }) => {

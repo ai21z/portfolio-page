@@ -160,6 +160,35 @@ test('movement keeps the graphics tier and real slowness still notifies after a 
   }
 });
 
+test('capped loops render on the vsync that meets their cap despite timestamp jitter', async ({ page }) => {
+  await page.goto('/index.html#contact');
+  const due = await page.evaluate(async () => {
+    const { frameDue } = await import('/js/graphics-governor.js');
+    const cap30 = 1000 / 30;
+    const cap24 = 1000 / 24;
+    return {
+      uncapped: frameDue(0.1, 0),
+      oneVsyncAt30: frameDue(16.7, cap30),
+      twoVsyncsJitteredLow: frameDue(33.2, cap30),
+      slackEdge: frameDue(29.4, cap30),
+      beforeSlack: frameDue(29.2, cap30),
+      twoVsyncsAt24: frameDue(33.4, cap24),
+      threeVsyncsAt24: frameDue(50, cap24),
+      fiveFramesAt120Hz: frameDue(41.6, cap24)
+    };
+  });
+  expect(due).toEqual({
+    uncapped: true,
+    oneVsyncAt30: false,
+    twoVsyncsJitteredLow: true,
+    slackEdge: true,
+    beforeSlack: false,
+    twoVsyncsAt24: false,
+    threeVsyncsAt24: true,
+    fiveFramesAt120Hz: true
+  });
+});
+
 test('a slow burst costs one tier and the tier is retried with growing backoff', async ({ browser, browserName }) => {
   test.skip(browserName !== 'chromium', 'Auto reaches Rich only in Chromium.');
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });

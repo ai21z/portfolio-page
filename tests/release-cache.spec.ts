@@ -10,7 +10,7 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
     '/styles/main.css', '/js/contact.js', '/js/app.js', '/js/graphics-governor.js',
     '/js/work-globe-webgl.js', '/js/blog-network-webgl.js', '/js/work-timeline.js', '/js/work-globe/work-index.js',
     '/js/work-globe/work-index-content.js', '/js/work-globe/data/work-locations.js', '/js/work-globe/data/projects.js',
-    '/js/work-globe/data/timeline.js'
+    '/js/work-globe/data/timeline.js', '/js/portrait-particles.js', '/js/altar-eye.js', '/js/altar-culture.js'
   ]);
   const requests: URL[] = [];
   const stale: string[] = [];
@@ -37,7 +37,7 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   await expect(page.locator('#contact')).toHaveClass(/active-section/);
   await expect(page.locator('.contact-email')).toBeVisible();
   for (const pathname of ['/js/contact.js', '/js/navigation.js', '/js/graphics-governor.js',
-    '/js/social-icons-animation.js', '/js/hub-to-icons.js']) {
+    '/js/social-icons-animation.js', '/js/hub-to-icons.js', '/js/portrait-particles.js']) {
     expect(requests.filter(url => url.pathname === pathname)).toHaveLength(1);
   }
   expect(requests.some(url => url.pathname === '/js/contact-attempt.js')).toBe(true);

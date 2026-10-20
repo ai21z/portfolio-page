@@ -339,6 +339,7 @@ function recommendationReason(state) {
 function formatCapabilityReason(reason) {
   const labels = {
     'strong-chromium-webgl': 'strong Chrome/Edge/Brave WebGL',
+    'capable-chromium': 'capable Chrome/Edge/Brave desktop',
     'firefox-conservative': 'Firefox conservative mode',
     'webkit-conservative': 'Safari/WebKit conservative mode'
   };

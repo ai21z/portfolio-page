@@ -123,9 +123,12 @@ function classifyRenderer(renderer) {
   const value = String(renderer || '').toLowerCase();
   if (!value) return 'unknown';
   if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
-  // Meteor Lake's "Intel(R) Arc(TM) Graphics" is integrated. Discrete Arc cards carry a model number.
-  if (/intel.*arc(\(tm\))?\s+graphics/i.test(value)) return 'integrated';
-  if (/(geforce|nvidia|rtx|gtx|radeon rx|radeon pro|quadro|arc\W|discrete)/i.test(value)) return 'discrete';
+  // Arc cards read "Arc(TM) A770 Graphics", "Arc(TM) Pro A60 Graphics" or "Arc(TM) B580 Graphics".
+  // Integrated Arc reads "Arc(TM) Graphics" (Meteor Lake) or "Arc(TM) 140V GPU" (Lunar Lake).
+  if (/intel.*\barc\b/i.test(value)) {
+    return /\barc(\(tm\))?\s+(pro\s+)?[ab]\d{2,3}m?\s+graphics/i.test(value) ? 'discrete' : 'integrated';
+  }
+  if (/(geforce|nvidia|rtx|gtx|radeon\s*(\(tm\))?\s*(rx|pro)\b|quadro|discrete)/i.test(value)) return 'discrete';
   // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
   if (/apple m\d/i.test(value)) return 'apple';
   // AMD APUs read "Radeon(TM) Graphics", "Radeon Vega 8 Graphics" or "Radeon 780M Graphics".

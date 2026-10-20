@@ -1075,12 +1075,17 @@ test.describe('browser audit', () => {
 
   test('graphics governor keeps Rich after the probe only for discrete or Apple silicon GPUs', async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== 'chromium', 'Rich is a Chromium recommendation.');
-    test.setTimeout(90_000);
+    test.setTimeout(150_000);
     const renderers: Array<[string, string, 'rich' | 'balanced']> = [
       ['ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
       ['ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)', 'apple', 'rich'],
       ['ANGLE (Intel, Intel(R) Arc(TM) A770 Graphics (0x000056A0) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A370M Graphics (0x00005693) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (AMD, Radeon (TM) RX 480 Graphics (0x000067DF) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
       ['ANGLE (Intel, Intel(R) Arc(TM) Graphics (0x00007D55) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) 140V GPU (16GB) (0x000064A0) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) 140T GPU (16GB) (0x00007D51) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Mesa Intel(R) Graphics (ADL GT2), OpenGL 4.6)', 'integrated', 'balanced'],
       ['ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
       ['ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
       ['AMD Radeon(TM) Vega 8 Graphics', 'integrated', 'balanced'],

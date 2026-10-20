@@ -37,6 +37,16 @@ async function gotoWork(page, viewport: { width: number; height: number }) {
   await page.goto('/index.html#work');
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('#work.active-section')).toBeVisible();
+  // Hover tests need a still rail. A late web-font swap or the rail's entrance animation can move a
+  // neighbouring node under a stationary pointer, and Firefox then fires mouseenter on it (without
+  // a pointer event), so the note shows the wrong entry.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    const rail = document.querySelector('.work-rail');
+    const finite = rail ? rail.getAnimations({ subtree: true })
+      .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity) : [];
+    await Promise.all(finite.map((a) => a.finished.catch(() => undefined)));
+  });
 }
 
 test.describe('Work career rail', () => {

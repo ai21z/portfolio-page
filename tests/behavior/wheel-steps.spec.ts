@@ -40,14 +40,21 @@ async function scrollBox(page: Page, selector: string, where: 'top' | 'end') {
 // A timed stream of wheel deltas, 16 ms apart like a trackpad or a free-spinning wheel, each event
 // on whatever is under the pointer at that moment. Real spacing matters here, so callers run it in
 // Chromium only, where the page's timers keep it.
-// A number is a wheel delta; { stall } blocks the page that long, as a heavy section arrival does,
-// and the next event then carries a timestamp that far later, as Chrome's merged events do.
-async function stream(page: Page, deltas: Array<number | { stall: number }>, at = POINTER, spacingMs = 16) {
+// A number is a wheel delta. { stall } blocks the page that long, as a heavy section arrival does,
+// and the next event then carries a timestamp that far later, as Chrome's merged events do. With
+// timersFirst the page's overdue timers run before that event. { rest } is a pause with the page free.
+type StreamItem = number | { stall: number, timersFirst?: boolean } | { rest: number };
+async function stream(page: Page, deltas: StreamItem[], at = POINTER, spacingMs = 16) {
   await page.evaluate(async ({ list, x, y, spacing }) => {
     for (const item of list) {
       if (typeof item === 'object') {
+        if ('rest' in item) {
+          await new Promise((resolve) => setTimeout(resolve, item.rest));
+          continue;
+        }
         const until = performance.now() + item.stall;
         while (performance.now() < until) { /* hold the main thread */ }
+        if (item.timersFirst) await new Promise((resolve) => setTimeout(resolve, 0));
         continue;
       }
       (document.elementFromPoint(x, y) || document.body)
@@ -145,11 +152,12 @@ test('a second swipe started during the first one\'s inertia moves on again', as
   expect(await active(page)).toBe('intro');
 });
 
-for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 Hz', 8, 0.983, 96]] as const) {
+// A busy page sees input only every few frames, so it gets the same swipes as fewer, larger steps.
+for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 Hz', 8, 0.983, 96], ['busy page', 47, 0.967, 45]] as const) {
   test(`a second swipe while the first one's momentum is still strong moves on again (${label})`, async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Needs the real event spacing that Chromium keeps.');
     await open(page, '#skills');
-    // The first swipe's momentum is still about 9 px per event when the second swipe starts.
+    // The first swipe's momentum is still 9 to 11 px per event when the second swipe starts.
     await stream(page, [...momentum(-1, events, decay), ...ramp(-1)], POINTER, spacing);
     expect(await active(page)).toBe('intro');
   });
@@ -163,13 +171,52 @@ test('one low reading in a steady stream does not split it after a step', async 
   expect(await active(page)).toBe('skills');
 });
 
-test('a stall right after a step does not split the gesture into a second step', async ({ page, browserName }) => {
+for (const timersFirst of [false, true]) {
+  test(`a stall right after a step does not split the gesture into a second step${timersFirst ? ', even when timers run first' : ''}`, async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+    await open(page, '#about');
+    // The step happens on the fifth event. The arrival then holds the page for 330 ms while the
+    // stream goes on, and the rest of the stream runs well past the cooldown.
+    await stream(page, [...Array(6).fill(15), { stall: 330, timersFirst }, ...Array(80).fill(15)]);
+    expect(await active(page)).toBe('skills');
+  });
+}
+
+test('one swipe that is still speeding up when it steps moves only one section', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real event spacing that Chromium keeps.');
+  await open(page, '#about');
+  // 120 Hz: a ramp that crosses the step distance while it still climbs, then inertia.
+  const deltas = [0.5, 1, 2, 3.5, 5.5, 7.5, 10.5, 13.5, 17.5, 21.5, 26];
+  for (let i = 1; i <= 160; i++) deltas.push(26 * 0.997 ** (8 * i));
+  await stream(page, deltas, POINTER, 8);
+  expect(await active(page)).toBe('skills');
+});
+
+test('a steady drag with a low reading, a push and merged frames moves only one section', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
   await open(page, '#about');
-  // The step happens on the fifth event. The arrival then holds the page for 330 ms while the
-  // stream goes on, and the rest of the stream runs well past the cooldown.
-  await stream(page, [...Array(6).fill(15), { stall: 330 }, ...Array(80).fill(15)]);
+  // Each merged frame carries three frames of travel and arrives three frames late.
+  const merged = [{ stall: 32 }, 60, { stall: 32 }, 60, { stall: 32 }, 60];
+  await stream(page, [...Array(30).fill(20), 5, ...Array(10).fill(26), ...merged, ...Array(40).fill(26)]);
   expect(await active(page)).toBe('skills');
+});
+
+test('notches 400 ms apart move on with every notch past the cooldown', async ({ page }) => {
+  await open(page, '#about');
+  // The second notch falls inside the first step's cooldown, the third is past it.
+  await stream(page, [120, { rest: 384 }, 120, { rest: 384 }, 120]);
+  expect(await active(page)).toBe('blog');
+});
+
+test('a gentle second swipe after a short rest moves on again', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#skills');
+  // A drag without inertia steps early, and after a rest a second one, too gentle to read as a new
+  // swipe within the first, starts near the end of that step's cooldown and carries on past it.
+  const first = [10, 14, 18, 16, 14, 12, 10, ...Array(9).fill(8)].map((d) => -d);
+  const second = [8, 10, 12, 12, 12, 12, 12, 10, 10, 8, 8].map((d) => -d);
+  await stream(page, [...first, { rest: 450 }, ...second]);
+  expect(await active(page)).toBe('intro');
 });
 
 test('a slow notch overtaken by a nav click does not move past the clicked section', async ({ page }) => {

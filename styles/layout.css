@@ -65,6 +65,18 @@
   transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Shared layers the outgoing section had covered fade in with the incoming view instead of
+   popping over the section still fading out: the AZ sigil under Blog or a deep-linked section,
+   and the landing's spores and sparks under any section. */
+@keyframes shared-layer-in {
+  from { opacity: 0; }
+}
+
+body:has(:is(#blog, .stage:target).stage-leaving) .network-sigil-node,
+body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #reveal-canvas) {
+  animation: shared-layer-in 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Custom scrollbar styling */
 .stage::-webkit-scrollbar{
   width:10px;

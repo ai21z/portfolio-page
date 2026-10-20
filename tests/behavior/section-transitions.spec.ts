@@ -103,6 +103,18 @@ test('network labels return with the landing instead of popping over the section
   for (const opacity of opacities) expect(opacity).toBeLessThan(0.6);
 });
 
+test('the sigil Blog covered fades in as Blog leaves instead of popping over it', async ({ page }) => {
+  await page.goto('/index.html#blog');
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  await expect(page.locator('.network-sigil-node')).toBeAttached();
+  const opacity = await page.evaluate(async () => {
+    document.querySelector<HTMLElement>('#blog .section-nav-link[data-section="about"]')!.click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return Number(getComputedStyle(document.querySelector('.network-sigil-node')!).opacity);
+  });
+  expect(opacity).toBeLessThan(0.5);
+});
+
 test('with reduced motion a switch is immediate and the section leaves at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/index.html#about');

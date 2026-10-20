@@ -66,6 +66,43 @@ test('returning before the fade ends keeps the section and never reports it as l
   expect(await page.evaluate(() => (window as any).__left)).toEqual(['skills']);
 });
 
+for (const [from, to] of [['contact', 'about'], ['blog', 'about']]) {
+  test(`leaving ${from} sits under ${to} and keeps its fixed nav in place`, async ({ page }) => {
+    await page.goto(`/index.html#${from}`);
+    await expect(page.locator(`#${from}`)).toHaveClass(/active-section/);
+    // Read 100 ms into the fade inside the page, so its own timers order it before the 500 ms leave.
+    const state = await page.evaluate(async ([out, into]) => {
+      const nav = document.querySelector(`#${out} .section-nav`);
+      const top = () => (nav ? Math.round(nav.getBoundingClientRect().top) : 0);
+      const before = top();
+      document.querySelector<HTMLElement>(`#${out} .section-nav-link[data-section="${into}"]`)!.click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return {
+        leaving: document.getElementById(out)!.classList.contains('stage-leaving'),
+        navMoved: top() - before,
+        leavingZ: Number(getComputedStyle(document.getElementById(out)!).zIndex),
+        incomingZ: Number(getComputedStyle(document.getElementById(into)!).zIndex)
+      };
+    }, [from, to]);
+    expect(state.leaving).toBe(true);
+    expect(state.navMoved).toBe(0);
+    expect(state.leavingZ).toBeLessThan(state.incomingZ);
+  });
+}
+
+test('network labels return with the landing instead of popping over the section still fading out', async ({ page }) => {
+  await page.goto('/index.html#about');
+  await expect(page.locator('#about')).toHaveClass(/active-section/);
+  await expect(page.locator('.network-node-label').first()).toBeAttached();
+  const opacities = await page.evaluate(async () => {
+    document.querySelector<HTMLElement>('#about [data-action="go-intro"]')!.click();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return [...document.querySelectorAll('.network-node-label')].map((el) => Number(getComputedStyle(el).opacity));
+  });
+  expect(opacities.length).toBeGreaterThan(0);
+  for (const opacity of opacities) expect(opacity).toBeLessThan(0.6);
+});
+
 test('with reduced motion a switch is immediate and the section leaves at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/index.html#about');

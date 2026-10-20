@@ -56,6 +56,12 @@
    never shows an empty frame. js/navigation.js removes the class after the fade. */
 .js-ready .stage.stage-leaving {
   content-visibility: visible;
+  /* Containment would make the stage the containing block of its fixed children (section nav,
+     close buttons), so they would jump mid-fade. */
+  contain: none;
+  /* Under the incoming section whatever the usual order (Blog sits at 1000, the landing at 2,
+     #contact sets 9 by id). */
+  z-index: 1 !important;
   transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -2,20 +2,18 @@ import { expect, test } from '@playwright/test';
 import { stubVerification } from './helpers/contact';
 
 test('release pages avoid stale scripts and styles and share one governor', async ({ page }) => {
-  const changed = new Set([
-    '/js/app.js', '/js/navigation.js',
-    '/js/graphics-governor.js', '/js/work-timeline.js',
-    '/js/work-globe-webgl.js', '/js/work-globe/work-index.js'
-  ]);
+  const changed = new Set(['/js/navigation.js', '/js/work-timeline.js', '/js/work-globe/work-index.js']);
   const mobileChanged = new Set([
-    '/js/app.js', '/js/graphics-governor.js', '/js/social-icons-animation.js',
-    '/js/hub-to-icons.js', '/styles/graphics-controls.css'
+    '/js/social-icons-animation.js', '/js/hub-to-icons.js', '/styles/graphics-controls.css'
   ]);
-  const contrastChanged = new Set(['/styles/main.css', '/js/contact.js']);
+  const releaseChanged = new Set([
+    '/styles/main.css', '/js/contact.js', '/js/app.js', '/js/graphics-governor.js',
+    '/js/work-globe-webgl.js', '/js/blog-network-webgl.js'
+  ]);
   const requests: URL[] = [];
   const stale: string[] = [];
   await stubVerification(page);
-  await page.route(url => contrastChanged.has(url.pathname)
+  await page.route(url => releaseChanged.has(url.pathname)
     ? url.searchParams.get('v') !== '20261019'
     : mobileChanged.has(url.pathname)
       ? url.searchParams.get('v') !== '20260913-mobile'
@@ -30,6 +28,9 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   await expect(page.locator('#work')).toHaveClass(/active-section/);
   await expect(page.getByRole('button', { name: /2024 - present\. ADP/ })).toBeVisible();
   await expect.poll(() => requests.some(url => url.pathname === '/js/work-timeline.js')).toBe(true);
+  await page.evaluate(() => { location.hash = 'blog'; });
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  await expect.poll(() => requests.some(url => url.pathname === '/js/blog-network-webgl.js')).toBe(true);
   await page.evaluate(() => { location.hash = 'contact'; });
   await expect(page.locator('#contact')).toHaveClass(/active-section/);
   await expect(page.locator('.contact-email')).toBeVisible();

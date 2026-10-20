@@ -117,14 +117,14 @@ let workTimelineModulePromise = null;
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260631').catch((err) => {
+    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20261019').catch((err) => {
       blogNetworkModulePromise = null;
       console.warn('blog network module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260913').catch((err) => {
+    workGlobeModulePromise = import('./work-globe-webgl.js?v=20261019').catch((err) => {
       workGlobeModulePromise = null;
       console.warn('work globe module unavailable:', err);
     });

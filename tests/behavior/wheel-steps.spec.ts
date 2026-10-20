@@ -40,20 +40,33 @@ async function scrollBox(page: Page, selector: string, where: 'top' | 'end') {
 // A timed stream of wheel deltas, 16 ms apart like a trackpad or a free-spinning wheel, each event
 // on whatever is under the pointer at that moment. Real spacing matters here, so callers run it in
 // Chromium only, where the page's timers keep it.
-async function stream(page: Page, deltas: number[], at = POINTER) {
-  await page.evaluate(async ({ list, x, y }) => {
-    for (const dy of list) {
+// A number is a wheel delta; { stall } blocks the page that long, as a heavy section arrival does,
+// and the next event then carries a timestamp that far later, as Chrome's merged events do.
+async function stream(page: Page, deltas: Array<number | { stall: number }>, at = POINTER, spacingMs = 16) {
+  await page.evaluate(async ({ list, x, y, spacing }) => {
+    for (const item of list) {
+      if (typeof item === 'object') {
+        const until = performance.now() + item.stall;
+        while (performance.now() < until) { /* hold the main thread */ }
+        continue;
+      }
       (document.elementFromPoint(x, y) || document.body)
-        .dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }));
-      await new Promise((resolve) => setTimeout(resolve, 16));
+        .dispatchEvent(new WheelEvent('wheel', { deltaY: item, bubbles: true, cancelable: true }));
+      await new Promise((resolve) => setTimeout(resolve, spacing));
     }
-  }, { list: deltas, x: at.x, y: at.y });
+  }, { list: deltas, x: at.x, y: at.y, spacing: spacingMs });
   await page.waitForTimeout(GESTURE_GAP_MS);
 }
 
 // A trackpad swipe: a short ramp up, then inertia decaying to 1 px.
 const swipe = (sign: number, events = 90) => Array.from({ length: events }, (_, i) =>
   sign * Math.max(1, Math.round(40 * (i < 6 ? (i + 1) / 6 : Math.exp(-(i - 6) / 14)))));
+
+// A swipe whose momentum is cut off while still strong, and the next swipe's linear ramp from the
+// touch, as a quick second swipe gives on a trackpad. decay is per event.
+const momentum = (sign: number, events: number, decay: number) => Array.from({ length: events }, (_, i) =>
+  sign * (i < 6 ? 40 * (i + 1) / 6 : 40 * decay ** (i - 6)));
+const ramp = (sign: number) => [3, 8, 14, 20, 25, 31, 33, 32, 30, 28, 26].map((d) => sign * d);
 
 const active = (page: Page) => page.evaluate(() => document.querySelector('.stage.active-section')?.getAttribute('data-section'));
 
@@ -130,6 +143,33 @@ test('a second swipe started during the first one\'s inertia moves on again', as
   await open(page, '#skills');
   await stream(page, [...swipe(-1), ...swipe(-1)]);
   expect(await active(page)).toBe('intro');
+});
+
+for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 Hz', 8, 0.983, 96]] as const) {
+  test(`a second swipe while the first one's momentum is still strong moves on again (${label})`, async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Needs the real event spacing that Chromium keeps.');
+    await open(page, '#skills');
+    // The first swipe's momentum is still about 9 px per event when the second swipe starts.
+    await stream(page, [...momentum(-1, events, decay), ...ramp(-1)], POINTER, spacing);
+    expect(await active(page)).toBe('intro');
+  });
+}
+
+test('one low reading in a steady stream does not split it after a step', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  const deltas = [...Array(30).fill(20), 5, 21, 23, 22, 21, ...Array(60).fill(20)];
+  await stream(page, deltas);
+  expect(await active(page)).toBe('skills');
+});
+
+test('a stall right after a step does not split the gesture into a second step', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // The step happens on the fifth event. The arrival then holds the page for 330 ms while the
+  // stream goes on, and the rest of the stream runs well past the cooldown.
+  await stream(page, [...Array(6).fill(15), { stall: 330 }, ...Array(80).fill(15)]);
+  expect(await active(page)).toBe('skills');
 });
 
 test('a slow notch overtaken by a nav click does not move past the clicked section', async ({ page }) => {

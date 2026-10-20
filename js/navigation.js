@@ -84,6 +84,10 @@ const WHEEL_ORDER = ['intro', 'about', 'skills', 'blog', 'work', 'contact'];
 const WHEEL_STEP_PX = 60;
 // A pause this long ends a gesture. Trackpad inertia keeps firing well inside it.
 const WHEEL_GESTURE_GAP_MS = 220;
+// Arriving in a section can stall the page (Blog's first visit compiles its scene). Chrome then
+// merges the queued wheels into one event stamped with the newest input, which looks like a pause.
+// Until the step's cooldown ends, a stepped gesture survives gaps up to this long.
+const WHEEL_STEPPED_GAP_MS = 600;
 // Covers the cross-fade, so a step never lands on a section still fading in.
 const WHEEL_STEP_COOLDOWN_MS = 700;
 
@@ -158,18 +162,20 @@ function wheelStepBlocked() {
     || Boolean(blog?.classList.contains('active-section') && blog.classList.contains('in-category'));
 }
 
-// A new trackpad swipe during the last one's inertia: the stream had sunk to a low tail (the median
-// of its last three deltas small, absolutely or next to the window's peak) and now climbs well above
-// it for three events in a row. Chrome merges queued wheels into one larger event when the page
-// stalls, and a lone merged spike or a lone low reading must not split a stream, so one event never
-// does. Only matters once the gesture has stepped.
+// A new trackpad swipe during the last one's inertia. A touch stops the inertia and the new swipe
+// ramps up from small deltas, so the stream dips and then climbs: three events in a row above both
+// three times the dip (the lowest of the last five) and a quarter above the level before it.
+// Chrome merges queued wheels into one larger event when the page stalls, and a lone merged spike,
+// or a lone low reading in a steady stream, cannot make three in a row. Only matters once the
+// gesture has stepped.
 function startsNewSwipe(gesture, size) {
   const sizes = gesture.sizes;
   if (!gesture.stepped || sizes.length < 10) return false;
   if (!gesture.rise) {
-    const tail = sizes.slice(-3).sort((a, b) => a - b)[1];
-    const lowTail = tail <= 3 || tail <= Math.max(...sizes) / 2;
-    if (lowTail && size > Math.max(4, tail * 3)) gesture.rise = { floor: Math.max(4, tail * 3), count: 1 };
+    const dip = Math.min(...sizes.slice(-5));
+    const before = sizes.slice(-8, -5).sort((a, b) => a - b)[1];
+    const floor = Math.max(4, dip * 3, before * 1.25);
+    if (size > floor) gesture.rise = { floor, count: 1 };
     return false;
   }
   if (size > gesture.rise.floor) gesture.rise.count += 1;
@@ -242,7 +248,10 @@ export function initWheelSteps(showSectionCallback) {
     // When the input happened, not when a busy page got to it, so a stalled frame cannot split
     // one gesture in two. Same clock as performance.now().
     const now = event.timeStamp || performance.now();
-    if (!gesture || now - gesture.lastAt > WHEEL_GESTURE_GAP_MS || direction !== gesture.direction
+    const gapLimit = gesture?.stepped && now - lastStepAt < WHEEL_STEP_COOLDOWN_MS + WHEEL_GESTURE_GAP_MS
+      ? WHEEL_STEPPED_GAP_MS
+      : WHEEL_GESTURE_GAP_MS;
+    if (!gesture || now - gesture.lastAt > gapLimit || direction !== gesture.direction
       || startsNewSwipe(gesture, size)) {
       if (gesture) window.clearTimeout(gesture.endTimer);
       delete root.dataset.wheelStepTail;

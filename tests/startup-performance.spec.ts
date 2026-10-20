@@ -131,16 +131,22 @@ test('movement keeps the graphics tier and real slowness still notifies after a 
     expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
     expect(await page.evaluate(() => (window as any).__dprEvents)).toBe(0);
 
-    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+    const report = (deltaMs: number, count: number, intervalMs = 1000 / 30) => page.evaluate(async ([delta, n, cap]) => {
       const governor = await import('/js/graphics-governor.js');
-      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 1000 / 30);
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, cap);
       governor.getGraphicsState();
-    }, [deltaMs, count]);
+    }, [deltaMs, count, intervalMs]);
 
     // One vsync past a 30 fps cap is jitter, not slowness.
     await report(50.1, 30);
     await page.clock.fastForward(600);
     await report(50.1, 1);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+
+    // A 24 fps cap under Chrome's 30 Hz Energy Saver renders every 66.7 ms by design.
+    await report(66.7, 30, 1000 / 24);
+    await page.clock.fastForward(600);
+    await report(66.7, 1, 1000 / 24);
     expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
 
     // Two vsyncs past the cap is real slowness.

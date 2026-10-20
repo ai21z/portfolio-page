@@ -570,10 +570,10 @@ function wireControl() {
   });
 }
 
-// A capped loop's own gap is not slowness: a 24 fps cap on 60 Hz waits 50 ms by design.
-// Slow means more than a vsync past the cap, and never under 50 ms.
+// A capped loop's own gap is not slowness: a 24 fps cap waits 50 ms on 60 Hz and 66.7 ms under
+// Chrome's 30 Hz Energy Saver by design. Slow means 30 ms past the cap, and never under 50 ms.
 function isSlowFrame(sample) {
-  return sample.deltaMs > Math.max(50, (sample.intervalMs || 0) + 20);
+  return sample.deltaMs > Math.max(50, (sample.intervalMs || 0) + 30);
 }
 
 function recentFrameSamples(now) {

@@ -20,6 +20,25 @@ for (const width of [390, 1366]) {
   }
 }
 
+test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {
+  // WCAG 2.1.4: a single-character shortcut fired whenever a visitor typed "Hello".
+  await stubVerification(page);
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await page.keyboard.press('Shift+H');
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
+
+  await page.goto('/index.html#contact');
+  const name = page.getByLabel('Your Name');
+  await name.pressSequentially('Hello Hana');
+  await expect(name).toHaveValue('Hello Hana');
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
+
+  await page.goto('/index.html?hud');
+  await expect(page.locator('#hud-canvas')).toHaveCount(1);
+});
+
 for (const section of ['about', 'skills']) {
   test(`${section} card keeps keyboard focus inside and restores its trigger`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1366, height: 900 });

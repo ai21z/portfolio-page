@@ -2,11 +2,11 @@
 
 export const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export let hudEnabled = new URLSearchParams(window.location.search).has('hud');
+// The nav-route debug overlay is for development only: it opens with ?hud and has no keyboard toggle.
+export const hudEnabled = new URLSearchParams(window.location.search).has('hud');
 export let hudCanvas = null;
 export let hudCtx = null;
 
-export function setHudEnabled(value) { hudEnabled = value; }
 export function setHudCanvas(canvas) { hudCanvas = canvas; }
 export function setHudCtx(ctx) { hudCtx = ctx; }
 

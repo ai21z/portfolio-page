@@ -13,7 +13,6 @@ import {
   hudEnabled,
   hudCanvas,
   hudCtx,
-  setHudEnabled,
   setHudCanvas,
   setHudCtx,
   bgImg,
@@ -266,18 +265,6 @@ function renderHUD() {
         }
       }
     }
-  }
-}
-
-function toggleHUD() {
-  setHudEnabled(!hudEnabled);
-  if (hudEnabled) {
-    initHUD();
-    renderHUD();
-  } else if (hudCanvas) {
-    hudCanvas.remove();
-    setHudCanvas(null);
-    setHudCtx(null);
   }
 }
 
@@ -1374,8 +1361,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'H') toggleHUD();
-
     if (e.key === 'Escape') {
       const articleView = document.getElementById('blog-article-view');
       const categoryView = document.getElementById('blog-category-view');

@@ -885,7 +885,8 @@ class PortraitParticles {
 
     const frameMs = now - this.lastFrameTime;
     const rawDt = frameMs / 16.667;
-    const dt = Math.max(0.5, Math.min(rawDt, 2));
+    // The floor admits 240 Hz frames, so a fast display does not speed the simulation up.
+    const dt = Math.max(0.25, Math.min(rawDt, 2));
     this.lastFrameTime = now;
 
     const physicsStart = performance.now();

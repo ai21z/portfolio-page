@@ -552,6 +552,7 @@ function render(deltaTime) {
       rotationVelocity.y = 0;
       if (t >= 1) focusTween = null;
     } else {
+      // The fling velocity is a per-pointer-event delta, so it is applied per frame.
       rotation.y += rotationVelocity.x;
       rotation.x += rotationVelocity.y;
 
@@ -559,8 +560,9 @@ function render(deltaTime) {
       rotationVelocity.x *= rotDecay;
       rotationVelocity.y *= rotDecay;
 
+      // The idle spin is tuned per 60 Hz frame. Scaling by elapsed time keeps it the same at 120 Hz.
       if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
-        rotation.y += 0.002;
+        rotation.y += 0.002 * deltaTime * 60;
       }
     }
   }

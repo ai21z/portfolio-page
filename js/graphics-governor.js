@@ -120,10 +120,13 @@ function classifyRenderer(renderer) {
   const value = String(renderer || '').toLowerCase();
   if (!value) return 'unknown';
   if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
+  // Meteor Lake's "Intel(R) Arc(TM) Graphics" is integrated. Discrete Arc cards carry a model number.
+  if (/intel.*arc(\(tm\))?\s+graphics/i.test(value)) return 'integrated';
   if (/(geforce|nvidia|rtx|gtx|radeon rx|radeon pro|quadro|arc\W|discrete)/i.test(value)) return 'discrete';
   // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
   if (/apple m\d/i.test(value)) return 'apple';
-  if (/(intel|uhd|iris|apple m|apple gpu|radeon graphics|integrated)/i.test(value)) return 'integrated';
+  // AMD APUs read "Radeon(TM) Graphics", "Radeon Vega 8 Graphics" or "Radeon 780M Graphics".
+  if (/(intel|uhd|iris|apple m|apple gpu|radeon.{0,24}graphics|adreno|mali|integrated)/i.test(value)) return 'integrated';
   return 'unknown';
 }
 
@@ -265,10 +268,12 @@ function getGraphicsCapability() {
     recommendedProfile = 'balanced';
     if (classification === 'modest') reasons.push('modest-hardware');
     if (viewport !== 'desktop') reasons.push(viewport);
-  } else if (engine === 'chromium') {
-    // The landing has no WebGL, so its GPU stays unprobed until a 3D section opens. An integrated
-    // GPU found then steps the recommendation down. The performance-caveat flag is ignored here
-    // too: software renderers already go Quiet and the flag has misfired on Apple silicon.
+  } else if (engine === 'chromium'
+    && (webgl.webgl2 === null || webgl.rendererCategory === 'discrete' || webgl.rendererCategory === 'apple')) {
+    // The landing has no WebGL, so its GPU stays unprobed until a 3D section opens. Once probed,
+    // Rich needs a GPU known to be discrete or Apple silicon. Integrated and unrecognised ones
+    // step down to Balanced. The performance-caveat flag is ignored: software renderers already
+    // go Quiet and the flag has misfired on Apple silicon.
     recommendedProfile = 'rich';
     reasons.push(classification === 'strong' ? 'strong-chromium-webgl' : 'capable-chromium');
   } else {

@@ -520,8 +520,8 @@ async function mockStrongWebGLCapability(page: Page) {
   });
 }
 
-async function mockIntegratedWebGLCapability(page: Page) {
-  await page.addInitScript(() => {
+async function mockRendererCapability(page: Page, renderer: string) {
+  await page.addInitScript((rendererName) => {
     Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
     Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
@@ -529,12 +529,16 @@ async function mockIntegratedWebGLCapability(page: Page) {
       if (contextId === 'webgl2') {
         return {
           getExtension: () => null,
-          getParameter: () => 'Intel(R) UHD Graphics 620'
+          getParameter: () => rendererName
         } as unknown as WebGL2RenderingContext;
       }
       return originalGetContext.call(this, contextId, options);
     };
-  });
+  }, renderer);
+}
+
+async function mockIntegratedWebGLCapability(page: Page) {
+  await mockRendererCapability(page, 'Intel(R) UHD Graphics 620');
 }
 
 async function mockUnavailableWebGL2(page: Page) {
@@ -1069,26 +1073,42 @@ test.describe('browser audit', () => {
     expect(state.effectiveProfile).toBe('rich');
   });
 
-  test('graphics governor steps a capable desktop down to Balanced when the probe finds an integrated GPU', async ({ page, baseURL, browserName }) => {
+  test('graphics governor keeps Rich after the probe only for discrete or Apple silicon GPUs', async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== 'chromium', 'Rich is a Chromium recommendation.');
-    test.setTimeout(60_000);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.addInitScript(() => {
-      window.localStorage.removeItem('aris.graphicsProfile');
-    });
-    await mockIntegratedWebGLCapability(page);
+    test.setTimeout(90_000);
+    const renderers: Array<[string, string, 'rich' | 'balanced']> = [
+      ['ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)', 'apple', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A770 Graphics (0x000056A0) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) Graphics (0x00007D55) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['AMD Radeon(TM) Vega 8 Graphics', 'integrated', 'balanced'],
+      ['AMD Radeon 780M Graphics', 'integrated', 'balanced'],
+      ['WebKit WebGL', 'unknown', 'balanced']
+    ];
 
-    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
-    await waitForGraphicsMovementStable(page);
-    const state = await page.evaluate(async () => {
-      const governor = await import('/js/graphics-governor.js');
-      governor.setGraphicsSection('work');
-      return governor.getGraphicsState();
-    });
+    for (const [renderer, category, profile] of renderers) {
+      const probePage = await page.context().newPage();
+      await probePage.setViewportSize({ width: 1440, height: 900 });
+      await probePage.addInitScript(() => window.localStorage.removeItem('aris.graphicsProfile'));
+      await mockRendererCapability(probePage, renderer);
+      await probePage.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+      await waitForGraphicsMovementStable(probePage);
+      const state = await probePage.evaluate(async () => {
+        const governor = await import('/js/graphics-governor.js');
+        const landing = governor.getGraphicsState().effectiveProfile;
+        governor.setGraphicsSection('work');
+        return { landing, ...governor.getGraphicsState() };
+      });
+      await probePage.close();
 
-    expect(state.capability.rendererCategory).toBe('integrated');
-    expect(state.capability.recommendedProfile).toBe('balanced');
-    expect(state.effectiveProfile).toBe('balanced');
+      // The unprobed landing starts every capable desktop on Rich.
+      expect(state.landing, renderer).toBe('rich');
+      expect(state.capability.rendererCategory, renderer).toBe(category);
+      expect(state.capability.recommendedProfile, renderer).toBe(profile);
+      expect(state.effectiveProfile, renderer).toBe(profile);
+    }
   });
 
   test('graphics control honours an explicit Rich choice, shows overrides, and returns to Auto', async ({ page, baseURL, browserName }) => {

@@ -128,7 +128,7 @@ function reloadOnceForRelease(err) {
   } catch {
     return false;
   }
-  if (typeof window.__showThreshold === 'function') window.__showThreshold();
+  // No threshold veil here: if the visitor cancels the reload, nothing would lift it again.
   window.location.reload();
   return true;
 }

@@ -241,9 +241,11 @@ test('a slow burst costs one tier and the tier is retried with growing backoff',
     await page.clock.fastForward(20_000);
     expect(await events()).toEqual(['balanced', 'rich']);
 
-    // Failing the retry steps back down and the next retry waits 60 s instead of 20 s. The same
-    // slowdown taking a second step still counts as one failed retry.
+    // Failing the retry steps back down and the next retry waits 60 s instead of 20 s, even when
+    // the retry first ran well for more than ten seconds of frames. The same slowdown taking a
+    // second step still counts as one failed retry.
     await page.clock.fastForward(1100);
+    await report(16.7, 700);
     await burst();
     expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
     expect((await state()).failedPromotions).toBe(1);

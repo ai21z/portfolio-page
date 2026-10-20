@@ -14,7 +14,7 @@ import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
 import { isCompact } from './compact.js';
-import { getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
@@ -841,13 +841,13 @@ function animate(timestamp) {
   }
 
   const budget = getGraphicsBudget('work-globe');
-  if (budget.frameIntervalMs && timestamp - lastFrameTime < budget.frameIntervalMs) {
+  if (!frameDue(timestamp - lastFrameTime, budget.frameIntervalMs)) {
     animationFrameId = requestAnimationFrame(animate);
     return;
   }
 
   const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
-  reportFrameSample('work-globe', timestamp - lastFrameTime);
+  reportFrameSample('work-globe', timestamp - lastFrameTime, budget.frameIntervalMs);
   lastFrameTime = timestamp;
 
   render(deltaTime);

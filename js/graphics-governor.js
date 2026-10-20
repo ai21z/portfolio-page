@@ -51,6 +51,10 @@ const PROFILE_BUDGETS = {
   }
 };
 
+// rAF timestamps jitter around vsync, so a 30 fps cap on a 60 Hz screen sees gaps a hair under 33.3 ms.
+// Without slack the loop waits for a third vsync and alternates 33 and 50 ms frames.
+const FRAME_SLACK_MS = 4;
+
 const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
@@ -727,9 +731,13 @@ export function markGraphicsActivity(reason = 'activity', durationMs = 700) {
   window.setTimeout(() => updateDocumentState(`${reason}:settled`), durationMs + 40);
 }
 
-export function reportFrameSample(systemName, deltaMs) {
+export function frameDue(elapsedMs, intervalMs) {
+  return !intervalMs || elapsedMs >= intervalMs - FRAME_SLACK_MS;
+}
+
+export function reportFrameSample(systemName, deltaMs, intervalMs = 0) {
   const now = performance.now();
-  frameSamples.push({ systemName, deltaMs, at: now });
+  frameSamples.push({ systemName, deltaMs, intervalMs, at: now });
   // Sample every frame but adjust the budget only a few times per second.
   if (now - lastFrameAdjustAt >= 500) {
     lastFrameAdjustAt = now;

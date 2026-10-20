@@ -1,4 +1,4 @@
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, lerp, clamp } from './utils.js';
 
 const prefersReducedMotion =
@@ -196,12 +196,12 @@ function initAltarCulture(sectionId) {
     if (Math.round(lens.clientWidth) !== cssW || !points.length) layout();
     const b = getGraphicsBudget('altar-culture');
     const interval = Math.max(33, b.frameIntervalMs || 33);
-    if (ts - lastTs >= interval) {
+    if (frameDue(ts - lastTs, interval)) {
       const dt = ts - lastTs;
       lastTs = ts;
       step(ts);
       draw(ts);
-      reportFrameSample('altar-culture', dt);
+      reportFrameSample('altar-culture', dt, interval);
     }
     rafId = requestAnimationFrame(loop);
   }

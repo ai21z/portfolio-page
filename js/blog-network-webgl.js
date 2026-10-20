@@ -1,5 +1,5 @@
 import { cappedDpr } from './utils.js';
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
@@ -1352,12 +1352,12 @@ async function initBlogNetwork(){
     const budget = getGraphicsBudget('blog-network');
     const frameIntervalMs = budget.frameIntervalMs || 0;
     const dt = now - last;
-    if (frameIntervalMs && dt < frameIntervalMs) {
+    if (!frameDue(dt, frameIntervalMs)) {
       rafId = requestAnimationFrame(loop);
       return;
     }
     last = now;
-    reportFrameSample('blog-network', dt);
+    reportFrameSample('blog-network', dt, frameIntervalMs);
 
     // PAPER (renders background)
     gl.useProgram(progPaper);

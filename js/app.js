@@ -70,6 +70,7 @@ import {
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import {
+  frameDue,
   getGraphicsBudget,
   initGraphicsGovernor,
   markGraphicsActivity,
@@ -310,7 +311,7 @@ function sparkLoopWrapper(ts) {
   }
 
   const budget = getGraphicsBudget('intro-sparks');
-  if (budget.frameIntervalMs && ts - lastSparkTs < budget.frameIntervalMs) {
+  if (!frameDue(ts - lastSparkTs, budget.frameIntervalMs)) {
     _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
     return;
   }
@@ -588,7 +589,7 @@ function drawSpores(ts) {
   const budget = getGraphicsBudget('intro-spores');
   if (budget.quiet || spores.length === 0) return;
   const frameInterval = Math.max(33, budget.frameIntervalMs || 33);
-  if (ts - lastSporeFrame < frameInterval) return;
+  if (!frameDue(ts - lastSporeFrame, frameInterval)) return;
   setLastSporeFrame(ts);
 
   const c = sporeCtx;

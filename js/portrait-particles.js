@@ -1,6 +1,6 @@
 // Portrait Particle Effect - Desktop only
 import { cappedDpr, isFirefox, isWebKit } from './utils.js';
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 const FIREFOX = isFirefox();
 const WEBKIT = isWebKit();
@@ -876,7 +876,7 @@ class PortraitParticles {
     }
     this.selectRenderMode();
     this.ensureBuffers();
-    if (budget.frameIntervalMs && now - this.lastFrameTime < budget.frameIntervalMs) {
+    if (!frameDue(now - this.lastFrameTime, budget.frameIntervalMs)) {
       this.animationId = requestAnimationFrame(this.boundAnimate);
       return;
     }
@@ -1183,7 +1183,7 @@ class PortraitParticles {
     this.render();
     const renderEnd = performance.now();
     const renderMs = renderEnd - renderStart;
-    reportFrameSample('portrait-particles', frameMs);
+    reportFrameSample('portrait-particles', frameMs, budget.frameIntervalMs);
 
 
     this.animationId = requestAnimationFrame(this.boundAnimate);

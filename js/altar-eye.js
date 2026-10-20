@@ -1,4 +1,4 @@
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, clamp } from './utils.js';
 
 const prefersReducedMotion =
@@ -209,10 +209,10 @@ function initAltarEye(sectionId) {
     if (Math.round(lens.clientWidth) !== cssW || !motes.length) layout();
     const b = getGraphicsBudget('altar-eye');
     const interval = Math.max(33, b.frameIntervalMs || 33);
-    if (ts - lastTs >= interval) {
+    if (frameDue(ts - lastTs, interval)) {
       const dt = ts - lastTs; lastTs = ts;
       step(); draw(ts);
-      reportFrameSample('altar-eye', dt);
+      reportFrameSample('altar-eye', dt, interval);
     }
     rafId = requestAnimationFrame(loop);
   }

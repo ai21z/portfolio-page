@@ -84,7 +84,7 @@ class NotebookContact {
     }
   }
 
-  // Once per page when Contact opens, and once more from Send when the script did not load.
+  // Once per page when Contact opens, and again on each Send while the script has not loaded.
   startVerification({ reload = false } = {}) {
     if (!this.turnstileRequired || (this.verificationStarted && !reload)) return;
     this.verificationStarted = true;
@@ -139,8 +139,8 @@ class NotebookContact {
     if (on) {
       window.clearTimeout(this.tokenWaiter.timer);
       this.showStatus('Tick the box and your message is on its way.', 'info');
-      // The box opens just above Send: bring both into view once it has its size.
-      window.requestAnimationFrame(() => this.submitBtn?.scrollIntoView({ block: 'nearest' }));
+      // The box opens just above the hint and Send: bring the three into view once it has its size.
+      window.requestAnimationFrame(() => this.submitBtn?.closest('.form-controls')?.scrollIntoView({ block: 'nearest' }));
     } else {
       this.armTokenWaiter();
     }

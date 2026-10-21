@@ -154,6 +154,26 @@ test.describe('Contact form', () => {
     expect(posts).toBe(0);
     await expect(send).toBeEnabled();
     await expect(page.getByLabel('Message')).toHaveValue('A note that goes by email instead.');
+    await expect(page.getByLabel('Message')).toBeEditable();
+  });
+
+  test('a server message that already points to email gets one email link', async ({ page }) => {
+    await routeTurnstile(page);
+    await page.route('**/api/contact', (route) => route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ state: 'not_sent', error: 'Contact service unavailable. Please email me directly.' })
+    }));
+    await page.goto('/index.html#contact');
+    await page.waitForSelector('#contact-form');
+    await page.getByLabel('Your Name').fill('Test Visitor');
+    await page.getByLabel('Your Email').fill('visitor@example.com');
+    await page.getByLabel('Subject').fill('Testing contact channel');
+    await page.getByLabel('Message').fill('A note for a service that is down.');
+    await page.getByRole('button', { name: /send message/i }).click();
+    const status = page.locator('[data-status]');
+    await expect(status).toHaveText('Contact service unavailable. Please email me directly.');
+    await expect(status.locator('a')).toHaveCount(1);
   });
 
   test('keeps the message and shows an error when email delivery is rejected', async ({ page }) => {

@@ -230,6 +230,20 @@ for (const { width, height } of VIEWPORTS) {
       }
       // Hover at every width: touch screens keep the hover style after a tap in the compact layout.
       const results = await measureSurface(page, testInfo, container, { hover: container.includes('.slab') });
+      if (section === 'contact') {
+        // The status line beside Send, low on the sheet where the paper darkens, also writes the
+        // green of an accepted message and the ink of the email fallback.
+        for (const [kind, html] of [
+          ['success', 'Message accepted. Thank you for getting in touch.'],
+          ['', 'The spam check could not run in this browser. Your message is still here, and you can <a href="mailto:aris@zounarakis.com">send it by email</a>.']
+        ]) {
+          await page.locator('#contact [data-status]').evaluate((el, [cls, text]) => {
+            el.className = ('form-status ' + cls).trim();
+            el.innerHTML = text;
+          }, [kind, html]);
+          results.push(...await measureSurface(page, testInfo, container));
+        }
+      }
       expect(results.length).toBeGreaterThan(0);
       expect(results.filter(r => r.coveredBy), 'text hidden under another element').toEqual([]);
       expect(results.filter(r => r.unmeasured !== undefined), 'text with too little paper under it to measure').toEqual([]);

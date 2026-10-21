@@ -3,7 +3,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 4vw, 64px) clamp(16px, 4vw, 32px);
+  /* The sheet is centred in the window, so this is only the least dark margin. More would make the
+     page scroll past a sheet that fits, and the first wheel would only scroll it back. */
+  padding: 16px clamp(16px, 4vw, 32px);
   position: relative;
   background: rgba(8,9,10,0.85); /* Semi-transparent dark overlay like altar screens */
   z-index: 9; /* Same as altar-screen to allow base background through */
@@ -277,7 +279,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 .form-status.success {
-  color: #0d3b1f;
+  color: #0a2e17;
 }
 
 .form-status.error {
@@ -334,6 +336,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   color: var(--paper-ink);
   margin: 0;
   line-height: max(var(--row), 1.1em);
+  /* Whole ruled lines even when the reader has set larger text. */
+  line-height: round(up, max(var(--row), 1.1em), var(--row));
   /* Larger type: lift its baseline onto the rule like the smaller lines. */
   position: relative;
   top: -2px;
@@ -371,11 +375,10 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 
-/* A field is its label line and its writing line, then a blank ruled line that carries the
-   field's error when there is one, so nothing is reserved under the inputs. */
+/* A field is its label line, its writing line and a blank ruled line kept for its error. A longer
+   error (larger text) pushes the next field down rather than printing over it. */
 .notebook-field {
   position: relative;
-  padding-bottom: var(--row);
 }
 
 .notebook-label {
@@ -429,34 +432,27 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 /* Four ruled lines to write on, growing a line at a time up to six where the browser can size a
-   field to its content. The message is its own last field: no blank line after it. */
+   field to its content (elsewhere it scrolls). */
 .notebook-textarea {
   resize: none;
-  height: calc(4 * var(--row));
   min-height: calc(4 * var(--row));
   max-height: calc(6 * var(--row));
   field-sizing: content;
 }
 
-.notebook-field:has(.notebook-textarea) {
-  padding-bottom: 0;
-}
-
-/* The counter, and the message's own error, write on the MESSAGE label's line. */
-.char-counter,
-.notebook-field:has(.notebook-textarea) .validation-msg {
+/* The counter writes on the MESSAGE label's line. */
+.char-counter {
   position: absolute;
   top: 0;
-  left: auto;
   right: 0;
-  max-width: 70%;
   line-height: var(--row);
   text-align: right;
   pointer-events: none;
 }
 
-.notebook-field:has(.validation-msg:not(:empty)) .char-counter {
-  visibility: hidden;
+/* The message is the last field, so its error takes a line only when there is one. */
+.notebook-field:has(.notebook-textarea) .validation-msg {
+  min-height: 0;
 }
 
 .char-count {
@@ -470,9 +466,7 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 .validation-msg {
-  position: absolute;
-  top: calc(2 * var(--row));
-  left: 0;
+  min-height: var(--row);
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
   line-height: var(--row);
@@ -490,6 +484,8 @@ body:has(#contact.stage.active-section) .dish-labels {
 
 .notebook-submit {
   grid-column: 2;
+  /* Clear of the message box's focus outline, which is drawn just below it. */
+  margin-top: 12px;
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
   font-weight: 400;
@@ -709,14 +705,10 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 }
 
-/* Short desktop windows (1366x768, 1280x720): name and email share one ruled line, the message
-   gets three lines and the dark margin narrows, so the whole sheet and Send stay in view. Before
-   the compact layout below, which undoes the pairing. */
-@media (max-height: 820px) {
-  #contact {
-    padding-block: 16px;
-  }
-
+/* Short desktop windows (1366x768, 1280x720, a MacBook Air): name and email share one ruled line
+   and the message gets three lines, growing to four, so the whole sheet and Send stay in view. The
+   full sheet needs about 850px. Before the compact layout below, which undoes the pairing. */
+@media (max-height: 860px) {
   .notebook-form {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -736,8 +728,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 
   .notebook-textarea {
-    height: calc(3 * var(--row));
     min-height: calc(3 * var(--row));
+    max-height: calc(4 * var(--row));
   }
 }
 
@@ -800,8 +792,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 
   .notebook-textarea {
-    height: calc(3 * var(--row));
     min-height: calc(3 * var(--row));
+    max-height: calc(6 * var(--row));
   }
 
   .char-count {
@@ -810,14 +802,6 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   .validation-msg {
     font-size: clamp(0.7rem, 2.5vw, 0.75rem);
-  }
-
-  /* A phone line is too narrow for the MESSAGE label and its error: the error takes the line
-     after the message. */
-  .notebook-field:has(.notebook-textarea) .validation-msg {
-    position: static;
-    max-width: none;
-    text-align: left;
   }
 
   .notebook-form {
@@ -834,7 +818,6 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   .notebook-submit {
     grid-column: 1;
-    margin-top: 8px;
     /* Ensure minimum 44px touch target height */
     min-height: 44px;
     padding: 0.7rem 1.8rem;

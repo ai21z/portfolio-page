@@ -377,6 +377,7 @@ test('a blocked verification script is tried again on Send, then the draft goes 
   await expect(page.locator('[data-status] a')).toHaveAttribute('href', /^mailto:aris@zounarakis\.com\?subject=Synthetic%20contact%20check&body=/);
   expect(loads).toBe(2);
   await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
+  await expect(page.getByLabel('Message')).toBeEditable();
 });
 
 test('the production stylesheet has no nested stylesheet requests', async ({ page }) => {

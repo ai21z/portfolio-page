@@ -1,11 +1,15 @@
 import { expect, test } from '@playwright/test';
 
-for (const scripts of ['disabled', 'blocked-app']) {
+for (const scripts of ['disabled', 'blocked-app', 'broken-module']) {
   for (const width of [390, 1366]) {
     test('essential content survives ' + scripts + ' at ' + width + 'px', async ({ browser, baseURL }) => {
       const context = await browser.newContext({ javaScriptEnabled: scripts !== 'disabled', viewport: { width, height: 844 } });
       const page = await context.newPage();
       if (scripts === 'blocked-app') await page.route('**/js/app.js*', route => route.abort());
+      // A module of the app that fails while it loads: the app never starts.
+      if (scripts === 'broken-module') {
+        await page.route('**/js/navigation.js*', route => route.fulfill({ contentType: 'application/javascript', body: 'throw new Error("broken module");' }));
+      }
       try {
         await page.goto(baseURL + '/index.html#work');
         await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeVisible();
@@ -53,7 +57,9 @@ for (const width of [390, 1366]) {
     });
     try {
       await page.goto('/index.html', { waitUntil: 'commit' });
-      await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeVisible();
+      await expect(page.locator('.grid')).toHaveCSS('display', 'grid');
+      // While the app loads, the plain fallback nav stays out of sight.
+      await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeHidden();
       await expect.poll(() => page.evaluate(() => Array.from(document.fonts)
         .some(font => font.family.includes('Special Elite') && font.status === 'loaded'))).toBe(true);
       const before = await page.locator('.grid').boundingBox();
@@ -70,3 +76,27 @@ for (const width of [390, 1366]) {
     }
   });
 }
+
+test('a cold load never shows the plain fallback nav while the app loads', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__navSeen = 0;
+    const sample = () => {
+      const nav = document.querySelector('.essential-nav');
+      if (nav) {
+        const style = getComputedStyle(nav);
+        if (style.display !== 'none' && style.visibility !== 'hidden' && nav.getBoundingClientRect().height > 0) (window as any).__navSeen++;
+      }
+      if (!document.documentElement.classList.contains('js-ready')) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  // A first visit on a slow line: the app's script arrives well after the page and its styles.
+  await page.route('**/js/app.js*', async route => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    await route.continue();
+  });
+  await page.goto('/index.html', { waitUntil: 'commit' });
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  expect(await page.evaluate(() => (window as any).__navSeen)).toBe(0);
+  await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeHidden();
+});

@@ -311,12 +311,17 @@ body:has(#contact.stage.active-section) .dish-labels {
   color: var(--paper-ink);
 }
 
+/* Hidden in place: pushed 9999px out, the trap was turned by the page's tilt into a scrollable
+   strip below the sheet, which ate the first wheel or touch gesture on Contact. */
 .honeypot-trap {
   position: absolute;
-  left: -9999px;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .notebook-header {

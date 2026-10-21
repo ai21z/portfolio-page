@@ -197,11 +197,13 @@ test('a swipe after a few small deltas steps once, though it steps while still s
   expect(await active(page)).toBe('skills');
 });
 
-test('one low reading after the inertia has slowed does not split it', async ({ page, browserName }) => {
+test('one low reading in slowed, rippling inertia does not split it', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
   await open(page, '#about');
-  // Inertia at 40% of its top, one 3 px reading, then the same inertia on to its end.
-  const decay = Array.from({ length: 120 }, (_, i) => Math.max(1, 40 * 0.97 ** i));
+  // Inertia with a trackpad's ripple, at 40% of its top, one 3 px reading, then the same inertia on
+  // to its end. The ripple lifts a few readings above the level, as real streams do.
+  const ripple = [1.1, 1.14, 1.08, 0.9, 0.86, 1.12, 1.1, 1.06, 0.88, 0.92];
+  const decay = Array.from({ length: 120 }, (_, i) => Math.max(1, 40 * 0.97 ** i * ripple[i % ripple.length]));
   await stream(page, [10, 20, 30, ...decay.slice(0, 30), 3, ...decay.slice(30)]);
   expect(await active(page)).toBe('skills');
 });

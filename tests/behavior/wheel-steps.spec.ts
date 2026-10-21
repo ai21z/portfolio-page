@@ -43,13 +43,27 @@ async function scrollBox(page: Page, selector: string, where: 'top' | 'end') {
 // A number is a wheel delta. { stall } blocks the page that long, as a heavy section arrival does,
 // and the next event then carries a timestamp that far later, as Chrome's merged events do. With
 // timersFirst the page's overdue timers run before that event. { rest } is a pause with the page free.
-type StreamItem = number | { stall: number, timersFirst?: boolean } | { rest: number };
+// { held } is input held up outside the page (a busy browser or GPU process) while the page stays
+// free: the deltas happen on time, then reach the page together, each with its own time as Firefox
+// keeps them, or merged into one event stamped with the newest, as Chrome does.
+type StreamItem = number | { stall: number, timersFirst?: boolean } | { rest: number } | { held: number[], merged?: boolean };
 async function stream(page: Page, deltas: StreamItem[], at = POINTER, spacingMs = 16) {
   await page.evaluate(async ({ list, x, y, spacing }) => {
     for (const item of list) {
       if (typeof item === 'object') {
         if ('rest' in item) {
           await new Promise((resolve) => setTimeout(resolve, item.rest));
+          continue;
+        }
+        if ('held' in item) {
+          const queue: WheelEvent[] = [];
+          for (const dy of item.held) {
+            queue.push(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }));
+            await new Promise((resolve) => setTimeout(resolve, spacing));
+          }
+          const sum = item.held.reduce((a, b) => a + b, 0);
+          const arriving = item.merged ? [new WheelEvent('wheel', { deltaY: sum, bubbles: true, cancelable: true })] : queue;
+          for (const event of arriving) (document.elementFromPoint(x, y) || document.body).dispatchEvent(event);
           continue;
         }
         const until = performance.now() + item.stall;
@@ -152,8 +166,9 @@ test('a second swipe started during the first one\'s inertia moves on again', as
   expect(await active(page)).toBe('intro');
 });
 
-// A busy page sees input only every few frames, so it gets the same swipes as fewer, larger steps.
-for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 Hz', 8, 0.983, 96], ['busy page', 47, 0.967, 45]] as const) {
+// The same per-event swipes at 60 and 120 Hz, and 47 ms apart as real input reached a busy headless
+// page: there they make a slower swipe with longer inertia, seen in few, sparse events.
+for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 Hz', 8, 0.983, 96], ['sparse events', 47, 0.967, 45]] as const) {
   test(`a second swipe while the first one's momentum is still strong moves on again (${label})`, async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Needs the real event spacing that Chromium keeps.');
     await open(page, '#skills');
@@ -163,6 +178,46 @@ for (const [label, spacing, decay, events] of [['60 Hz', 16, 0.967, 51], ['120 H
   });
 }
 
+for (const cut of [50, 45]) {
+  test(`a brisk second swipe once the first one's inertia is nearly spent moves on again (${cut} events)`, async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+    await open(page, '#skills');
+    // The inertia is down to 2 or 3 px a frame, and the new swipe starts at 7 px after a 40 ms touch.
+    await stream(page, [...swipe(-1).slice(0, cut), { rest: 40 }, ...swipe(-1)]);
+    expect(await active(page)).toBe('intro');
+  });
+}
+
+test('a swipe after a few small deltas steps once, though it steps while still speeding up', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // Fingers settling on the pad send a few small deltas, then the swipe steps on its first event.
+  const decay = Array.from({ length: 80 }, (_, i) => Math.max(1, 600 * 0.94 ** i));
+  await stream(page, [4, 4, 4, 1, 1, { rest: 150 }, 70, 230, 500, ...decay]);
+  expect(await active(page)).toBe('skills');
+});
+
+test('one low reading after the inertia has slowed does not split it', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // Inertia at 40% of its top, one 3 px reading, then the same inertia on to its end.
+  const decay = Array.from({ length: 120 }, (_, i) => Math.max(1, 40 * 0.97 ** i));
+  await stream(page, [10, 20, 30, ...decay.slice(0, 30), 3, ...decay.slice(30)]);
+  expect(await active(page)).toBe('skills');
+});
+
+test('merged frames after a low reading keep their true speed and do not split the gesture', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // Inertia at under half its top, one 3 px reading, then frames merged in threes: each event
+  // carries three frames of travel and arrives three frames after the last.
+  const decay = Array.from({ length: 90 }, (_, i) => Math.max(1, 40 * 0.97 ** i));
+  const merged: StreamItem[] = [];
+  for (let i = 30; i < 60; i += 3) merged.push({ stall: 32 }, decay[i] + decay[i + 1] + decay[i + 2]);
+  await stream(page, [10, 20, 30, ...decay.slice(0, 30), 3, ...merged, ...decay.slice(60)]);
+  expect(await active(page)).toBe('skills');
+});
+
 test('one low reading in a steady stream does not split it after a step', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
   await open(page, '#about');
@@ -171,16 +226,54 @@ test('one low reading in a steady stream does not split it after a step', async 
   expect(await active(page)).toBe('skills');
 });
 
-for (const timersFirst of [false, true]) {
-  test(`a stall right after a step does not split the gesture into a second step${timersFirst ? ', even when timers run first' : ''}`, async ({ page, browserName }) => {
+for (const [stall, timersFirst] of [[330, false], [330, true], [240, true]] as const) {
+  test(`a ${stall} ms stall right after a step does not split the gesture into a second step${timersFirst ? ', even when timers run first' : ''}`, async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
     await open(page, '#about');
-    // The step happens on the fifth event. The arrival then holds the page for 330 ms while the
-    // stream goes on, and the rest of the stream runs well past the cooldown.
-    await stream(page, [...Array(6).fill(15), { stall: 330, timersFirst }, ...Array(80).fill(15)]);
+    // The step happens on the fourth event, and two events later the arrival holds the page while
+    // the stream goes on. The rest of the stream runs well past the cooldown. A 240 ms stall leaves
+    // the end timer under 50 ms late, as if the page had been free, and Chrome then hands the
+    // stall's input over as one merged event.
+    const merged = stall < 300 ? [15 * stall / 16] : [];
+    await stream(page, [...Array(6).fill(15), { stall, timersFirst }, ...merged, ...Array(80).fill(15)]);
     expect(await active(page)).toBe('skills');
   });
 }
+
+for (const merged of [false, true]) {
+  test(`input held up outside the page still belongs to its gesture (${merged ? 'merged, as Chrome' : 'own times, as Firefox'})`, async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+    await open(page, '#about');
+    // A busy browser or GPU process holds 300 ms of the stream while the page's own timers run.
+    await stream(page, [...Array(6).fill(15), { held: Array(19).fill(15), merged }, ...Array(80).fill(15)]);
+    expect(await active(page)).toBe('skills');
+  });
+}
+
+test('input held up through fast-fading inertia still belongs to its gesture', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#about');
+  // 800 ms of the inertia are held and merged into one event, which carries a quarter of the
+  // speed the inertia had before the hold.
+  const decay = Array.from({ length: 70 }, (_, i) => 100 * 0.92 ** i);
+  await stream(page, [10, 30, 60, 90, ...decay.slice(0, 2), { held: decay.slice(2, 52), merged: true }, ...decay.slice(52)]);
+  expect(await active(page)).toBe('skills');
+});
+
+test('a swipe after the Work timeline reached its end moves on, though the scroll before it was brisk', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Needs the real 16 ms spacing that Chromium keeps.');
+  await open(page, '#work');
+  await expect(page.locator('#work .work-rail-scroll')).toBeVisible();
+  await scrollBox(page, '#work .work-rail-scroll', 'top');
+  const away = { x: 1000, y: 150 };
+  // The first swipe scrolls the timeline, and its inertia runs out at 1 px a frame.
+  await stream(page, swipe(1, 70), away);
+  await scrollBox(page, '#work .work-rail-scroll', 'end');
+  // A brisk swipe moments later: its first event carries far more than the inertia's last ones,
+  // which must not pass for input held up from the scroll.
+  await stream(page, [24, 40, 50, 45, 40, 35, 30, 25, 20], away);
+  expect(await active(page)).toBe('contact');
+});
 
 test('one swipe that is still speeding up when it steps moves only one section', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Needs the real event spacing that Chromium keeps.');

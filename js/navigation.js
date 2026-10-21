@@ -84,15 +84,21 @@ const WHEEL_ORDER = ['intro', 'about', 'skills', 'blog', 'work', 'contact'];
 const WHEEL_STEP_PX = 60;
 // A pause this long ends a gesture. Trackpad inertia keeps firing well inside it.
 const WHEEL_GESTURE_GAP_MS = 220;
-// Arriving in a section can block the page (Blog's first visit compiles its scene). Wheel input
-// then waits in a queue, and Chrome merges it into one event stamped with the newest input, which
-// looks like a pause. A gesture's end timer that runs this late ran after a long task.
+// Wheel input can be held up on its way to the page: behind a long task (Blog's first visit
+// compiles its scene), or in a busy browser or GPU process (another tab compiling shaders). It
+// reaches the page late, Chrome merges it into one event stamped with the newest input, and that
+// looks like a pause. Input held up to this long still rejoins its gesture.
+const WHEEL_HELD_MS = 1000;
+// A gesture's end timer that runs this late ran after a long task.
 const WHEEL_STALL_MS = 50;
 // Covers the cross-fade, so a step never lands on a section still fading in.
 const WHEEL_STEP_COOLDOWN_MS = 700;
-// Wheel speed is measured in px per frame of this length. Merged events span several frames, so
-// their speed stays true, and events closer together than a frame count as one frame each.
+// Wheel speed is read in px per frame of this length: the travel since the last reading over the
+// time since it. A merged event spans several frames, so its speed stays true.
 const WHEEL_FRAME_MS = 16;
+// A reading spans at least this long, so events closer together (a 240 Hz display, a 1000 Hz
+// mouse) add up into one, while a 120 or 144 Hz event, a touch among them, still reads on its own.
+const WHEEL_READ_MS = 7;
 
 // Scroll positions as last seen. A fast wheel without scroll animation can carry a box to its end
 // before this listener runs, and that gesture still belongs to the box, not to a section step.
@@ -165,30 +171,51 @@ function wheelStepBlocked() {
     || Boolean(blog?.classList.contains('active-section') && blog.classList.contains('in-category'));
 }
 
+const median = (list) => [...list].sort((a, b) => a - b)[list.length >> 1];
+
 // A new trackpad swipe during the last one's inertia. Inertia only slows, so the stream must first
-// have fallen to half its top speed (the median of three events, so a lone spike is no top). A
-// touch then stops the inertia, which shows as an event at half the inertia's speed or less (a
-// long gap gives a low speed too), or the inertia is nearly spent. The new swipe ramps up from
-// there: three events in a row, within 400 ms (a busy page sees the ramp in few, sparse events),
-// faster than both one and a half times the inertia and three times the dip. A swipe still
-// speeding up, a steady or noisy drag and a merged event (whose speed is spread over its frames)
-// never qualify. Only matters once the gesture has stepped.
+// have fallen to half its top speed since the step (the median of three readings, so a lone spike
+// is no top, and a swipe that steps while it still speeds up has not fallen from anything). A new
+// swipe then shows as three readings in a row faster than three times the inertia and 4 px a
+// frame, which inertia never gets back to. A touch that stops the inertia first reads at half its
+// speed or less (a long gap reads low too), and within 400 ms of it (a busy page sees the ramp in
+// few, sparse events) a gentler swipe will do: faster than one and a half times the inertia and
+// three times the low point. A swipe still speeding up, a steady or noisy drag and a merged event
+// (whose speed is spread over its frames) never qualify. Only matters once the gesture has stepped.
 function startsNewSwipe(gesture, speed, at) {
-  const speeds = gesture.speeds;
-  if (!gesture.stepped || speeds.length < 3) return false;
-  const level = [...speeds].sort((a, b) => a - b)[1];
-  const dip = gesture.dip;
-  if (level <= gesture.top / 2 && speed <= Math.max(level / 2, 1.5)) {
-    gesture.dip = { level: dip ? dip.level : level, speed, at, count: 0 };
+  if (!gesture.stepped || gesture.speeds.length < 3) return false;
+  const level = median(gesture.speeds);
+  const fallen = level <= gesture.top / 2;
+  const low = gesture.low && at - gesture.low.at <= 400 ? gesture.low : null;
+  if (fallen && speed <= level / 2) {
+    const floor = Math.max(4, level * 1.5, speed * 3);
+    gesture.low = { floor: low ? Math.min(low.floor, floor) : floor, at };
+    gesture.rise = null;
     return false;
   }
-  if (!dip) return false;
-  if (at - dip.at > 400) {
-    gesture.dip = null;
-    return false;
-  }
-  dip.count = speed > Math.max(4, dip.level * 1.5, dip.speed * 3) ? dip.count + 1 : 0;
-  return dip.count >= 3;
+  gesture.low = low;
+  // A rise starts at the first reading above the inertia and is judged against the inertia as it
+  // was then, before the rise's own readings lift the level.
+  const rise = gesture.rise ?? (fallen && speed > level ? { base: level, count: 0 } : null);
+  gesture.rise = rise && speed > rise.base ? rise : null;
+  if (!gesture.rise) return false;
+  rise.count = speed > (low ? low.floor : Math.max(4, rise.base * 3)) ? rise.count + 1 : 0;
+  return rise.count >= 3;
+}
+
+// Input held up on its way to the page arrives after its gesture's end. It still tells: its time
+// falls inside the pause, or (for a gesture that has stepped) it merges the travel of the whole
+// hold into one event, at least twice what an event of the gesture carried and at a fifth of its
+// last speed or more across the gap (inertia decays over a long hold). A new notch carries one
+// event's travel, and a new swipe after a real pause reads slow across it, so each starts a gesture
+// of its own, or, rejoining a stepped gesture, reads as the touch of a new swipe and splits off.
+function heldBack(gesture, size, at) {
+  const gap = at - gesture.lastAt;
+  if (gap <= WHEEL_GESTURE_GAP_MS) return true;
+  const last = gesture.speeds.at(-1);
+  const speed = (gesture.travel + size) * WHEEL_FRAME_MS / (at - gesture.readAt);
+  return gesture.stepped && gap <= WHEEL_HELD_MS && size >= 2 * median(gesture.sizes)
+    && (last === undefined || speed >= last / 5);
 }
 
 export function initWheelSteps(showSectionCallback) {
@@ -211,6 +238,7 @@ export function initWheelSteps(showSectionCallback) {
     const next = index < 0 ? null : WHEEL_ORDER[index + direction];
     if (!next) return;
     gesture.stepped = true;
+    gesture.top = 0;
     lastStepAt = at;
     // The rest of this gesture reaches the incoming section. Its handlers (the dish zoom) skip it.
     root.dataset.wheelStepTail = '';
@@ -232,11 +260,11 @@ export function initWheelSteps(showSectionCallback) {
     step(ended.direction, now);
   };
 
-  // A gesture ends once a pause has passed with the page free to see input. After a long task,
-  // wheel input from that time may still be waiting, and browsers hand queued input to the page at
-  // the start of a frame, so a late timer ends the gesture only after two more frames, however
-  // slow (a page whose every frame is a long task still ends its gestures). A hidden page has no
-  // frames and no wheel input, and its timers run late anyway, so there it ends at once.
+  // A gesture ends once a pause has passed. An end timer that runs late (a long task) waits two
+  // more frames first: browsers hand queued input to the page at the start of a frame, so input
+  // held behind the long task still arrives first, however slow the frames (a page whose every
+  // frame is a long task still ends its gestures). Input held anywhere else rejoins through
+  // heldBack. A hidden page has no frames and no wheel input, so there it ends at once.
   const end = (current) => {
     current.ended = true;
     settle(current);
@@ -274,13 +302,15 @@ export function initWheelSteps(showSectionCallback) {
     pending = null;
     const delta = deltaOf(event);
     if (!delta) return;
+    const size = Math.abs(delta);
     const direction = Math.sign(delta);
     // When the input happened, not when a busy page got to it. Same clock as performance.now().
     const now = event.timeStamp || performance.now();
-    const live = gesture && !gesture.ended;
-    const gap = live ? now - gesture.lastAt : WHEEL_FRAME_MS;
-    const speed = Math.abs(delta) * WHEEL_FRAME_MS / Math.max(gap, WHEEL_FRAME_MS);
-    if (!live || direction !== gesture.direction || startsNewSwipe(gesture, speed, now)) {
+    const live = Boolean(gesture) && direction === gesture.direction
+      && (!gesture.ended || heldBack(gesture, size, now));
+    const span = live ? now - gesture.readAt : 0;
+    const speed = span >= WHEEL_READ_MS ? (gesture.travel + size) * WHEEL_FRAME_MS / span : null;
+    if (!live || (speed !== null && startsNewSwipe(gesture, speed, now))) {
       if (gesture) {
         window.clearTimeout(gesture.endTimer);
         window.cancelAnimationFrame(gesture.endFrame);
@@ -289,15 +319,25 @@ export function initWheelSteps(showSectionCallback) {
       const consumed = canScrollFrom(event.target, direction);
       const drive = consumed || wheelStepBlocked() ? null : sectionWheelTarget(event.target, direction);
       gesture = {
-        direction, distance: 0, events: 0, speeds: [], top: 0, dip: null,
-        stepped: false, consumed, drive, section: activeSection()
+        direction, distance: 0, events: 0, sizes: [], speeds: [], top: 0, low: null, rise: null,
+        travel: 0, readAt: now, stepped: false, consumed, drive, section: activeSection()
       };
     }
+    gesture.ended = false;
     gesture.lastAt = now;
     gesture.events += 1;
-    gesture.speeds.push(speed);
-    if (gesture.speeds.length > 3) gesture.speeds.shift();
-    if (gesture.speeds.length === 3) gesture.top = Math.max(gesture.top, [...gesture.speeds].sort((a, b) => a - b)[1]);
+    gesture.sizes.push(size);
+    if (gesture.sizes.length > 3) gesture.sizes.shift();
+    // A gesture's first event only starts the clock, unless it split off at a reading.
+    if (speed === null) {
+      if (gesture.events > 1) gesture.travel += size;
+    } else {
+      gesture.travel = 0;
+      gesture.readAt = now;
+      gesture.speeds.push(speed);
+      if (gesture.speeds.length > 3) gesture.speeds.shift();
+      if (gesture.speeds.length === 3) gesture.top = Math.max(gesture.top, median(gesture.speeds));
+    }
     armEnd(gesture);
     pending = { event, delta, now };
   }, { capture: true, passive: true });

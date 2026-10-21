@@ -104,22 +104,22 @@
     }
   </script>
 
-  <!-- With scripts on, the plain portfolio nav waits for the app. It shows only with scripts off or
-       when the app did not start: a module script runs before DOMContentLoaded, so a page without
-       js-ready by then has a blocked or failed app. -->
+  <!-- With scripts on, the plain portfolio nav waits for the app. It shows with scripts off, when
+       the app did not start (a module script runs before DOMContentLoaded, so a page without js-ready
+       by then has a blocked or failed app), and 4 s in while the app is still on its way (a stalled or
+       very slow load, where DOMContentLoaded may never come). A late app hides it again. -->
   <script>
     (function () {
       var root = document.documentElement;
+      function check() { if (!root.classList.contains('js-ready')) root.classList.add('js-failed'); }
       root.classList.add('js');
-      document.addEventListener('DOMContentLoaded', function () {
-        if (!root.classList.contains('js-ready')) root.classList.add('js-failed');
-      });
+      document.addEventListener('DOMContentLoaded', check);
+      setTimeout(check, 4000);
     })();
   </script>
 
   <!-- Inline the loading cover so it paints before the page. -->
   <style>
-    .js:not(.js-failed) .essential-nav{display:none}
     .threshold{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;pointer-events:none;
       background:radial-gradient(120% 90% at 50% 44%,rgba(22,40,36,0.42),transparent 58%),
         radial-gradient(150% 130% at 50% 122%,rgba(8,12,12,0.94),transparent 70%),#07090a;

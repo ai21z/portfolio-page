@@ -24,9 +24,10 @@
 .published-writing a { min-height: 44px; }
 .contact-email { color: #49331d; text-underline-offset: 4px; }
 
-/* Scripts off, or the app did not start (index.html marks js-failed). While the app loads it stays
-   hidden, so the first second never shows a bare row of links over the loading cover. */
-html:not(.js) .essential-nav,
+/* Scripts off, or the app did not start or is long overdue (index.html marks js-failed). While the
+   app loads it stays hidden, so a load never shows a bare row of links over the loading cover. A
+   running app always hides it. */
+html:not(.js):not(.js-ready) .essential-nav,
 html.js-failed:not(.js-ready) .essential-nav {
   display: flex;
   position: fixed;

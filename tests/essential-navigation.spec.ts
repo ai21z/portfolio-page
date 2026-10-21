@@ -100,3 +100,38 @@ test('a cold load never shows the plain fallback nav while the app loads', async
   expect(await page.evaluate(() => (window as any).__navSeen)).toBe(0);
   await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeHidden();
 });
+
+test('a stalled load shows the plain nav once the app is long overdue, and the app hides it on arrival', async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  // One module of the app hangs: the page never reaches DOMContentLoaded while it does.
+  await page.route('**/js/navigation.js*', async route => {
+    await held;
+    await route.continue();
+  });
+  try {
+    await page.goto('/index.html', { waitUntil: 'commit' });
+    const nav = page.getByRole('navigation', { name: 'Portfolio navigation' });
+    await expect(nav).toBeHidden();
+    await expect(nav).toBeVisible({ timeout: 8000 });
+    await nav.getByRole('link', { name: 'Work' }).click();
+    await expect(page.locator('#work-index')).toBeVisible();
+    release();
+    await expect(page.locator('html')).toHaveClass(/js-ready/);
+    await expect(nav).toBeHidden();
+  } finally {
+    release();
+  }
+});
+
+test('a running app keeps the plain nav hidden even if the head script that marks scripts is blocked', async ({ page }) => {
+  await page.route('**/index.html', async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace(/<script>\s*\(function \(\) \{\s*var root = document\.documentElement;[\s\S]*?<\/script>/, '');
+    await route.fulfill({ response, body });
+  });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await expect(page.locator('html')).not.toHaveClass(/(^|\s)js(\s|$)/);
+  await expect(page.getByRole('navigation', { name: 'Portfolio navigation' })).toBeHidden();
+});

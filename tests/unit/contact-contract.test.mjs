@@ -102,6 +102,21 @@ for (const result of [
   });
 }
 
+// The form keeps Send ready while the spam check runs, so the server alone must refuse a message
+// that comes without a token.
+for (const turnstileToken of [undefined, '']) {
+  test('refuses a request without a verification token ' + JSON.stringify(turnstileToken) + ' before any outbound call', async t => {
+    const { emails } = services(t);
+    const body = { ...payload, turnstileToken };
+    if (turnstileToken === undefined) delete body.turnstileToken;
+    const response = await onRequestPost({ request: request(body), env });
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).state, 'not_sent');
+    assert.equal(fetch.mock.callCount(), 0);
+    assert.equal(emails.length, 0);
+  });
+}
+
 test('uses trusted configured hosts, never a caller supplied host', async t => {
   const { emails } = services(t, { verify: () => Response.json({ ...verification, hostname: 'preview.example.test' }) });
   assert.equal((await onRequestPost({ request: request(payload, { host: 'preview.example.test' }), env })).status, 401);

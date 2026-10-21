@@ -5,7 +5,15 @@ const SUBJECT_LIMIT = { min: 5, max: 60 };
 const MESSAGE_LIMIT = { min: 10, max: 350 };
 const NAME_LIMIT = { min: 2, max: 80 };
 const DIRECT_EMAIL = 'aris@zounarakis.com';
+// How long a press of Send waits for the spam check before offering email instead. Turnstile
+// retries a failed check about every 10 s on its own.
+const VERIFY_WAIT_MS = 12000;
 
+// The spam check (Cloudflare Turnstile) runs out of sight from the moment Contact opens, and how
+// it fares stays quiet until the visitor presses Send. Send is never held back for it: the server
+// refuses any message without a valid token, so a disabled button protected nothing and only made
+// the form look broken where the check is blocked or slow. Send waits for the check instead, and
+// where it cannot finish, the draft goes by email.
 class NotebookContact {
   constructor() {
     this.form = null;
@@ -19,8 +27,16 @@ class NotebookContact {
     this.turnstileToken = '';
     this.turnstileRequired = true;
     this.verificationStarted = false;
+    // idle, loading, running, ready, failed (the check ran and did not clear) or unavailable
+    // (the script did not load or mount).
+    this.verification = 'idle';
+    this.tokenWaiter = null;
     this.visibilityListener = (event) => {
       if (event.detail?.visible) this.startVerification();
+    };
+    // A script that arrives after the load timeout still mounts.
+    this.lateLoadListener = () => {
+      if (this.verification === 'unavailable' && window.turnstile?.render) this.mountTurnstile();
     };
     this.formDisabled = false;
     this.isSubmitting = false;
@@ -56,6 +72,7 @@ class NotebookContact {
 
     if (this.turnstileRequired) {
       window.addEventListener('contact:visible', this.visibilityListener);
+      document.addEventListener('turnstile-loaded', this.lateLoadListener);
       if (this.form.closest('.active-section')) this.startVerification();
     } else {
       this.formDisabled = true;
@@ -67,16 +84,64 @@ class NotebookContact {
     }
   }
 
-  startVerification() {
-    if (!this.turnstileRequired || this.verificationStarted) return;
+  // Once per page when Contact opens, and once more from Send when the script did not load.
+  startVerification({ reload = false } = {}) {
+    if (!this.turnstileRequired || (this.verificationStarted && !reload)) return;
     this.verificationStarted = true;
-    this.waitForTurnstile()
+    this.verification = 'loading';
+    this.waitForTurnstile({ reload })
       .then(() => this.mountTurnstile())
-      .catch(() => {
-        this.formDisabled = true;
-        this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
-        this.updateSubmitState();
-      });
+      .catch(() => this.verificationEnded('unavailable'));
+  }
+
+  verificationEnded(state) {
+    this.turnstileToken = '';
+    this.verification = state;
+    this.settleTokenWaiter('');
+  }
+
+  // Resolves with a token, or with '' once the check has failed or VERIFY_WAIT_MS has passed.
+  // A check that asks the visitor for a tick waits for the tick.
+  waitForToken() {
+    if (this.turnstileToken) return Promise.resolve(this.turnstileToken);
+    if (this.verification === 'unavailable' || this.verification === 'idle') {
+      this.startVerification({ reload: true });
+    } else if (this.verification === 'failed') {
+      this.verification = 'running';
+      this.resetTurnstile();
+    }
+    return new Promise((resolve) => {
+      this.tokenWaiter = { resolve, timer: 0 };
+      if (this.verification === 'unavailable' || this.verification === 'failed') this.settleTokenWaiter('');
+      else if (this.turnstileContainer?.classList.contains('is-interactive')) this.setInteractive(true);
+      else this.armTokenWaiter();
+    });
+  }
+
+  armTokenWaiter() {
+    if (!this.tokenWaiter) return;
+    window.clearTimeout(this.tokenWaiter.timer);
+    this.tokenWaiter.timer = window.setTimeout(() => this.settleTokenWaiter(''), VERIFY_WAIT_MS);
+  }
+
+  settleTokenWaiter(token) {
+    const waiter = this.tokenWaiter;
+    if (!waiter) return;
+    this.tokenWaiter = null;
+    window.clearTimeout(waiter.timer);
+    waiter.resolve(token);
+  }
+
+  // Turnstile shows a checkbox only to a visitor it is unsure about.
+  setInteractive(on) {
+    this.turnstileContainer?.classList.toggle('is-interactive', on);
+    if (!this.tokenWaiter) return;
+    if (on) {
+      window.clearTimeout(this.tokenWaiter.timer);
+      this.showStatus('One quick tick below and your message is on its way.', 'info');
+    } else {
+      this.armTokenWaiter();
+    }
   }
 
   wireFieldValidation() {
@@ -185,15 +250,19 @@ class NotebookContact {
       this.form.querySelector('[aria-invalid="true"]')?.focus();
       return;
     }
-    if (this.turnstileRequired && !this.turnstileToken) {
-      this.showDirectEmailStatus('Complete verification before sending, or');
-      return;
-    }
 
     this.isSubmitting = true;
-    this.hasSubmissionResult = false;
     this.setSubmittingState(true);
     this.showStatus('Sending your message...', 'info');
+    if (this.turnstileRequired && !(await this.waitForToken())) {
+      this.isSubmitting = false;
+      this.setSubmittingState(false);
+      this.updateSubmitState();
+      this.showEmailFallback(this.verification === 'unavailable'
+        ? 'The spam check could not run in this browser. Your message is still here, and you can'
+        : 'The spam check did not clear this time. Press Send to try again, or');
+      return;
+    }
     const controller = new AbortController();
     this.submissionController = controller;
     const timer = window.setTimeout(() => controller.abort(), 30000);
@@ -211,8 +280,7 @@ class NotebookContact {
       });
       const result = await this.parseJson(response);
       if (!response.ok || !result?.success || result.state !== 'accepted') {
-        const message = result?.error || 'The result could not be confirmed. Your message may already have been accepted.';
-        this.showDirectEmailStatus(message + ' You can');
+        this.showResultError(result?.error || 'The result could not be confirmed. Your message may already have been accepted.');
         return;
       }
       this.showStatus('Message accepted. Thank you for getting in touch.', 'success');
@@ -220,13 +288,14 @@ class NotebookContact {
       this.attempt.clear();
       this.updateCharCount();
     } catch (error) {
-      this.showDirectEmailStatus(requestStarted
-        ? 'The result could not be confirmed. Your message may already have been accepted. You can retry unchanged content or'
-        : error.message || 'This attempt could not start. Please');
+      if (requestStarted) {
+        this.showDirectEmailStatus('The result could not be confirmed. Your message may already have been accepted. You can retry unchanged content or');
+      } else {
+        this.showResultError(error.message || 'This attempt could not start.');
+      }
     } finally {
       window.clearTimeout(timer);
       this.submissionController = null;
-      this.hasSubmissionResult = true;
       this.resetTurnstile();
       this.isSubmitting = false;
       this.setSubmittingState(false);
@@ -276,24 +345,40 @@ class NotebookContact {
     }
   }
 
-  showDirectEmailStatus(message, level = 'error') {
+  showDirectEmailStatus(message, level = 'error', link = this.emailLink('email me directly')) {
     if (!this.statusEl) return;
 
     this.showStatus('', level);
     this.statusEl.append(document.createTextNode(`${message} `));
-
-    const link = document.createElement('a');
-    link.href = `mailto:${DIRECT_EMAIL}`;
-    link.textContent = 'email me directly';
     this.statusEl.append(link);
     this.statusEl.append(document.createTextNode('.'));
   }
 
+  // A message that already ends by pointing to email gets its link there, the rest gain one.
+  showResultError(message) {
+    const pointsToEmail = /\s*email me directly\.?$/i;
+    this.showDirectEmailStatus(pointsToEmail.test(message) ? message.replace(pointsToEmail, '') : `${message} You can`);
+  }
+
+  // Not an error of the visitor's, so it is written in ink, with the draft ready to go by email.
+  showEmailFallback(message) {
+    const draft = this.buildPayload();
+    const params = new URLSearchParams({ subject: draft.subject, body: `${draft.message}\n\n${draft.name}` });
+    // Mail clients read %20, not +, as a space.
+    const link = this.emailLink('send it by email', `?${params.toString().replace(/\+/g, '%20')}`);
+    this.showDirectEmailStatus(message, 'info', link);
+  }
+
+  emailLink(text, query = '') {
+    const link = document.createElement('a');
+    link.href = `mailto:${DIRECT_EMAIL}${query}`;
+    link.textContent = text;
+    return link;
+  }
+
   updateSubmitState() {
     if (!this.submitBtn) return;
-    const waitingForVerification = this.turnstileRequired && !this.turnstileToken;
-    const disabled = this.isSubmitting || this.formDisabled || waitingForVerification;
-    this.submitBtn.disabled = disabled;
+    this.submitBtn.disabled = this.isSubmitting || this.formDisabled;
   }
 
   async parseJson(response) {
@@ -304,12 +389,14 @@ class NotebookContact {
     }
   }
 
-  async waitForTurnstile() {
+  async waitForTurnstile({ reload = false } = {}) {
     if (window.turnstile && typeof window.turnstile.render === 'function') {
       return Promise.resolve();
     }
 
     return new Promise((resolve, reject) => {
+      // A script element that failed never loads again, so a second try needs a fresh one.
+      if (reload) document.getElementById('turnstile-script')?.remove();
       let script = document.getElementById('turnstile-script');
       const cleanup = () => {
         window.clearTimeout(timeout);
@@ -347,10 +434,10 @@ class NotebookContact {
   }
 
   mountTurnstile() {
-    if (!this.turnstileContainer || !window.turnstile) return;
+    if (!this.turnstileContainer || !window.turnstile || this.turnstileWidgetId) return;
 
     this.turnstileContainer.innerHTML = '';
-    this.updateSubmitState();
+    this.verification = 'running';
 
     try {
       this.turnstileWidgetId = window.turnstile.render(this.turnstileContainer, {
@@ -360,41 +447,38 @@ class NotebookContact {
         appearance: 'interaction-only',
         callback: (token) => {
           this.turnstileToken = token;
-          this.formDisabled = false;
-          if (!this.hasSubmissionResult && this.statusEl?.classList.contains('error')) {
-            this.showStatus('', 'info');
-          }
-          this.updateSubmitState();
+          this.verification = 'ready';
+          this.setInteractive(false);
+          this.settleTokenWaiter(token);
         },
+        // Turnstile keeps retrying on its own, and a later success lands in callback. Returning
+        // true marks the error as handled, so it is not logged as an uncaught one.
         'error-callback': () => {
-          this.turnstileToken = '';
-          this.formDisabled = true;
-          if (!this.isSubmitting && !this.hasSubmissionResult) {
-            this.showDirectEmailStatus('Verification could not complete. Please refresh the page or', 'error');
-          }
-          this.updateSubmitState();
+          this.verificationEnded('failed');
+          return true;
         },
+        'timeout-callback': () => this.verificationEnded('failed'),
+        // Turnstile renews an expired token by itself.
         'expired-callback': () => {
           this.turnstileToken = '';
-          this.updateSubmitState();
-          if (!this.isSubmitting && !this.hasSubmissionResult) {
-            this.showStatus('Verification expired. Complete the challenge again.', 'error');
-          }
-        }
+          this.verification = 'running';
+        },
+        'before-interactive-callback': () => this.setInteractive(true),
+        'after-interactive-callback': () => this.setInteractive(false)
       });
     } catch (error) {
-      console.error('Turnstile render failed', error);
-      this.formDisabled = true;
-      this.showDirectEmailStatus('Verification service unavailable. Please refresh the page or', 'error');
-      this.updateSubmitState();
+      this.turnstileWidgetId = null;
+      this.verificationEnded('unavailable');
     }
   }
 
+  // Tokens are single use, so every send after the first runs the check again.
   resetTurnstile() {
+    this.turnstileToken = '';
     if (this.turnstileWidgetId && window.turnstile && typeof window.turnstile.reset === 'function') {
+      this.verification = 'running';
       window.turnstile.reset(this.turnstileWidgetId);
     }
-    this.turnstileToken = '';
     this.updateSubmitState();
   }
 
@@ -402,6 +486,8 @@ class NotebookContact {
     if (!this.form) return;
     this.submissionController?.abort();
     window.removeEventListener('contact:visible', this.visibilityListener);
+    document.removeEventListener('turnstile-loaded', this.lateLoadListener);
+    this.settleTokenWaiter('');
     this.form.removeEventListener('submit', this.submitListener);
     if (this.turnstileWidgetId && window.turnstile && typeof window.turnstile.remove === 'function') {
       window.turnstile.remove(this.turnstileWidgetId);

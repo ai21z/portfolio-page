@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { stubVerification } from '../helpers/contact';
+import { fillContact, stubVerification } from '../helpers/contact';
 
 // What a visitor sees on opening Contact, before typing anything.
 
@@ -19,3 +19,63 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     expect(overflow).toBeLessThanOrEqual(1);
   });
 }
+
+for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test(`with the spam check blocked, Contact opens calm and ready to send (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.route('https://challenges.cloudflare.com/**', (route) => route.abort());
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    await page.waitForTimeout(500);
+    await expect(page.locator('#contact [data-status]')).toHaveText('');
+    await expect(page.locator('#contact .error')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
+  });
+}
+
+test('a check that asks for a tick is explained while Send waits, and sends once ticked', async ({ page }) => {
+  await page.clock.install();
+  await page.route('https://challenges.cloudflare.com/**', (route) => route.fulfill({
+    contentType: 'application/javascript',
+    body: "window.turnstile = { render(el, o) { window.__tick = () => { o['after-interactive-callback'](); o.callback('ticked-token'); }; setTimeout(() => o['before-interactive-callback'](), 0); return 'w'; }, reset() {}, remove() {} }; window.__turnstileOnLoad();"
+  }));
+  const tokens: string[] = [];
+  await page.route('**/api/contact', (route) => {
+    tokens.push(route.request().postDataJSON().turnstileToken);
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, state: 'accepted' }) });
+  });
+  await page.goto('/index.html#contact');
+  await expect(page.locator('#contact [data-turnstile]')).toHaveClass(/is-interactive/);
+  await fillContact(page);
+  await page.getByRole('button', { name: /send message/i }).click();
+  const status = page.locator('#contact [data-status]');
+  await expect(status).toHaveText('One quick tick below and your message is on its way.');
+  await expect(status).not.toHaveClass(/error/);
+  // A visitor ticking takes as long as they take: the press keeps waiting.
+  await page.clock.fastForward(20000);
+  await expect(status).toHaveText('One quick tick below and your message is on its way.');
+  await page.evaluate(() => (window as any).__tick());
+  await expect(status).toContainText('Message accepted');
+  expect(tokens).toEqual(['ticked-token']);
+  await expect(page.locator('#contact [data-turnstile]')).not.toHaveClass(/is-interactive/);
+});
+
+test('a spam check script that arrives after its load timeout still mounts', async ({ page }) => {
+  await page.clock.install();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('https://challenges.cloudflare.com/**', async (route) => {
+    await gate;
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: "window.__mounts = 0; window.turnstile = { render(el, o) { window.__mounts++; setTimeout(() => o.callback('late-token'), 0); return 'late'; }, reset() {}, remove() {} }; window.__turnstileOnLoad();"
+    });
+  });
+  // The held script also holds the page's load event.
+  await page.goto('/index.html#contact', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#contact')).toHaveClass(/active-section/);
+  await page.clock.fastForward(9000);
+  release();
+  await expect.poll(() => page.evaluate(() => (window as any).__mounts)).toBe(1);
+  await expect(page.locator('#contact [data-status]')).toHaveText('');
+});

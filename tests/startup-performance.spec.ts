@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { fillContact } from './helpers/contact';
 
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, deviceScaleFactor: 2.625 });
 
@@ -354,7 +355,7 @@ test('contact loads and mounts verification once after opening', async ({ page }
   await expect(page.locator('#threshold')).toBeHidden();
   expect(loads).toBe(0);
   await page.evaluate(() => { location.hash = 'contact'; });
-  await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => (window as any).__verificationMounts)).toBe(1);
   await page.getByLabel('Your Name').fill('Test Visitor');
   await page.evaluate(() => { location.hash = 'about'; });
   await expect(page.locator('#about')).toHaveClass(/active-section/);
@@ -364,12 +365,18 @@ test('contact loads and mounts verification once after opening', async ({ page }
   expect(await page.evaluate(() => (window as any).__verificationMounts)).toBe(1);
 });
 
-test('a blocked verification script leaves direct email available', async ({ page }) => {
-  await page.route('https://challenges.cloudflare.com/**', route => route.abort());
+test('a blocked verification script is tried again on Send, then the draft goes by email', async ({ page }) => {
+  let loads = 0;
+  await page.route('https://challenges.cloudflare.com/**', route => { loads++; return route.abort(); });
   await page.goto('/index.html#contact');
-  await expect(page.locator('[data-status]')).toHaveText(/verification service unavailable/i);
-  await expect(page.locator('[data-status] a')).toHaveAttribute('href', 'mailto:aris@zounarakis.com');
-  await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
+  await expect.poll(() => loads).toBe(1);
+  await expect(page.locator('[data-status]')).toHaveText('');
+  await fillContact(page);
+  await page.getByRole('button', { name: /send message/i }).click();
+  await expect(page.locator('[data-status]')).toHaveText(/the spam check could not run in this browser\. your message is still here, and you can send it by email\./i);
+  await expect(page.locator('[data-status] a')).toHaveAttribute('href', /^mailto:aris@zounarakis\.com\?subject=Synthetic%20contact%20check&body=/);
+  expect(loads).toBe(2);
+  await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
 });
 
 test('the production stylesheet has no nested stylesheet requests', async ({ page }) => {

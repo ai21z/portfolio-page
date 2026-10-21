@@ -218,12 +218,16 @@ for (const { width, height } of VIEWPORTS) {
       test.skip(browserName !== 'chromium', 'Gradient rendering is shared; one engine is enough.');
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.setViewportSize({ width, height });
-      // Stay offline and deterministic: with Turnstile unreachable the form shows its error
-      // status, so the error ink is measured too.
+      // Stay offline and deterministic.
       await page.route('https://challenges.cloudflare.com/**', route => route.abort());
       await page.goto('/index.html#' + section);
       await expect(page.locator('html')).toHaveClass(/js-ready/);
       await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+      if (section === 'contact') {
+        // An empty Send writes the error ink: the status line and every field's message.
+        await page.locator('#contact-form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+        await expect(page.locator('#contact [data-status]')).toHaveClass(/error/);
+      }
       // Hover at every width: touch screens keep the hover style after a tap in the compact layout.
       const results = await measureSurface(page, testInfo, container, { hover: container.includes('.slab') });
       expect(results.length).toBeGreaterThan(0);

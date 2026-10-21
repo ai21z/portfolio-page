@@ -206,7 +206,7 @@ export function createContactHandler({ budget = BUDGET, makeLimiter = createLimi
         const hosts = (env.CONTACT_ALLOWED_HOSTNAMES || 'zounarakis.com').split(',').map(value => value.trim()).filter(Boolean);
         if (turnstile?.success !== true || turnstile.action !== 'contact_form' || !hosts.includes(turnstile.hostname)) {
           log('verification_rejected');
-          return reply(401, { state: 'not_sent', error: 'Verification failed or expired. Please complete the challenge again.' });
+          return reply(401, { state: 'not_sent', error: 'The spam check did not clear. Press Send to try again.' });
         }
       } catch {
         log('verification_unavailable');

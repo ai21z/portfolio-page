@@ -305,12 +305,6 @@ body:has(#contact.stage.active-section) .dish-labels {
   width: 100%;
 }
 
-.turnstile-placeholder {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.8rem;
-  color: var(--paper-ink);
-}
-
 /* Hidden in place: pushed 9999px out, the trap was turned by the page's tilt into a scrollable
    strip below the sheet, which ate the first wheel or touch gesture on Contact. */
 .honeypot-trap {

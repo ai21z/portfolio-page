@@ -20,6 +20,23 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
   });
 }
 
+// The jury found Send below the fold at 1440x900. Short laptop windows pair name and email on one
+// ruled line to keep it in view.
+for (const viewport of [
+  { width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 },
+  { width: 1280, height: 720 }, { width: 390, height: 844 }, { width: 360, height: 780 }
+]) {
+  test(`Send is in the first view of the contact sheet (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    await openContact(page, viewport);
+    const send = page.getByRole('button', { name: /send message/i });
+    // The sheet rises 30px into place as it opens.
+    await expect.poll(async () => {
+      const box = await send.boundingBox();
+      return box ? Math.round(box.y + box.height) : Infinity;
+    }).toBeLessThanOrEqual(viewport.height);
+  });
+}
+
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
   test(`with the spam check blocked, Contact opens calm and ready to send (${viewport.width}x${viewport.height})`, async ({ page }) => {
     await page.setViewportSize(viewport);
@@ -49,11 +66,11 @@ test('a check that asks for a tick is explained while Send waits, and sends once
   await fillContact(page);
   await page.getByRole('button', { name: /send message/i }).click();
   const status = page.locator('#contact [data-status]');
-  await expect(status).toHaveText('One quick tick below and your message is on its way.');
+  await expect(status).toHaveText('Tick the box and your message is on its way.');
   await expect(status).not.toHaveClass(/error/);
   // A visitor ticking takes as long as they take: the press keeps waiting.
   await page.clock.fastForward(20000);
-  await expect(status).toHaveText('One quick tick below and your message is on its way.');
+  await expect(status).toHaveText('Tick the box and your message is on its way.');
   await page.evaluate(() => (window as any).__tick());
   await expect(status).toContainText('Message accepted');
   expect(tokens).toEqual(['ticked-token']);

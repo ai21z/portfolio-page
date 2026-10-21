@@ -138,7 +138,9 @@ class NotebookContact {
     if (!this.tokenWaiter) return;
     if (on) {
       window.clearTimeout(this.tokenWaiter.timer);
-      this.showStatus('One quick tick below and your message is on its way.', 'info');
+      this.showStatus('Tick the box and your message is on its way.', 'info');
+      // The box opens just above Send: bring both into view once it has its size.
+      window.requestAnimationFrame(() => this.submitBtn?.scrollIntoView({ block: 'nearest' }));
     } else {
       this.armTokenWaiter();
     }

@@ -1101,8 +1101,6 @@
         <p class="notebook-subheader notebook-quote">&ldquo;Alone we can do so little, together we can do so much.&rdquo;</p>
         <p class="notebook-cite">Helen Keller</p>
 
-        <div class="form-status" data-status aria-live="polite"></div>
-
         <div class="notebook-field">
           <label for="name" class="notebook-label">Your Name</label>
           <input
@@ -1173,9 +1171,10 @@
           <input type="text" id="nickname" name="nickname" tabindex="-1" autocomplete="off" />
         </div>
 
-        <!-- Form Controls: Turnstile + Submit -->
+        <!-- Form Controls: Turnstile, status and Submit -->
         <div class="form-controls">
           <div class="turnstile-field" data-turnstile data-sitekey="0x4AAAAAAB_wPDpP2-KNVfsi"></div>
+          <div class="form-status" data-status aria-live="polite"></div>
           <button type="submit" class="notebook-submit" data-submit>
             <span class="submit-label" data-submit-label>Send Message</span>
             <span class="notebook-spinner" data-spinner aria-hidden="true"></span>

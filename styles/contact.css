@@ -747,8 +747,12 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 
   .contact-close {
-    top: max(12px, env(safe-area-inset-top, 12px));
-    right: max(12px, env(safe-area-inset-right, 12px));
+    /* Rides with the sheet in the corner torn out for it, so it never lies on the paper or over
+       the text as the page scrolls. Its centre is 18px in from the sheet's right edge and 18px
+       below its top, which ties it to #contact's padding above. */
+    position: absolute;
+    top: 12px;
+    right: calc(clamp(1rem, 3vw, 1.5rem) - 4px);
     width: 44px; /* Maintain 44px minimum touch target */
     height: 44px;
     font-size: 18px;
@@ -764,6 +768,24 @@ body:has(#contact.stage.active-section) .dish-labels {
     padding: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)) clamp(1rem, 4vw, 1.5rem) var(--row) clamp(2.5rem, 8vw, 3.5rem);
     /* Slightly reduce rotation on mobile for better alignment */
     transform: rotate(-0.3deg);
+  }
+
+  /* The torn edge with a bite out of the top-right corner, around the close button */
+  .notebook-page,
+  .notebook-page::after {
+    clip-path: polygon(
+      0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%,
+      25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%,
+      65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, max(80%, calc(100% - 64px)) 0.8%,
+      calc(100% - 44px) 0.6%, calc(100% - 45.2px) 4.2px, calc(100% - 45.9px) 10px,
+      calc(100% - 49.9px) 15.8px, calc(100% - 47.1px) 22.6px, calc(100% - 47.2px) 29.8px,
+      calc(100% - 42px) 34.2px, calc(100% - 40.2px) 41.8px, calc(100% - 33.2px) 43.3px,
+      calc(100% - 27.6px) 47.5px, calc(100% - 20.5px) 46.9px, calc(100% - 14.1px) 49.8px,
+      calc(100% - 7.9px) 45.7px, calc(100% - 2.5px) 44.8px, 100% 42.5px,
+      100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+      75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+      35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+    );
   }
 
   .notebook-page::before {
@@ -855,7 +877,7 @@ body:has(#contact.stage.active-section) .dish-labels {
   @media (max-height: 600px) {
     .wax-seal {
       left: auto;
-      right: 20px;
+      right: 64px; /* Clear of the close button's corner */
       top: 10px;
       width: 40px;
       height: 40px;

@@ -191,3 +191,49 @@ test('a spam check script that arrives after its load timeout still mounts', asy
   await expect.poll(() => page.evaluate(() => (window as any).__mounts)).toBe(1);
   await expect(page.locator('#contact [data-status]')).toHaveText('');
 });
+
+// On phones and tablets the close button sits in a corner torn out of the sheet and scrolls with
+// it, so at no scroll position does it lie on the paper, a line of text or the seal.
+for (const viewport of [
+  { width: 390, height: 844 }, { width: 360, height: 780 }, { width: 375, height: 667 },
+  { width: 320, height: 568 }, { width: 844, height: 390 }, { width: 768, height: 1024 }
+]) {
+  test(`the phone close button never lies on the sheet (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    await openContact(page, viewport);
+    const settle = () => page.evaluate(() => Promise.all([...document.querySelectorAll('#contact .notebook-page, #contact .notebook-page *')]
+      .flatMap((el) => el.getAnimations())
+      .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+      .map((animation) => animation.finished.catch(() => undefined))));
+    const paperUnderClose = () => page.evaluate(() => {
+      const close = document.querySelector<HTMLElement>('#contact .contact-close')!;
+      const scrollers = [document.documentElement, document.body];
+      const end = Math.max(...scrollers.map((el) => el.scrollHeight - el.clientHeight));
+      const hits: string[] = [];
+      close.style.visibility = 'hidden';
+      for (let at = 0; at <= end + 4; at += 4) {
+        for (const el of scrollers) el.scrollTop = Math.min(at, end);
+        // Sampled with the button hidden, over its 44px disc.
+        const disc = close.getBoundingClientRect();
+        const cx = disc.left + disc.width / 2;
+        const cy = disc.top + disc.height / 2;
+        for (let x = -22; x <= 22; x += 2) {
+          for (let y = -22; y <= 22; y += 2) {
+            if (x * x + y * y > 22 * 22) continue;
+            if (document.elementFromPoint(cx + x, cy + y)?.closest('.notebook-page, .wax-seal')) hits.push(`${cx + x},${cy + y} at scroll ${Math.min(at, end)}`);
+          }
+        }
+      }
+      close.style.visibility = '';
+      for (const el of scrollers) el.scrollTop = 0;
+      return hits;
+    });
+    await settle();
+    expect(await paperUnderClose()).toEqual([]);
+    // With every field error showing, the sheet is longer and the page scrolls further.
+    await page.locator('#contact-form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+    await expect(page.locator('#contact .validation-msg:not(:empty)')).toHaveCount(4);
+    await settle();
+    expect(await paperUnderClose()).toEqual([]);
+    await expect(page.locator('#contact .contact-close')).toBeVisible();
+  });
+}

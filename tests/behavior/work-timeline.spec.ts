@@ -208,11 +208,15 @@ test.describe('Work career rail', () => {
 });
 
 // On touch screens base.css grows every button to a 44px target, so the toggle bar is 52px tall.
-// The bar, the close beside it and the legend below must stay apart, also when the page is zoomed.
+// The bar, the close beside it and the legend below must stay apart, also when the page is zoomed
+// (206 and 195 are 360 and 390 phones at 175% and 200%, where the toggle takes its own row).
 test.describe('Work top bar on a touch screen', () => {
   test.use({ hasTouch: true });
 
-  for (const viewport of [MOBILE, { width: 360, height: 780 }, { width: 280, height: 606 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
+  for (const viewport of [
+    MOBILE, { width: 360, height: 780 }, { width: 280, height: 606 }, { width: 206, height: 446 }, { width: 195, height: 422 },
+    { width: 844, height: 390 }, { width: 568, height: 320 }, { width: 768, height: 1024 }
+  ]) {
     test(`the toggle, the close and the legend keep apart (${viewport.width}x${viewport.height})`, async ({ page, browserName }) => {
       await routeTurnstile(page);
       await gotoWork(page, viewport);
@@ -230,6 +234,14 @@ test.describe('Work top bar on a touch screen', () => {
       for (const [name, rect] of [['toggle', toggle], ['legend', legend]] as const) {
         const gap = Math.hypot(Math.max(rect.left - cx, 0, cx - rect.right), Math.max(rect.top - cy, 0, cy - rect.bottom)) - close.width / 2;
         expect(gap, `close to ${name}`).toBeGreaterThanOrEqual(4);
+      }
+      // Short landscape phones lay the key in one row where the 90vmin column holds it, so the
+      // timeline keeps room for an entry or more.
+      if (viewport.height <= 520 && viewport.width > viewport.height) {
+        const rows = await page.$$eval('.work-rail-key-row', (els) => new Set(els.map((el) => Math.round(el.getBoundingClientRect().top))).size);
+        if (viewport.height * 0.9 >= 340) expect(rows, 'legend rows').toBe(1);
+        const entry = (await page.locator('.rail-node').first().boundingBox())!.height;
+        expect((await page.locator('.work-rail-viewport').boundingBox())!.height, 'timeline height').toBeGreaterThanOrEqual(entry);
       }
       // The buttons are still full touch targets, and a tap on each reaches it.
       for (const button of await page.locator('.work-view-btn').all()) {

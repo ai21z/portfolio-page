@@ -635,9 +635,52 @@
     }
   }
 
-  /* Short landscape phones: the key in one row gives back more height than the bar takes */
-  @media (max-height: 520px) and (orientation: landscape) {
+  /* Too narrow for the toggle beside the close (page zoom, large default text). The labels are about
+     5.9em and the bar adds 52px, so it stops fitting near 7.25em + 126px and takes its own row under
+     the close. */
+  @media (max-width: calc(7.25em + 126px)) {
+    .work-view-toggle {
+      top: calc(var(--work-bar-top) + var(--work-bar-h) + 8px);
+    }
+
+    .work-rail {
+      padding-top: calc(var(--work-bar-top) + 2 * var(--work-bar-h) + 8px + var(--work-bar-gap));
+    }
+
+    .work-auto-writer {
+      top: calc(var(--work-bar-top) + 2 * var(--work-bar-h) + 8px + var(--work-bar-gap) - 36px);
+    }
+
+    /* Win back most of the second row */
+    .work-rail-sub {
+      display: none;
+    }
+
     .work-rail-key {
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 14px;
+      row-gap: 6px;
+    }
+
+    .work-rail-key-row {
+      grid-template-columns: 16px auto;
+      gap: 8px;
+    }
+  }
+
+  /* Short landscape phones: the key in one row and the sort modes beside the title give back more
+     height than the bar takes, so at least one entry shows */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .work-rail-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 12px;
+    }
+
+    .work-rail-key {
+      flex: 0 0 100%;
       flex-direction: row;
       flex-wrap: wrap;
       column-gap: 18px;
@@ -648,6 +691,18 @@
     .work-rail-key-row {
       grid-template-columns: 16px auto;
       gap: 8px;
+    }
+
+    .work-rail-title {
+      flex: 1 1 auto;
+    }
+
+    .work-rail-sub {
+      display: none;
+    }
+
+    .work-rail-modes {
+      margin-top: 0;
     }
   }
 }

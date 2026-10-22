@@ -27,6 +27,13 @@
 .ring {
   position: absolute;
   inset: 0;
+  transition: opacity 200ms ease;
+}
+
+/* An opened card does not dim the section, so the ring recedes instead of leaving cut phrases
+   around the card. */
+body.has-paper-open-global .altar-screen .ring {
+  opacity: 0.18;
 }
 
 .halo {
@@ -42,11 +49,28 @@
   stroke-width: 0.8;
 }
 
+/* The ring title is set as four phrases, one in each gap between the cards, so no card covers a
+   word. Each phrase is centred on the bottom of the orbit and turned around the ring centre to its
+   gap: --at is the gap centre in degrees clockwise from 12 o'clock. The bottom phrase runs on a twin
+   orbit the other way, so it reads upright. Units are % of the altar. */
 .ring-text {
-  font: 2.4px/1 system-ui, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Arial;
-  letter-spacing: 0.6px;
+  font: 2px/1 system-ui, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Arial;
+  letter-spacing: 0.35px;
   fill: rgba(232,232,234,0.48);
+  text-anchor: middle;
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  transform: rotate(calc(var(--at, 180deg) - 180deg));
 }
+
+.ring-text--top { --at: 0deg; }
+.ring-text--right { --at: 106deg; }
+.ring-text--bottom { --at: 180deg; }
+.ring-text--left { --at: 277deg; }
+#skills .ring-text--right { --at: 90deg; }
+#skills .ring-text--left { --at: 260deg; }
+/* The tightest fit: 25 units in a 27 unit gap on short windows. */
+#skills .ring-text--top { letter-spacing: 0.25px; }
 
 .filament {
   display: none; /* Hide radial filaments for clean look */
@@ -587,6 +611,15 @@
   .slab p, .slab li { font-size: clamp(10px, 3.5cqi, 14px); }
   .kv li { font-size: clamp(9.5px, 3.2cqi, 13px); }
   .tech-stack { font-size: clamp(9.5px, 3.3cqi, 13px); }
+}
+
+/* Short desktop windows: the cards reach out into the side room, inner edges unchanged, so they
+   run shorter and the gaps beside the lens hold the ring phrases. */
+@media (min-width: 901px) and (max-height: 820px) and (pointer: fine) {
+  .slab { width: 46%; }
+  .slab-about, .slab-vitals, .slab-systems, .slab-restoflife { left: -8%; }
+  .slab-expertise, .slab-paramour, .slab-interface, .slab-scientific { right: -8%; }
+  #about .ring-text--right { --at: 108deg; }
 }
 
 /* Pencil sketch style tags */

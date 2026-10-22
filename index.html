@@ -654,6 +654,8 @@
         <defs>
           <!-- Orbital path for spores & curved title -->
           <path id="orbit" d="M50,5 A45,45 0 1,1 49.99,5" />
+          <!-- The same orbit run the other way, a little wider, so the bottom phrase reads upright -->
+          <path id="orbit-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
           <!-- Mycelial filaments -->
           <path id="hypha1" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
@@ -663,13 +665,6 @@
         <circle cx="50" cy="50" r="48" class="halo"/>
         <!-- Ring stroke -->
         <circle cx="50" cy="50" r="45" class="ring-stroke"/>
-
-        <!-- Title along the orbit -->
-        <text class="ring-text">
-          <textPath href="#orbit" startOffset="2%">
-            • ABOUT - ARIS ZOUNARAKIS - PLAIN, RELIABLE SOFTWARE - TOOLS YOU CAN TRUST •
-          </textPath>
-        </text>
 
         <!-- Hyphae filaments -->
         <use class="filament" href="#hypha1"/>
@@ -691,6 +686,13 @@
             <mpath href="#orbit"/>
           </animateMotion>
         </circle>
+
+        <!-- Title along the orbit, one phrase in each gap between the cards (placed in altar.css),
+             above the spores so they pass under the letters -->
+        <text class="ring-text ring-text--top"><textPath href="#orbit" startOffset="50%">• ABOUT •</textPath></text>
+        <text class="ring-text ring-text--right"><textPath href="#orbit" startOffset="50%">ARIS ZOUNARAKIS</textPath></text>
+        <text class="ring-text ring-text--bottom"><textPath href="#orbit-under" startOffset="50%">PLAIN, RELIABLE SOFTWARE</textPath></text>
+        <text class="ring-text ring-text--left"><textPath href="#orbit" startOffset="50%">TOOLS YOU CAN TRUST</textPath></text>
       </svg>
 
       <div class="core" aria-hidden="true">
@@ -757,18 +759,13 @@
       <svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs>
           <path id="orbit-skills" d="M50,5 A45,45 0 1,1 49.99,5" />
+          <path id="orbit-skills-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
           <path id="hypha1-skills" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2-skills" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
         </defs>
 
         <circle cx="50" cy="50" r="48" class="halo"/>
         <circle cx="50" cy="50" r="45" class="ring-stroke"/>
-
-        <text class="ring-text">
-          <textPath href="#orbit-skills" startOffset="2%">
-            • SKILLS - TECH STACK - SYSTEMS THINKING - USER INTERFACE - SCIENTIFIC RIGOR •
-          </textPath>
-        </text>
 
         <use class="filament" href="#hypha1-skills"/>
         <use class="filament thin" href="#hypha2-skills"/>
@@ -788,6 +785,11 @@
             <mpath href="#orbit-skills"/>
           </animateMotion>
         </circle>
+
+        <text class="ring-text ring-text--top"><textPath href="#orbit-skills" startOffset="50%">SKILLS - TECH STACK</textPath></text>
+        <text class="ring-text ring-text--right"><textPath href="#orbit-skills" startOffset="50%">SYSTEMS THINKING</textPath></text>
+        <text class="ring-text ring-text--bottom"><textPath href="#orbit-skills-under" startOffset="50%">USER INTERFACE</textPath></text>
+        <text class="ring-text ring-text--left"><textPath href="#orbit-skills" startOffset="50%">SCIENTIFIC RIGOR</textPath></text>
       </svg>
 
       <div class="core" aria-hidden="true">

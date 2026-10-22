@@ -337,7 +337,7 @@ body.has-paper-open-global .altar-screen .ring {
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.22),
     inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
-    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.2);
+    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.14);
   filter:
     drop-shadow(0 calc(10px * var(--k)) calc(16px * var(--k)) rgba(0, 0, 0, 0.5))
     drop-shadow(0 calc(2px * var(--k)) calc(4px * var(--k)) rgba(0, 0, 0, 0.45));
@@ -433,8 +433,8 @@ body.has-paper-open-global .altar-screen .ring {
   transform: translateY(calc(-6px * var(--k))) rotate(calc(var(--rot) * 0.4)) scale(1.035);
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.3),
-    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.35),
-    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.25);
+    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
+    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.14);
   filter:
     drop-shadow(0 calc(22px * var(--k)) calc(34px * var(--k)) rgba(0, 0, 0, 0.6))
     drop-shadow(0 calc(4px * var(--k)) calc(10px * var(--k)) rgba(0, 0, 0, 0.5))
@@ -446,7 +446,7 @@ body.has-paper-open-global .altar-screen .ring {
   box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.5),
     inset 0 36px 120px rgba(101, 67, 33, 0.3),
-    inset -20px 0 40px rgba(101, 67, 33, 0.2);
+    inset -20px 0 40px rgba(101, 67, 33, 0.14);
   pointer-events: none;
 }
 

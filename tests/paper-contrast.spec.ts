@@ -193,7 +193,7 @@ async function measureSurface(page: Page, testInfo: TestInfo, container: string,
     await settle(page);
     all.push(...await measure(page, await collectRuns(page, container, index)));
     if (hover) {
-      // A desktop reader usually has the pointer on the card being read, and hover darkens its edges.
+      // A desktop reader usually has the pointer on the card being read, so measure the lifted card too.
       await surface.hover();
       await settle(page);
       const hovered = await measure(page, await collectRuns(page, container, index));

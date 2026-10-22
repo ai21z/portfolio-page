@@ -210,8 +210,10 @@
   <!-- Network Navigation Nodes (rendered via JS with smart placement) -->
   <div id="network-nav" role="navigation" aria-label="Main navigation"></div>
 
+  <!-- The six views share one main landmark. Only the active view is reachable: the others are inert. -->
+  <main>
   <!-- SECTION: INTRO -->
-  <main id="main" class="stage active-section" data-section="intro" aria-label="Intro" tabindex="-1">
+  <section id="main" class="stage active-section" data-section="intro" aria-label="Intro" tabindex="-1">
     <!-- Ambient photographic fungus (very dim) -->
     <div class="fungi-ambient" aria-hidden="true"></div>
 
@@ -636,10 +638,11 @@
       <!-- Portrait particle effect (desktop only) -->
       <script type="module" src="./js/portrait-particles.js?v=20261019"></script>
     </section>
-  </main>
+  </section>
 
   <!-- SECTION: ABOUT -->
   <section id="about" class="stage altar-screen" data-section="about" aria-label="About" tabindex="-1">
+    <h2 class="sr-only">About</h2>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -705,11 +708,11 @@
 
       <!-- THREE NECRO-SLABS (now treated as "papers") -->
       <article class="slab slab-about paper" data-paper aria-label="About text" tabindex="0">
-        <h2>Background</h2>
+        <h3>Background</h3>
         <p>Software engineer (M.Sc.). I build reliable systems, Java/Spring services and local-first tools for LLMs. Comfortable in ambiguity, allergic to heroics, big on documentation.</p>
       </article>
 
-      <section class="slab slab-expertise paper" data-paper aria-label="What I value" tabindex="0">
+      <article class="slab slab-expertise paper" data-paper aria-label="What I value" tabindex="0">
         <h3>What I value</h3>
         <ul class="kv about-values">
           <li><span>Clarity</span><span>Simple interfaces, explicit contracts.</span></li>
@@ -723,14 +726,14 @@
           <li><strong>Talos</strong>: local-first workspace operator for governed developer tasks.</li>
           <li><strong>TrueRolls</strong>: verifiable dice with signed drand receipts and documented limits.</li>
         </ul>
-      </section>
+      </article>
 
       <article class="slab slab-paramour paper" data-paper aria-label="Art's paramour" tabindex="0">
-        <h2>Art's paramour</h2>
+        <h3>Art's paramour</h3>
         <p>Moved by music, image, and story, with a lifelong commitment to the craft. I play, I learn, I feel it in my chest, and I let it change me.</p>
       </article>
 
-      <aside class="slab slab-vitals paper" data-paper aria-label="Contact" tabindex="0">
+      <article class="slab slab-vitals paper" data-paper aria-label="Contact" tabindex="0">
         <h3>Contact</h3>
         <p>Best way to reach me is email (<a href="mailto:aris@zounarakis.com">aris@zounarakis.com</a>).</p>
         <h3 style="margin-top:16px;">Now</h3>
@@ -740,12 +743,13 @@
           <li>Building <strong>Talos</strong> (local workspace operator) and <strong>TrueRolls</strong>.</li>
           <li>Enjoying Barcelona.</li>
         </ul>
-      </aside>
+      </article>
     </div>
   </section>
 
   <!-- SECTION: SKILLS -->
   <section id="skills" class="stage altar-screen" data-section="skills" aria-label="Skills" tabindex="-1">
+    <h2 class="sr-only">Skills</h2>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -802,8 +806,8 @@
 
       <!-- THREE SKILL CARDS -->
       <article class="slab slab-systems paper" data-paper aria-label="Systems Thinking" tabindex="0">
-        <h2>Systems Thinking</h2>
-        <h3>Backend & Infrastructure</h3>
+        <h3>Systems Thinking</h3>
+        <h4>Backend & Infrastructure</h4>
         <ul class="tech-stack">
           <li>Java</li>
           <li>Spring Framework</li>
@@ -820,8 +824,8 @@
       </article>
 
       <article class="slab slab-interface paper" data-paper aria-label="User Interface" tabindex="0">
-        <h2>User Interface</h2>
-        <h3>Frontend & UX</h3>
+        <h3>User Interface</h3>
+        <h4>Frontend & UX</h4>
         <ul class="tech-stack">
           <li>React</li>
           <li>Angular</li>
@@ -835,8 +839,8 @@
       </article>
 
       <article class="slab slab-scientific paper" data-paper aria-label="Scientific Rigor" tabindex="0">
-        <h2>Scientific Rigor</h2>
-        <h3>Environmental Research & Analysis</h3>
+        <h3>Scientific Rigor</h3>
+        <h4>Environmental Research & Analysis</h4>
         <ul class="tech-stack">
           <li>Python</li>
           <li>Data Analysis & Modeling</li>
@@ -848,7 +852,7 @@
       </article>
 
       <article class="slab slab-restoflife paper" data-paper aria-label="The rest of my life" tabindex="0">
-        <h2>The rest of my life</h2>
+        <h3>The rest of my life</h3>
         <ul class="tech-stack">
           <li>Guitar</li>
           <li>Piano</li>
@@ -863,6 +867,7 @@
 
   <!-- SECTION: BLOG (Mycelium Network - Petri Dish) -->
   <section id="blog" class="stage blog-screen blog-stage panel-screen" data-section="blog" data-mode="map" aria-label="Blog" tabindex="-1">
+    <h2 class="sr-only">Blog</h2>
     <button class="blog-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -1060,6 +1065,7 @@
 
   <!-- SECTION: WORK (Mycelial Globe) -->
   <section id="work" class="stage work-globe-screen panel-screen" data-section="work" aria-label="Work Experience" tabindex="-1">
+    <h2 class="sr-only">Work</h2>
     <button class="work-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -1199,6 +1205,7 @@
       </form>
     </div>
   </section>
+  </main>
 
 
   <!-- Global backdrop for note focus (full-viewport, not a rectangle) -->

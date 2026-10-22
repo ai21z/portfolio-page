@@ -206,3 +206,39 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.work-card-backdrop')).toBeHidden();
   });
 });
+
+// On touch screens base.css grows every button to a 44px target, so the toggle bar is 52px tall.
+// The bar, the close beside it and the legend below must stay apart, also when the page is zoomed.
+test.describe('Work top bar on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  for (const viewport of [MOBILE, { width: 360, height: 780 }, { width: 280, height: 606 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
+    test(`the toggle, the close and the legend keep apart (${viewport.width}x${viewport.height})`, async ({ page, browserName }) => {
+      await routeTurnstile(page);
+      await gotoWork(page, viewport);
+      await page.waitForSelector('.rail-node');
+      if (browserName !== 'firefox') expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
+      const boxes = await page.evaluate(() => {
+        const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().toJSON();
+        return { toggle: box('.work-view-toggle'), close: box('.work-close'), legend: box('.work-rail-key') };
+      });
+      const { toggle, close, legend } = boxes;
+      expect(toggle.bottom + 8, 'toggle above the legend').toBeLessThanOrEqual(legend.top);
+      // The close is a 44px disc: its edge stays at least 4px off the toggle and the legend.
+      const cx = close.left + close.width / 2;
+      const cy = close.top + close.height / 2;
+      for (const [name, rect] of [['toggle', toggle], ['legend', legend]] as const) {
+        const gap = Math.hypot(Math.max(rect.left - cx, 0, cx - rect.right), Math.max(rect.top - cy, 0, cy - rect.bottom)) - close.width / 2;
+        expect(gap, `close to ${name}`).toBeGreaterThanOrEqual(4);
+      }
+      // The buttons are still full touch targets, and a tap on each reaches it.
+      for (const button of await page.locator('.work-view-btn').all()) {
+        expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+      await page.locator('.work-view-btn[data-view="globe"]').tap();
+      await expect(page.locator('#work')).toHaveClass(/work-view-globe/);
+      await page.locator('.work-view-btn[data-view="timeline"]').tap();
+      await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
+    });
+  }
+});

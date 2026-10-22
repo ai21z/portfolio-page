@@ -546,7 +546,8 @@
     display: flex;
     gap: 4px;
     position: absolute;
-    top: 14px;
+    top: var(--work-bar-top);
+    height: var(--work-bar-h);
     left: 50%;
     transform: translateX(-50%);
     z-index: 30;
@@ -567,7 +568,9 @@
     background: none;
     border: 0;
     border-radius: 3px;
-    padding: 6px 15px;
+    /* The bar sets the 44px target, so base.css's touch rule for buttons cannot grow it */
+    min-height: 0;
+    padding: 0 15px;
     cursor: pointer;
   }
 
@@ -581,7 +584,7 @@
     position: absolute;
     inset: 0;
     width: auto;
-    padding: 56px 16px 10px;
+    padding: calc(var(--work-bar-top) + var(--work-bar-h) + var(--work-bar-gap)) 16px 10px;
     background: #07090a;
     z-index: 20;
     animation: none;
@@ -617,5 +620,34 @@
 
   #work.work-view-timeline .work-auto-writer {
     display: none;
+  }
+
+  /* Narrow or zoomed: the centred bar no longer fits beside the close, so it starts at the legend's edge */
+  @media (max-width: 19.5em) {
+    .work-view-toggle {
+      left: calc((100% - min(100%, 90vmin)) / 2 + 16px);
+      transform: none;
+    }
+
+    .work-view-btn {
+      padding-inline: 10px;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  /* Short landscape phones: the key in one row gives back more height than the bar takes */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .work-rail-key {
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 18px;
+      row-gap: 6px;
+      padding: 8px 12px;
+    }
+
+    .work-rail-key-row {
+      grid-template-columns: 16px auto;
+      gap: 8px;
+    }
   }
 }

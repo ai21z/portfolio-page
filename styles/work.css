@@ -403,8 +403,16 @@
     margin: auto;
   }
 
+  /* One top bar for the Timeline / Globe toggle and the close (styles/work-timeline.css). Keep
+     the bar at least 52px, the 44px buttons plus 3px padding and 1px border, top and bottom. */
+  #work {
+    --work-bar-top: max(14px, env(safe-area-inset-top, 0px));
+    --work-bar-h: 52px;
+    --work-bar-gap: 14px;
+  }
+
   .work-close {
-    top: max(1rem, env(safe-area-inset-top, 1rem));
+    top: calc(var(--work-bar-top) + (var(--work-bar-h) - 44px) / 2);
     right: max(1rem, env(safe-area-inset-right, 1rem));
     min-width: 44px;
     min-height: 44px;

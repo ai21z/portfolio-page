@@ -88,7 +88,7 @@ test.describe('Work career rail', () => {
 
     const ids = await page.locator('.rail-node').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).dataset.id));
-    expect(ids.length).toBe(18);
+    expect(ids.length).toBe(16);
     expect(ids[0]).toBe('adp');
     expect(ids[ids.length - 1]).toBe('beng');
 
@@ -108,8 +108,8 @@ test.describe('Work career rail', () => {
     await expect(note).toContainText('Lyric HCM');
     await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
 
-    await page.locator('.rail-node[data-id="cert-oci-foundations"] .rail-dot-btn').hover();
-    await expect(note.locator('.work-note-title')).toContainText('Oracle Cloud Infrastructure');
+    await page.locator('.rail-node[data-id="cert-jee8"] .rail-dot-btn').hover();
+    await expect(note.locator('.work-note-title')).toContainText('Java Enterprise Edition 8');
     await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
   });
 
@@ -146,7 +146,7 @@ test.describe('Work career rail', () => {
     expect(await select('netcompany')).toEqual({ id: 'netcompany', target: { kind: 'location', id: 'greece' } });
     expect(await select('talos')).toEqual({ id: 'talos', target: { kind: 'moon', id: 'talos-cli' } });
     expect(await select('true-rolls')).toEqual({ id: 'true-rolls', target: { kind: 'moon', id: 'true-rolls' } });
-    expect(await select('cert-oci-foundations')).toBeNull();
+    expect(await select('cert-jee8')).toBeNull();
 
     expect(pageErrors).toEqual([]);
   });

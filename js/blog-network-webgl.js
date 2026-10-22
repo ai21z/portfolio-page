@@ -774,7 +774,9 @@ async function initBlogNetwork(){
     }
     frag.appendChild(fringe);
 
-    defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 156) }));
+    // 40 degrees, or longer on a small dish so the whole caption (about 260px at most) fits. It starts
+    // at 116, clear of the ember at 112.
+    defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 116 + Math.max(40, 260 / (r + 20) * 180 / Math.PI)) }));
     const tagText = el('text', { class: 'dish-tag-text' });
     const tp = el('textPath', { href: '#dishTagArc', startOffset: '50%', 'text-anchor': 'middle' });
     tp.textContent = 'CULTURE No. AZ-2026 · incept vi.2026';
@@ -838,7 +840,7 @@ async function initBlogNetwork(){
     }
 
     svg.appendChild(frag);
-    return { cx, cy, r, natural };
+    return { cx, cy, r, natural, w: wCss, h: hCss };
   }
 
   // Update dish clipping uniforms (CSS pixel space, not buffer pixels)
@@ -881,7 +883,8 @@ async function initBlogNetwork(){
       {id:'codex',        midDeg:  90, text:'CODEX'},        // South (bottom)
     ];
 
-    const w = root.clientWidth, h = root.clientHeight;
+    // The dish's frame, not the root's: a category hides the root, and its size then reads 0.
+    const w = dish.w, h = dish.h;
     const cx = dish.cx, cy = dish.cy;
     const outerR = dish.r + 48; // Position labels 48px OUTSIDE the rim
 
@@ -893,7 +896,8 @@ async function initBlogNetwork(){
 
     for (const c of cfg) {
       const arcId = `arc-${c.id}`;
-      const span = 70 * Math.PI/180;  // Wider arc for bigger text
+      // 70 degrees, or wider on a small dish so the whole word fits (24px a letter with its spacing)
+      const span = Math.max(70, (c.text.length * 24) / outerR * 180 / Math.PI) * Math.PI/180;
       const a0 = (c.midDeg*Math.PI/180) - span/2;
       const a1 = (c.midDeg*Math.PI/180) + span/2;
 

@@ -480,6 +480,14 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
+/* The section rail sits at top 64px here (navigation.css). Keep the tooltip left of it and right of CRAFT. */
+@media (max-width: 1024px) and (min-width: 901px) and (pointer: fine) {
+  .blog-hub-tooltip {
+    right: 82px;
+    max-width: min(280px, calc(50vw - 262px));
+  }
+}
+
 .blog-hub-tooltip.visible {
   opacity: 1;
   transform: translateY(0);

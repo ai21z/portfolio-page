@@ -53,7 +53,7 @@ export const WORK_LOCATIONS = {
         responsibilities: [
           'AI model evaluation for code generation, reasoning and content quality',
           'Prompt, rubric and acceptance-test design for coding, refactoring & debugging tasks',
-          'Design and development of local-first tools & prototypes (e.g. Talos, TrueRolls)',
+          'Design and development of developer tools & prototypes (e.g. Talos, TrueRolls)',
           'Experiments with governed local AI workflows, workspace context and developer productivity tooling'
         ]
       }

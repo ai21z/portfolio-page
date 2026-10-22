@@ -9,6 +9,21 @@ if (!window.__BLOG_NETWORK_VERSION) {
 
 const PETRI_K = 0.42;
 
+// Rim labels sit on r + 48 and stand up to 18 px (Menlo caps). Keep that ring clear of the
+// Field Notes column, the section rail and the viewport edges, centred whenever there is room.
+const RIM_LABEL_REACH = 48 + 18 + 12;
+function dishFit(wCss, hCss) {
+  const cs = getComputedStyle(document.getElementById('blog-map') || document.documentElement);
+  const left = parseFloat(cs.getPropertyValue('--dish-clear-left')) || 0;
+  const right = parseFloat(cs.getPropertyValue('--dish-clear-right')) || 0;
+  const natural = Math.floor(Math.min(wCss, hCss) * PETRI_K);
+  const r = Math.max(120, Math.min(natural,
+    Math.floor((wCss - left - right) / 2 - RIM_LABEL_REACH),
+    Math.floor(hCss / 2 - RIM_LABEL_REACH)));
+  const cx = Math.min(Math.max(wCss / 2, left + r + RIM_LABEL_REACH), wCss - right - r - RIM_LABEL_REACH);
+  return { cx, r, natural };
+}
+
 const PAL = {
   ABYSS: [0.031, 0.035, 0.039],     // near-black abyss floor (9b)
   BRANCH1: [0.25, 0.35, 0.28],      // mossy green
@@ -689,8 +704,8 @@ async function initBlogNetwork(){
     svg.setAttribute('viewBox', `0 0 ${wCss} ${hCss}`);
     svg.innerHTML = '';
 
-    const cx = wCss / 2, cy = hCss / 2;
-    const r = Math.floor(Math.min(wCss, hCss) * PETRI_K); // Draw the glass outside the agar radius.
+    const cy = hCss / 2;
+    const { cx, r, natural } = dishFit(wCss, hCss); // Draw the glass outside the agar radius.
     const NS = 'http://www.w3.org/2000/svg';
     const el = (tag, attrs) => {
       const n = document.createElementNS(NS, tag);
@@ -823,7 +838,7 @@ async function initBlogNetwork(){
     }
 
     svg.appendChild(frag);
-    return { cx, cy, r };
+    return { cx, cy, r, natural };
   }
 
   // Update dish clipping uniforms (CSS pixel space, not buffer pixels)
@@ -862,8 +877,8 @@ async function initBlogNetwork(){
     const cfg = [
       {id:'craft',        midDeg: 270, text:'CRAFT'},        // North (top)
       {id:'cosmos',       midDeg:   0, text:'COSMOS'},       // East (right)
-      {id:'convergence',  midDeg: 180, text:'CONVERGENCE'},  // South (bottom)
-      {id:'codex',        midDeg:  90, text:'CODEX'},        // West (left)
+      {id:'convergence',  midDeg: 180, text:'CONVERGENCE'},  // West (left)
+      {id:'codex',        midDeg:  90, text:'CODEX'},        // South (bottom)
     ];
 
     const w = root.clientWidth, h = root.clientHeight;
@@ -1103,17 +1118,19 @@ async function initBlogNetwork(){
       gl.viewport(0, 0, w, h);
     }
 
-    // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x)
-    baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H);
-    const scale = baseScale * userZoom;
-    const offX = (cssW - VIEW.W*scale)/2;
-    const offY = (cssH - VIEW.H*scale)/2;
-
     // Build Petri dish and curved labels
     currentDish = buildDish({wCss: cssW, hCss: cssH});
     updateDishUniforms(currentDish);
     buildLabels(currentDish);
     updateZoomIndicator();   // buildLabels rebuilds the label -> refresh it to the real zoom
+
+    // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x). The network
+    // shrinks and moves with the dish when the dish is fitted between the legend and the rail.
+    const dishCx = currentDish ? currentDish.cx : cssW / 2;
+    baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H) * (currentDish ? currentDish.r / currentDish.natural : 1);
+    const scale = baseScale * userZoom;
+    const offX = dishCx - VIEW.W*scale/2;
+    const offY = (cssH - VIEW.H*scale)/2;
 
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
     window.dispatchEvent(new CustomEvent('blog:transform', {
@@ -1128,7 +1145,7 @@ async function initBlogNetwork(){
       }
     }));
 
-    return { scale, offX, offY, cssW, cssH };
+    return { scale, offX, offY, cssW, cssH, dishCx };
   }
   let fit = resize();
 
@@ -1168,7 +1185,7 @@ async function initBlogNetwork(){
       const dy = e.clientY - panStartY;
       panOffsetX = dx;
       panOffsetY = dy;
-      fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2 + panOffsetX;
+      fit.offX = fit.dishCx - VIEW.W * fit.scale / 2 + panOffsetX;
       fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2 + panOffsetY;
       return;
     }
@@ -1330,7 +1347,7 @@ async function initBlogNetwork(){
     userZoom = nextZoom;
     fit.scale = baseScale * userZoom;
     // Recalculate offsets to keep zoom centered
-    fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;
+    fit.offX = fit.dishCx - VIEW.W * fit.scale / 2;
     fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
     updateZoomIndicator();
   }, { passive: false });

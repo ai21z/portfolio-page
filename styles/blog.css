@@ -310,6 +310,10 @@
   width: 100%;
   height: 100%;
   display: block;
+  /* The dish and its rim labels stay clear of the Field Notes column (40 + 260 px) and the
+     section rail (24 px + about 56 px). js/blog-network-webgl.js reads these. */
+  --dish-clear-left: 328px;
+  --dish-clear-right: 108px;
 }
 
 /* z:20 */

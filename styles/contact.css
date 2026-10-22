@@ -893,6 +893,13 @@ body:has(#contact.stage.active-section) .dish-labels {
       padding-top: 2rem; /* Reduce top padding since seal is moved */
     }
   }
+
+  /* Short portrait phones: the centred title would run under the corner seal, so it starts one ruled line lower. */
+  @media (max-height: 600px) and (max-aspect-ratio: 1/1) {
+    .notebook-page {
+      padding-top: calc(2 * var(--row));
+    }
+  }
 }
 
 /* Disable hover effects on touch devices */

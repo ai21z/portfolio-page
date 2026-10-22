@@ -572,10 +572,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   filter: blur(0.3px);
 }
 
-.notebook-submit:hover {
-  transform: translateY(-1px);
-}
-
+/* Hover shows in the pencil lines only. Lifting the button moved its edge under a resting cursor,
+   so hover switched off and on every frame. */
 .notebook-submit:hover::before {
   border-color: rgba(58, 53, 48, 0.8);
   opacity: 0.9;

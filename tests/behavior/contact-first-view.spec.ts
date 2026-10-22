@@ -292,3 +292,27 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 560 }
     expect(covered).toBe('');
   });
 }
+
+// Hover once lifted Send by a pixel, so a cursor resting on its lower edge left and re-entered it on
+// every frame and the button never stood still.
+test('Send stands still under a cursor resting on its edge', async ({ page }) => {
+  await openContact(page, { width: 1440, height: 900 });
+  await settleSheet(page);
+  const send = page.getByRole('button', { name: /send message/i });
+  const box = (await send.boundingBox())!;
+  const x = box.x + box.width / 2;
+  // The lowest point that still hovers the button (its pencil frame reaches past the box).
+  const edge = await page.evaluate(({ x, from }) => {
+    const button = document.querySelector('#contact [data-submit]');
+    for (let y = from; y > from - 20; y -= 0.5) if (document.elementFromPoint(x, y)?.closest('[data-submit]') === button) return y;
+    return null;
+  }, { x, from: box.y + box.height + 10 });
+  expect(edge).not.toBeNull();
+  await page.mouse.move(x, edge!);
+  const tops = await send.evaluate((el) => new Promise<number[]>((resolve) => {
+    const out: number[] = [];
+    const tick = () => { out.push(el.getBoundingClientRect().top); if (out.length < 12) requestAnimationFrame(tick); else resolve(out); };
+    setTimeout(() => requestAnimationFrame(tick), 400);
+  }));
+  expect(new Set(tops.map((t) => t.toFixed(2))).size).toBe(1);
+});

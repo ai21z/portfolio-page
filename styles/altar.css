@@ -55,7 +55,8 @@ body.has-paper-open-global .altar-screen .ring {
    orbit the other way, so it reads upright. Units are % of the altar. */
 .ring-text {
   font: 2px/1 system-ui, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Arial;
-  letter-spacing: 0.35px;
+  /* A little tracking, and no more, so the long side phrases clear a lifted card in the tightest gaps. */
+  letter-spacing: 0.25px;
   fill: rgba(232,232,234,0.48);
   text-anchor: middle;
   transform-box: view-box;
@@ -64,13 +65,11 @@ body.has-paper-open-global .altar-screen .ring {
 }
 
 .ring-text--top { --at: 0deg; }
-.ring-text--right { --at: 106deg; }
+.ring-text--right { --at: 107deg; }
 .ring-text--bottom { --at: 180deg; }
 .ring-text--left { --at: 277deg; }
-#skills .ring-text--right { --at: 90deg; }
-#skills .ring-text--left { --at: 260deg; }
-/* The tightest fit: 25 units in a 27 unit gap on short windows. */
-#skills .ring-text--top { letter-spacing: 0.25px; }
+#skills .ring-text--right { --at: 89deg; }
+#skills .ring-text--left { --at: 259deg; }
 
 .filament {
   display: none; /* Hide radial filaments for clean look */
@@ -213,7 +212,11 @@ body.has-paper-open-global .altar-screen .ring {
 /* Aged notebook paper cards */
 .slab {
   position: absolute;
-  width: 36%;
+  /* 36% of the altar, or --w-fit if wider: the width at which the current type step sits at its
+     floor size, so the card widens without its text growing. A wider card wraps fewer lines, runs
+     shorter, and leaves the ring phrases their gaps. */
+  --w: max(36%, var(--w-fit, 322px));
+  width: var(--w);
   max-height: 45%;
 
   /* Container queries: font sizes use cqi (% of card width) so they
@@ -533,51 +536,57 @@ body.has-paper-open-global .altar-screen .ring {
   border-bottom-color: var(--paper-ink);
 }
 
+/* The inner edges stay at 38% and 62% of the altar, so a wider card reaches outward. The right
+   column stops 100 px short of the window edge, clear of the section nav. */
+.slab-about, .slab-vitals, .slab-systems, .slab-restoflife {
+  left: calc(38% - var(--w));
+}
+
+.slab-expertise, .slab-paramour, .slab-interface, .slab-scientific {
+  --w: max(36%, min(var(--w-fit, 322px), 38% + (100vw - 100%) / 2 - 100px));
+  right: calc(38% - var(--w));
+}
+
+/* As the window gets shorter the rows ease away from the side phrases: About lifts its top row (its
+   title is short), Skills lowers its bottom row. The Skills top row sinks a little on very short
+   windows, so a lifted card stays off its long title. */
 .slab-about {
-  left: 2%;
-  top: 8%;
+  top: clamp(2%, 16% - 80px, 8%);
   --rot: -3deg;
 }
 
 .slab-expertise {
-  right: 2%;
-  top: 8%;
+  top: clamp(2%, 16% - 80px, 8%);
   --rot: 3deg;
 }
 
 .slab-vitals {
-  left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
 .slab-paramour {
-  right: 2%;
   bottom: 8%;
   --rot: 2deg;
 }
 
 .slab-systems {
-  left: 2%;
-  top: 8%;
+  top: clamp(8%, 5% + 19px, 9%);
   --rot: -3deg;
 }
 
 .slab-interface {
-  right: 2%;
-  top: 8%;
+  top: clamp(8%, 5% + 19px, 9%);
   --rot: 3deg;
 }
 
 .slab-scientific {
-  right: 2%;
-  bottom: 8%;
+  bottom: clamp(4.5%, 29% - 126px, 8%);
   --rot: 3deg;
 }
 
 .slab-restoflife {
-  left: 2%;
-  bottom: 8%;
+  bottom: clamp(4.5%, 29% - 126px, 8%);
   --rot: -2deg;
 }
 
@@ -597,29 +606,87 @@ body.has-paper-open-global .altar-screen .ring {
   z-index: 1;
 }
 
-/* Scale both text and spacing on short desktop screens. */
+/* Scale both text and spacing on short desktop screens. A step names the card width at which its
+   type sits at the floor (--w-fit), and the first step re-aims the About name at its new gap. */
 @media (min-width: 901px) and (max-height: 940px) and (pointer: fine) {
-  .slab { --k: 0.86; }
+  .slab { --k: 0.86; --w-fit: 307px; }
   .slab h2, .slab h3 { font-size: clamp(11.5px, 4.3cqi, 20px); }
   .slab p, .slab li { font-size: clamp(10.5px, 3.8cqi, 16px); }
   .kv li { font-size: clamp(10px, 3.5cqi, 15px); }
   .tech-stack { font-size: clamp(10px, 3.6cqi, 15px); }
+  #about .ring-text--right { --at: 105deg; }
 }
+
+/* Short desktop windows: the cards reach out into the side room, inner edges unchanged, so they
+   run shorter and the gaps beside the lens hold the ring phrases. */
+@media (min-width: 901px) and (max-height: 820px) and (pointer: fine) {
+  .slab { --w-fit: max(46%, 319px); }
+  #about .ring-text--left { --at: 279deg; }
+}
+
 @media (min-width: 901px) and (max-height: 760px) and (pointer: fine) {
   .slab { --k: 0.76; }
   .slab h2, .slab h3 { font-size: clamp(11px, 3.9cqi, 18px); }
   .slab p, .slab li { font-size: clamp(10px, 3.5cqi, 14px); }
   .kv li { font-size: clamp(9.5px, 3.2cqi, 13px); }
   .tech-stack { font-size: clamp(9.5px, 3.3cqi, 13px); }
+  #about .ring-text--left { --at: 282deg; }
 }
 
-/* Short desktop windows: the cards reach out into the side room, inner edges unchanged, so they
-   run shorter and the gaps beside the lens hold the ring phrases. */
-@media (min-width: 901px) and (max-height: 820px) and (pointer: fine) {
-  .slab { width: 46%; }
-  .slab-about, .slab-vitals, .slab-systems, .slab-restoflife { left: -8%; }
-  .slab-expertise, .slab-paramour, .slab-interface, .slab-scientific { right: -8%; }
-  #about .ring-text--right { --at: 108deg; }
+/* Below 1220 px wide a bottom right card reaches under the graphics control in the window corner,
+   so on short windows its corner stays 72 px above the window bottom, and the right phrases turn up
+   a little, away from it. */
+@media (min-width: 901px) and (max-width: 1219px) and (max-height: 650px) and (pointer: fine) {
+  .slab-paramour { bottom: max(8%, 72px - (100dvh - 100%) / 2); }
+  .slab-scientific { bottom: max(clamp(4.5%, 29% - 126px, 8%), 72px - (100dvh - 100%) / 2); }
+  #about .ring-text--right { --at: 104.5deg; }
+  #skills .ring-text--right { --at: 86.25deg; }
+}
+
+/* Too short, or too narrow beside the nav, for the name on the right: the name takes the left gap,
+   and TOOLS YOU CAN TRUST, too long for any gap left, is left out. */
+@media (min-width: 901px) and (max-height: 609px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 959px) and (max-height: 959px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 983px) and (min-height: 941px) and (pointer: fine) {
+  #about .ring-text--right { --at: 283deg; }
+  #about .ring-text--left { display: none; }
+}
+
+/* Near-square windows keep the full-size type on a smaller altar: the Skills bottom row steps down
+   and both side phrases turn toward it. */
+@media (min-width: 901px) and (max-width: 983px) and (min-height: 941px) and (pointer: fine) {
+  #skills .slab-scientific, #skills .slab-restoflife { bottom: 5%; }
+  #skills .ring-text--right { --at: 87.5deg; }
+  #skills .ring-text--left { --at: 257deg; }
+}
+
+/* Below 910 px the nav leaves the right column no gap for SYSTEMS THINKING, nor below 590 px tall
+   where the bottom right card keeps clear of the graphics control. */
+@media (min-width: 901px) and (max-width: 909px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 1219px) and (max-height: 589px) and (pointer: fine) {
+  #skills .ring-text--right { display: none; }
+}
+
+/* Touch screens wider than 1366 px show the ring with the full-size type, so on short screens the
+   name takes the wider top gap, the title takes its side, and SCIENTIFIC RIGOR turns down or, below
+   870 px, is left out. Below 770 px TOOLS YOU CAN TRUST and SYSTEMS THINKING give way too, and below
+   740 px the title. */
+@media (min-width: 1367px) and (max-height: 940px) and (pointer: coarse) {
+  #about .ring-text--right { --at: 0deg; }
+  #about .ring-text--top { --at: 106deg; }
+  #about .ring-text--left { --at: 280deg; }
+  #skills .slab-restoflife { bottom: 5%; }
+  #skills .ring-text--right { --at: 90deg; }
+  #skills .ring-text--left { --at: 256deg; }
+}
+@media (min-width: 1367px) and (max-height: 869px) and (pointer: coarse) {
+  #skills .ring-text--left { display: none; }
+}
+@media (min-width: 1367px) and (max-height: 769px) and (pointer: coarse) {
+  #about .ring-text--left, #skills .ring-text--right { display: none; }
+}
+@media (min-width: 1367px) and (max-height: 739px) and (pointer: coarse) {
+  #about .ring-text--top { display: none; }
 }
 
 /* Pencil sketch style tags */

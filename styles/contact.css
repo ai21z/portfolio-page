@@ -362,16 +362,9 @@ body:has(#contact.stage.active-section) .dish-labels {
   line-height: var(--row);
 }
 
-/* Contact epigraph: a typed quote + its attribution on the notebook paper */
-.notebook-cite {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--paper-ink);
-  text-align: center;
-  line-height: var(--row);
-  margin: 0 0 var(--row); /* one blank ruled line before the form */
+/* Contact epigraph: one typed line on the notebook paper, then a blank ruled line before the form */
+.notebook-quote {
+  margin-bottom: var(--row);
 }
 
 

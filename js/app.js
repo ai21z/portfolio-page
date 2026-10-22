@@ -1535,6 +1535,16 @@ window.addEventListener('hashchange', () => {
   }
 });
 
+// Skip to content moves focus into the section on screen. Its #main target serves the page without
+// scripts; the router would read it as a route and return to the landing.
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('a.skip')) return;
+  const active = document.querySelector('.stage.active-section');
+  if (!active) return;
+  e.preventDefault();
+  active.focus({ preventScroll: true });
+});
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action="go-intro"]');
   if (!btn) return;

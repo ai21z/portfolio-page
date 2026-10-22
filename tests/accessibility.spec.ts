@@ -20,6 +20,23 @@ for (const width of [390, 1366]) {
   }
 }
 
+// Skip to content was routed as a hash, so from any view but the landing it returned to the landing.
+test('skip to content moves focus into the section on screen and stays there', async ({ page }) => {
+  await stubVerification(page);
+  for (const section of ['main', 'about', 'skills', 'work', 'blog', 'contact']) {
+    await page.goto('/index.html#' + section);
+    await expect(page.locator('html')).toHaveClass(/js-ready/);
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    // The first stop from the address bar.
+    await page.locator('a.skip').focus();
+    const before = page.url();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    await expect(page.locator('#' + section)).toBeFocused();
+    expect(page.url()).toBe(before);
+  }
+});
+
 test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {
   // WCAG 2.1.4: a single-character shortcut fired whenever a visitor typed "Hello".
   await stubVerification(page);

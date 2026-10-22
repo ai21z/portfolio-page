@@ -197,6 +197,35 @@ test.describe('Work career rail', () => {
     await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
   });
 
+  test('Talos links to its own site from the landing, the work index and its card', async ({ page, browserName }) => {
+    await gotoWork(page, MOBILE);
+    await page.waitForSelector('.rail-node');
+    await expect(page.locator('#main .selected-projects a', { hasText: 'Talos' })).toHaveAttribute('href', 'https://taloslocal.com/');
+    await expect(page.locator('#work-index a[href="https://taloslocal.com/"]')).toHaveCount(1);
+
+    await page.locator('.rail-node[data-id="talos"] .rail-dot-btn').click();
+    const site = page.locator('.work-card-site');
+    await expect(site).toHaveAttribute('href', 'https://taloslocal.com/');
+    await expect(site).toHaveAttribute('target', '_blank');
+    // The card keeps focus inside it: close, the site, the globe, then close again. Safari, like WebKit
+    // here, skips links on Tab unless the reader turns that on, so there Tab goes straight to the globe.
+    await expect(page.locator('.work-card-close')).toBeFocused();
+    await page.keyboard.press('Tab');
+    if (browserName !== 'webkit') {
+      await expect(site).toBeFocused();
+      await page.keyboard.press('Tab');
+    }
+    await expect(page.locator('.work-card-globe')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.work-card-close')).toBeFocused();
+    await page.locator('.work-card-close').click();
+
+    // A project without a site of its own gets no site link.
+    await page.locator('.rail-node[data-id="true-rolls"] .rail-dot-btn').click();
+    await expect(page.locator('.work-card-title')).toHaveText('TrueRolls');
+    await expect(page.locator('.work-card-site')).toHaveCount(0);
+  });
+
   test('desktop: no toggle, and hover shows the side note rather than the card', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');

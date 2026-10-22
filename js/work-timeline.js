@@ -257,6 +257,7 @@ export function initWorkTimeline() {
       '<div class="work-card-title">' + node.title + '</div>' +
       '<div class="work-card-meta">' + node.dates + (node.subtitle ? ' · ' + node.subtitle : '') + '</div>' +
       '<div class="work-card-summary">' + node.summary + '</div>' +
+      (node.site ? '<a class="work-card-site" href="' + node.site + '" target="_blank" rel="noopener noreferrer">Visit ' + new URL(node.site).hostname + '</a>' : '') +
       (node.target ? '<button type="button" class="work-card-globe">See it on the globe</button>' : '');
     const globeBtn = cardBody.querySelector('.work-card-globe');
     if (globeBtn) {
@@ -287,7 +288,7 @@ export function initWorkTimeline() {
   }
 
   function cardFocusables() {
-    return [cardClose, ...card.querySelectorAll('.work-card-globe')];
+    return [cardClose, ...card.querySelectorAll('.work-card-site, .work-card-globe')];
   }
 
   cardClose.addEventListener('click', () => closeCard());

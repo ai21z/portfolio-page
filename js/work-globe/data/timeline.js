@@ -19,6 +19,7 @@ export const TIMELINE = [
     title: 'Talos',
     subtitle: 'Local workspace operator',
     summary: 'Installable local-first Java workspace operator with bounded tools, approval gates, local model backends and durable traces.',
+    site: 'https://taloslocal.com/',
     target: { kind: 'moon', id: 'talos-cli' }
   },
   {

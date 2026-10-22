@@ -6,7 +6,8 @@ function escape(value) {
 }
 
 export function renderProjectLinks() {
-  return PROJECTS.map(project => `<a href="${escape(project.github)}" target="_blank" rel="noopener noreferrer">${escape(project.name)}</a>`).join('\n');
+  // A project with its own site links there; the others link to their source.
+  return PROJECTS.map(project => `<a href="${escape(project.site || project.github)}" target="_blank" rel="noopener noreferrer">${escape(project.name)}</a>`).join('\n');
 }
 
 export function renderWorkIndex() {
@@ -21,6 +22,7 @@ export function renderWorkIndex() {
       <h3>${escape(project.name)}</h3>
       <p>${escape(project.description)}</p>
       <p class="work-index-meta">${escape(project.tech.join(' | '))}</p>
+      ${project.site ? `<a class="work-index-link" href="${escape(project.site)}" target="_blank" rel="noopener noreferrer">Visit the site</a>` : ''}
       <a class="work-index-link" href="${escape(project.github)}" target="_blank" rel="noopener noreferrer">View on GitHub</a>
     </li>`).join('');
   return `<h2 class="work-index-title">Work history</h2><ul class="work-index-list">${work}</ul>

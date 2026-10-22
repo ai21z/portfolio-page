@@ -6,6 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 const GESTURE_GAP_MS = 300;
 const COOLDOWN_MS = 750;
 const POINTER = { x: 700, y: 450 };
+const STACKED = { width: 900, height: 800 };
 
 async function open(page: Page, hash: string) {
   await page.goto(`/index.html${hash}`);
@@ -327,9 +328,10 @@ test('a slow notch overtaken by a nav click does not move past the clicked secti
 });
 
 test('a section that can still scroll keeps the gesture, and the edge passes it on', async ({ page }) => {
+  // A narrow desktop window stacks the landing, which then scrolls.
+  await page.setViewportSize(STACKED);
   await open(page, '');
-  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
-  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
+  expect(await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(40);
 
   await scrollBox(page, '#main', 'top');
   await gesture(page, 120);
@@ -341,9 +343,10 @@ test('a section that can still scroll keeps the gesture, and the edge passes it 
 });
 
 test('a wheel that carried the landing to its end in the same frame stays on the landing', async ({ page }) => {
+  // A narrow desktop window stacks the landing, which then scrolls.
+  await page.setViewportSize(STACKED);
   await open(page, '');
-  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
-  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
+  expect(await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(40);
   await scrollBox(page, '#main', 'top');
   // An unanimated wheel scroll lands before the page's listener runs: the box is at its end, but
   // its scroll event has not fired yet.
@@ -357,38 +360,25 @@ test('a wheel that carried the landing to its end in the same frame stays on the
   expect(await active(page)).toBe('intro');
 });
 
-test('over the landing nav the wheel scrolls the landing before it moves on', async ({ page }) => {
+test('on desktop the landing fits the window, so the first wheel steps to About, over the nav too', async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1920, height: 953 }, { width: 1366, height: 657 }]) {
+    await page.setViewportSize(viewport);
+    await open(page, '');
+    expect(await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight), `${viewport.width}x${viewport.height}`).toBeLessThanOrEqual(1);
+    // The project links and the footer are in view.
+    for (const selector of ['#main .selected-projects', '#main .foot']) {
+      expect((await page.locator(selector).boundingBox())!.y + (await page.locator(selector).boundingBox())!.height).toBeLessThanOrEqual(viewport.height);
+    }
+  }
+  await gesture(page, 120);
+  expect(await active(page)).toBe('about');
+
+  // Over a label of the landing nav, the wheel steps as well.
   await open(page, '');
-  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
-  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
-  await scrollBox(page, '#main', 'top');
   const label = await page.locator('.network-node-label').first().boundingBox();
   test.skip(!label, 'The network labels are not laid out in this viewport.');
-  const at = { x: label!.x + label!.width / 2, y: label!.y + label!.height / 2 };
-  const outside = await page.evaluate(({ x, y }) => !document.getElementById('main')!.contains(document.elementFromPoint(x, y)), at);
-  test.skip(!outside, 'The label is not above the landing here.');
-
-  await gesture(page, 120, 2, at);
-  expect(await active(page)).toBe('intro');
-  await expect.poll(() => page.locator('#main').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
-});
-
-test('with reduced motion the landing scrolls at once under the wheel, without an animation', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await open(page, '');
-  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
-  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
-  await scrollBox(page, '#main', 'top');
-  const label = await page.locator('.network-node-label').first().boundingBox();
-  test.skip(!label, 'The network labels are not laid out in this viewport.');
-  const top = await page.evaluate(({ x, y }) => {
-    const target = document.elementFromPoint(x, y);
-    if (document.getElementById('main')!.contains(target)) return -1;
-    target!.dispatchEvent(new WheelEvent('wheel', { deltaY: 30, bubbles: true, cancelable: true }));
-    return document.getElementById('main')!.scrollTop;
-  }, { x: label!.x + label!.width / 2, y: label!.y + label!.height / 2 });
-  test.skip(top === -1, 'The label is not above the landing here.');
-  expect(top).toBeGreaterThan(20);
+  await gesture(page, 120, 2, { x: label!.x + label!.width / 2, y: label!.y + label!.height / 2 });
+  expect(await active(page)).toBe('about');
 });
 
 test('an open graphics menu closes on a click elsewhere and frees the wheel', async ({ page }) => {
@@ -501,9 +491,10 @@ test('the rest of a gesture that stepped into Blog does not zoom the dish', asyn
 
 test('a real wheel scrolls the landing to its end before a fresh gesture moves on', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Real wheel timing through the driver is only tight enough in Chromium.');
+  // A narrow desktop window stacks the landing, which then scrolls.
+  await page.setViewportSize(STACKED);
   await open(page, '');
-  const overflow = await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight);
-  test.skip(overflow < 40, 'The landing fits this viewport, so there is nothing to scroll first.');
+  expect(await page.locator('#main').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(40);
   await page.mouse.move(POINTER.x, POINTER.y);
   for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 120);
   await page.waitForTimeout(GESTURE_GAP_MS);

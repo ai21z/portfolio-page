@@ -1061,19 +1061,20 @@ function initArticleScrollNav() {
   scrollNav.querySelectorAll('.scroll-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
+      const behavior = prefersReducedMotion ? 'instant' : 'smooth';
 
       switch (action) {
         case 'top':
-          articleView.scrollTo({ top: 0, behavior: 'smooth' });
+          articleView.scrollTo({ top: 0, behavior });
           break;
         case 'up':
-          articleView.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'smooth' });
+          articleView.scrollBy({ top: -SCROLL_AMOUNT, behavior });
           break;
         case 'down':
-          articleView.scrollBy({ top: SCROLL_AMOUNT, behavior: 'smooth' });
+          articleView.scrollBy({ top: SCROLL_AMOUNT, behavior });
           break;
         case 'bottom':
-          articleView.scrollTo({ top: articleView.scrollHeight, behavior: 'smooth' });
+          articleView.scrollTo({ top: articleView.scrollHeight, behavior });
           break;
       }
     });

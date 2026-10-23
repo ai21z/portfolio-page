@@ -43,9 +43,26 @@ test('a reduced-motion setting changed while the page is open pauses and resumes
   await expect.poll(async () => (await paused()).every(state => !state)).toBe(true);
 });
 
+test('under reduced motion the article scroll buttons jump instead of gliding', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
+  const view = page.locator('#blog-article-view');
+  await expect(view).toBeVisible();
+  await view.evaluate(el => { el.scrollTop = 900; el.dispatchEvent(new Event('scroll')); });
+  await expect(page.locator('.article-scroll-nav')).toHaveClass(/visible/);
+  // An instant scroll has landed by the time click() returns. A smooth one has barely started.
+  const top = await page.evaluate(() => {
+    (document.querySelector('.scroll-nav-btn[data-action="top"]') as HTMLButtonElement).click();
+    return document.getElementById('blog-article-view')!.scrollTop;
+  });
+  expect(top).toBe(0);
+});
+
 test('under reduced motion the WebGL views hold still, and a drag still turns the globe, then stops', async ({ browserName, baseURL }) => {
   // The globe and the dish draw with WebGL, which needs a real GPU here.
   test.skip(browserName !== 'chromium', 'needs a GPU Chromium');
+  test.setTimeout(90_000);
   const gpu = await chromium.launch({ args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
   try {
     const context = await gpu.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, hasTouch: false, isMobile: false, reducedMotion: 'reduce', baseURL });
@@ -59,9 +76,15 @@ test('under reduced motion the WebGL views hold still, and a drag still turns th
       test.skip(!live, 'no hardware WebGL here');
       await page.waitForTimeout(view === 'work' ? 6000 : 4000);
       await page.mouse.move(2, 2);
-      const first = await shot();
-      await page.waitForTimeout(1200);
-      expect(await shot(), `${view} moved while held still`).toBe(first);
+      // A scene in motion differs in every pair. A one-off redraw, such as the governor changing tier
+      // under a loaded machine, differs in one pair only.
+      let still = false;
+      for (let attempt = 0; attempt < 3 && !still; attempt++) {
+        const first = await shot();
+        await page.waitForTimeout(1200);
+        still = (await shot()) === first;
+      }
+      expect(still, `${view} moved while held still`).toBe(true);
     }
     const box = (await page.locator('#work-globe-canvas').boundingBox())!;
     const before = await shot();

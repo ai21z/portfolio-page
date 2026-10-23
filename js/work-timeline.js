@@ -43,7 +43,7 @@ export function initWorkTimeline() {
   // screen taps instead of clicks.
   const sub = header.querySelector('.work-rail-sub');
   const updateSub = () => {
-    sub.textContent = isCompact() ? 'tap a marker to open it' : `${pressVerb()} a marker to place it on the globe`;
+    sub.textContent = isCompact() ? `${pressVerb()} a marker to open it` : `${pressVerb()} a marker to place it on the globe`;
   };
   updateSub();
   const modeBar = el('div', 'work-rail-modes');

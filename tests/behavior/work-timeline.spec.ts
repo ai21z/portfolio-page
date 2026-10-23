@@ -178,8 +178,9 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.work-view-toggle')).toBeVisible();
     await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
     await expect(page.locator('.work-rail')).toBeVisible();
-    // A tap here opens the card, so the line says so.
-    await expect(page.locator('.work-rail-sub')).toHaveText('tap a marker to open it');
+    // A marker here opens the card, so the line says so, with the verb of the pointer in use.
+    const verb = await page.evaluate(() => (matchMedia('(pointer: coarse)').matches ? 'tap' : 'click'));
+    await expect(page.locator('.work-rail-sub')).toHaveText(`${verb} a marker to open it`);
 
     await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').click();
     const card = page.locator('.work-card-backdrop');

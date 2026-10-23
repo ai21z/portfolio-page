@@ -251,7 +251,7 @@ test('sources keep no cache tokens by hand, the build sets every one from the co
     ...fs.readdirSync(path.join(repoRoot, 'styles')).filter((f) => f.endsWith('.css')).map((f) => 'styles/' + f)];
   const handKept: string[] = [];
   for (const file of sources) {
-    for (const match of readText(file).matchAll(/[\w./-]+\.(?:js|css|webp|png|svg)\?v=([^'"\s)]+)/g)) handKept.push(`${file}: ${match[0]}`);
+    for (const match of readText(file).matchAll(/[\w./-]+\.(?:js|css|json|webp|png|jpg|svg|woff2|mp4|ico|pdf)\?v=([^'"`\s)]+)/g)) handKept.push(`${file}: ${match[0]}`);
   }
   expect(handKept).toEqual([]);
   expect(readText('index.html')).toMatch(/<script type="importmap">\s*\{ "imports": \{\} \}\s*<\/script>/);

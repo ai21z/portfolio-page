@@ -500,7 +500,8 @@ async function initBlogNetwork(){
   });
 
   // Load network JSON
-  const res = await fetch(`./artifacts/blog_network.json?v=${BLOG_NETWORK_VERSION}`);
+  // Fetched without a token: JSON always revalidates, and the edge does not cache it.
+  const res = await fetch('./artifacts/blog_network.json');
   const data = await res.json();
 
   // Vein widths come from the JSON's [x, y, width] values.

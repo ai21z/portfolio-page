@@ -79,8 +79,9 @@ function leaveStage(stage, instant) {
 // on it (Work's timeline, or the section itself under the overlay nav). A wheel gesture that starts
 // with nothing to scroll in its direction, and that nothing else consumed (the Blog dish zooms),
 // steps to the previous or next section instead. One gesture, trackpad inertia included, moves one
-// section, and the rest of that gesture is left alone by the section it lands on.
-const WHEEL_ORDER = ['intro', 'about', 'skills', 'blog', 'work', 'contact'];
+// section, and the rest of that gesture is left alone by the section it lands on. The order is the
+// landing's, read top to bottom, which the section menus follow too.
+const WHEEL_ORDER = ['intro', 'about', 'skills', 'work', 'blog', 'contact'];
 const WHEEL_STEP_PX = 60;
 // A pause this long ends a gesture. Trackpad inertia keeps firing well inside it.
 const WHEEL_GESTURE_GAP_MS = 220;
@@ -481,7 +482,10 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
 
   if (nav.children.length === 0) {
     const frag = document.createDocumentFragment();
-    for (const id of NAV_ORDER) {
+    // The sigil, then the labels in the order they read on the art, top to bottom, so Tab follows
+    // what the eye does. NAV_ORDER still sets the ritual's spark order.
+    const readingOrder = ['intro', ...NAV_ORDER.filter(id => id !== 'intro').sort((a, b) => NAV_COORDS[a].y - NAV_COORDS[b].y)];
+    for (const id of readingOrder) {
       if (id === 'intro') {
         const sigil = createSigilNode();
         frag.appendChild(sigil);

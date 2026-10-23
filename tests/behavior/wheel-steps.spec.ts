@@ -275,7 +275,7 @@ test('a swipe after the Work timeline reached its end moves on, though the scrol
   // A brisk swipe moments later: its first event carries far more than the inertia's last ones,
   // which must not pass for input held up from the scroll.
   await stream(page, [24, 40, 50, 45, 40, 35, 30, 25, 20], away);
-  expect(await active(page)).toBe('contact');
+  expect(await active(page)).toBe('blog');
 });
 
 test('one swipe that is still speeding up when it steps moves only one section', async ({ page, browserName }) => {
@@ -301,7 +301,7 @@ test('notches 400 ms apart move on with every notch past the cooldown', async ({
   await open(page, '#about');
   // The second notch falls inside the first step's cooldown, the third is past it.
   await stream(page, [120, { rest: 384 }, 120, { rest: 384 }, 120]);
-  expect(await active(page)).toBe('blog');
+  expect(await active(page)).toBe('work');
 });
 
 test('a gentle second swipe after a short rest moves on again', async ({ page, browserName }) => {
@@ -439,10 +439,10 @@ test('on Work the wheel scrolls the timeline from anywhere, and moves on only pa
   await scrollBox(page, '#work .work-rail-scroll', 'end');
   await page.waitForTimeout(COOLDOWN_MS);
   await gesture(page, 120, 4, away);
-  expect(await active(page)).toBe('contact');
+  expect(await active(page)).toBe('blog');
 });
 
-test('on Blog the dish zoom keeps its gesture, and wheel down at full view moves on to Work', async ({ page }) => {
+test('on Blog the dish zoom keeps its gesture, and wheel down at full view moves on to Contact', async ({ page }) => {
   test.setTimeout(60_000);
   test.skip(!(await openDish(page)), 'The dish fell back to reduced graphics in this browser.');
 
@@ -455,7 +455,7 @@ test('on Blog the dish zoom keeps its gesture, and wheel down at full view moves
   expect(await active(page)).toBe('blog');
   await page.waitForTimeout(COOLDOWN_MS);
   await gesture(page, 120);
-  expect(await active(page)).toBe('work');
+  expect(await active(page)).toBe('contact');
 });
 
 test('pinch and ctrl+wheel stay with the dish at its zoom limit, so the page never zooms', async ({ page }) => {
@@ -478,12 +478,11 @@ test('the rest of a gesture that stepped into Blog does not zoom the dish', asyn
   const onDish = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id === 'blog-network-canvas', point);
   test.skip(!onDish, 'Something covers the dish at the test point here.');
   await expect(page.locator('#zoom-text-content')).toContainText('75%');
-  await page.locator('#blog .section-nav-link[data-section="work"]').first().click();
-  await expect(page.locator('#work')).toHaveClass(/active-section/);
+  await page.locator('#blog .section-nav-link[data-section="contact"]').first().click();
+  await expect(page.locator('#contact')).toHaveClass(/active-section/);
   await page.waitForTimeout(COOLDOWN_MS);
-  await scrollBox(page, '#work .work-rail-scroll', 'top');
 
-  // Upward over the globe: the first notch steps to Blog, the rest land on the dish.
+  // Upward from Contact: the first notch steps to Blog, the rest land on the dish.
   await gesture(page, -120, 6, point);
   expect(await active(page)).toBe('blog');
   await expect(page.locator('#zoom-text-content')).toContainText('75%');

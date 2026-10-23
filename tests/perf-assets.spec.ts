@@ -182,6 +182,24 @@ test('responsive images stay smaller than their full-size sources', () => {
   expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image.webp')).toBeLessThan(170_000);
 });
 
+// A video with preload="none" and no poster showed every reader a large grey box.
+test('every article video shows a published poster frame before it plays', () => {
+  const published = new Set(JSON.parse(readText('scripts/public-files.json')));
+  const articles = ['blog/codex/fail-fast-learn-faster.html', 'blog/cosmos/first-year-software-engineer.html'];
+  let videos = 0;
+  for (const article of articles) {
+    for (const [tag] of readText(article).matchAll(/<video\b[^>]*>/g)) {
+      videos++;
+      const poster = /\bposter="([^"]+)"/.exec(tag)?.[1];
+      expect(poster, `${article} video poster`).toBeTruthy();
+      const file = path.posix.normalize(path.posix.join(path.posix.dirname(article), poster!));
+      expect(published.has(file), `${file} is published`).toBe(true);
+      expect(sizeOf(file)).toBeLessThan(60_000);
+    }
+  }
+  expect(videos).toBeGreaterThan(0);
+});
+
 test('public discovery files identify the canonical portfolio URL', () => {
   const robots = readText('robots.txt');
   const sitemap = readText('sitemap.xml');

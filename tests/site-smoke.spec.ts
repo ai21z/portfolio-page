@@ -89,6 +89,33 @@ test('defers compact mycelium network data until navigation effects need it', as
   expect(originalNetworkRequests).toBe(0);
 });
 
+test('a desktop builds the mycelium network in idle time before any hover, a phone does not', async ({ browser, browserName }) => {
+  // Safari has no idle callback, so there the first hover still builds it.
+  test.skip(browserName === 'webkit', 'WebKit has no requestIdleCallback');
+  test.setTimeout(45_000);
+  const open = async (viewport: { width: number; height: number }, hasTouch: boolean) => {
+    const page = await browser.newPage({ viewport, hasTouch });
+    // Headless runs are on a software renderer, which the governor would keep on Quiet.
+    await page.addInitScript(() => localStorage.setItem('aris.graphicsProfile', 'balanced'));
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/artifacts/network-lite.json') requests.push(request.url());
+    });
+    await page.goto('/index.html');
+    return { page, requests };
+  };
+  const [desktop, phone] = await Promise.all([open({ width: 1440, height: 900 }, false), open({ width: 390, height: 844 }, true)]);
+  try {
+    await expect.poll(() => desktop.requests.length, { timeout: 20_000 }).toBe(1);
+    await expect.poll(() => desktop.page.evaluate(async () =>
+      Object.keys((await import('/js/state.js')).LOCKED_ROUTES).length), { timeout: 10_000 }).toBe(5);
+    await phone.page.waitForTimeout(2000);
+    expect(phone.requests).toEqual([]);
+  } finally {
+    await Promise.all([desktop.page.close(), phone.page.close()]);
+  }
+});
+
 test('intro ritual toggle and work navigation do not throw route errors', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));

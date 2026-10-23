@@ -689,29 +689,42 @@ function ritualCatchUp() {
   }
 }
 
+// Gives the page a turn, so a long build runs as short tasks between frames. A timer, not
+// scheduler.yield(): Chrome runs yield continuations ahead of rendering, so the chunks still
+// landed in one 100 ms frame.
+function yieldToPage() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// The first hover of a node waits on this, and the idle warm-up runs it ahead of time. It yields
+// between phases so it never holds a frame for long. The network is published only once the label
+// routes are ready, so nothing reads a half-built one.
 async function initNetworkAndNav() {
   if (!MYC_MAP) return;
 
-  setGraph(buildGraphFromPaths(MYC_MAP.paths));
-  computeNavOffsets();
+  const graph = buildGraphFromPaths(MYC_MAP.paths);
+  await yieldToPage();
+
   PATH_CACHE.clear();
 
   for (const [id, pt] of Object.entries(NAV_COORDS)) {
-    NODE_IDS[id] = GRAPH.nearestId(pt.x, pt.y, 80, 24);
+    NODE_IDS[id] = graph.nearestId(pt.x, pt.y, 80, 24);
   }
 
   const introId = NODE_IDS.intro;
   if (introId != null && introId >= 0) {
     for (const [id, gid] of Object.entries(NODE_IDS)) {
       if (id === 'intro' || gid == null || gid < 0) continue;
-      aStarPath(introId, gid, GRAPH, PATH_CACHE);
-      aStarPath(gid, introId, GRAPH, PATH_CACHE);
+      aStarPath(introId, gid, graph, PATH_CACHE);
+      aStarPath(gid, introId, graph, PATH_CACHE);
     }
   }
 
   // Lock each label to a single polyline
-  buildLockedRoutes();
+  await buildLockedRoutes(graph, yieldToPage);
 
+  setGraph(graph);
+  computeNavOffsets();
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
@@ -1445,6 +1458,38 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   });
 }
 
+// Once the landing has settled, do in idle time the work that would otherwise be a long frame
+// later: building the navigation graph, which the first hover of a node waits for. One step per
+// idle callback, and only on desktops outside Quiet, since phones may never hover and Quiet
+// sessions asked for less work.
+const IDLE_WARMUP_DELAY_MS = 4000;
+const idleWarmupSteps = [
+  () => ensureMyceliumReady()
+];
+
+function idleWarmupAllowed() {
+  return !isCompact() && !prefersReducedMotion && !navigator.connection?.saveData &&
+    !getGraphicsBudget('idle-warmup').quiet;
+}
+
+function runIdleWarmup() {
+  const step = idleWarmupSteps.shift();
+  if (!step || !idleWarmupAllowed()) return;
+  if (document.hidden) {
+    idleWarmupSteps.unshift(step);
+    document.addEventListener('visibilitychange', () => scheduleIdleWarmupStep(), { once: true });
+    return;
+  }
+  Promise.resolve()
+    .then(step)
+    .catch((err) => console.warn('idle warm-up step failed:', err))
+    .finally(scheduleIdleWarmupStep);
+}
+
+function scheduleIdleWarmupStep() {
+  requestIdleCallback(runIdleWarmup);
+}
+
 window.addEventListener('load', () => {
   if (COVER.ready) {
     computeCoverFromImage();
@@ -1454,6 +1499,11 @@ window.addEventListener('load', () => {
   }
 
   initHubToIcons();
+
+  // Safari has no idle callback, so it keeps the work where it was.
+  if (typeof window.requestIdleCallback === 'function') {
+    setTimeout(scheduleIdleWarmupStep, IDLE_WARMUP_DELAY_MS);
+  }
 });
 
 const glitchElements = document.querySelectorAll('.glitch-text');

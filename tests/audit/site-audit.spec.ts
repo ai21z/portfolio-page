@@ -1210,6 +1210,49 @@ test.describe('browser audit', () => {
     ]));
   });
 
+  // Chrome reports a major performance caveat on some capable GPUs, Macs among them. A real GPU gets
+  // the scene anyway, and only a software renderer keeps the reduced fallback.
+  for (const renderer of ['ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)', 'SwiftShader']) {
+    const software = renderer === 'SwiftShader';
+    test(`a performance caveat on ${software ? 'a software renderer keeps the fallback' : 'a real GPU still draws the scenes'}`, async ({ page, baseURL, browserName }) => {
+      test.skip(browserName !== 'chromium', 'the stub reads the renderer through a Chromium extension');
+      test.setTimeout(75_000);
+      await page.addInitScript((name) => {
+        window.__webglContextRequests = [];
+        const originalGetContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+          if (contextId !== 'webgl2') return originalGetContext.call(this, contextId, options);
+          const caveat = Boolean((options as { failIfMajorPerformanceCaveat?: boolean } | undefined)?.failIfMajorPerformanceCaveat);
+          window.__webglContextRequests.push({ canvasId: this.id || '', failIfMajorPerformanceCaveat: caveat });
+          if (caveat) return null;
+          const gl = originalGetContext.call(this, contextId, options) as WebGL2RenderingContext | null;
+          if (gl) {
+            const getParameter = gl.getParameter.bind(gl);
+            // UNMASKED_RENDERER_WEBGL
+            gl.getParameter = ((parameter: number) => parameter === 0x9246 ? name : getParameter(parameter)) as typeof gl.getParameter;
+          }
+          return gl;
+        };
+      }, renderer);
+
+      await page.goto(urlFor(baseURL, sections.find((section) => section.name === 'blog')!), { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#blog')).toHaveClass(/active-section/);
+      await page.waitForFunction(() => window.__webglContextRequests.some((request) => request.canvasId === 'blog-network-canvas'));
+      await page.waitForTimeout(1500);
+      const requests = await page.evaluate(() => window.__webglContextRequests.filter((request) => request.canvasId === 'blog-network-canvas'));
+      expect(requests[0]).toEqual({ canvasId: 'blog-network-canvas', failIfMajorPerformanceCaveat: true });
+      const fallback = page.locator('#blog .webgl-fallback-visible');
+      if (software) {
+        expect(requests.some((request) => !request.failIfMajorPerformanceCaveat)).toBe(false);
+        await expect(fallback.first()).toContainText(/may be slow/i);
+      } else {
+        expect(requests.some((request) => !request.failIfMajorPerformanceCaveat)).toBe(true);
+        await expect(fallback).toHaveCount(0);
+        await expect(page.locator('#blog-network-canvas')).toBeVisible();
+      }
+    });
+  }
+
   test('WebGL-heavy sections show intentional reduced-graphics fallback when WebGL2 is unavailable', async ({ page, baseURL }) => {
     test.setTimeout(75_000);
     const consoleErrors: string[] = [];

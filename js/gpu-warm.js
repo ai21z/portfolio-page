@@ -1,3 +1,5 @@
+import { readRendererCategory } from './graphics-governor.js';
+
 // Links a section's shader programs once in a throwaway WebGL context during idle time. Chromium
 // keeps linked programs in a cache that every context on the page shares, so when the section
 // later links the same programs, the link is quick instead of a long frame.
@@ -12,11 +14,13 @@ export function warmPrograms(specs, bindAttribs = () => {}) {
     canvas.height = 1;
     let gl = null;
     try {
-      gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: true });
+      gl = canvas.getContext('webgl2');
     } catch {
       gl = null;
     }
-    const parallel = gl && gl.getExtension('KHR_parallel_shader_compile');
+    // The scenes retry a performance-caveat context on a real GPU, so the warm-up does too, and skips
+    // only a software renderer.
+    const parallel = gl && readRendererCategory(gl) !== 'software' && gl.getExtension('KHR_parallel_shader_compile');
     const release = () => gl?.getExtension('WEBGL_lose_context')?.loseContext();
     if (!parallel) {
       release();

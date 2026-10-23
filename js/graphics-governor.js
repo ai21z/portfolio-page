@@ -148,7 +148,7 @@ function createProbeContext(options) {
   }
 }
 
-function readRendererCategory(gl) {
+export function readRendererCategory(gl) {
   if (!gl) return 'unknown';
   try {
     const debugInfo = gl.getExtension?.('WEBGL_debug_renderer_info');

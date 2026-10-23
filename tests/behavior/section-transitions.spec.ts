@@ -194,17 +194,32 @@ test('the Blog canvas, black until drawn, stays transparent until its first fram
 
 // Skills to Blog showed the bright landing network over the half-drawn dish: the rule meant to fade
 // the landing layers out on Blog used a sibling selector, and the layers come before Blog in the page.
-test('the landing layers fade out as Blog arrives and come back after it', async ({ page }) => {
+test('the landing layers fade out once the dish draws, and come back after Blog', async ({ page }) => {
+  // Headless browsers draw on a software renderer, which keeps the reduced fallback. Let the dish
+  // draw there, as the Blog dish tests do.
+  await page.addInitScript(() => {
+    const orig = HTMLCanvasElement.prototype.getContext as any;
+    HTMLCanvasElement.prototype.getContext = function (type: string, attrs: any) {
+      if (type === 'webgl2') return orig.call(this, type, { ...(attrs || {}), failIfMajorPerformanceCaveat: false });
+      return orig.call(this, type, attrs);
+    };
+  });
   await page.goto('/index.html#skills');
   await expect(page.locator('#skills')).toHaveClass(/active-section/);
   const opacity = () => page.locator('#bg').evaluate((el) => Number(getComputedStyle(el).opacity));
   expect(await opacity()).toBeGreaterThan(0.5);
   await clickSectionLink(page, 'skills', 'blog');
-  await expect(page.locator('#blog')).toHaveClass(/active-section/);
-  // Well inside the 450 ms crossfade the layers are already on their way out.
-  await page.waitForTimeout(250);
-  expect(await opacity()).toBeLessThan(0.5);
+  await expect(page.locator('#blog-network-canvas')).toHaveClass(/is-drawn/);
   await expect.poll(opacity).toBe(0);
   await clickSectionLink(page, 'blog', 'about');
   await expect.poll(opacity).toBeGreaterThan(0.5);
+});
+
+// Without a drawn dish the Blog view is see-through by design, over the landing art like About.
+test('on a phone Blog keeps the landing backdrop behind its scrim', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/index.html#blog');
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  await page.waitForTimeout(800);
+  expect(await page.locator('#bg').evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.5);
 });

@@ -509,13 +509,22 @@
   line-height: 1.6;
 }
 
-/* The landing layers leave as Blog arrives, so the network never shows through while the section
-   left fades out under the dish. They come before the Blog section in the page, so a sibling
-   selector never reached them. */
+/* The landing layers leave once the dish has drawn, so the network never shows through it while the
+   section left fades out. Without a drawn dish (phones, the reduced fallback) and in a category, the
+   Blog view is see-through by design and keeps them. They come before the Blog section in the page,
+   so a sibling selector never reached them. */
 body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-canvas) {
-  pointer-events: none;
-  opacity: 0;
   transition: opacity 400ms ease;
+}
+
+/* Only where the dish map shows: compact layouts hide it, though some browsers still draw the dish.
+   The query is the compact one from js/compact.js, negated. A browser that cannot read it keeps the
+   layers, as before. */
+@media not ((max-width: 900px) or ((max-width: 1199px) and (max-aspect-ratio: 1/1)) or ((max-width: 1366px) and (pointer: coarse))) {
+  body:has(#blog.active-section[data-mode="map"] #blog-network-canvas.is-drawn) :is(#network-nav, #bg, #spore-canvas, #reveal-canvas) {
+    pointer-events: none;
+    opacity: 0;
+  }
 }
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),

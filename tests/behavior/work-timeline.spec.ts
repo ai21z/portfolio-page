@@ -83,6 +83,7 @@ test.describe('Work career rail', () => {
     await gotoWork(page, DESKTOP);
     await expect(page.locator('.work-rail')).toBeVisible();
     await expect(page.locator('.work-rail-title')).toHaveText('Timeline');
+    await expect(page.locator('.work-rail-sub')).toHaveText('click a marker to place it on the globe');
     await expect(page.locator('.work-rail-key-row')).toHaveText(['place', 'project', 'credential']);
     await page.waitForSelector('.rail-node');
 
@@ -107,6 +108,7 @@ test.describe('Work career rail', () => {
     await expect(note.locator('.work-note-title')).toHaveText('ADP');
     await expect(note).toContainText('Lyric HCM');
     await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
+    await expect(note.locator('.work-note-cta')).toHaveText('click → locate on Earth');
 
     await page.locator('.rail-node[data-id="cert-jee8"] .rail-dot-btn').hover();
     await expect(note.locator('.work-note-title')).toContainText('Java Enterprise Edition 8');
@@ -176,6 +178,8 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.work-view-toggle')).toBeVisible();
     await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
     await expect(page.locator('.work-rail')).toBeVisible();
+    // A tap here opens the card, so the line says so.
+    await expect(page.locator('.work-rail-sub')).toHaveText('tap a marker to open it');
 
     await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').click();
     const card = page.locator('.work-card-backdrop');

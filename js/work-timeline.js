@@ -4,6 +4,8 @@ import { reducedMotion } from './motion.js';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
+const pressVerb = () => (window.matchMedia('(pointer: coarse)').matches ? 'tap' : 'click');
+
 const MODES = {
   year: { label: 'Year' },
   type: { label: 'Type', order: ['work', 'project', 'cert'], labels: { work: 'Roles', project: 'Projects', cert: 'Credentials' }, key: (n) => n.type }
@@ -36,7 +38,14 @@ export function initWorkTimeline() {
     '<div class="work-rail-key-row"><span class="rail-glyph rail-glyph--cert"></span><span>credential</span></div>' +
     '</div>' +
     '<div class="work-rail-title">Timeline</div>' +
-    '<div class="work-rail-sub">click a marker to place it on the globe</div>';
+    '<div class="work-rail-sub"></div>';
+  // On a compact layout a marker opens its card, elsewhere it places itself on the globe. A touch
+  // screen taps instead of clicks.
+  const sub = header.querySelector('.work-rail-sub');
+  const updateSub = () => {
+    sub.textContent = isCompact() ? 'tap a marker to open it' : `${pressVerb()} a marker to place it on the globe`;
+  };
+  updateSub();
   const modeBar = el('div', 'work-rail-modes');
   modeBar.setAttribute('role', 'group');
   modeBar.setAttribute('aria-label', 'Sort the timeline');
@@ -72,7 +81,7 @@ export function initWorkTimeline() {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
     activeLi = li;
     const driveHint = node.target
-      ? (node.target.kind === 'moon' ? 'click → frame the moon' : 'click → locate on Earth')
+      ? `${pressVerb()} → ${node.target.kind === 'moon' ? 'frame the moon' : 'locate on Earth'}`
       : 'credential · note only';
     note.innerHTML =
       '<div class="work-note-kicker">' + GLYPH_HINT[node.type] + '</div>' +
@@ -324,6 +333,7 @@ export function initWorkTimeline() {
   let viewResizeTimer = 0;
   window.addEventListener('resize', () => {
     if (!isCompact()) closeCard({ restoreFocus: false });
+    updateSub();
     clearTimeout(viewResizeTimer);
     viewResizeTimer = window.setTimeout(() => {
       document.dispatchEvent(new CustomEvent('work-view:change', { detail: { view: currentView } }));

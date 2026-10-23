@@ -108,7 +108,9 @@ for (const article of articles) {
       const response = await page.goto(`/blog/${article.hub}/${article.id}`);
       expect(response!.status()).toBe(200);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(article.title);
-      await expect(page.getByRole('link', { name: 'Aris Zounarakis', exact: true })).toBeVisible();
+      // The byline. The site bar above the article carries the name too, as its home link.
+      await expect(page.locator('.article-meta').getByRole('link', { name: 'Aris Zounarakis', exact: true })).toBeVisible();
+      await expect(page.locator('.article-site-nav')).toBeVisible();
       const overflow = await page.evaluate(() => document.body.scrollWidth > window.innerWidth);
       expect(overflow).toBe(false);
       for (const image of await page.locator('.article-content img').all()) {

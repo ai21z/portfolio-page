@@ -185,6 +185,24 @@ for (const section of ['about', 'skills']) {
   });
 }
 
+// The article pages had only a breadcrumb, no way back to the other views.
+test('article pages lead back to the five views, and the in-app reader leaves that bar out', async ({ page }) => {
+  for (const slug of ['codex/fail-fast-learn-faster', 'cosmos/first-year-software-engineer']) {
+    await page.goto(`/blog/${slug}`);
+    const links = page.locator('nav.article-site-nav .article-site-links a');
+    await expect(links).toHaveText(['About', 'Skills', 'Work', 'Blog', 'Contact']);
+    expect(await links.evaluateAll((items) => items.map((item) => item.getAttribute('href'))))
+      .toEqual(['/#about', '/#skills', '/#work', '/#blog', '/#contact']);
+    await expect(page.locator('nav.article-site-nav .article-site-home')).toHaveAttribute('href', '/');
+    await page.locator('a.skip').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main.article-container')).toBeFocused();
+  }
+  await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
+  await expect(page.locator('#blog-article-content .article-title')).toBeVisible();
+  await expect(page.locator('#blog-article-content .article-site-nav')).toHaveCount(0);
+});
+
 // An opened card showed its own close and the section's, two × marks for one way out.
 test('an opened card shows one close, and the section close returns once it shuts', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

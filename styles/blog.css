@@ -1328,6 +1328,57 @@
   background-color: var(--abyss);
 }
 
+.article-container:focus {
+  outline: none;
+}
+
+/* The article pages' way back to the five views, in the landing's order. It sits outside
+   .article-container, so the in-app reader, which lifts only the container, never shows it. */
+.article-site-nav {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+.article-site-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.article-site-nav a {
+  color: var(--bone-dim);
+  text-decoration: none;
+  transition: color 150ms var(--ease-house);
+}
+
+.article-site-nav .article-site-home {
+  color: var(--bone);
+}
+
+.article-site-nav a[aria-current],
+.article-site-nav a:hover {
+  color: var(--necrotic);
+}
+
+.article-site-nav a:focus-visible {
+  color: var(--necrotic);
+  outline: 2px solid var(--necrotic);
+  outline-offset: 3px;
+}
+
+.article-site-nav + .article-container {
+  padding-top: 48px;
+}
+
 .article-container .breadcrumb {
   font-size: 0.875rem;
   color: var(--bone-dim);
@@ -1563,6 +1614,14 @@ body > .article-container {
   body > .article-container {
     padding: 32px 20px;
     font-size: 16px;
+  }
+
+  .article-site-nav {
+    padding: 20px 20px 0;
+  }
+
+  .article-site-nav + .article-container {
+    padding-top: 24px;
   }
 
   .article-container .article-title {

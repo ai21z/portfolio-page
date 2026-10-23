@@ -255,6 +255,19 @@ test.describe('Work career rail', () => {
     await expect.poll(() => cue.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
 
+  // The cue was only checked on scroll, so a taller window that brought the end into view kept it.
+  test('the more-below cue follows a resize that changes whether the list overflows', async ({ page }) => {
+    await gotoWork(page, { width: 1440, height: 600 });
+    await page.waitForSelector('.rail-node');
+    const opacity = () => page.locator('.work-rail-cue').evaluate((el) => getComputedStyle(el).opacity);
+    await expect.poll(opacity).toBe('1');
+    await page.setViewportSize({ width: 1440, height: 2200 });
+    await expect.poll(() => page.locator('.work-rail-scroll').evaluate((el) => el.scrollHeight <= el.clientHeight + 24)).toBe(true);
+    await expect.poll(opacity).toBe('0');
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await expect.poll(opacity).toBe('1');
+  });
+
   test('desktop: no toggle, and hover shows the side note rather than the card', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');

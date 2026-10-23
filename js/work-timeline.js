@@ -331,6 +331,11 @@ export function initWorkTimeline() {
   viewport.appendChild(scroll);
   viewport.appendChild(readhead);
   viewport.appendChild(cue);
+  // A taller window, a turned tablet or the rail showing again can bring the end into view (or out of
+  // it) without a scroll, so the cue is checked again whenever the list box changes size.
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(() => { if (!scrollRaf) scrollRaf = requestAnimationFrame(markCentered); }).observe(scroll);
+  }
   host.appendChild(viewport);
   host.appendChild(note);
   if (workSection) workSection.appendChild(toggle);

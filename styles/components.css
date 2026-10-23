@@ -248,8 +248,11 @@
     line-height: 1.5;
   }
 
+  /* Centred in the margin left of the text column, so no vial reaches the bio. The section is
+     centred, so (100vw - 100%) / 2 is its margin, and a vial is 56px wide. At left: 0 the rail hung
+     10 to 17px into the column on laptops. */
   .living-sigils {
-    left: 0;
+    left: calc((var(--gap-large) - 56px - (100vw - 100%) / 2) / 2);
     top: 24%;
     gap: 14px;
   }

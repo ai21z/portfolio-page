@@ -1100,12 +1100,15 @@ function initArticleScrollNav() {
 
     const pastTop = scrollTop > THRESHOLD;
     const beforeEnd = distanceFromBottom > THRESHOLD;
-    const shouldShow = pastTop && beforeEnd;
+    // A button pressed from the keyboard keeps the buttons up, so Top or Bottom never hides the focus.
+    const shouldShow = (pastTop && beforeEnd) || scrollNav.contains(document.activeElement);
 
     scrollNav.classList.toggle('visible', shouldShow);
   };
 
   articleView.addEventListener('scroll', updateScrollNav);
+  // Focus has moved on by the next frame, so the buttons can hide once it leaves them.
+  scrollNav.addEventListener('focusout', () => requestAnimationFrame(updateScrollNav));
 
   const observer = new MutationObserver(() => {
     if (!articleView.hidden) {

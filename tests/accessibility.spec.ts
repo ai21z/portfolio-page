@@ -92,12 +92,29 @@ test('controls no one can see stay out of the Tab order', async ({ page }) => {
   // Contact fades the word labels out, and they leave the Tab order once faded.
   await expect.poll(() => page.locator('.network-node-label').evaluateAll(labels =>
     labels.length > 0 && labels.every(label => getComputedStyle(label).visibility === 'hidden'))).toBe(true);
-  // The article scroll buttons show only once the article is scrolled.
+  // The article scroll buttons show once the article is scrolled, and leave the Tab order when it
+  // returns to the top.
   await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
-  await expect(page.locator('#blog-article-view')).toBeVisible();
+  const view = page.locator('#blog-article-view');
+  await expect(view).toBeVisible();
   const scrollNav = page.locator('.article-scroll-nav');
+  const visibility = () => scrollNav.evaluate(el => getComputedStyle(el).visibility);
+  await view.evaluate(el => { el.scrollTop = 900; });
+  await expect(scrollNav).toHaveClass(/visible/);
+  await expect.poll(visibility).toBe('visible');
+  await view.evaluate(el => { el.scrollTop = 0; });
   await expect(scrollNav).not.toHaveClass(/visible/);
-  await expect.poll(() => scrollNav.evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+  await expect.poll(visibility).toBe('hidden');
+  // Pressed from the keyboard, Bottom scrolls to the end and the focused button stays shown.
+  await view.evaluate(el => { el.scrollTop = 900; });
+  await expect(scrollNav).toHaveClass(/visible/);
+  const bottom = page.locator('.scroll-nav-btn[data-action="bottom"]');
+  await bottom.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => view.evaluate(el => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(2);
+  await page.waitForTimeout(500);
+  await expect(bottom).toBeFocused();
+  expect(await visibility()).toBe('visible');
 });
 
 test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {

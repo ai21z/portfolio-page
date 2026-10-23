@@ -1602,16 +1602,12 @@ function watchForBlogSection() {
     return;
   }
 
-  // Watch for visibility changes
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-        if (blogSection.classList.contains('active-section')) {
-          initBlogNetwork();
-          observer.disconnect(); // Stop watching after init
-        }
-      }
-    });
+  // Watch for visibility changes. A section switch changes the class several times in one batch,
+  // so check once per batch: init is async, and a call per record started the network twice.
+  const observer = new MutationObserver(() => {
+    if (!blogSection.classList.contains('active-section')) return;
+    observer.disconnect(); // Stop watching after init
+    initBlogNetwork();
   });
 
   observer.observe(blogSection, {

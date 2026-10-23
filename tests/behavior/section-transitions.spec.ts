@@ -107,12 +107,16 @@ test('the sigil Blog covered fades in as Blog leaves instead of popping over it'
   await page.goto('/index.html#blog');
   await expect(page.locator('#blog')).toHaveClass(/active-section/);
   await expect(page.locator('.network-sigil-node')).toBeAttached();
-  const opacity = await page.evaluate(async () => {
+  // Read the fade itself, not the opacity after a fixed wait: the curve starts fast, and a timer
+  // stretched by a loaded machine read the sigil past half way.
+  const fade = await page.evaluate(async () => {
     document.querySelector<HTMLElement>('#blog .section-nav-link[data-section="about"]')!.click();
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    return Number(getComputedStyle(document.querySelector('.network-sigil-node')!).opacity);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const sigil = document.querySelector('.network-sigil-node')!;
+    const animation = sigil.getAnimations().find((a) => (a as CSSAnimation).animationName === 'shared-layer-in');
+    return animation ? { running: animation.playState === 'running', from: (animation.effect as KeyframeEffect).getKeyframes()[0].opacity } : null;
   });
-  expect(opacity).toBeLessThan(0.5);
+  expect(fade).toEqual({ running: true, from: '0' });
 });
 
 test('leaving a deep-linked Contact keeps the sigil, which Contact never covered, steady', async ({ page }) => {

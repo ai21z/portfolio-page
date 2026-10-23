@@ -54,10 +54,15 @@ test('large runtime images have WebP variants referenced by the app', () => {
   expect(globe).toContain('ominus-earth.webp');
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
-  // The 64 px hub takes a 192 px sigil, not the 1024 px one the particles sample.
-  expect(nav).toContain('AZ-01-192.webp');
-  expect(nav).not.toContain('AZ-01.webp');
-  expect(particles).toContain('AZ-01.webp');
+  // The 64 px hub and the particles' constellation mask both take the 192 px sigil. The 1024 px
+  // one is only a source for the icon generators and is not shipped.
+  for (const source of [nav, particles]) {
+    expect(source).toContain('AZ-01-192.webp');
+    expect(source).not.toContain('AZ-01.webp');
+  }
+  const shipped = JSON.parse(readText('scripts/public-files.json'));
+  expect(shipped).not.toContain('artifacts/sigil/AZ-01.webp');
+  expect(shipped).not.toContain('artifacts/sigil/AZ-01.png');
 });
 
 test('below-the-fold feature modules are lazy-loaded by section', () => {

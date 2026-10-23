@@ -87,9 +87,11 @@ const CONFIG = {
   REFORM_STREAM_PHASE_DIST: 150,
 
   // Constellation mode (click easter egg)
-  SIGIL_PATH: './artifacts/sigil/AZ-01.webp',
-  SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-01.png',
-  SIGIL_BRIGHTNESS_THRESHOLD: 40,
+  // The constellation only needs a brightness mask, so it reads the 192 px sigil the hub already loads.
+  SIGIL_PATH: './artifacts/sigil/AZ-01-192.webp',
+  SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-01-192.png',
+  // 48 on the 192 px mask marks the same share of particles as 40 did on the 1024 px one.
+  SIGIL_BRIGHTNESS_THRESHOLD: 48,
   CONSTELLATION_SCATTER: 0.6,
   CONSTELLATION_SPRING: 0.2,
   CONSTELLATION_RAMP_MS: 400,
@@ -388,10 +390,18 @@ class PortraitParticles {
     if (!this.img) return;
 
     if (this.img.complete && this.img.naturalWidth > 0) {
-      this.setup();
+      this.scheduleSetup();
     } else {
-      this.img.addEventListener('load', () => this.setup(), { once: true });
+      this.img.addEventListener('load', () => this.scheduleSetup(), { once: true });
     }
+  }
+
+  // Sampling reads the portrait's pixels, which held a 100 to 300 ms frame while the page loaded.
+  // The photo is on screen from the first frame either way, so the particles can wait for idle time.
+  scheduleSetup() {
+    const run = () => { if (!this.initialized) this.setup(); };
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 1500 });
+    else setTimeout(run, 300);
   }
 
   setup() {
@@ -436,6 +446,7 @@ class PortraitParticles {
     const stats = {
       renderMode: this.renderMode,
       particleCount: this.particles.length,
+      sigilCount: this.sigilCount ?? 0,
       backingWidth: this.canvas?.width ?? 0,
       backingHeight: this.canvas?.height ?? 0,
       bufferPixels: (this.canvas?.width ?? 0) * (this.canvas?.height ?? 0),
@@ -566,8 +577,9 @@ class PortraitParticles {
       return;
     }
 
+    // A canvas kept in CPU memory, so reading the pixels back is a copy and not a wait on the GPU.
     const offscreen = document.createElement('canvas');
-    const offCtx = offscreen.getContext('2d');
+    const offCtx = offscreen.getContext('2d', { willReadFrequently: true });
     const imgW = this.img.naturalWidth;
     const imgH = this.img.naturalHeight;
 
@@ -640,7 +652,7 @@ class PortraitParticles {
 
     sigil.onload = () => {
       const offscreen = document.createElement('canvas');
-      const ctx = offscreen.getContext('2d');
+      const ctx = offscreen.getContext('2d', { willReadFrequently: true });
       const imgW = sigil.naturalWidth;
       const imgH = sigil.naturalHeight;
 
@@ -676,11 +688,12 @@ class PortraitParticles {
           }
         }
       }
-
+      this.sigilCount = sigilCount;
+      this.publishStats();
     };
 
     sigil.onerror = () => {
-      if (sigil.src.endsWith('/AZ-01.webp') || sigil.src.endsWith('AZ-01.webp')) {
+      if (sigil.src.endsWith('AZ-01-192.webp')) {
         sigil.src = CONFIG.SIGIL_FALLBACK_PATH;
         return;
       }
@@ -842,7 +855,11 @@ class PortraitParticles {
     this.lastFrameTime = performance.now();
     this.lastInteractionTime = performance.now();
     this.publishStats({ started: true, released: false });
-    this.animate();
+    // The first frame fills the whole buffer. Draw it a frame later, so the sampling and the first
+    // fill do not land in one long frame.
+    this.animationId = requestAnimationFrame(() => {
+      this.animationId = requestAnimationFrame(this.boundAnimate);
+    });
   }
 
   stop(options = {}) {

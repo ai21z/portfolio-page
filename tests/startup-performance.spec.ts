@@ -386,7 +386,7 @@ test('the production stylesheet has no nested stylesheet requests', async ({ pag
     if (request.resourceType() === 'stylesheet') styles.push(new URL(request.url()).pathname);
   });
   await page.goto('/index.html');
-  expect(styles.sort()).toEqual(['/styles/graphics-controls.css', '/styles/main.css']);
+  expect(styles).toEqual(['/styles/main.css']);
   const importedRules = await page.evaluate(() => Array.from(document.styleSheets)
     .filter(sheet => sheet.href?.includes('/styles/main.css'))
     .flatMap(sheet => Array.from(sheet.cssRules))

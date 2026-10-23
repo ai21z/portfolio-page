@@ -11,3 +11,5 @@
 @import 'work-timeline.css?v=20261019';
 @import 'blog.css?v=20261019';
 @import 'fallback.css';
+/* Last, as it loaded after main.css when it was its own render-blocking stylesheet. */
+@import 'graphics-controls.css';

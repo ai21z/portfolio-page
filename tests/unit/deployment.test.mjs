@@ -24,7 +24,8 @@ test('deploys only listed public files and removes stale output', async (t) => {
   const output = await buildSite(root);
   assert.deepEqual(await verifyPublicSite(output), [...publicFiles].sort());
   for (const file of publicFiles) {
-    if (file === 'styles/main.css' || file === '_headers') continue;
+    // The stylesheet is bundled, the headers gain a policy, and modules are minified.
+    if (file === 'styles/main.css' || file === '_headers' || /^js\/.+\.js$/.test(file)) continue;
     assert.equal(await readFile(path.join(output, file), 'utf8'), await readFile(path.join(root, file), 'utf8'));
   }
   const css = await readFile(path.join(output, 'styles/main.css'), 'utf8');
@@ -49,6 +50,28 @@ test('deploys only listed public files and removes stale output', async (t) => {
   await rm(path.join(root, 'index.html'));
   await assert.rejects(buildSite(root), { code: 'ENOENT' });
   await verifyPublicSite(output);
+});
+
+test('minifies shipped modules and preloads the page module graph', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'portfolio-modules-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const file of publicFiles) {
+    await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+    await writeFile(path.join(root, file), file.endsWith('.js') ? 'export {};\n' : file);
+  }
+  await writeFile(path.join(root, 'styles/main.css'), 'body { color: blue; }');
+  await writeFile(path.join(root, 'index.html'), '<head><script type="importmap">{"imports":{"./js/contact.js":"./js/contact.js?v=1"}}</script>\n</head><body><script type="module" src="./js/app.js?v=1"></script></body>');
+  await writeFile(path.join(root, 'js/app.js'), "// a long explanatory comment\nimport { send } from './contact.js';\nexport const answer = send();\n");
+  await writeFile(path.join(root, 'js/contact.js'), 'export function send() {\n  return 42;\n}\n');
+  const output = await buildSite(root);
+  const app = await readFile(path.join(output, 'js/app.js'), 'utf8');
+  assert.ok(!app.includes('explanatory comment'));
+  assert.ok(app.includes('./contact.js'));
+  const home = await readFile(path.join(output, 'index.html'), 'utf8');
+  assert.match(home, /<link rel="modulepreload" href="\.\/js\/app\.js\?v=1" \/>/);
+  // The import goes through the import map, so its preload uses the mapped, versioned address.
+  assert.match(home, /<link rel="modulepreload" href="\.\/js\/contact\.js\?v=1" \/>/);
+  assert.ok(home.indexOf('modulepreload') > home.indexOf('</script>'));
 });
 
 test('includes the canonical public assets', () => {

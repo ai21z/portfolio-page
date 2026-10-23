@@ -1,7 +1,7 @@
 import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 import { renderProjectLinks, renderWorkIndex } from '../js/work-globe/work-index-content.js';
 import { appendContentSecurity } from './content-security.mjs';
 
@@ -90,6 +90,54 @@ async function bundleStyles(root) {
   return result.outputFiles[0].contents;
 }
 
+// Shipped modules are minified in place: same files, same paths and cache tokens, smaller bytes.
+// Names are kept, so nothing that reads a function or class name changes.
+async function minifyScripts(output) {
+  for (const file of publicFiles.filter(file => /^js\/.+\.js$/.test(file))) {
+    const target = path.join(output, file);
+    const result = await transform(await readFile(target, 'utf8'), {
+      loader: 'js', format: 'esm', minify: true, keepNames: true, legalComments: 'none',
+      target: ['chrome100', 'firefox100', 'safari15.4']
+    });
+    await writeFile(target, result.code);
+  }
+}
+
+// The static import graph of the page's module scripts, as the URLs the browser will request
+// (relative imports resolved, then the page's import map applied). Preloading them all lets the
+// browser fetch them in parallel instead of one import level at a time.
+async function moduleGraph(root, html) {
+  const importMap = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)?.[1] || '{}').imports || {};
+  const base = new URL('https://site.invalid/index.html');
+  const mapped = new Map(Object.entries(importMap).map(([from, to]) => [new URL(from, base).href, new URL(to, base).href]));
+  const pending = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(match => new URL(match[1], base).href);
+  const seen = new Set();
+  while (pending.length) {
+    const url = pending.shift();
+    if (seen.has(url)) continue;
+    seen.add(url);
+    const file = decodeURIComponent(new URL(url).pathname.slice(1));
+    if (!publicFiles.includes(file)) continue;
+    const source = await readFile(path.join(root, file), 'utf8');
+    for (const match of source.matchAll(/(?:^|[;\n])\s*(?:import|export)\s*(?:[\w$*{}\s,]+?\s*from\s*)?['"]([^'"]+)['"]/g)) {
+      if (!match[1].startsWith('.')) continue;
+      const resolved = new URL(match[1], url).href;
+      pending.push(mapped.get(resolved) || resolved);
+    }
+  }
+  return [...seen].map(url => '.' + url.slice(base.origin.length));
+}
+
+async function preloadModules(root, homePath) {
+  const html = await readFile(homePath, 'utf8');
+  const importMapEnd = html.indexOf('</script>', html.indexOf('<script type="importmap">'));
+  if (!html.includes('<script type="importmap">') || importMapEnd < 0) return;
+  const links = (await moduleGraph(root, html)).map(href => `  <link rel="modulepreload" href="${href}" />`).join('\n');
+  if (!links) return;
+  const at = importMapEnd + '</script>'.length;
+  await writeFile(homePath, `${html.slice(0, at)}\n${links}${html.slice(at)}`);
+}
+
 export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
   root = await realpath(root);
   validateManifest(publicFiles);
@@ -115,6 +163,8 @@ export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
     .replace('<!-- work-index-content -->', renderWorkIndex())
     .replace('<!-- selected-project-links -->', renderProjectLinks()));
   await writeFile(path.join(output, 'styles/main.css'), styles);
+  await preloadModules(root, homePath);
+  await minifyScripts(output);
   const htmlPages = [];
   for (const file of publicFiles.filter(file => file.endsWith('.html'))) {
     htmlPages.push(await readFile(path.join(output, file), 'utf8'));

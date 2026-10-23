@@ -185,6 +185,22 @@ for (const section of ['about', 'skills']) {
   });
 }
 
+// An opened card showed its own close and the section's, two × marks for one way out.
+test('an opened card shows one close, and the section close returns once it shuts', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const section of ['about', 'skills']) {
+    await page.goto('/index.html#' + section);
+    const sectionClose = page.locator(`#${section} .altar-close`);
+    await expect(sectionClose).toBeVisible();
+    await page.locator(`#${section} .paper`).first().click();
+    await expect(page.locator('.paper-open .paper-card-close')).toBeVisible();
+    await expect(sectionClose).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.paper-open')).toHaveCount(0);
+    await expect(sectionClose).toBeVisible();
+  }
+});
+
 test('closing a paper during routing or resize does not leave an inert page', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/index.html#about');

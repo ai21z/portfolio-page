@@ -921,6 +921,15 @@ body.has-paper-open-global .altar-screen .ring {
   outline-offset: 4px;
 }
 
+/* An opened card carries its own close, so the section's steps aside and one × reads as the way out.
+   It comes back at once when the card closes. */
+body.has-paper-open-global .altar-close {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 150ms ease, visibility 0s linear 150ms;
+}
+
 /* Mobile adjustments for altar/resume close buttons */
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),

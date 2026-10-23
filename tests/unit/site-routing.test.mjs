@@ -47,7 +47,7 @@ test('sends blog URLs to their one address, keeping the query', async () => {
     }
   }
   // Unknown articles and the hub paths are not invented.
-  for (const pathname of ['/blog/codex/not-a-post/', '/blog/codex/', '/blogs/']) {
+  for (const pathname of ['/blog/codex/not-a-post/', '/blog/codex/', '/blogs/', '/blog/codex/fail-fast-learn-faster%2F']) {
     const response = await onRequest(context(pathname));
     assert.equal(response.status, 404, pathname);
   }
@@ -75,11 +75,32 @@ test('caches a file as immutable only when its token matches the bytes served', 
   assert.equal(fresh.headers.get('cache-control'), 'public, max-age=31536000, immutable');
   assert.equal(fresh.headers.get('content-type'), 'text/javascript');
   assert.equal(await fresh.text(), body);
-  // An old token (a tab open across a deploy), no token, HEAD, and HTML keep revalidating.
-  for (const [pathname, method] of [['/js/app.js?v=0123456789ab', 'GET'], ['/js/app.js', 'GET'], ['/js/app.js?v=1', 'GET'],
-    [`/js/app.js?v=${current}`, 'HEAD'], [`/404.html?v=${current}`, 'GET']]) {
+  // An old token (a tab open across a deploy), a malformed one, and a module without one must
+  // revalidate. Said explicitly, since the zone's browser cache TTL lifts the default max-age=0 to 4 h.
+  for (const pathname of ['/js/app.js?v=0123456789ab', '/js/app.js?v=1', '/js/app.js', '/styles/main.css', '/icons/favicon-32.png?v=0123456789ab']) {
+    const response = await serve(pathname);
+    assert.equal(response.headers.get('cache-control'), 'no-cache', pathname);
+    assert.equal(await response.text(), body, pathname);
+  }
+  // A versioned request reaches the assets without conditional headers, so it is always a whole
+  // 200 that can be hashed. A 304 would carry the zone's TTL onto bytes the browser already holds.
+  let forwarded;
+  const conditional = context(`/js/app.js?v=0123456789ab`);
+  conditional.request = new Request(conditional.request, { headers: { 'If-None-Match': '"b-etag"', 'If-Modified-Since': 'Mon, 01 Jan 2024 00:00:00 GMT', Range: 'bytes=0-9' } });
+  conditional.next = (input) => { forwarded = input; return new Response(body); };
+  assert.equal((await onRequest(conditional)).headers.get('cache-control'), 'no-cache');
+  assert.ok(forwarded, 'the versioned request must be forwarded explicitly');
+  for (const name of ['if-none-match', 'if-modified-since', 'range']) assert.equal(forwarded.headers.get(name), null, name);
+  // A module or stylesheet revalidated without a token gets no-cache on its 304 too.
+  const notModified = context('/js/app.js');
+  notModified.next = () => new Response(null, { status: 304, headers: { 'Cache-Control': 'public, max-age=14400, must-revalidate' } });
+  const reply = await onRequest(notModified);
+  assert.equal(reply.status, 304);
+  assert.equal(reply.headers.get('cache-control'), 'no-cache');
+  // HEAD, HTML and unversioned images keep what Pages sends.
+  for (const [pathname, method] of [[`/js/app.js?v=${current}`, 'HEAD'], [`/404.html?v=${current}`, 'GET'], ['/icons/favicon-32.png', 'GET']]) {
     const response = await serve(pathname, method);
-    assert.notEqual(response.headers.get('cache-control'), 'public, max-age=31536000, immutable', `${method} ${pathname}`);
+    assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate', `${method} ${pathname}`);
   }
 });
 

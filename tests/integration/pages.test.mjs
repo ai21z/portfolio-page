@@ -46,9 +46,13 @@ test('compiled Pages middleware, assets and contact work together with isolated 
     assert.match(app.headers.get('content-type'), /javascript/);
     const sheet = await fetch('/' + homeHtml.match(/href="\.\/(styles\/main\.css\?v=[a-f0-9]{12})"/)[1]);
     assert.equal(sheet.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    // Revalidating a versioned asset gets the whole file back, hashed, never a bare 304.
+    const revalidated = await fetch('/' + appUrl, { headers: { 'If-None-Match': app.headers.get('etag') || '"x"' } });
+    assert.equal(revalidated.status, 200);
+    assert.equal(revalidated.headers.get('cache-control'), 'public, max-age=31536000, immutable');
     const stale = await fetch('/js/app.js?v=0123456789ab');
     assert.equal(stale.status, 200);
-    assert.notEqual(stale.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    assert.equal(stale.headers.get('cache-control'), 'no-cache');
     assert.equal(await stale.text(), await app.text());
     const robots = await fetch('/robots.txt');
     assert.match(robots.headers.get('content-type'), /text\/plain/);

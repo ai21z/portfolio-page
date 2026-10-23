@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import { onRequest } from '../../functions/_middleware.js';
 
@@ -59,6 +60,26 @@ test('passes public assets, clean page URLs, and the contact endpoint through', 
     const response = await onRequest(context(pathname));
     assert.equal(response.status, 200, pathname);
     assert.equal(await response.text(), 'public content');
+  }
+});
+
+test('caches a file as immutable only when its token matches the bytes served', async () => {
+  const body = 'export const answer = 42;\n';
+  const current = createHash('sha256').update(body).digest('hex').slice(0, 12);
+  const serve = (pathname, method = 'GET') => {
+    const ctx = context(pathname, { method });
+    ctx.next = () => new Response(method === 'HEAD' ? null : body, { headers: { 'Content-Type': 'text/javascript', 'Cache-Control': 'public, max-age=0, must-revalidate' } });
+    return onRequest(ctx);
+  };
+  const fresh = await serve(`/js/app.js?v=${current}`);
+  assert.equal(fresh.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+  assert.equal(fresh.headers.get('content-type'), 'text/javascript');
+  assert.equal(await fresh.text(), body);
+  // An old token (a tab open across a deploy), no token, HEAD, and HTML keep revalidating.
+  for (const [pathname, method] of [['/js/app.js?v=0123456789ab', 'GET'], ['/js/app.js', 'GET'], ['/js/app.js?v=1', 'GET'],
+    [`/js/app.js?v=${current}`, 'HEAD'], [`/404.html?v=${current}`, 'GET']]) {
+    const response = await serve(pathname, method);
+    assert.notEqual(response.headers.get('cache-control'), 'public, max-age=31536000, immutable', `${method} ${pathname}`);
   }
 });
 

@@ -45,8 +45,26 @@ async function route(context) {
   return new Response(context.request.method === 'HEAD' ? null : page.body, { status: 404, headers });
 }
 
+// A ?v= token is current when it is the start of the SHA-256 of the bytes served, the token the build
+// writes (scripts/build-site.mjs). Only then may the response be cached as immutable: a tab open across
+// a deploy can still ask for an old token, and the new bytes must not be pinned under it.
+async function immutableIfCurrent(request, response) {
+  const url = new URL(request.url);
+  const v = url.searchParams.get('v');
+  if (request.method !== 'GET' || response.status !== 200 || !/^[a-f0-9]{12}$/.test(v || '') ||
+      url.pathname.endsWith('.html') || !publicPaths.has(decodeURIComponent(url.pathname))) {
+    return response;
+  }
+  const bytes = await response.arrayBuffer();
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const token = Array.from(digest.subarray(0, 6), byte => byte.toString(16).padStart(2, '0')).join('');
+  const headers = new Headers(response.headers);
+  if (token === v) headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  return new Response(bytes, { status: response.status, statusText: response.statusText, headers });
+}
+
 export async function onRequest(context) {
-  const response = await route(context);
+  const response = await immutableIfCurrent(context.request, await route(context));
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');

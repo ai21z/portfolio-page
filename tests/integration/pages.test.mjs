@@ -37,6 +37,19 @@ test('compiled Pages middleware, assets and contact work together with isolated 
     assert.equal(home.headers.get('x-frame-options'), 'DENY');
     assert.ok(home.headers.get('content-security-policy-report-only') || home.headers.get('content-security-policy'));
     assert.match(await home.text(), /Aris Zounarakis/);
+    // Built tokens make the asset immutable, an old token does not.
+    const homeHtml = await (await fetch('/')).text();
+    const appUrl = homeHtml.match(/src="\.\/(js\/app\.js\?v=[a-f0-9]{12})"/)[1];
+    const app = await fetch('/' + appUrl);
+    assert.equal(app.status, 200);
+    assert.equal(app.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    assert.match(app.headers.get('content-type'), /javascript/);
+    const sheet = await fetch('/' + homeHtml.match(/href="\.\/(styles\/main\.css\?v=[a-f0-9]{12})"/)[1]);
+    assert.equal(sheet.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    const stale = await fetch('/js/app.js?v=0123456789ab');
+    assert.equal(stale.status, 200);
+    assert.notEqual(stale.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    assert.equal(await stale.text(), await app.text());
     const robots = await fetch('/robots.txt');
     assert.match(robots.headers.get('content-type'), /text\/plain/);
     assert.equal(robots.headers.get('cache-control'), 'public, max-age=3600');

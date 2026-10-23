@@ -1,6 +1,7 @@
 import { cappedDpr } from './utils.js';
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
+import { warmPrograms } from './gpu-warm.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -8,6 +9,21 @@ if (!window.__BLOG_NETWORK_VERSION) {
 }
 
 const PETRI_K = 0.42;
+
+// Rim labels sit on r + 48 and stand up to 18 px (Menlo caps). Keep that ring clear of the
+// Field Notes column, the section rail and the viewport edges, centred whenever there is room.
+const RIM_LABEL_REACH = 48 + 18 + 12;
+function dishFit(wCss, hCss) {
+  const cs = getComputedStyle(document.getElementById('blog-map') || document.documentElement);
+  const left = parseFloat(cs.getPropertyValue('--dish-clear-left')) || 0;
+  const right = parseFloat(cs.getPropertyValue('--dish-clear-right')) || 0;
+  const natural = Math.floor(Math.min(wCss, hCss) * PETRI_K);
+  const r = Math.max(120, Math.min(natural,
+    Math.floor((wCss - left - right) / 2 - RIM_LABEL_REACH),
+    Math.floor(hCss / 2 - RIM_LABEL_REACH)));
+  const cx = Math.min(Math.max(wCss / 2, left + r + RIM_LABEL_REACH), wCss - right - r - RIM_LABEL_REACH);
+  return { cx, r, natural };
+}
 
 const PAL = {
   ABYSS: [0.031, 0.035, 0.039],     // near-black abyss floor (9b)
@@ -30,7 +46,7 @@ const PAL = {
 
 function currentDPR() {
   const rect = q('#blog-network-canvas')?.getBoundingClientRect();
-  return cappedDpr(1.5, {
+  return cappedDpr(2, {
     systemName: 'blog-network',
     width: Math.max(1, rect?.width || window.innerWidth),
     height: Math.max(1, rect?.height || window.innerHeight)
@@ -415,7 +431,22 @@ function program(gl, vs, fs){
   return p;
 }
 
+// The Blog programs, in the order init links them. The idle warm-up links the same list.
+const BLOG_PROGRAMS = [
+  { vs: VS_FSQ, fs: FS_PAPER },
+  { vs: VS_SEG, fs: FS_SEG },
+  { vs: VS_CYST, fs: FS_CYST },
+  { vs: VS_NODE, fs: FS_NODE }
+];
+
 let initialized = false;
+
+// Links the Blog programs ahead of the first visit, so entering Blog finds them in the browser's
+// program cache instead of waiting on the GPU.
+export function warmBlogNetwork() {
+  if (initialized) return Promise.resolve(false);
+  return warmPrograms(BLOG_PROGRAMS);
+}
 
 async function initBlogNetwork(){
   if (initialized) return;
@@ -433,10 +464,15 @@ async function initBlogNetwork(){
   let rafId = null;
   let clockRafId = null;
 
+  // The context is alpha:false, so an undrawn or released canvas is solid black. It stays
+  // transparent (styles/blog.css) until a frame is drawn into it.
+  let canvasDrawn = false;
   const releaseCanvasBuffer = () => {
     canvas.width = 1;
     canvas.height = 1;
     gl.viewport(0, 0, 1, 1);
+    canvasDrawn = false;
+    canvas.classList.remove('is-drawn');
   };
 
   const stopClockLoop = () => {
@@ -587,10 +623,7 @@ async function initBlogNetwork(){
     return { vao, count: nodeCount };
   }
 
-  const progPaper = program(gl, VS_FSQ, FS_PAPER);
-  const progSeg   = program(gl, VS_SEG, FS_SEG);
-  const progCyst  = program(gl, VS_CYST, FS_CYST);
-  const progNode  = program(gl, VS_NODE, FS_NODE);
+  const [progPaper, progSeg, progCyst, progNode] = BLOG_PROGRAMS.map(({ vs, fs }) => program(gl, vs, fs));
 
   // Create main VAO
   const vaoSeg  = makeVAOforSegments();
@@ -684,8 +717,8 @@ async function initBlogNetwork(){
     svg.setAttribute('viewBox', `0 0 ${wCss} ${hCss}`);
     svg.innerHTML = '';
 
-    const cx = wCss / 2, cy = hCss / 2;
-    const r = Math.floor(Math.min(wCss, hCss) * PETRI_K); // Draw the glass outside the agar radius.
+    const cy = hCss / 2;
+    const { cx, r, natural } = dishFit(wCss, hCss); // Draw the glass outside the agar radius.
     const NS = 'http://www.w3.org/2000/svg';
     const el = (tag, attrs) => {
       const n = document.createElementNS(NS, tag);
@@ -754,7 +787,9 @@ async function initBlogNetwork(){
     }
     frag.appendChild(fringe);
 
-    defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 156) }));
+    // 40 degrees, or longer on a small dish so the whole caption (about 260px at most) fits. It starts
+    // at 116, clear of the ember at 112.
+    defs.appendChild(el('path', { id: 'dishTagArc', fill: 'none', d: arc(r + 20, 116, 116 + Math.max(40, 260 / (r + 20) * 180 / Math.PI)) }));
     const tagText = el('text', { class: 'dish-tag-text' });
     const tp = el('textPath', { href: '#dishTagArc', startOffset: '50%', 'text-anchor': 'middle' });
     tp.textContent = 'CULTURE No. AZ-2026 · incept vi.2026';
@@ -818,7 +853,7 @@ async function initBlogNetwork(){
     }
 
     svg.appendChild(frag);
-    return { cx, cy, r };
+    return { cx, cy, r, natural, w: wCss, h: hCss };
   }
 
   // Update dish clipping uniforms (CSS pixel space, not buffer pixels)
@@ -857,11 +892,12 @@ async function initBlogNetwork(){
     const cfg = [
       {id:'craft',        midDeg: 270, text:'CRAFT'},        // North (top)
       {id:'cosmos',       midDeg:   0, text:'COSMOS'},       // East (right)
-      {id:'convergence',  midDeg: 180, text:'CONVERGENCE'},  // South (bottom)
-      {id:'codex',        midDeg:  90, text:'CODEX'},        // West (left)
+      {id:'convergence',  midDeg: 180, text:'CONVERGENCE'},  // West (left)
+      {id:'codex',        midDeg:  90, text:'CODEX'},        // South (bottom)
     ];
 
-    const w = root.clientWidth, h = root.clientHeight;
+    // The dish's frame, not the root's: a category hides the root, and its size then reads 0.
+    const w = dish.w, h = dish.h;
     const cx = dish.cx, cy = dish.cy;
     const outerR = dish.r + 48; // Position labels 48px OUTSIDE the rim
 
@@ -873,7 +909,8 @@ async function initBlogNetwork(){
 
     for (const c of cfg) {
       const arcId = `arc-${c.id}`;
-      const span = 70 * Math.PI/180;  // Wider arc for bigger text
+      // 70 degrees, or wider on a small dish so the whole word fits (24px a letter with its spacing)
+      const span = Math.max(70, (c.text.length * 24) / outerR * 180 / Math.PI) * Math.PI/180;
       const a0 = (c.midDeg*Math.PI/180) - span/2;
       const a1 = (c.midDeg*Math.PI/180) + span/2;
 
@@ -1098,17 +1135,19 @@ async function initBlogNetwork(){
       gl.viewport(0, 0, w, h);
     }
 
-    // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x)
-    baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H);
-    const scale = baseScale * userZoom;
-    const offX = (cssW - VIEW.W*scale)/2;
-    const offY = (cssH - VIEW.H*scale)/2;
-
     // Build Petri dish and curved labels
     currentDish = buildDish({wCss: cssW, hCss: cssH});
     updateDishUniforms(currentDish);
     buildLabels(currentDish);
     updateZoomIndicator();   // buildLabels rebuilds the label -> refresh it to the real zoom
+
+    // scale & offset to fit 1920x1080, with the user zoom applied (0.75x..1.0x). The network
+    // shrinks and moves with the dish when the dish is fitted between the legend and the rail.
+    const dishCx = currentDish ? currentDish.cx : cssW / 2;
+    baseScale = Math.min(cssW/VIEW.W, cssH/VIEW.H) * (currentDish ? currentDish.r / currentDish.natural : 1);
+    const scale = baseScale * userZoom;
+    const offX = dishCx - VIEW.W*scale/2;
+    const offY = (cssH - VIEW.H*scale)/2;
 
     // Emit transform event for overlay (legacy, may not be needed with dish-first layout)
     window.dispatchEvent(new CustomEvent('blog:transform', {
@@ -1123,7 +1162,7 @@ async function initBlogNetwork(){
       }
     }));
 
-    return { scale, offX, offY, cssW, cssH };
+    return { scale, offX, offY, cssW, cssH, dishCx };
   }
   let fit = resize();
 
@@ -1141,7 +1180,9 @@ async function initBlogNetwork(){
     const dpr = currentDPR();
     if (dpr !== lastDPR) {
       lastDPR = dpr;
-      if (running) fit = resize();
+      // A resize clears the canvas. A section fading out keeps its last frame, and startLoop
+      // resizes on the way back in.
+      if (running && canvas.closest('.active-section')) fit = resize();
     }
   });
 
@@ -1161,7 +1202,7 @@ async function initBlogNetwork(){
       const dy = e.clientY - panStartY;
       panOffsetX = dx;
       panOffsetY = dy;
-      fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2 + panOffsetX;
+      fit.offX = fit.dishCx - VIEW.W * fit.scale / 2 + panOffsetX;
       fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2 + panOffsetY;
       return;
     }
@@ -1311,12 +1352,19 @@ async function initBlogNetwork(){
   updateZoomIndicator(); // Set initial indicator to match default zoom
 
   canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
+    // The rest of a wheel gesture that just stepped into Blog (js/navigation.js) is not a zoom.
+    if (!e.ctrlKey && document.documentElement.hasAttribute('data-wheel-step-tail')) return;
     const delta = e.deltaY > 0 ? 0.95 : 1.05;
-    userZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
+    const nextZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
+    // At the zoom limit a plain wheel is left to the page, so a fresh gesture can step to the next
+    // section. Pinch and ctrl+wheel stay with the dish, or the browser would zoom the whole page.
+    if (nextZoom === userZoom && !e.ctrlKey) return;
+    e.preventDefault();
+    if (nextZoom === userZoom) return;
+    userZoom = nextZoom;
     fit.scale = baseScale * userZoom;
     // Recalculate offsets to keep zoom centered
-    fit.offX = (fit.cssW - VIEW.W * fit.scale) / 2;
+    fit.offX = fit.dishCx - VIEW.W * fit.scale / 2;
     fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
     updateZoomIndicator();
   }, { passive: false });
@@ -1352,12 +1400,12 @@ async function initBlogNetwork(){
     const budget = getGraphicsBudget('blog-network');
     const frameIntervalMs = budget.frameIntervalMs || 0;
     const dt = now - last;
-    if (frameIntervalMs && dt < frameIntervalMs) {
+    if (!frameDue(dt, frameIntervalMs)) {
       rafId = requestAnimationFrame(loop);
       return;
     }
     last = now;
-    reportFrameSample('blog-network', dt);
+    reportFrameSample('blog-network', dt, frameIntervalMs);
 
     // PAPER (renders background)
     gl.useProgram(progPaper);
@@ -1488,6 +1536,11 @@ async function initBlogNetwork(){
       }
     }
 
+    if (!canvasDrawn) {
+      canvasDrawn = true;
+      canvas.classList.add('is-drawn');
+    }
+
     if (running && !document.hidden) {
       rafId = requestAnimationFrame(loop);
     } else {
@@ -1505,13 +1558,13 @@ async function initBlogNetwork(){
       rafId = requestAnimationFrame(loop);
     }
   };
-  const stopLoop = () => {
+  const stopLoop = ({ keepFrame = false } = {}) => {
     if (rafId) {
       cancelAnimationFrame(rafId);
     }
     rafId = null;
     stopClockLoop();
-    releaseCanvasBuffer();
+    if (!keepFrame) releaseCanvasBuffer();
   };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
@@ -1519,9 +1572,13 @@ async function initBlogNetwork(){
       const isActive = blogStage.classList.contains('active-section');
       running = isActive;
       if (isActive) startLoop();
-      else stopLoop();
+      // While the section fades out its last frame stays on screen. 'stage:left' releases it.
+      else stopLoop({ keepFrame: blogStage.classList.contains('stage-leaving') });
     });
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
+    blogStage.addEventListener('stage:left', () => {
+      if (!blogStage.classList.contains('active-section')) releaseCanvasBuffer();
+    });
 
     // Initial check
     running = blogStage.classList.contains('active-section');
@@ -1558,16 +1615,12 @@ function watchForBlogSection() {
     return;
   }
 
-  // Watch for visibility changes
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-        if (blogSection.classList.contains('active-section')) {
-          initBlogNetwork();
-          observer.disconnect(); // Stop watching after init
-        }
-      }
-    });
+  // Watch for visibility changes. A section switch changes the class several times in one batch,
+  // so check once per batch: init is async, and a call per record started the network twice.
+  const observer = new MutationObserver(() => {
+    if (!blogSection.classList.contains('active-section')) return;
+    observer.disconnect(); // Stop watching after init
+    initBlogNetwork();
   });
 
   observer.observe(blogSection, {

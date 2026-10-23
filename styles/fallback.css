@@ -24,7 +24,11 @@
 .published-writing a { min-height: 44px; }
 .contact-email { color: #49331d; text-underline-offset: 4px; }
 
-html:not(.js-ready) .essential-nav {
+/* Scripts off, or the app did not start or is long overdue (index.html marks js-failed). While the
+   app loads it stays hidden, so a load never shows a bare row of links over the loading cover. A
+   running app always hides it. */
+html:not(.js):not(.js-ready) .essential-nav,
+html.js-failed:not(.js-ready) .essential-nav {
   display: flex;
   position: fixed;
   inset: auto 0 0;
@@ -43,6 +47,13 @@ html:not(.js-ready) .stage.active-section,
 html:not(.js-ready) .stage:target { display: block; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 html:not(.js-ready) body:has(.stage:target) .stage:not(:target) { display: none; }
 html:not(.js-ready) .stage:not(#main) { background: #0b0b0c; }
+/* The landing fits the window with its footer on the bottom edge: while the row shows, keep the
+   footer above it. A normal load never shows the row, so its layout does not move. */
+html:not(.js):not(.js-ready) #main .grid,
+html.js-failed:not(.js-ready) #main .grid {
+  --landing-reserve: 86px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
 html:not(.js-ready) .altar-close,
 html:not(.js-ready) .work-close,
 html:not(.js-ready) .contact-close,

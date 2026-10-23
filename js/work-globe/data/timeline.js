@@ -19,6 +19,7 @@ export const TIMELINE = [
     title: 'Talos',
     subtitle: 'Local workspace operator',
     summary: 'Installable local-first Java workspace operator with bounded tools, approval gates, local model backends and durable traces.',
+    site: 'https://taloslocal.com/',
     target: { kind: 'moon', id: 'talos-cli' }
   },
   {
@@ -50,26 +51,6 @@ export const TIMELINE = [
     subtitle: 'Software Engineer · remote',
     summary: 'Full-stack work on EU statistical platforms. Java and Spring on the back, React and Angular on the front.',
     target: { kind: 'location', id: 'greece' }
-  },
-  {
-    id: 'cert-junit-mockito',
-    type: 'cert',
-    dates: '2024',
-    sortKey: 2024.15,
-    title: 'Testing Java with JUnit5 & Mockito',
-    subtitle: 'Udemy',
-    summary: 'Test-driven development in Java with JUnit5 and Mockito.',
-    target: null
-  },
-  {
-    id: 'cert-oci-foundations',
-    type: 'cert',
-    dates: '2023',
-    sortKey: 2023.7,
-    title: 'Oracle Cloud Infrastructure 2023 Foundations',
-    subtitle: 'Oracle',
-    summary: 'Certified Foundations Associate. Core Oracle Cloud Infrastructure services and architecture.',
-    target: null
   },
   {
     id: 'cert-jee8',

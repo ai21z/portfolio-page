@@ -520,6 +520,27 @@ async function mockStrongWebGLCapability(page: Page) {
   });
 }
 
+async function mockRendererCapability(page: Page, renderer: string) {
+  await page.addInitScript((rendererName) => {
+    Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+    Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (contextId: string, options?: unknown) {
+      if (contextId === 'webgl2') {
+        return {
+          getExtension: () => null,
+          getParameter: () => rendererName
+        } as unknown as WebGL2RenderingContext;
+      }
+      return originalGetContext.call(this, contextId, options);
+    };
+  }, renderer);
+}
+
+async function mockIntegratedWebGLCapability(page: Page) {
+  await mockRendererCapability(page, 'Intel(R) UHD Graphics 620');
+}
+
 async function mockUnavailableWebGL2(page: Page) {
   await page.addInitScript(() => {
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
@@ -912,12 +933,10 @@ test.describe('browser audit', () => {
         configurable: true,
         get: () => ({ saveData: true })
       });
-      const originalMatchMedia = window.matchMedia.bind(window);
-      window.matchMedia = (query: string) => ({
-        ...originalMatchMedia(query),
-        matches: query.includes('prefers-reduced-motion') ? true : originalMatchMedia(query).matches
-      });
     });
+    // Real emulation, not a matchMedia fake: a spread MediaQueryList has no addEventListener,
+    // so modules that listen for changes threw at load and app.js never started.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
@@ -958,11 +977,20 @@ test.describe('browser audit', () => {
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
-    const state = await collectGraphicsGovernorState(page);
+    let state = await collectGraphicsGovernorState(page);
 
     if (browserName === 'firefox') {
+      // Firefox rejects Full, so with no explicit quality choice the landing page defers the
+      // WebGL probe and the software renderer is only seen once a 3D section opens.
       expect(state.profile).toBe('balanced');
+      expect(state.capability.reasons).not.toContain('software-renderer');
+      state = await page.evaluate(async () => {
+        const governor = await import('/js/graphics-governor.js');
+        governor.setGraphicsSection('work');
+        return governor.getGraphicsState();
+      });
     } else {
+      // An explicit Full choice probes the GPU immediately, even on the landing page.
       expect(state.profile).toBe('full');
     }
     expect(state.capability.recommendedProfile).toBe('quiet');
@@ -1011,9 +1039,10 @@ test.describe('browser audit', () => {
     expect(state.capability.reasons).toContain('firefox-conservative');
   });
 
-  test('graphics governor gives strong Chromium capability a rich recommendation without forcing Quiet', async ({ page, baseURL, browserName }) => {
+  test('graphics governor defaults capable Chromium desktops to Rich and confirms it once a 3D section probes the GPU', async ({ page, baseURL, browserName }) => {
     test.skip(browserName !== 'chromium', 'The strong capability expectation is Chromium-specific.');
     test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       window.localStorage.removeItem('aris.graphicsProfile');
     });
@@ -1021,12 +1050,135 @@ test.describe('browser audit', () => {
 
     await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
     await waitForGraphicsMovementStable(page);
-    const state = await collectGraphicsGovernorState(page);
+    const landing = await collectGraphicsGovernorState(page);
 
-    expect(state.profile).toBe('balanced');
+    // The landing page defers the WebGL probe to keep startup light, so only CPU and memory are known.
+    expect(landing.profileSource).toBe('auto');
+    expect(landing.capability.webgl2).toBeNull();
+    expect(landing.capability.hardwareClass).toBe('capable');
+    expect(landing.capability.recommendedProfile).toBe('rich');
+    expect(landing.profile).toBe('rich');
+    expect(landing.effectiveProfile).toBe('rich');
+    await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Rich');
+
+    // Entering a 3D section runs the deferred probe and confirms the recommendation.
+    const state = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsSection('work');
+      return governor.getGraphicsState();
+    });
+
     expect(state.capability.recommendedProfile).toBe('rich');
     expect(state.capability.hardwareClass).toBe('strong');
-    expect(profileRank(state.effectiveProfile)).toBeGreaterThanOrEqual(profileRank('balanced'));
+    expect(state.effectiveProfile).toBe('rich');
+  });
+
+  test('graphics governor keeps Rich after the probe only for discrete or Apple silicon GPUs', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Rich is a Chromium recommendation.');
+    test.setTimeout(150_000);
+    const renderers: Array<[string, string, 'rich' | 'balanced']> = [
+      ['ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 (0x00002786) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)', 'apple', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A770 Graphics (0x000056A0) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A370M Graphics (0x00005693) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (AMD, Radeon (TM) RX 480 Graphics (0x000067DF) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A310 LP Graphics (0x000056A6) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) A750E Graphics (0x000056B3) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) Pro A40/A50 Graphics (0x000056B1) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'discrete', 'rich'],
+      ['ANGLE (AMD, AMD Radeon(TM) RX Vega 11 Graphics (0x000015DD) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) Graphics (0x00007D55) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) 140V GPU (16GB) (0x000064A0) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) Arc(TM) 140T GPU (16GB) (0x00007D51) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Mesa Intel(R) Graphics (ADL GT2), OpenGL 4.6)', 'integrated', 'balanced'],
+      ['ANGLE (Intel, Intel(R) UHD Graphics 620 (0x00005917) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)', 'integrated', 'balanced'],
+      ['AMD Radeon(TM) Vega 8 Graphics', 'integrated', 'balanced'],
+      ['AMD Radeon 780M Graphics', 'integrated', 'balanced'],
+      ['WebKit WebGL', 'unknown', 'balanced']
+    ];
+
+    for (const [renderer, category, profile] of renderers) {
+      const probePage = await page.context().newPage();
+      await probePage.setViewportSize({ width: 1440, height: 900 });
+      await probePage.addInitScript(() => window.localStorage.removeItem('aris.graphicsProfile'));
+      await mockRendererCapability(probePage, renderer);
+      await probePage.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+      await waitForGraphicsMovementStable(probePage);
+      const state = await probePage.evaluate(async () => {
+        const governor = await import('/js/graphics-governor.js');
+        const landing = governor.getGraphicsState().effectiveProfile;
+        governor.setGraphicsSection('work');
+        return { landing, ...governor.getGraphicsState() };
+      });
+      await probePage.close();
+
+      // The unprobed landing starts every capable desktop on Rich.
+      expect(state.landing, renderer).toBe('rich');
+      expect(state.capability.rendererCategory, renderer).toBe(category);
+      expect(state.capability.recommendedProfile, renderer).toBe(profile);
+      expect(state.effectiveProfile, renderer).toBe(profile);
+    }
+  });
+
+  test('graphics control honours an explicit Rich choice, shows overrides, and returns to Auto', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName === 'firefox', 'Firefox only offers Quiet and Balanced.');
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      // Seed the choice once, so the reload after picking Auto shows what Auto stored.
+      if (!window.sessionStorage.getItem('seeded')) {
+        window.sessionStorage.setItem('seeded', '1');
+        window.localStorage.setItem('aris.graphicsProfile', 'rich');
+      }
+    });
+    // Integrated graphics recommend Balanced, which must not cap an explicit choice.
+    await mockIntegratedWebGLCapability(page);
+
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    let state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('user');
+    expect(state.capability.recommendedProfile).toBe('balanced');
+    if (browserName === 'chromium') {
+      expect(state.effectiveProfile).toBe('rich');
+      await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Rich');
+    } else {
+      // WebKit keeps its conservative cap and says so on the control.
+      expect(state.effectiveProfile).toBe('balanced');
+      await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Balanced (auto)');
+    }
+
+    await page.locator('.graphics-control__toggle').click();
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="rich"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="auto"]')).toHaveAttribute('aria-pressed', 'false');
+    const reloaded = page.waitForEvent('framenavigated');
+    await page.locator('#graphics-profile-menu [data-graphics-profile="auto"]').click();
+    await reloaded;
+    await page.waitForLoadState('domcontentloaded');
+    expect(await page.evaluate(() => window.localStorage.getItem('aris.graphicsProfile'))).toBeNull();
+    state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('auto');
+    // Auto leaves the GPU unprobed on the landing: Chromium starts on Rich, WebKit on its Balanced cap.
+    const autoTier = browserName === 'chromium' ? 'rich' : 'balanced';
+    expect(state.effectiveProfile).toBe(autoTier);
+    await expect(page.locator('.graphics-control__toggle')).toHaveText(`Graphics: ${autoTier === 'rich' ? 'Rich' : 'Balanced'}`);
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="auto"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#graphics-profile-menu [data-graphics-profile="rich"]')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Firefox offers Auto as an enabled, pressed default that runs Balanced', async ({ page, baseURL, browserName }) => {
+    test.skip(browserName !== 'firefox', 'Firefox-specific graphics policy.');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => window.localStorage.removeItem('aris.graphicsProfile'));
+    await page.goto(urlFor(baseURL, sections[0]), { waitUntil: 'domcontentloaded' });
+    await waitForGraphicsMovementStable(page);
+    const state = await collectGraphicsGovernorState(page);
+    expect(state.profileSource).toBe('auto');
+    expect(state.effectiveProfile).toBe('balanced');
+    await expect(page.locator('.graphics-control__toggle')).toHaveText('Graphics: Balanced');
+    const auto = page.locator('#graphics-profile-menu [data-graphics-profile="auto"]');
+    await expect(auto).toHaveAttribute('aria-pressed', 'true');
+    await expect(auto).toBeEnabled();
   });
 
   test('WebGL-heavy sections request protected contexts before starting scenes', async ({ page, baseURL }) => {
@@ -1267,6 +1419,8 @@ test.describe('browser audit', () => {
     } else {
       expect(activeStats.renderMode).toBe('imagedata');
     }
+    // While particles draw the portrait, the photo underneath is dimmed inline.
+    await expect.poll(() => page.locator('.portrait').evaluate((img: HTMLImageElement) => img.style.opacity)).not.toBe('');
 
     const contact = sections.find((section) => section.name === 'contact')!;
     await switchSection(page, contact);
@@ -1278,6 +1432,8 @@ test.describe('browser audit', () => {
 
     const inactiveStats = await collectPortraitParticleStats(page);
     expect(inactiveStats.running).toBe(false);
+    // A released canvas draws nothing, so the photo returns to its stylesheet opacity.
+    expect(await page.locator('.portrait').evaluate((img: HTMLImageElement) => img.style.opacity)).toBe('');
   });
 
   test('constrained engines apply stricter heavy-graphics budgets', async ({ page, baseURL, browserName }) => {

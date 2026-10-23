@@ -37,6 +37,16 @@ async function gotoWork(page, viewport: { width: number; height: number }) {
   await page.goto('/index.html#work');
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('#work.active-section')).toBeVisible();
+  // Hover tests need a still rail. A late web-font swap or the rail's entrance animation can move a
+  // neighbouring node under a stationary pointer, and Firefox then fires mouseenter on it (without
+  // a pointer event), so the note shows the wrong entry.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    const rail = document.querySelector('.work-rail');
+    const finite = rail ? rail.getAnimations({ subtree: true })
+      .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity) : [];
+    await Promise.all(finite.map((a) => a.finished.catch(() => undefined)));
+  });
 }
 
 test.describe('Work career rail', () => {
@@ -78,7 +88,7 @@ test.describe('Work career rail', () => {
 
     const ids = await page.locator('.rail-node').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).dataset.id));
-    expect(ids.length).toBe(18);
+    expect(ids.length).toBe(16);
     expect(ids[0]).toBe('adp');
     expect(ids[ids.length - 1]).toBe('beng');
 
@@ -98,8 +108,8 @@ test.describe('Work career rail', () => {
     await expect(note).toContainText('Lyric HCM');
     await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
 
-    await page.locator('.rail-node[data-id="cert-oci-foundations"] .rail-dot-btn').hover();
-    await expect(note.locator('.work-note-title')).toContainText('Oracle Cloud Infrastructure');
+    await page.locator('.rail-node[data-id="cert-jee8"] .rail-dot-btn').hover();
+    await expect(note.locator('.work-note-title')).toContainText('Java Enterprise Edition 8');
     await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
   });
 
@@ -136,7 +146,7 @@ test.describe('Work career rail', () => {
     expect(await select('netcompany')).toEqual({ id: 'netcompany', target: { kind: 'location', id: 'greece' } });
     expect(await select('talos')).toEqual({ id: 'talos', target: { kind: 'moon', id: 'talos-cli' } });
     expect(await select('true-rolls')).toEqual({ id: 'true-rolls', target: { kind: 'moon', id: 'true-rolls' } });
-    expect(await select('cert-oci-foundations')).toBeNull();
+    expect(await select('cert-jee8')).toBeNull();
 
     expect(pageErrors).toEqual([]);
   });
@@ -187,6 +197,35 @@ test.describe('Work career rail', () => {
     await expect(page.locator('#work-globe-canvas')).toHaveCount(1);
   });
 
+  test('Talos links to its own site from the landing, the work index and its card', async ({ page, browserName }) => {
+    await gotoWork(page, MOBILE);
+    await page.waitForSelector('.rail-node');
+    await expect(page.locator('#main .selected-projects a', { hasText: 'Talos' })).toHaveAttribute('href', 'https://taloslocal.com/');
+    await expect(page.locator('#work-index a[href="https://taloslocal.com/"]')).toHaveCount(1);
+
+    await page.locator('.rail-node[data-id="talos"] .rail-dot-btn').click();
+    const site = page.locator('.work-card-site');
+    await expect(site).toHaveAttribute('href', 'https://taloslocal.com/');
+    await expect(site).toHaveAttribute('target', '_blank');
+    // The card keeps focus inside it: close, the site, the globe, then close again. Safari, like WebKit
+    // here, skips links on Tab unless the reader turns that on, so there Tab goes straight to the globe.
+    await expect(page.locator('.work-card-close')).toBeFocused();
+    await page.keyboard.press('Tab');
+    if (browserName !== 'webkit') {
+      await expect(site).toBeFocused();
+      await page.keyboard.press('Tab');
+    }
+    await expect(page.locator('.work-card-globe')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.work-card-close')).toBeFocused();
+    await page.locator('.work-card-close').click();
+
+    // A project without a site of its own gets no site link.
+    await page.locator('.rail-node[data-id="true-rolls"] .rail-dot-btn').click();
+    await expect(page.locator('.work-card-title')).toHaveText('TrueRolls');
+    await expect(page.locator('.work-card-site')).toHaveCount(0);
+  });
+
   test('desktop: no toggle, and hover shows the side note rather than the card', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');
@@ -195,4 +234,52 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.work-note')).toHaveClass(/is-visible/);
     await expect(page.locator('.work-card-backdrop')).toBeHidden();
   });
+});
+
+// On touch screens base.css grows every button to a 44px target, so the toggle bar is 52px tall.
+// The bar, the close beside it and the legend below must stay apart, also when the page is zoomed
+// (206 and 195 are 360 and 390 phones at 175% and 200%, where the toggle takes its own row).
+test.describe('Work top bar on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  for (const viewport of [
+    MOBILE, { width: 360, height: 780 }, { width: 280, height: 606 }, { width: 206, height: 446 }, { width: 195, height: 422 },
+    { width: 844, height: 390 }, { width: 568, height: 320 }, { width: 768, height: 1024 }
+  ]) {
+    test(`the toggle, the close and the legend keep apart (${viewport.width}x${viewport.height})`, async ({ page, browserName }) => {
+      await routeTurnstile(page);
+      await gotoWork(page, viewport);
+      await page.waitForSelector('.rail-node');
+      if (browserName !== 'firefox') expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true);
+      const boxes = await page.evaluate(() => {
+        const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().toJSON();
+        return { toggle: box('.work-view-toggle'), close: box('.work-close'), legend: box('.work-rail-key') };
+      });
+      const { toggle, close, legend } = boxes;
+      expect(toggle.bottom + 8, 'toggle above the legend').toBeLessThanOrEqual(legend.top);
+      // The close is a 44px disc: its edge stays at least 4px off the toggle and the legend.
+      const cx = close.left + close.width / 2;
+      const cy = close.top + close.height / 2;
+      for (const [name, rect] of [['toggle', toggle], ['legend', legend]] as const) {
+        const gap = Math.hypot(Math.max(rect.left - cx, 0, cx - rect.right), Math.max(rect.top - cy, 0, cy - rect.bottom)) - close.width / 2;
+        expect(gap, `close to ${name}`).toBeGreaterThanOrEqual(4);
+      }
+      // Short landscape phones lay the key in one row where the 90vmin column holds it, so the
+      // timeline keeps room for an entry or more.
+      if (viewport.height <= 520 && viewport.width > viewport.height) {
+        const rows = await page.$$eval('.work-rail-key-row', (els) => new Set(els.map((el) => Math.round(el.getBoundingClientRect().top))).size);
+        if (viewport.height * 0.9 >= 340) expect(rows, 'legend rows').toBe(1);
+        const entry = (await page.locator('.rail-node').first().boundingBox())!.height;
+        expect((await page.locator('.work-rail-viewport').boundingBox())!.height, 'timeline height').toBeGreaterThanOrEqual(entry);
+      }
+      // The buttons are still full touch targets, and a tap on each reaches it.
+      for (const button of await page.locator('.work-view-btn').all()) {
+        expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+      await page.locator('.work-view-btn[data-view="globe"]').tap();
+      await expect(page.locator('#work')).toHaveClass(/work-view-globe/);
+      await page.locator('.work-view-btn[data-view="timeline"]').tap();
+      await expect(page.locator('#work')).toHaveClass(/work-view-timeline/);
+    });
+  }
 });

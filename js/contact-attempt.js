@@ -21,7 +21,7 @@ export class ContactAttempt {
     }
     const age = Date.now() - this.current.createdAt;
     if (!Number.isFinite(age) || age > RETRY_LIFETIME || age < -60000) {
-      throw new Error('This retry has expired. An earlier attempt may have been accepted. Please');
+      throw new Error('This retry has expired. An earlier attempt may have been accepted. Please email me directly.');
     }
     return { submissionId: this.current.id, submissionCreatedAt: this.current.createdAt };
   }

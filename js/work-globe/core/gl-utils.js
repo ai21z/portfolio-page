@@ -12,15 +12,9 @@ function createShader(gl, type, source) {
   return shader;
 }
 
-export function createProgram(gl, vertexSource, fragmentSource, attribLocations = {}) {
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  
-  // Bind attribute locations before linking
+// Attribute locations bound before linking. Only these three names are bound. The idle shader
+// warm-up binds through this too, so it links exactly the program createProgram does.
+export function bindAttribs(gl, program, attribLocations = {}) {
   if (attribLocations.position !== undefined) {
     gl.bindAttribLocation(program, attribLocations.position, 'position');
   }
@@ -30,7 +24,16 @@ export function createProgram(gl, vertexSource, fragmentSource, attribLocations 
   if (attribLocations.uv !== undefined) {
     gl.bindAttribLocation(program, attribLocations.uv, 'uv');
   }
-  
+}
+
+export function createProgram(gl, vertexSource, fragmentSource, attribLocations = {}) {
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  bindAttribs(gl, program, attribLocations);
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {

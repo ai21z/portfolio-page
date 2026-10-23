@@ -13,11 +13,21 @@
   display: none;
 }
 
-.blog-screen.active-section {
+.blog-screen.active-section,
+.blog-screen.stage-leaving {
   display: block !important;
-  opacity: 1 !important;
+}
+
+.blog-screen.active-section {
+  opacity: 1;
   pointer-events: auto !important;
-  transition: none !important;
+}
+
+/* Fade in from display:none like the other sections. Older browsers show it at once. */
+@starting-style {
+  .blog-screen.active-section {
+    opacity: 0;
+  }
 }
 
 .blog-network-canvas {
@@ -27,6 +37,15 @@
   width: 100%;
   height: 100%;
   display: block;
+  /* Its WebGL context is opaque, so the canvas is black until a frame is drawn. Stay
+     transparent until then, so a first visit shows the background instead of a black frame. */
+  opacity: 0;
+}
+
+/* Fade in once drawn. Released canvases drop to transparent at once, never fading out black. */
+.blog-network-canvas.is-drawn {
+  opacity: 1;
+  transition: opacity 300ms ease-out;
 }
 
 .blog-intro-caption {
@@ -108,7 +127,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(201, 194, 179, 0.5);
+  color: rgba(201, 194, 179, 0.72); /* 6.1:1 on the abyss; 0.5 gave 3.5:1 */
 }
 
 .blog-memo-list {
@@ -291,6 +310,10 @@
   width: 100%;
   height: 100%;
   display: block;
+  /* The dish and its rim labels stay clear of the Field Notes column (40 + 260 px) and the
+     section rail (24 px + about 56 px). js/blog-network-webgl.js reads these. */
+  --dish-clear-left: 328px;
+  --dish-clear-right: 108px;
 }
 
 /* z:20 */
@@ -394,7 +417,7 @@
 }
 
 .zoom-arc-label {
-  fill: rgba(180, 160, 130, 0.5); /* Dimmer than hub labels */
+  fill: rgba(180, 160, 130, 0.8); /* Dimmer than hub labels, still 5.3:1 on the abyss */
   font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
   font-weight: 400;
   letter-spacing: 0.2em;
@@ -455,6 +478,14 @@
   transform: translateY(-10px);
   transition: opacity 300ms ease, transform 300ms ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* The section rail sits at top 64px here (navigation.css). Keep the tooltip left of it and right of CRAFT. */
+@media (max-width: 1024px) and (min-width: 901px) and (pointer: fine) {
+  .blog-hub-tooltip {
+    right: 82px;
+    max-width: min(280px, calc(50vw - 262px));
+  }
 }
 
 .blog-hub-tooltip.visible {
@@ -747,7 +778,7 @@
 .blog-map-btn:focus {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-map-btn:focus-visible {
@@ -786,7 +817,7 @@
 
 .blog-nav-link:hover,
 .blog-nav-link:focus {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-nav-link:focus-visible {
@@ -1390,7 +1421,7 @@
 }
 
 .article-container .article-content a {
-  color: var(--ember);
+  color: var(--ember-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1444,7 +1475,7 @@
 
 .article-container .article-content ol li::before {
   content: counter(item) ".";
-  color: var(--ember);
+  color: var(--ember-text);
   font-weight: 600;
   position: absolute;
   left: -24px;
@@ -1477,7 +1508,7 @@
 .article-container .back-button:hover {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .article-container .back-button:focus-visible {
@@ -1496,7 +1527,7 @@
 }
 
 .article-container .go-top-link:hover {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .article-meta a,
@@ -1601,7 +1632,7 @@ body > .article-container {
 .blog-article-content .back-button:hover {
   background: rgba(25, 26, 28, 0.95);
   border-color: var(--ember);
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 .blog-article-content .go-top-link {
@@ -1615,7 +1646,7 @@ body > .article-container {
 }
 
 .blog-article-content .go-top-link:hover {
-  color: var(--ember);
+  color: var(--ember-text);
 }
 
 @media (max-width: 700px),

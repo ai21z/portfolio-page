@@ -51,15 +51,36 @@ const PROFILE_BUDGETS = {
   }
 };
 
+// rAF timestamps jitter around vsync, so a 30 fps cap on a 60 Hz screen sees gaps a hair under 33.3 ms.
+// Without slack the loop waits for a third vsync and alternates 33 and 50 ms frames.
+const FRAME_SLACK_MS = 4;
+
+// A gap this long is a pause (hidden tab, stopped loop), not a frame.
+const PAUSE_MS = 1000;
+// Frames right after a tier change carry its canvas reallocation, so they are not evidence.
+const SETTLE_MS = 1000;
+// A stepped-down tier is retried after 20 s, then 60 s, then 180 s, then no more this visit.
+// Any downgrade after a retry counts that retry as failed, however late it comes, so a retry
+// made in silence (Contact, Quiet) or a device that slows after warming up still backs off.
+const PROMOTION_DELAY_MS = 20_000;
+const MAX_FAILED_PROMOTIONS = 3;
+
 const frameSamples = [];
 let lastFrameAdjustAt = 0;
 
 let initialized = false;
-let selectedProfile = normalizeSelectableProfile(readStoredProfile() || (isMobileViewport() ? 'quiet' : 'balanced'));
-let effectiveProfile = selectedProfile;
-let downgradeSteps = 0;
+const storedProfile = readStoredProfile();
+// Null until the visitor picks a profile. Until then the recommendation decides.
+let explicitProfile = storedProfile ? normalizeSelectableProfile(storedProfile) : null;
+let effectiveProfile = explicitProfile || (isMobileViewport() ? 'quiet' : 'balanced');
+// The highest tier recent frames allow. Held as a ceiling, not as steps, so a later lower
+// recommendation is not penalised twice.
+let runtimeCeiling = PROFILES.length - 1;
+let tierChangedAt = 0;
+let retryAwaitingVerdict = false;
+let failedPromotions = 0;
+let promotionTimer = 0;
 let movementRegressionUntil = 0;
-let lastPromotionCheck = 0;
 let currentSection = 'intro';
 let debugOverlay = null;
 let webglCapabilityProbe = null;
@@ -99,8 +120,18 @@ function classifyRenderer(renderer) {
   const value = String(renderer || '').toLowerCase();
   if (!value) return 'unknown';
   if (/(swiftshader|llvmpipe|software|warp|basic render|mesa offscreen)/i.test(value)) return 'software';
-  if (/(geforce|nvidia|rtx|gtx|radeon rx|radeon pro|quadro|arc\W|discrete)/i.test(value)) return 'discrete';
-  if (/(intel|uhd|iris|apple m|apple gpu|radeon graphics|integrated)/i.test(value)) return 'integrated';
+  // Arc cards read "Arc(TM) A770 Graphics", "A750E", "A370M", "A310 LP", "Pro A40/A50" or "B580".
+  // Integrated Arc reads "Arc(TM) Graphics" (Meteor Lake) or "Arc(TM) 140V GPU" (Lunar Lake).
+  if (/intel.*\barc\b/i.test(value)) {
+    const card = /\barc(\(tm\))?\s+(pro\s+)?[ab]\d{2,3}[a-z]?(\/[ab]?\d{2,3})?(\s+lp)?\s+graphics/i;
+    return card.test(value) ? 'discrete' : 'integrated';
+  }
+  // "Radeon(TM) RX Vega 11 Graphics" is a Raven Ridge APU. "RX Vega 56", "RX Vega M" and "RX 480" are cards.
+  if (/(geforce|nvidia|rtx|gtx|radeon\s*(\(tm\))?\s*(rx\b(?!\s+vega\s+\d{1,2}\s+graphics)|pro\b)|quadro|discrete)/i.test(value)) return 'discrete';
+  // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
+  if (/apple m\d/i.test(value)) return 'apple';
+  // AMD APUs read "Radeon(TM) Graphics", "Radeon Vega 8 Graphics" or "Radeon 780M Graphics".
+  if (/(intel|uhd|iris|apple m|apple gpu|radeon.{0,24}graphics|adreno|mali|integrated)/i.test(value)) return 'integrated';
   return 'unknown';
 }
 
@@ -170,7 +201,7 @@ function hardwareClass({ hardwareConcurrency, deviceMemory, rendererCategory }) 
   }
   if ((hardwareConcurrency === null || hardwareConcurrency >= 8)
     && (deviceMemory === null || deviceMemory >= 8)
-    && rendererCategory === 'discrete') {
+    && (rendererCategory === 'discrete' || rendererCategory === 'apple')) {
     return 'strong';
   }
   return 'capable';
@@ -194,7 +225,7 @@ function getGraphicsCapability() {
   const viewport = viewportClass();
   // Defer GPU startup unless a 3D section or an explicit desktop quality choice needs it.
   const needsWebGL = currentSection === 'work' || currentSection === 'blog'
-    || (!isMobileViewport() && rank(selectedProfile) > rank('balanced'));
+    || (!isMobileViewport() && explicitProfile !== null && rank(explicitProfile) > rank('balanced'));
   const webgl = webglCapabilityProbe || (needsWebGL ? probeWebGL2Capability() : {
     webgl2: null,
     webgl2PerformanceOk: null,
@@ -242,9 +273,14 @@ function getGraphicsCapability() {
     recommendedProfile = 'balanced';
     if (classification === 'modest') reasons.push('modest-hardware');
     if (viewport !== 'desktop') reasons.push(viewport);
-  } else if (engine === 'chromium' && classification === 'strong' && webgl.webgl2PerformanceOk) {
+  } else if (engine === 'chromium'
+    && (webgl.webgl2 === null || webgl.rendererCategory === 'discrete' || webgl.rendererCategory === 'apple')) {
+    // The landing has no WebGL, so its GPU stays unprobed until a 3D section opens. Once probed,
+    // Rich needs a GPU known to be discrete or Apple silicon. Integrated and unrecognised ones
+    // step down to Balanced. The performance-caveat flag is ignored: software renderers already
+    // go Quiet and the flag has misfired on Apple silicon.
     recommendedProfile = 'rich';
-    reasons.push('strong-chromium-webgl');
+    reasons.push(classification === 'strong' ? 'strong-chromium-webgl' : 'capable-chromium');
   } else {
     reasons.push('standard-capability');
   }
@@ -291,7 +327,8 @@ function readStoredProfile() {
 
 function writeStoredProfile(profile) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, profile);
+    if (validProfile(profile)) window.localStorage.setItem(STORAGE_KEY, profile);
+    else window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Ignore private browsing/storage denial.
   }
@@ -319,7 +356,6 @@ function recommendationReason(state) {
   if (state.firefox) return 'Firefox receives a safer WebGL budget';
   if (state.webkit) return 'WebKit receives a safer WebGL budget';
   if (state.mobile) return 'small or touch viewport';
-  if (state.movementRegression) return 'recent movement or long frames';
   if (state.downgradeSteps > 0) return 'recent long frames';
   if (state.profile !== state.effectiveProfile) return 'runtime capability budget';
   return 'standard browser settings';
@@ -328,19 +364,25 @@ function recommendationReason(state) {
 function formatCapabilityReason(reason) {
   const labels = {
     'strong-chromium-webgl': 'strong Chrome/Edge/Brave WebGL',
+    'capable-chromium': 'capable Chrome/Edge/Brave desktop',
     'firefox-conservative': 'Firefox conservative mode',
     'webkit-conservative': 'Safari/WebKit conservative mode'
   };
   return labels[reason] || reason.replaceAll('-', ' ');
 }
 
+function selectedProfile() {
+  return explicitProfile || getGraphicsCapability().recommendedProfile;
+}
+
 function selectedProfileAllowsPortraitStreaming() {
-  return selectedProfile === 'rich' || selectedProfile === 'full';
+  const profile = selectedProfile();
+  return profile === 'rich' || profile === 'full';
 }
 
 function mergeBudget(profile, extras = {}) {
   return {
-    profile: selectedProfile,
+    profile: selectedProfile(),
     effectiveProfile: profile,
     ...PROFILE_BUDGETS[profile],
     ...extras
@@ -354,31 +396,28 @@ function ownerSectionForSystem(systemName) {
   return null;
 }
 
-function computeEffectiveProfile() {
-  const capability = getGraphicsCapability();
+// The tier before runtime evidence.
+function baseProfileIndex() {
+  // Reduced motion, save-data, phones, missing WebGL2 and software rendering always run Quiet.
+  if (getGraphicsCapability().recommendedProfile === 'quiet') return 0;
 
-  if (capability.recommendedProfile === 'quiet') return 'quiet';
-
-  let index = rank(selectedProfile);
-  if (rank(capability.recommendedProfile) <= rank('balanced')) {
-    index = Math.min(index, rank(capability.recommendedProfile));
-  }
+  // An explicit choice is honoured. The runtime ceiling still steps it down if frames slow.
+  let index = rank(selectedProfile());
 
   if (isFirefox() || isWebKit()) {
     index = Math.min(index, rank('balanced'));
   }
+  return index;
+}
 
-  if (isMobileViewport()) {
-    index = Math.min(index, rank(selectedProfile === 'full' ? 'rich' : 'balanced'));
-  }
+// Movement pauses portrait streaming only. Dropping a tier mid-gesture reallocated every canvas.
+function computeEffectiveProfile() {
+  return profileAt(Math.min(baseProfileIndex(), runtimeCeiling));
+}
 
-  index = Math.max(0, index - downgradeSteps);
-
-  if (performance.now() < movementRegressionUntil) {
-    index = Math.max(0, index - 1);
-  }
-
-  return profileAt(index);
+function runtimeSteps() {
+  const base = baseProfileIndex();
+  return base - Math.min(base, runtimeCeiling);
 }
 
 function updateDocumentState(reason = 'state') {
@@ -386,7 +425,7 @@ function updateDocumentState(reason = 'state') {
   const changed = nextEffective !== effectiveProfile;
   effectiveProfile = nextEffective;
 
-  document.documentElement.dataset.graphicsProfile = selectedProfile;
+  document.documentElement.dataset.graphicsProfile = selectedProfile();
   document.documentElement.dataset.graphicsEffectiveProfile = effectiveProfile;
   document.documentElement.dataset.graphicsSection = currentSection;
   document.documentElement.dataset.graphicsReducedMotion = String(prefersReducedMotion());
@@ -396,6 +435,7 @@ function updateDocumentState(reason = 'state') {
 
   syncControl();
   updateDebugOverlay();
+  armPromotionIfHeldBack();
 
   if (changed || reason === 'profile' || reason === 'section') {
     notifySubscribers(reason);
@@ -412,15 +452,18 @@ function syncControl() {
   const root = document.querySelector('[data-graphics-control]');
   if (!root) return;
 
+  const state = getGraphicsState();
   const toggle = root.querySelector('.graphics-control__toggle');
   if (toggle) {
-    toggle.textContent = `Graphics: ${formatProfile(selectedProfile)}`;
+    // Name the tier actually running, and mark it when the governor overrode the visitor's choice.
+    const overridden = explicitProfile && state.effectiveProfile !== explicitProfile;
+    toggle.textContent = `Graphics: ${formatProfile(state.effectiveProfile)}${overridden ? ' (auto)' : ''}`;
   }
 
   root.querySelectorAll('[data-graphics-profile]').forEach((button) => {
     const profile = button.getAttribute('data-graphics-profile');
     const unavailable = isFirefoxUnavailableProfile(profile);
-    const active = profile === selectedProfile;
+    const active = profile === (explicitProfile || 'auto');
     button.setAttribute('aria-pressed', String(active));
     button.toggleAttribute('disabled', unavailable);
     button.setAttribute('aria-disabled', String(unavailable));
@@ -431,7 +474,6 @@ function syncControl() {
     }
   });
 
-  const state = getGraphicsState();
   const status = root.querySelector('[data-graphics-help-status]');
   if (status) {
     const selectedSuffix = state.profile === state.capability.recommendedProfile
@@ -513,7 +555,7 @@ function wireControl() {
       const profile = button.getAttribute('data-graphics-profile');
       setMenuOpen(false);
       // Reload on explicit profile changes, never on automatic downgrades.
-      if (!profile || profile === selectedProfile) return;
+      if (!profile || profile === (explicitProfile || 'auto')) return;
       writeStoredProfile(profile);
       if (typeof window.__showThreshold === 'function') window.__showThreshold();
       window.location.reload();
@@ -533,32 +575,81 @@ function wireControl() {
     setMenuOpen(false);
   });
 
+  // A click anywhere else closes the menu as well as the help, so neither lingers (an open menu
+  // also holds back the wheel's section steps).
   document.addEventListener('pointerdown', (event) => {
     if (root.contains(event.target)) return;
     setHelpOpen(false);
+    setMenuOpen(false);
   });
 }
 
+// A capped loop's own gap is not slowness: a 24 fps cap waits 50 ms on 60 Hz and 66.7 ms under
+// Chrome's 30 Hz Energy Saver by design. Slow means 30 ms past the cap, and never under 50 ms.
+function isSlowFrame(sample) {
+  return sample.deltaMs > Math.max(50, (sample.intervalMs || 0) + 30);
+}
+
+function recentFrameSamples(now) {
+  return frameSamples.filter((sample) => now - sample.at <= 10_000);
+}
+
+function setRuntimeCeiling(index, reason) {
+  runtimeCeiling = index;
+  tierChangedAt = performance.now();
+  // One burst costs one tier: the next decision needs fresh evidence from the new tier.
+  frameSamples.length = 0;
+  updateDocumentState(reason);
+  schedulePromotion(PROMOTION_DELAY_MS * 3 ** failedPromotions);
+}
+
+function schedulePromotion(delayMs) {
+  window.clearTimeout(promotionTimer);
+  promotionTimer = 0;
+  if (runtimeCeiling >= PROFILES.length - 1 || failedPromotions >= MAX_FAILED_PROMOTIONS) return;
+  promotionTimer = window.setTimeout(tryPromotion, delayMs);
+}
+
+// Called on every state update, so a retry that found the ceiling not binding (the base had
+// dropped for a narrow window or reduced motion) is armed again once the base rises above it.
+function armPromotionIfHeldBack() {
+  if (!promotionTimer && runtimeCeiling < baseProfileIndex()) {
+    schedulePromotion(PROMOTION_DELAY_MS * 3 ** failedPromotions);
+  }
+}
+
+function tryPromotion() {
+  promotionTimer = 0;
+  if (runtimeCeiling >= baseProfileIndex() || failedPromotions >= MAX_FAILED_PROMOTIONS) return;
+  // Retiering a hidden tab would reallocate canvases nobody sees.
+  if (document.hidden) {
+    schedulePromotion(5_000);
+    return;
+  }
+  const recent = recentFrameSamples(performance.now());
+  // Quiet stops the landing's only sampled loop, so silence must not block a retry.
+  const calm = recent.length === 0 || (recent.length >= 30 && !recent.some(isSlowFrame));
+  if (!calm) {
+    schedulePromotion(5_000);
+    return;
+  }
+  retryAwaitingVerdict = true;
+  setRuntimeCeiling(runtimeCeiling + 1, 'runtime-promotion');
+}
+
 function maybeAdjustFromFrames(now) {
-  const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
+  const recent = recentFrameSamples(now);
   frameSamples.length = 0;
   frameSamples.push(...recent);
 
-  const slowFrames = recent.filter((sample) => sample.deltaMs > 50).length;
+  const slowFrames = recent.filter(isSlowFrame).length;
   const longFrames = recent.filter((sample) => sample.deltaMs > 100).length;
-  if ((longFrames >= 5 || slowFrames >= 18) && downgradeSteps < 3) {
-    downgradeSteps++;
-    updateDocumentState('runtime-downgrade');
-    return;
-  }
-
-  if (now - lastPromotionCheck < 20_000 || downgradeSteps <= 0) return;
-  lastPromotionCheck = now;
-
-  const stable = recent.length >= 30 && recent.every((sample) => sample.deltaMs < 50);
-  if (stable) {
-    downgradeSteps--;
-    updateDocumentState('runtime-promotion');
+  const current = rank(computeEffectiveProfile());
+  if ((longFrames >= 5 || slowFrames >= 18) && current > 0) {
+    // One failed retry counts once, however many steps the same slowdown then takes.
+    if (retryAwaitingVerdict) failedPromotions++;
+    retryAwaitingVerdict = false;
+    setRuntimeCeiling(current - 1, 'runtime-downgrade');
   }
 }
 
@@ -599,14 +690,16 @@ function updateDebugOverlay() {
 
 export function getGraphicsState() {
   const now = performance.now();
-  const recent = frameSamples.filter((sample) => now - sample.at <= 10_000);
+  const recent = recentFrameSamples(now);
   const effectiveProfile = computeEffectiveProfile();
   return {
-    profile: selectedProfile,
+    profile: selectedProfile(),
+    profileSource: explicitProfile ? 'user' : 'auto',
     effectiveProfile,
     capability: getGraphicsCapability(),
     currentSection,
-    downgradeSteps,
+    downgradeSteps: runtimeSteps(),
+    failedPromotions,
     movementRegression: now < movementRegressionUntil,
     reducedMotion: prefersReducedMotion(),
     saveData: saveDataEnabled(),
@@ -711,25 +804,37 @@ export function getGraphicsBudget(systemName = 'default') {
   return budget;
 }
 
+// 'auto' clears the visitor's choice and hands the tier back to the recommendation.
 export function setGraphicsProfile(profile, options = {}) {
-  if (!validProfile(profile)) return;
-  const nextProfile = normalizeSelectableProfile(profile);
-  selectedProfile = nextProfile;
+  if (profile !== 'auto' && !validProfile(profile)) return;
+  explicitProfile = profile === 'auto' ? null : normalizeSelectableProfile(profile);
   invalidateGraphicsCapability();
-  downgradeSteps = 0;
-  if (options.persist !== false) writeStoredProfile(nextProfile);
+  runtimeCeiling = PROFILES.length - 1;
+  failedPromotions = 0;
+  retryAwaitingVerdict = false;
+  tierChangedAt = performance.now();
+  frameSamples.length = 0;
+  window.clearTimeout(promotionTimer);
+  promotionTimer = 0;
+  if (options.persist !== false) writeStoredProfile(explicitProfile || 'auto');
   updateDocumentState('profile');
 }
 
+// The reason names the gesture at call sites. Movement only pauses portrait streaming,
+// which reads the budget every frame, so no state update or event is needed.
 export function markGraphicsActivity(reason = 'activity', durationMs = 700) {
   movementRegressionUntil = Math.max(movementRegressionUntil, performance.now() + durationMs);
-  updateDocumentState(reason);
-  window.setTimeout(() => updateDocumentState(`${reason}:settled`), durationMs + 40);
 }
 
-export function reportFrameSample(systemName, deltaMs) {
+export function frameDue(elapsedMs, intervalMs) {
+  return !intervalMs || elapsedMs >= intervalMs - FRAME_SLACK_MS;
+}
+
+export function reportFrameSample(systemName, deltaMs, intervalMs = 0) {
   const now = performance.now();
-  frameSamples.push({ systemName, deltaMs, at: now });
+  if (deltaMs < PAUSE_MS && now - tierChangedAt >= SETTLE_MS) {
+    frameSamples.push({ systemName, deltaMs, intervalMs, at: now });
+  }
   // Sample every frame but adjust the budget only a few times per second.
   if (now - lastFrameAdjustAt >= 500) {
     lastFrameAdjustAt = now;

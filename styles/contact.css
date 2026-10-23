@@ -3,7 +3,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 4vw, 64px) clamp(16px, 4vw, 32px);
+  /* The sheet is centred in the window, so this is only the least dark margin. More would make the
+     page scroll past a sheet that fits, and the first wheel would only scroll it back. */
+  padding: 16px clamp(16px, 4vw, 32px);
   position: relative;
   background: rgba(8,9,10,0.85); /* Semi-transparent dark overlay like altar screens */
   z-index: 9; /* Same as altar-screen to allow base background through */
@@ -90,14 +92,18 @@ body:has(#contact.stage.active-section) .dish-labels {
 
 .notebook-page {
   position: relative;
-  /* Keep the header padding tied to the seal dimensions. */
-  --seal-top: clamp(8px, 2vw, 16px);
-  --seal-size: clamp(64px, 12vw, 100px);
-  --seal-gap: clamp(18px, 3vw, 24px);
-  max-width: 720px;
-  width: min(100%, 720px);
+  /* Every line of the sheet sits on one ruled pitch, counted from the top of the sheet, so the
+     typed text and the rules line up at any length. */
+  --row: 32px;
+  /* The seal and its gap fill the first four ruled lines. */
+  --seal-top: 12px;
+  --seal-size: 100px;
+  --seal-gap: 16px;
+  max-width: 600px;
+  width: min(100%, 600px);
   padding: clamp(16px, 4vw, 40px);
-  padding-top: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)); /* clear the seal + gap */
+  padding-top: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap));
+  padding-bottom: var(--row);
   padding-left: clamp(32px, 6vw, 72px); /* Extra left for spiral holes */
   box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.5),
@@ -119,13 +125,12 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   /* Aged paper texture - richer, darker tones */
   background:
-    /* Subtle horizontal lines */
+    /* Ruled lines, 20px into each row: under the baseline of the 11 to 29px type */
     repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 31px,
-      rgba(139, 125, 107, 0.15) 31px,
-      rgba(139, 125, 107, 0.15) 32px
+      180deg,
+      transparent 0 20px,
+      rgba(139, 125, 107, 0.15) 20px 21px,
+      transparent 21px var(--row)
     ),
     /* Heavy coffee stain top - darker */
     radial-gradient(
@@ -204,15 +209,15 @@ body:has(#contact.stage.active-section) .dish-labels {
     radial-gradient(ellipse 38px 72px at 73% 38%, rgba(101, 67, 33, 0.32) 0%, rgba(101, 67, 33, 0.18) 45%, transparent 70%),
     radial-gradient(ellipse 25px 55px at 76% 44%, rgba(101, 67, 33, 0.24) 0%, transparent 65%),
 
-    /* Bottom left cluster - darker */
-    radial-gradient(ellipse 90px 75px at 18% 62%, rgba(101, 67, 33, 0.4) 0%, rgba(101, 67, 33, 0.24) 38%, transparent 62%),
-    radial-gradient(ellipse 55px 45px at 14% 58%, rgba(101, 67, 33, 0.35) 0%, transparent 58%),
-    radial-gradient(circle 30px at 22% 65%, rgba(101, 67, 33, 0.3) 0%, transparent 68%),
+    /* Bottom left cluster (sits under the Message label: kept lighter for contrast) */
+    radial-gradient(ellipse 90px 75px at 18% 62%, rgba(101, 67, 33, 0.28) 0%, rgba(101, 67, 33, 0.16) 38%, transparent 62%),
+    radial-gradient(ellipse 55px 45px at 14% 58%, rgba(101, 67, 33, 0.24) 0%, transparent 58%),
+    radial-gradient(circle 30px at 22% 65%, rgba(101, 67, 33, 0.2) 0%, transparent 68%),
 
-    /* Bottom right stain cluster - darker */
-    radial-gradient(ellipse 110px 85px at 88% 78%, rgba(101, 67, 33, 0.45) 0%, rgba(101, 67, 33, 0.28) 35%, transparent 65%),
-    radial-gradient(ellipse 65px 50px at 92% 82%, rgba(101, 67, 33, 0.38) 0%, transparent 60%),
-    radial-gradient(circle 35px at 85% 75%, rgba(101, 67, 33, 0.32) 0%, transparent 70%),
+    /* Bottom right stain cluster (sits under the character counter on phones) */
+    radial-gradient(ellipse 110px 85px at 88% 78%, rgba(101, 67, 33, 0.28) 0%, rgba(101, 67, 33, 0.17) 35%, transparent 65%),
+    radial-gradient(ellipse 65px 50px at 92% 82%, rgba(101, 67, 33, 0.24) 0%, transparent 60%),
+    radial-gradient(circle 35px at 85% 75%, rgba(101, 67, 33, 0.2) 0%, transparent 70%),
 
     /* Small random spatter marks - darker */
     radial-gradient(ellipse 28px 35px at 42% 15%, rgba(101, 67, 33, 0.28) 0%, transparent 65%),
@@ -254,52 +259,74 @@ body:has(#contact.stage.active-section) .dish-labels {
   z-index: 2;
 }
 
+/* Secondary notebook text uses the same --paper-ink as everything else: #5A5040 and lighter fell
+   to 2-4:1 over the coffee stains (tests/paper-contrast.spec.ts measures the rendered paper). */
+.notebook-page {
+  /* Deep enough for the status line beside Send, low on the sheet where the paper darkens. */
+  --notebook-error: #600000;
+}
+
+/* Beside Send, where the eye is after pressing it. Empty, it takes no line of its own. */
 .form-status {
+  grid-column: 1;
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: #5A5040;
-  min-height: 1.2rem;
-  margin-bottom: 1.1rem;
+  color: var(--paper-ink);
+  line-height: var(--row);
+  text-align: right;
   letter-spacing: 0.3px;
   transition: color 0.3s ease;
 }
 
 .form-status.success {
-  color: #14532d;
+  color: #0a2e17;
 }
 
 .form-status.error {
-  color: #8B0000;
+  color: var(--notebook-error);
+}
+
+/* The "email me directly" fallback link: ink like its message, told apart by the underline */
+.form-status a {
+  color: inherit;
+  text-decoration: underline dashed rgba(101, 67, 33, 0.7);
+  text-underline-offset: 0.18em;
+}
+
+.form-status a:hover {
+  text-decoration-style: solid;
 }
 
 .form-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 24px;
+  align-items: start;
 }
 
+/* The spam check is invisible unless Turnstile asks a visitor for a tick, so it takes no room
+   until then. It stays rendered, collapsed, as Turnstile needs. */
 .turnstile-field {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
-  min-height: 42px;
-  width: 100%;
 }
 
-.turnstile-placeholder {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.8rem;
-  color: rgba(58, 53, 48, 0.7);
+.turnstile-field.is-interactive {
+  margin-bottom: 12px;
 }
 
+/* Hidden in place: pushed 9999px out, the trap was turned by the page's tilt into a scrollable
+   strip below the sheet, which ate the first wheel or touch gesture on Contact. */
 .honeypot-trap {
   position: absolute;
-  left: -9999px;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .notebook-header {
@@ -307,50 +334,53 @@ body:has(#contact.stage.active-section) .dish-labels {
   font-size: 1.8rem;
   font-weight: 400;
   color: var(--paper-ink);
-  margin-bottom: 0.4rem;
-  margin-top: 0.5rem;
+  margin: 0;
+  line-height: max(var(--row), 1.1em);
+  /* Whole ruled lines even when the reader has set larger text. */
+  line-height: round(up, max(var(--row), 1.1em), var(--row));
+  /* Larger type: lift its baseline onto the rule like the smaller lines. */
+  position: relative;
+  top: -2px;
   text-align: center;
   letter-spacing: 0.5px;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+.contact-email {
+  display: block;
+  width: fit-content;
+  margin-inline: auto;
+  line-height: var(--row);
+}
+
 .notebook-subheader {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: #5A5040;
+  color: var(--paper-ink);
   text-align: center;
-  margin-bottom: 1.5rem;
-  line-height: 32px; /* Align with notebook lines */
+  margin: 0;
+  line-height: var(--row);
 }
 
-/* Contact epigraph: a typed quote + its attribution on the notebook paper */
+/* Contact epigraph: one typed line on the notebook paper, then a blank ruled line before the form */
 .notebook-quote {
-  margin-bottom: 0; /* keep the attribution on the next ruled line */
-}
-
-.notebook-cite {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6A5F4D;
-  text-align: center;
-  line-height: 32px; /* drop to the next ruled line */
-  margin: 0 0 1.5rem;
+  margin-bottom: var(--row);
 }
 
 
+/* A field is its label line, its writing line and a blank ruled line kept for its error. A longer
+   error (larger text) pushes the next field down rather than printing over it. */
 .notebook-field {
-  margin-bottom: 1.2rem;
   position: relative;
 }
 
 .notebook-label {
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
-  color: #5A5040;
+  color: var(--paper-ink);
   display: block;
-  margin-bottom: 0.25rem;
+  margin: 0;
+  line-height: var(--row);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
@@ -365,48 +395,75 @@ body:has(#contact.stage.active-section) .dish-labels {
   padding: 0;
   background: transparent;
   border: none;
-  line-height: 32px; /* Match notebook line spacing exactly */
+  display: block;
+  line-height: var(--row);
   transition: var(--ui-transition-slow);
   outline: none;
-  /* Ensure text sits exactly on the ruled lines */
   position: relative;
-  top: -1px; /* Fine-tune alignment */
 }
 
-.notebook-input:focus,
-.notebook-textarea:focus {
-  color: #1A1510; /* Slightly darker on focus */
+/* The fields have no border, so focus is shown with a dashed ink outline, the same mark as the
+   links. The old darker-text cue was about 1.2:1 from the normal ink, too faint to see. */
+.notebook-input:focus-visible,
+.notebook-textarea:focus-visible {
+  outline: 1px dashed var(--paper-ink);
+  outline-offset: 4px;
+}
+
+/* Placeholders read as hints through the italic; the browser's default grey failed on the paper */
+.notebook-input::placeholder,
+.notebook-textarea::placeholder {
+  color: var(--paper-ink-hint);
+  font-style: italic;
+  opacity: 1;
 }
 
 .notebook-input.error,
 .notebook-textarea.error {
-  color: rgba(139, 0, 0, 0.8);
+  color: var(--notebook-error);
   animation: inputShake 0.4s ease;
 }
 
+/* Four ruled lines to write on, growing a line at a time up to six where the browser can size a
+   field to its content (elsewhere it scrolls). */
 .notebook-textarea {
   resize: none;
-  min-height: 128px; /* 4 lines × 32px */
-  padding-top: 0;
+  min-height: calc(4 * var(--row));
+  max-height: calc(6 * var(--row));
+  field-sizing: content;
 }
 
+/* The counter writes on the MESSAGE label's line. */
 .char-counter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  line-height: var(--row);
   text-align: right;
-  margin-top: 0.25rem;
+  pointer-events: none;
+}
+
+/* The message is the last field, so its error takes a line only when there is one. */
+.notebook-field:has(.notebook-textarea) .validation-msg {
+  min-height: 0;
 }
 
 .char-count {
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
-  color: #8B7D6B;
+  color: var(--paper-ink);
+}
+
+.char-count.over-limit {
+  color: var(--notebook-error);
 }
 
 .validation-msg {
+  min-height: var(--row);
   font-family: 'Special Elite', monospace;
   font-size: 0.75rem;
-  color: #8B0000;
-  margin-top: 0.25rem;
-  min-height: 1rem;
+  line-height: var(--row);
+  color: var(--notebook-error);
   opacity: 0;
   transform: translateY(-5px);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -419,6 +476,9 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 .notebook-submit {
+  grid-column: 2;
+  /* Clear of the message box's focus outline, which is drawn just below it. */
+  margin-top: 12px;
   font-family: 'Special Elite', monospace;
   font-size: 0.85rem;
   font-weight: 400;
@@ -512,11 +572,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   filter: blur(0.3px);
 }
 
-.notebook-submit:hover {
-  color: #1A1510;
-  transform: translateY(-1px);
-}
-
+/* Hover shows in the pencil lines only. Lifting the button moved its edge under a resting cursor,
+   so hover switched off and on every frame. */
 .notebook-submit:hover::before {
   border-color: rgba(58, 53, 48, 0.8);
   opacity: 0.9;
@@ -639,11 +696,39 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 }
 
+/* Short desktop windows (1366x768, 1280x720, a MacBook Air): name and email share one ruled line
+   and the message gets three lines, growing to four, so the whole sheet and Send stay in view. The
+   full sheet needs about 850px. Before the compact layout below, which undoes the pairing. */
+@media (max-height: 860px) {
+  .notebook-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+
+  .notebook-form > * {
+    grid-column: 1 / -1;
+  }
+
+  .notebook-field:has(#name) {
+    grid-column: 1;
+  }
+
+  .notebook-field:has(#email) {
+    grid-column: 2;
+  }
+
+  .notebook-textarea {
+    min-height: calc(3 * var(--row));
+    max-height: calc(4 * var(--row));
+  }
+}
+
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),
        (max-width: 1366px) and (pointer: coarse) {
   #contact {
-    padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
+    padding: 16px clamp(1rem, 3vw, 1.5rem) clamp(1.5rem, 4vw, 2rem);
     /* Ensure section is scrollable on mobile */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -653,22 +738,45 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 
   .contact-close {
-    top: max(12px, env(safe-area-inset-top, 12px));
-    right: max(12px, env(safe-area-inset-right, 12px));
+    /* Rides with the sheet in the corner torn out for it, so it never lies on the paper or over
+       the text as the page scrolls. Its centre is 18px in from the sheet's right edge and 18px
+       below its top, which ties it to #contact's padding above. */
+    position: absolute;
+    top: 12px;
+    right: calc(clamp(1rem, 3vw, 1.5rem) - 4px);
     width: 44px; /* Maintain 44px minimum touch target */
     height: 44px;
     font-size: 18px;
   }
 
   .notebook-page {
-    --seal-top: 6px;
-    --seal-size: clamp(60px, 15vw, 85px);
-    --seal-gap: clamp(16px, 5vw, 22px);
+    /* The seal and its gap fill the first three ruled lines. */
+    --seal-top: 8px;
+    --seal-size: 64px;
+    --seal-gap: 24px;
     max-width: 100%;
     width: 100%;
-    padding: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)) clamp(1rem, 4vw, 1.5rem) clamp(1.5rem, 5vw, 2rem) clamp(2.5rem, 8vw, 3.5rem);
+    padding: calc(var(--seal-top) + var(--seal-size) + var(--seal-gap)) clamp(1rem, 4vw, 1.5rem) var(--row) clamp(2.5rem, 8vw, 3.5rem);
     /* Slightly reduce rotation on mobile for better alignment */
     transform: rotate(-0.3deg);
+  }
+
+  /* The torn edge with a bite out of the top-right corner, around the close button */
+  .notebook-page,
+  .notebook-page::after {
+    clip-path: polygon(
+      0% 2%, 1% 0%, 3% 1%, 5% 0.5%, 8% 1%, 12% 0.8%, 15% 1.5%, 18% 0.5%, 22% 1%,
+      25% 0.8%, 30% 1.2%, 35% 0.5%, 40% 1%, 45% 0.8%, 50% 1.2%, 55% 0.5%, 60% 1%,
+      65% 0.8%, 70% 1.5%, 75% 0.5%, 80% 1.2%, max(80%, calc(100% - 64px)) 0.8%,
+      calc(100% - 44px) 0.6%, calc(100% - 45.2px) 4.2px, calc(100% - 45.9px) 10px,
+      calc(100% - 49.9px) 15.8px, calc(100% - 47.1px) 22.6px, calc(100% - 47.2px) 29.8px,
+      calc(100% - 42px) 34.2px, calc(100% - 40.2px) 41.8px, calc(100% - 33.2px) 43.3px,
+      calc(100% - 27.6px) 47.5px, calc(100% - 20.5px) 46.9px, calc(100% - 14.1px) 49.8px,
+      calc(100% - 7.9px) 45.7px, calc(100% - 2.5px) 44.8px, 100% 42.5px,
+      100% 98%, 99% 100%, 97% 99%, 95% 99.5%, 92% 99%, 88% 99.5%, 85% 98.5%, 82% 99.5%, 78% 99%,
+      75% 99.2%, 70% 98.8%, 65% 99.5%, 60% 99%, 55% 99.2%, 50% 98.8%, 45% 99.5%, 40% 99%,
+      35% 99.5%, 30% 98.8%, 25% 99.2%, 20% 99.5%, 15% 99%, 10% 99.5%, 5% 99%, 2% 99.5%, 0% 98%
+    );
   }
 
   .notebook-page::before {
@@ -680,52 +788,25 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   .notebook-header {
     font-size: clamp(1.4rem, 5vw, 1.7rem);
-    margin-top: 0;
-    margin-bottom: 0.3rem;
   }
 
   .notebook-subheader {
     font-size: clamp(0.8rem, 3.5vw, 0.9rem);
-    margin-bottom: 1.2rem;
-    line-height: 1.4;
-  }
-
-  .notebook-quote {
-    margin-bottom: 0.35rem;
-  }
-
-  .notebook-cite {
-    line-height: 1.4;
-    margin-bottom: 1.2rem;
   }
 
   .notebook-label {
     font-size: clamp(0.75rem, 3vw, 0.85rem);
-    margin-bottom: 0.35rem;
   }
 
+  /* The label line above each field focuses it too, so a field is two ruled lines to tap. */
   .notebook-input,
   .notebook-textarea {
     font-size: clamp(0.95rem, 4vw, 1.05rem);
-    line-height: clamp(28px, 8vw, 32px); /* Slightly tighter line height for mobile */
-    /* Ensure minimum touch-friendly input height */
-    min-height: 44px;
-    padding: 0.5rem 0;
-  }
-
-  .notebook-input::placeholder,
-  .notebook-textarea::placeholder {
-    color: rgba(58, 53, 48, 0.85);
-    opacity: 1;
   }
 
   .notebook-textarea {
-    min-height: clamp(120px, 30vw, 160px); /* Responsive textarea height */
-    line-height: clamp(28px, 8vw, 32px);
-  }
-
-  .char-counter {
-    margin-top: 0.5rem;
+    min-height: calc(3 * var(--row));
+    max-height: calc(6 * var(--row));
   }
 
   .char-count {
@@ -734,23 +815,22 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   .validation-msg {
     font-size: clamp(0.7rem, 2.5vw, 0.75rem);
-    margin-top: 0.35rem;
+  }
+
+  .notebook-form {
+    display: block;
   }
 
   .form-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.2rem;
-    margin-top: 1.2rem;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .turnstile-field {
-    width: 100%;
-    display: flex;
-    justify-content: center;
+  .form-status {
+    text-align: left;
   }
 
   .notebook-submit {
+    grid-column: 1;
     /* Ensure minimum 44px touch target height */
     min-height: 44px;
     padding: 0.7rem 1.8rem;
@@ -783,14 +863,12 @@ body:has(#contact.stage.active-section) .dish-labels {
 
   .form-status {
     font-size: clamp(0.75rem, 3vw, 0.85rem);
-    margin-bottom: 1rem;
-    min-height: 1rem;
   }
 
   @media (max-height: 600px) {
     .wax-seal {
       left: auto;
-      right: 20px;
+      right: 64px; /* Clear of the close button's corner */
       top: 10px;
       width: 40px;
       height: 40px;
@@ -804,6 +882,13 @@ body:has(#contact.stage.active-section) .dish-labels {
 
     .notebook-page {
       padding-top: 2rem; /* Reduce top padding since seal is moved */
+    }
+  }
+
+  /* Short portrait phones: the centred title would run under the corner seal, so it starts one ruled line lower. */
+  @media (max-height: 600px) and (max-aspect-ratio: 1/1) {
+    .notebook-page {
+      padding-top: calc(2 * var(--row));
     }
   }
 }

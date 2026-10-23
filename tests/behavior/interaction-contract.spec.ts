@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fillContact } from '../helpers/contact';
 
 const successTurnstileStub = `
   window.turnstile = {
@@ -336,24 +337,35 @@ test('page close and section navigation close child overlays', async ({ page }) 
   await expect(page.locator('.project-panel.visible')).toHaveCount(0);
 });
 
-test('Contact disables submit until required verification is ready', async ({ page }) => {
+test('Contact keeps Send ready while verification runs, and a press waits for it before sending', async ({ page }) => {
   await routeTurnstile(page, pendingTurnstileStub);
+  const tokens: string[] = [];
+  await page.route('**/api/contact', (route) => {
+    tokens.push(route.request().postDataJSON().turnstileToken);
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, state: 'accepted' }) });
+  });
 
   await page.goto('/index.html#contact');
   await page.waitForLoadState('domcontentloaded');
   await waitForActiveSection(page, 'contact');
 
   const submit = page.getByRole('button', { name: /send message/i });
-  await expect(submit).toBeDisabled();
+  await expect(submit).toBeEnabled();
+  await fillContact(page);
+  await submit.click();
+  await expect(page.locator('[data-status]')).toContainText('Sending');
+  await page.waitForTimeout(200);
+  expect(tokens).toEqual([]);
 
   await page.evaluate(() => {
     (window as Window & { __releaseTurnstileToken?: () => void }).__releaseTurnstileToken?.();
   });
 
-  await expect(submit).toBeEnabled();
+  await expect(page.locator('[data-status]')).toContainText('Message accepted');
+  expect(tokens).toEqual(['test-turnstile-token']);
 });
 
-test('Contact shows an actionable unavailable state when Turnstile cannot mount', async ({ page }) => {
+test('Contact offers the draft by email when Turnstile cannot mount', async ({ page }) => {
   await routeTurnstile(page, unavailableTurnstileStub);
 
   await page.goto('/index.html#contact');
@@ -363,8 +375,11 @@ test('Contact shows an actionable unavailable state when Turnstile cannot mount'
     document.dispatchEvent(new CustomEvent('turnstile-loaded'));
   });
 
-  await expect(page.locator('[data-status]')).toHaveText(/verification .*unavailable/i);
-  await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
+  await expect(page.locator('[data-status]')).toHaveText('');
+  await fillContact(page);
+  await page.getByRole('button', { name: /send message/i }).click();
+  await expect(page.locator('[data-status]')).toHaveText(/could not run in this browser.*send it by email/i);
+  await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
 });
 
 test('inactive intro canvas buffers are released and return within the active budget', async ({ page }) => {

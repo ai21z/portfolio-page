@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { fillContact } from './helpers/contact';
 
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, deviceScaleFactor: 2.625 });
 
@@ -101,29 +102,234 @@ test('desktop social animation initializes only once and stops in Quiet', async 
   }
 });
 
-test('reading graphics state preserves the recovery notification', async ({ browser }) => {
+test('movement keeps the graphics tier and real slowness still notifies after a state read', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
   try {
+    // Contact runs no sampled render loop, so only the frames reported here reach the governor.
     await page.clock.install();
-    await page.goto('/index.html');
-    await expect(page.locator('#threshold')).toBeHidden();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
     await page.clock.fastForward(2000);
     await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');
       governor.setGraphicsProfile('balanced', { persist: false });
-      (window as any).__recoveryEvents = [];
+      (window as any).__tierEvents = [];
+      (window as any).__dprEvents = 0;
       window.addEventListener('graphics:profile-change', (event: CustomEvent) => {
-        (window as any).__recoveryEvents.push(event.detail.effectiveProfile);
+        (window as any).__tierEvents.push(event.detail.effectiveProfile);
       });
+      window.addEventListener('dpr-changed', () => { (window as any).__dprEvents++; });
       governor.markGraphicsActivity('test', 700);
     });
-    await page.clock.fastForward(710);
-    await page.evaluate(async () => {
+    const during = await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');
-      governor.getGraphicsState();
+      return governor.getGraphicsState();
     });
-    await page.clock.fastForward(60);
-    expect(await page.evaluate(() => (window as any).__recoveryEvents)).toContain('balanced');
+    expect(during.movementRegression).toBe(true);
+    expect(during.effectiveProfile).toBe('balanced');
+    // Past the movement window and the settle time after the profile change.
+    await page.clock.fastForward(1100);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+    expect(await page.evaluate(() => (window as any).__dprEvents)).toBe(0);
+
+    const report = (deltaMs: number, count: number, intervalMs = 1000 / 30) => page.evaluate(async ([delta, n, cap]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, cap);
+      governor.getGraphicsState();
+    }, [deltaMs, count, intervalMs]);
+
+    // One vsync past a 30 fps cap is jitter, not slowness.
+    await report(50.1, 30);
+    await page.clock.fastForward(600);
+    await report(50.1, 1);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+
+    // A 24 fps cap under Chrome's 30 Hz Energy Saver renders every 66.7 ms by design.
+    await report(66.7, 30, 1000 / 24);
+    await page.clock.fastForward(600);
+    await report(66.7, 1, 1000 / 24);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual([]);
+
+    // Two vsyncs past the cap is real slowness.
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await page.evaluate(() => (window as any).__tierEvents)).toEqual(['quiet']);
+    await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
+  } finally {
+    await page.close();
+  }
+});
+
+test('capped loops render on the vsync that meets their cap despite timestamp jitter', async ({ page }) => {
+  await page.goto('/index.html#contact');
+  const due = await page.evaluate(async () => {
+    const { frameDue } = await import('/js/graphics-governor.js');
+    const cap30 = 1000 / 30;
+    const cap24 = 1000 / 24;
+    return {
+      uncapped: frameDue(0.1, 0),
+      oneVsyncAt30: frameDue(16.7, cap30),
+      twoVsyncsJitteredLow: frameDue(33.2, cap30),
+      slackEdge: frameDue(29.4, cap30),
+      beforeSlack: frameDue(29.2, cap30),
+      twoVsyncsAt24: frameDue(33.4, cap24),
+      threeVsyncsAt24: frameDue(50, cap24),
+      fiveFramesAt120Hz: frameDue(41.6, cap24)
+    };
+  });
+  expect(due).toEqual({
+    uncapped: true,
+    oneVsyncAt30: false,
+    twoVsyncsJitteredLow: true,
+    slackEdge: true,
+    beforeSlack: false,
+    twoVsyncsAt24: false,
+    threeVsyncsAt24: true,
+    fiveFramesAt120Hz: true
+  });
+});
+
+test('a slow burst costs one tier and the tier is retried with growing backoff', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Auto reaches Rich only in Chromium.');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.addInitScript(() => {
+      localStorage.removeItem('aris.graphicsProfile');
+      Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+    });
+    // Contact runs no sampled render loop, so only the frames reported here reach the governor.
+    await page.clock.install();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    await page.clock.fastForward(2000);
+    await page.evaluate(() => {
+      (window as any).__tierEvents = [];
+      window.addEventListener('graphics:profile-change', (event: CustomEvent) => {
+        (window as any).__tierEvents.push(event.detail.effectiveProfile);
+      });
+    });
+    const events = () => page.evaluate(() => (window as any).__tierEvents);
+    const state = () => page.evaluate(async () => (await import('/js/graphics-governor.js')).getGraphicsState());
+    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 0);
+    }, [deltaMs, count]);
+    const burst = async () => {
+      await report(80, 20);
+      await page.clock.fastForward(600);
+      await report(80, 1);
+    };
+    expect((await state()).effectiveProfile).toBe('rich');
+
+    // Gaps over a second are pauses such as a hidden tab, not frames.
+    await report(5000, 6);
+    await page.clock.fastForward(600);
+    await report(16.7, 1);
+    expect(await events()).toEqual([]);
+
+    await burst();
+    expect(await events()).toEqual(['balanced']);
+    // The same burst is not counted twice, and the frames right after the change are not evidence.
+    await page.clock.fastForward(600);
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await events()).toEqual(['balanced']);
+
+    // With no sampled loop running, the stepped-down tier is retried after 20 s.
+    await page.clock.fastForward(20_000);
+    expect(await events()).toEqual(['balanced', 'rich']);
+
+    // Failing the retry steps back down and the next retry waits 60 s instead of 20 s, even when
+    // the retry first ran well for more than ten seconds of frames. The same slowdown taking a
+    // second step still counts as one failed retry.
+    await page.clock.fastForward(1100);
+    await report(16.7, 700);
+    await burst();
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced']);
+    expect((await state()).failedPromotions).toBe(1);
+    await page.clock.fastForward(1100);
+    await burst();
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet']);
+    expect((await state()).failedPromotions).toBe(1);
+    await page.clock.fastForward(21_000);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet']);
+    await page.clock.fastForward(40_000);
+    expect(await events()).toEqual(['balanced', 'rich', 'balanced', 'quiet', 'balanced']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('a held-back tier is retried after the base dips and returns, and never while the tab is hidden', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Auto reaches Rich only in Chromium.');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    await page.addInitScript(() => {
+      localStorage.removeItem('aris.graphicsProfile');
+      Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', { configurable: true, get: () => 8 });
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', { configurable: true, get: () => 8 });
+      // Lets the test hide the tab without leaving the page.
+      let hidden = false;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+      (window as any).__setHidden = (value: boolean) => { hidden = value; };
+    });
+    await page.clock.install();
+    await page.goto('/index.html#contact');
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    await page.clock.fastForward(2000);
+    const effective = () => page.locator('html').getAttribute('data-graphics-effective-profile');
+    const report = (deltaMs: number, count: number) => page.evaluate(async ([delta, n]) => {
+      const governor = await import('/js/graphics-governor.js');
+      for (let i = 0; i < n; i++) governor.reportFrameSample('test', delta, 0);
+    }, [deltaMs, count]);
+    expect(await effective()).toBe('rich');
+    await report(80, 20);
+    await page.clock.fastForward(600);
+    await report(80, 1);
+    expect(await effective()).toBe('balanced');
+
+    // A narrow window lowers the base to Balanced, so the retry finds nothing held back.
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await page.clock.fastForward(20_500);
+    expect(await effective()).toBe('balanced');
+    // Restoring the width raises the base again, and the retry is armed again.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => (window as any).__setHidden(true));
+    await page.clock.fastForward(20_500);
+    expect(await effective()).toBe('balanced');
+    await page.evaluate(() => (window as any).__setHidden(false));
+    await page.clock.fastForward(5_500);
+    expect(await effective()).toBe('rich');
+  } finally {
+    await page.close();
+  }
+});
+
+test('a section module from a newer release reloads the page once, then only warns', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
+  try {
+    // An open tab keeps its old governor, so newer Work modules importing new exports fail to link.
+    // Two imports failing with different errors must not reload back and forth.
+    await page.route('**/js/work-globe-webgl.js*', route => route.fulfill({
+      contentType: 'application/javascript',
+      body: "import { exportFromANewerRelease } from './graphics-governor.js'; export default exportFromANewerRelease;"
+    }));
+    await page.route('**/js/work-timeline.js*', route => route.fulfill({
+      contentType: 'application/javascript',
+      body: "import { anotherNewerExport } from './graphics-governor.js'; export const initWorkTimeline = anotherNewerExport;"
+    }));
+    // Firefox can restart a load still in progress, so count navigation requests rather than load events.
+    let navigations = 0;
+    page.on('request', request => { if (request.isNavigationRequest()) navigations++; });
+    const warnings: string[] = [];
+    page.on('console', message => { if (message.type() === 'warning') warnings.push(message.text()); });
+    await page.goto('/index.html#work');
+    await expect.poll(() => warnings.some(text => text.includes('work globe module unavailable')), { timeout: 15_000 }).toBe(true);
+    expect(navigations).toBe(2);
+    await expect(page.locator('#work')).toHaveClass(/active-section/);
   } finally {
     await page.close();
   }
@@ -149,7 +355,7 @@ test('contact loads and mounts verification once after opening', async ({ page }
   await expect(page.locator('#threshold')).toBeHidden();
   expect(loads).toBe(0);
   await page.evaluate(() => { location.hash = 'contact'; });
-  await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => (window as any).__verificationMounts)).toBe(1);
   await page.getByLabel('Your Name').fill('Test Visitor');
   await page.evaluate(() => { location.hash = 'about'; });
   await expect(page.locator('#about')).toHaveClass(/active-section/);
@@ -159,12 +365,19 @@ test('contact loads and mounts verification once after opening', async ({ page }
   expect(await page.evaluate(() => (window as any).__verificationMounts)).toBe(1);
 });
 
-test('a blocked verification script leaves direct email available', async ({ page }) => {
-  await page.route('https://challenges.cloudflare.com/**', route => route.abort());
+test('a blocked verification script is tried again on Send, then the draft goes by email', async ({ page }) => {
+  let loads = 0;
+  await page.route('https://challenges.cloudflare.com/**', route => { loads++; return route.abort(); });
   await page.goto('/index.html#contact');
-  await expect(page.locator('[data-status]')).toHaveText(/verification service unavailable/i);
-  await expect(page.locator('[data-status] a')).toHaveAttribute('href', 'mailto:aris@zounarakis.com');
-  await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
+  await expect.poll(() => loads).toBe(1);
+  await expect(page.locator('[data-status]')).toHaveText('');
+  await fillContact(page);
+  await page.getByRole('button', { name: /send message/i }).click();
+  await expect(page.locator('[data-status]')).toHaveText(/the spam check could not run in this browser\. your message is still here, and you can send it by email\./i);
+  await expect(page.locator('[data-status] a')).toHaveAttribute('href', /^mailto:aris@zounarakis\.com\?subject=Synthetic%20contact%20check&body=/);
+  expect(loads).toBe(2);
+  await expect(page.getByRole('button', { name: /send message/i })).toBeEnabled();
+  await expect(page.getByLabel('Message')).toBeEditable();
 });
 
 test('the production stylesheet has no nested stylesheet requests', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, lerp, clamp } from './utils.js';
 
 const prefersReducedMotion =
@@ -186,8 +186,13 @@ function initAltarCulture(sectionId) {
   }
 
   function loop(ts) {
-    // Keep the loop alive during transient pauses so it can resume.
-    if (!sectionActive()) { release(); rafId = null; return; }
+    // Keep the loop alive during transient pauses so it can resume. A section fading out keeps
+    // its last frame and releases once the fade ends.
+    if (!sectionActive()) {
+      if (!section.classList.contains('stage-leaving')) release();
+      rafId = null;
+      return;
+    }
     if (document.hidden || paperOpen() || !lensVisible()) {
       lastTs = ts;
       rafId = requestAnimationFrame(loop);
@@ -196,12 +201,12 @@ function initAltarCulture(sectionId) {
     if (Math.round(lens.clientWidth) !== cssW || !points.length) layout();
     const b = getGraphicsBudget('altar-culture');
     const interval = Math.max(33, b.frameIntervalMs || 33);
-    if (ts - lastTs >= interval) {
+    if (frameDue(ts - lastTs, interval)) {
       const dt = ts - lastTs;
       lastTs = ts;
       step(ts);
       draw(ts);
-      reportFrameSample('altar-culture', dt);
+      reportFrameSample('altar-culture', dt, interval);
     }
     rafId = requestAnimationFrame(loop);
   }
@@ -227,9 +232,13 @@ function initAltarCulture(sectionId) {
     rafId = requestAnimationFrame(loop);
   }
 
-  function stop() {
+  function pause() {
     if (rafId != null) cancelAnimationFrame(rafId);
     rafId = null;
+  }
+
+  function stop() {
+    pause();
     release();
   }
 
@@ -263,6 +272,8 @@ function initAltarCulture(sectionId) {
 
   const mo = new MutationObserver(() => {
     if (sectionActive()) ensureLoop();
+    // A section fading out keeps its last frame. The class change that ends the fade stops it.
+    else if (section.classList.contains('stage-leaving')) pause();
     else stop();
   });
   mo.observe(section, { attributes: true, attributeFilter: ['class'] });

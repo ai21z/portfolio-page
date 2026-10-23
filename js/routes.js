@@ -9,7 +9,7 @@ import {
   RESAMPLE_STEP_PX,
   RESAMPLE_MIN_POINTS
 } from './config.js';
-import { GRAPH, LOCKED_ROUTES, setLockedRoutes } from './state.js';
+import { LOCKED_ROUTES, setLockedRoutes } from './state.js';
 import { coverMap, projectXY } from './viewport.js';
 import { cumulativeLengths, pointAt } from './utils.js';
 
@@ -19,48 +19,59 @@ const LOCKED = new Map();
 // gracefully). Gate them behind the same ?hud debug flag as the HUD overlay.
 const ROUTE_DEBUG = new URLSearchParams(window.location.search).has('hud');
 
-const deg = (id) => (GRAPH.neighbors(id) || []).length;
+const deg = (graph, id) => (graph.neighbors(id) || []).length;
 
 const hyp = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-function climbToSpine(id, prev = null, maxHops = 80) {
+function climbToSpine(graph, id, prev = null, maxHops = 80) {
   let a = prev, b = id, hops = 0;
   while (hops++ < maxHops) {
-    const nbs = GRAPH.neighbors(b).filter(n => n !== a);
+    const nbs = graph.neighbors(b).filter(n => n !== a);
     if (nbs.length !== 1) break;
     a = b; b = nbs[0];
   }
   return b;
 }
 
-function farthestLeafFrom(src, forbidFirstHop = -1) {
-  const q = [src];
-  const dist   = new Map([[src, 0]]);
-  const parent = new Map();
-  const firstHop = new Map();
+// Breadth-first walk from src over the whole network, keeping each node's first-found parent and
+// the walked length to it. The leaf is the node farthest along that walk, the first one found on
+// a tie. The walk covers some 80,000 nodes twice per label, so it runs on typed arrays with an
+// index queue. A shifted array and maps made it a 110 ms frame.
+function farthestLeafFrom(graph, src, forbidFirstHop = -1) {
+  const count = graph.nodes.length;
+  const order = new Int32Array(count);
+  const dist = new Float64Array(count).fill(-1);
+  const parent = new Int32Array(count).fill(-1);
+  const firstHop = new Int32Array(count).fill(-1);
+  order[0] = src;
+  dist[src] = 0;
+  let head = 0;
+  let tail = 1;
 
-  while (q.length) {
-    const u = q.shift();
-    for (const v of GRAPH.neighbors(u)) {
+  while (head < tail) {
+    const u = order[head++];
+    for (const v of graph.neighbors(u)) {
       if (u === src && v === forbidFirstHop) continue;
-      if (!dist.has(v)) {
-        const w = hyp(GRAPH.nodes[u], GRAPH.nodes[v]);
-        dist.set(v, dist.get(u) + w);
-        parent.set(v, u);
-        firstHop.set(v, firstHop.get(u) ?? v);
-        q.push(v);
+      if (dist[v] < 0) {
+        dist[v] = dist[u] + hyp(graph.nodes[u], graph.nodes[v]);
+        parent[v] = u;
+        firstHop[v] = u === src ? v : firstHop[u];
+        order[tail++] = v;
       }
     }
   }
 
   let best = src, bestD = -1;
-  for (const [v, d] of dist) if (d > bestD) { best = v; bestD = d; }
-  return { leaf: best, parent, dist, firstHop };
+  for (let i = 0; i < tail; i++) {
+    const v = order[i];
+    if (dist[v] > bestD) { best = v; bestD = dist[v]; }
+  }
+  return { leaf: best, parent, firstHop };
 }
 
-function rebuildPath(parent, end) {
+function rebuildPath(graph, parent, end) {
   const out = [];
-  for (let v = end; v != null; v = parent.get(v)) out.push(GRAPH.nodes[v]);
+  for (let v = end; v >= 0; v = parent[v]) out.push(graph.nodes[v]);
   return out.reverse();
 }
 
@@ -117,37 +128,42 @@ function findClosestSOnRoute(route, vpX, vpY) {
   return bestS;
 }
 
-function computeLockedRouteFor(id, anchor) {
-  let start = GRAPH.nearestId(anchor.x, anchor.y, 160, 12);
-  
+// The label's route in image space: the longest run of the network through the node nearest its
+// anchor, trimmed around the anchor.
+function traceRouteFor(graph, id, anchor) {
+  let start = graph.nearestId(anchor.x, anchor.y, 160, 12);
+
   if (start < 0) {
     if (ROUTE_DEBUG) console.warn(`[LOCKED-ROUTE] ${id}: nearestId failed at r=160, retrying with r=240`);
-    start = GRAPH.nearestId(anchor.x, anchor.y, 240, 12);
+    start = graph.nearestId(anchor.x, anchor.y, 240, 12);
   }
-  
+
   if (start < 0) {
     console.error(`[LOCKED-ROUTE] ${id}: nearestId failed even with r=240`);
     return null;
   }
 
-  if (deg(start) <= 1) start = climbToSpine(start);
+  if (deg(graph, start) <= 1) start = climbToSpine(graph, start);
 
-  const A = farthestLeafFrom(start);
-  const avoid = A.firstHop.get(A.leaf) ?? -1;
-  const B = farthestLeafFrom(start, avoid);
+  const A = farthestLeafFrom(graph, start);
+  const avoid = A.firstHop[A.leaf];
+  const B = farthestLeafFrom(graph, start, avoid);
 
-  let left  = rebuildPath(A.parent, A.leaf);
-  let right = rebuildPath(B.parent, B.leaf);
+  let left  = rebuildPath(graph, A.parent, A.leaf);
+  let right = rebuildPath(graph, B.parent, B.leaf);
 
-  const spine = GRAPH.nodes[start];
+  const spine = graph.nodes[start];
   const eq = (p,q) => p.x === q.x && p.y === q.y;
   while (left.length  && !eq(left[0], spine))  left.shift();
   while (right.length && !eq(right[0], spine)) right.shift();
 
   const raw = [...left.reverse(), spine, ...right.slice(1)];
 
-  const trimmed = trimAroundAnchor(raw, MAX_ROUTE_LEN_PX, anchor);
+  return trimAroundAnchor(raw, MAX_ROUTE_LEN_PX, anchor);
+}
 
+// The traced route on the current viewport.
+function projectRoute(id, trimmed) {
   const sampled = resampleToViewport(trimmed.imgPts);
   if (sampled.projPts.length < 2) {
     console.error(`[LOCKED-ROUTE] ${id}: resample produced < 2 points`);
@@ -162,13 +178,21 @@ function computeLockedRouteFor(id, anchor) {
   return { ...sampled, imgPts: trimmed.imgPts };
 }
 
-export function buildLockedRoutes() {
-  LOCKED.clear();
-  
+// Locks each label to a single polyline on the network. Tracing a label walks the whole network,
+// so the page gets a turn before each one. The routes are put on the viewport together at the
+// end, so a resize during the build cannot leave a label on the old layout.
+export async function buildLockedRoutes(graph, pause = () => {}) {
+  const traced = [];
   for (const [id, anchor] of Object.entries(NAV_COORDS)) {
     if (id === 'intro') continue;
-    
-    const route = computeLockedRouteFor(id, anchor);
+    await pause();
+    traced.push([id, anchor, traceRouteFor(graph, id, anchor)]);
+  }
+
+  LOCKED.clear();
+
+  for (const [id, anchor, trimmed] of traced) {
+    const route = trimmed && projectRoute(id, trimmed);
     if (!route) {
       if (ROUTE_DEBUG) console.warn(`[LOCKED-ROUTE] ${id}: failed; fallback to static anchor`);
       LOCKED.set(id, null);

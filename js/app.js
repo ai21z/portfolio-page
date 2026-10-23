@@ -2,7 +2,7 @@
 window.__appBooted = true;
 document.documentElement.classList.add('js-ready');
 
-import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
+import { sizeCanvas, cumulativeLengths, isFirefox, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
 import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
@@ -13,7 +13,6 @@ import {
   hudEnabled,
   hudCanvas,
   hudCtx,
-  setHudEnabled,
   setHudCanvas,
   setHudCtx,
   bgImg,
@@ -60,6 +59,7 @@ import {
   layoutNavNodes,
   handleNavEnter,
   handleNavLeave,
+  initWheelSteps,
   updateMovingLabels
 } from './navigation.js';
 import {
@@ -70,6 +70,7 @@ import {
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import {
+  frameDue,
   getGraphicsBudget,
   initGraphicsGovernor,
   markGraphicsActivity,
@@ -114,26 +115,51 @@ let blogNetworkModulePromise = null;
 let workGlobeModulePromise = null;
 let workTimelineModulePromise = null;
 
+// A tab opened before a deploy keeps the old modules it already loaded. A section module fetched
+// later can import an export they lack, which fails to link as a SyntaxError. Reload to pick up
+// the whole release, at most once per tab every ten minutes, so two failing imports or a cached
+// stale copy cannot loop. Network failures are TypeErrors and only warn.
+function reloadOnceForRelease(err) {
+  if (!(err instanceof SyntaxError)) return false;
+  try {
+    const last = Number(sessionStorage.getItem('aris.releaseReload')) || 0;
+    if (Date.now() - last < 10 * 60_000) return false;
+    sessionStorage.setItem('aris.releaseReload', String(Date.now()));
+  } catch {
+    return false;
+  }
+  // No threshold veil here: if the visitor cancels the reload, nothing would lift it again.
+  window.location.reload();
+  return true;
+}
+
+// The section graphics modules, loaded on a visit or ahead of it by the idle warm-up.
+const importBlogNetwork = () => import('./blog-network-webgl.js?v=20261019');
+const importWorkGlobe = () => import('./work-globe-webgl.js?v=20261019');
+
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20260631').catch((err) => {
+    blogNetworkModulePromise = importBlogNetwork().catch((err) => {
       blogNetworkModulePromise = null;
+      if (reloadOnceForRelease(err)) return;
       console.warn('blog network module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20260913').catch((err) => {
+    workGlobeModulePromise = importWorkGlobe().catch((err) => {
       workGlobeModulePromise = null;
+      if (reloadOnceForRelease(err)) return;
       console.warn('work globe module unavailable:', err);
     });
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20260913')
+    workTimelineModulePromise = import('./work-timeline.js?v=20261019')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;
+        if (reloadOnceForRelease(err)) return;
         console.warn('work timeline module unavailable:', err);
       });
   }
@@ -247,18 +273,6 @@ function renderHUD() {
   }
 }
 
-function toggleHUD() {
-  setHudEnabled(!hudEnabled);
-  if (hudEnabled) {
-    initHUD();
-    renderHUD();
-  } else if (hudCanvas) {
-    hudCanvas.remove();
-    setHudCanvas(null);
-    setHudCtx(null);
-  }
-}
-
 if (!sparkCanvas) {
   const canvas = document.createElement('canvas');
   canvas.id = 'spark-canvas';
@@ -310,7 +324,7 @@ function sparkLoopWrapper(ts) {
   }
 
   const budget = getGraphicsBudget('intro-sparks');
-  if (budget.frameIntervalMs && ts - lastSparkTs < budget.frameIntervalMs) {
+  if (!frameDue(ts - lastSparkTs, budget.frameIntervalMs)) {
     _sparkRafId = requestAnimationFrame(sparkLoopWrapper);
     return;
   }
@@ -353,14 +367,19 @@ function releaseIntroCanvasBuffers() {
   setLastSporeFrame(0);
 }
 
-function releaseInactiveFeatureCanvasBuffers(activeSectionName) {
-  if (activeSectionName !== 'work') {
-    releaseCanvasBacking(document.getElementById('work-globe-canvas'), null);
-  }
-  if (activeSectionName !== 'blog') {
-    releaseCanvasBacking(document.getElementById('blog-network-canvas'), null);
+// A section's canvases keep their last frame while it fades out, so only sections that are
+// neither shown nor still leaving give theirs up.
+function releaseInactiveFeatureCanvasBuffers() {
+  for (const [section, canvasId] of [['work', 'work-globe-canvas'], ['blog', 'blog-network-canvas']]) {
+    const stage = document.querySelector(`.stage[data-section="${section}"]`);
+    if (stage?.matches('.active-section, .stage-leaving')) continue;
+    const canvas = document.getElementById(canvasId);
+    releaseCanvasBacking(canvas, null);
+    canvas?.classList.remove('is-drawn');
   }
 }
+
+document.addEventListener('stage:left', releaseInactiveFeatureCanvasBuffers);
 
 function restoreIntroCanvasBuffers() {
   if (getGraphicsBudget('intro-spores').quiet) {
@@ -588,7 +607,7 @@ function drawSpores(ts) {
   const budget = getGraphicsBudget('intro-spores');
   if (budget.quiet || spores.length === 0) return;
   const frameInterval = Math.max(33, budget.frameIntervalMs || 33);
-  if (ts - lastSporeFrame < frameInterval) return;
+  if (!frameDue(ts - lastSporeFrame, frameInterval)) return;
   setLastSporeFrame(ts);
 
   const c = sporeCtx;
@@ -674,29 +693,42 @@ function ritualCatchUp() {
   }
 }
 
+// Gives the page a turn, so a long build runs as short tasks between frames. A timer, not
+// scheduler.yield(): Chrome runs yield continuations ahead of rendering, so the chunks still
+// landed in one 100 ms frame.
+function yieldToPage() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// The first hover of a node waits on this, and the idle warm-up runs it ahead of time. It yields
+// between phases so it never holds a frame for long. The network is published only once the label
+// routes are ready, so nothing reads a half-built one.
 async function initNetworkAndNav() {
   if (!MYC_MAP) return;
 
-  setGraph(buildGraphFromPaths(MYC_MAP.paths));
-  computeNavOffsets();
+  const graph = buildGraphFromPaths(MYC_MAP.paths);
+  await yieldToPage();
+
   PATH_CACHE.clear();
 
   for (const [id, pt] of Object.entries(NAV_COORDS)) {
-    NODE_IDS[id] = GRAPH.nearestId(pt.x, pt.y, 80, 24);
+    NODE_IDS[id] = graph.nearestId(pt.x, pt.y, 80, 24);
   }
 
   const introId = NODE_IDS.intro;
   if (introId != null && introId >= 0) {
     for (const [id, gid] of Object.entries(NODE_IDS)) {
       if (id === 'intro' || gid == null || gid < 0) continue;
-      aStarPath(introId, gid, GRAPH, PATH_CACHE);
-      aStarPath(gid, introId, GRAPH, PATH_CACHE);
+      aStarPath(introId, gid, graph, PATH_CACHE);
+      aStarPath(gid, introId, graph, PATH_CACHE);
     }
   }
 
   // Lock each label to a single polyline
-  buildLockedRoutes();
+  await buildLockedRoutes(graph, yieldToPage);
 
+  setGraph(graph);
+  computeNavOffsets();
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 }
 
@@ -1204,10 +1236,12 @@ function closeTransientUi() {
 
 function showSectionWithEffects(sectionName, options = {}) {
   closeTransientUi();
+  // Switch the classes before the governor announces the new section, so canvases of the section
+  // fading out see it as inactive and keep their last frame instead of resizing (which clears them).
+  showSection(sectionName, options);
+  releaseInactiveFeatureCanvasBuffers();
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', 900);
-  showSection(sectionName, options);
-  releaseInactiveFeatureCanvasBuffers(sectionName);
   ensureSectionModule(sectionName);
 
   window.dispatchEvent(new CustomEvent('contact:visible', {
@@ -1333,7 +1367,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const articleId = parts[2];
 
     // Deep-link load: the hash is already correct, so don't touch history.
-    showSectionWithEffects('blog', { historyMode: 'none' });
+    showSectionWithEffects('blog', { historyMode: 'none', instant: true });
 
     if (articleId) {
       scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId, { historyMode: 'none' }));
@@ -1343,7 +1377,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
-    showSectionWithEffects(initialSection);
+    // Nothing has been seen yet on load, so the landing does not fade out behind the veil.
+    showSectionWithEffects(initialSection, { instant: true });
   }
 
   if (hudEnabled) {
@@ -1351,9 +1386,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     renderHUD();
   }
 
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'H') toggleHUD();
+  initWheelSteps(showSectionWithEffects);
 
+  window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const articleView = document.getElementById('blog-article-view');
       const categoryView = document.getElementById('blog-category-view');
@@ -1427,6 +1462,51 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   });
 }
 
+// Links a section's shaders ahead of its first visit. A failed load is left to the visit itself,
+// which knows how to recover from a newer release, so the warm-up never reloads the page. Only in
+// Chromium, where the gain was measured: Firefox may not share linked programs between contexts.
+async function warmSectionShaders(sectionName, load, warm) {
+  if (isFirefox()) return;
+  if (document.getElementById(sectionName)?.classList.contains('active-section')) return;
+  const mod = await load().catch(() => null);
+  await mod?.[warm]?.();
+}
+
+// Once the landing has settled, do in idle time the work that would otherwise be a long frame
+// later: building the navigation graph, which the first hover of a node waits for, then linking
+// the Blog and Work shaders, which their first visit waits for. One step per idle callback, and
+// only on desktops outside Quiet, since phones may never hover and Quiet sessions asked for less
+// work.
+const IDLE_WARMUP_DELAY_MS = 4000;
+const idleWarmupSteps = [
+  () => ensureMyceliumReady(),
+  () => warmSectionShaders('blog', importBlogNetwork, 'warmBlogNetwork'),
+  () => warmSectionShaders('work', importWorkGlobe, 'warmWorkGlobe')
+];
+
+function idleWarmupAllowed() {
+  return !isCompact() && !prefersReducedMotion && !navigator.connection?.saveData &&
+    !getGraphicsBudget('idle-warmup').quiet;
+}
+
+function runIdleWarmup() {
+  const step = idleWarmupSteps.shift();
+  if (!step || !idleWarmupAllowed()) return;
+  if (document.hidden) {
+    idleWarmupSteps.unshift(step);
+    document.addEventListener('visibilitychange', () => scheduleIdleWarmupStep(), { once: true });
+    return;
+  }
+  Promise.resolve()
+    .then(step)
+    .catch((err) => console.warn('idle warm-up step failed:', err))
+    .finally(scheduleIdleWarmupStep);
+}
+
+function scheduleIdleWarmupStep() {
+  requestIdleCallback(runIdleWarmup);
+}
+
 window.addEventListener('load', () => {
   if (COVER.ready) {
     computeCoverFromImage();
@@ -1436,6 +1516,11 @@ window.addEventListener('load', () => {
   }
 
   initHubToIcons();
+
+  // Safari has no idle callback, so it keeps the work where it was.
+  if (typeof window.requestIdleCallback === 'function') {
+    setTimeout(scheduleIdleWarmupStep, IDLE_WARMUP_DELAY_MS);
+  }
 });
 
 const glitchElements = document.querySelectorAll('.glitch-text');
@@ -1515,6 +1600,16 @@ window.addEventListener('hashchange', () => {
   } else {
     showSectionWithEffects('intro');
   }
+});
+
+// Skip to content moves focus into the section on screen. Its #main target serves the page without
+// scripts; the router would read it as a route and return to the landing.
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('a.skip')) return;
+  const active = document.querySelector('.stage.active-section');
+  if (!active) return;
+  e.preventDefault();
+  active.focus({ preventScroll: true });
 });
 
 document.addEventListener('click', (e) => {

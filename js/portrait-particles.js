@@ -1,6 +1,6 @@
 // Portrait Particle Effect - Desktop only
 import { cappedDpr, isFirefox, isWebKit } from './utils.js';
-import { getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 
 const FIREFOX = isFirefox();
 const WEBKIT = isWebKit();
@@ -464,6 +464,8 @@ class PortraitParticles {
     this.bufHeight = 1;
     this.dirtyPrev = null;
     this.dirtyCurr = null;
+    // A released canvas draws nothing, so the photo carries the portrait again until particles restart.
+    if (this.img) this.img.style.opacity = '';
     this.publishStats({ released: true });
   }
 
@@ -708,11 +710,15 @@ class PortraitParticles {
           if (mutation.attributeName === 'class') {
             const isActive = introSection.classList.contains('active-section');
             if (isActive && this.isVisible && !this.running) this.start();
-            else if (!isActive) this.stop({ release: true });
+            else if (!isActive) this.stop({ release: !this.introLeaving() });
           }
         });
       });
       this.mutationObserver.observe(introSection, { attributes: true });
+      // While the landing fades out the particles hold their last frame. Release once it left.
+      introSection.addEventListener('stage:left', () => {
+        if (!introSection.classList.contains('active-section')) this.stop({ release: true, forceRelease: true });
+      });
     }
   }
 
@@ -803,7 +809,11 @@ class PortraitParticles {
     }
 
     if (this.shouldRun()) this.start();
-    else this.stop({ release: true });
+    else this.stop({ release: !this.introLeaving() });
+  }
+
+  introLeaving() {
+    return Boolean(document.querySelector('.stage[data-section="intro"]')?.classList.contains('stage-leaving'));
   }
 
   handleResize() {
@@ -876,14 +886,15 @@ class PortraitParticles {
     }
     this.selectRenderMode();
     this.ensureBuffers();
-    if (budget.frameIntervalMs && now - this.lastFrameTime < budget.frameIntervalMs) {
+    if (!frameDue(now - this.lastFrameTime, budget.frameIntervalMs)) {
       this.animationId = requestAnimationFrame(this.boundAnimate);
       return;
     }
 
     const frameMs = now - this.lastFrameTime;
     const rawDt = frameMs / 16.667;
-    const dt = Math.max(0.5, Math.min(rawDt, 2));
+    // The floor admits 240 Hz frames, so a fast display does not speed the simulation up.
+    const dt = Math.max(0.25, Math.min(rawDt, 2));
     this.lastFrameTime = now;
 
     const physicsStart = performance.now();
@@ -1183,7 +1194,7 @@ class PortraitParticles {
     this.render();
     const renderEnd = performance.now();
     const renderMs = renderEnd - renderStart;
-    reportFrameSample('portrait-particles', frameMs);
+    reportFrameSample('portrait-particles', frameMs, budget.frameIntervalMs);
 
 
     this.animationId = requestAnimationFrame(this.boundAnimate);

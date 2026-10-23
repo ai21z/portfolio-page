@@ -20,6 +20,63 @@ for (const width of [390, 1366]) {
   }
 }
 
+// Every view sits inside the one main landmark and names itself with a heading. The other views are
+// inert, so a screen reader meets exactly one main and the heading of the view on screen.
+test('each view has the main landmark and its own heading', async ({ page, browserName }) => {
+  await stubVerification(page);
+  const views = [['main', 1, 'Aris Zounarakis'], ['about', 2, 'About'], ['skills', 2, 'Skills'], ['blog', 2, 'Blog'],
+    ['work', 2, 'Work'], ['contact', 2, 'Get in Touch']] as const;
+  for (const [section, level, name] of views) {
+    await page.goto('/index.html#' + section);
+    await expect(page.locator('html')).toHaveClass(/js-ready/);
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level, name, exact: true })).toHaveCount(1);
+    // Playwright's role lookup in WebKit does not leave out inert content (Safari itself does), so the
+    // other views are checked in Chromium and Firefox.
+    if (browserName === 'webkit') continue;
+    for (const [other, , otherName] of views) {
+      if (other !== section) await expect(page.getByRole('heading', { name: otherName, exact: true })).toHaveCount(0);
+    }
+  }
+});
+
+// Skip to content was routed as a hash, so from any view but the landing it returned to the landing.
+test('skip to content moves focus into the section on screen and stays there', async ({ page }) => {
+  await stubVerification(page);
+  for (const section of ['main', 'about', 'skills', 'work', 'blog', 'contact']) {
+    await page.goto('/index.html#' + section);
+    await expect(page.locator('html')).toHaveClass(/js-ready/);
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    // The first stop from the address bar.
+    await page.locator('a.skip').focus();
+    const before = page.url();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    await expect(page.locator('#' + section)).toBeFocused();
+    expect(page.url()).toBe(before);
+  }
+});
+
+test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {
+  // WCAG 2.1.4: a single-character shortcut fired whenever a visitor typed "Hello".
+  await stubVerification(page);
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await page.keyboard.press('Shift+H');
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
+
+  await page.goto('/index.html#contact');
+  const name = page.getByLabel('Your Name');
+  await name.pressSequentially('Hello Hana');
+  await expect(name).toHaveValue('Hello Hana');
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
+
+  await page.goto('/index.html?hud');
+  await expect(page.locator('#hud-canvas')).toHaveCount(1);
+});
+
 for (const section of ['about', 'skills']) {
   test(`${section} card keeps keyboard focus inside and restores its trigger`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1366, height: 900 });

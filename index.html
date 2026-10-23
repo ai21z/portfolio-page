@@ -81,25 +81,42 @@
   <link rel="manifest" href="./manifest.json" />
 
   <!-- Preload critical resources -->
-  <link rel="preload" href="./styles/main.css?v=20260913" as="style" />
+  <link rel="preload" href="./styles/main.css?v=20261019" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <!-- Match the portrait source so the preload is reused. -->
   <link rel="preload" as="image" href="./myOminousGreenPortrait-600.webp" media="(max-width: 900px)" imagesrcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-600.webp 600w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v=20260631 1024w" imagesizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" fetchpriority="high" />
   <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=20260631" media="(min-width: 901px)" type="image/webp" fetchpriority="high" />
 
-  <link rel="stylesheet" href="./styles/main.css?v=20260913" />
+  <link rel="stylesheet" href="./styles/main.css?v=20261019" />
   <link rel="stylesheet" href="./styles/graphics-controls.css?v=20260913-mobile" />
 
   <script type="importmap">
     {
       "imports": {
-        "./js/contact.js": "./js/contact.js?v=20260913",
-        "./js/navigation.js": "./js/navigation.js?v=20260913",
-        "./js/graphics-governor.js": "./js/graphics-governor.js?v=20260913-mobile",
+        "./js/contact.js": "./js/contact.js?v=20261019",
+        "./js/contact-attempt.js": "./js/contact-attempt.js?v=20261019",
+        "./js/navigation.js": "./js/navigation.js?v=20261019",
+        "./js/routes.js": "./js/routes.js?v=20261019",
+        "./js/graphics-governor.js": "./js/graphics-governor.js?v=20261019",
+        "./js/portrait-particles.js": "./js/portrait-particles.js?v=20261019",
         "./js/social-icons-animation.js": "./js/social-icons-animation.js?v=20260913-mobile",
         "./js/hub-to-icons.js": "./js/hub-to-icons.js?v=20260913-mobile"
       }
     }
+  </script>
+
+  <!-- With scripts on, the plain portfolio nav waits for the app. It shows with scripts off, when
+       the app did not start (a module script runs before DOMContentLoaded, so a page without js-ready
+       by then has a blocked or failed app), and 4 s in while the app is still on its way (a stalled or
+       very slow load, where DOMContentLoaded may never come). A late app hides it again. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      function check() { if (!root.classList.contains('js-ready')) root.classList.add('js-failed'); }
+      root.classList.add('js');
+      document.addEventListener('DOMContentLoaded', check);
+      setTimeout(check, 4000);
+    })();
   </script>
 
   <!-- Inline the loading cover so it paints before the page. -->
@@ -194,8 +211,10 @@
   <!-- Network Navigation Nodes (rendered via JS with smart placement) -->
   <div id="network-nav" role="navigation" aria-label="Main navigation"></div>
 
+  <!-- The six views share one main landmark. Only the active view is reachable: the others are inert. -->
+  <main>
   <!-- SECTION: INTRO -->
-  <main id="main" class="stage active-section" data-section="intro" aria-label="Intro" tabindex="-1">
+  <section id="main" class="stage active-section" data-section="intro" aria-label="Intro" tabindex="-1">
     <!-- Ambient photographic fungus (very dim) -->
     <div class="fungi-ambient" aria-hidden="true"></div>
 
@@ -618,12 +637,13 @@
       </footer>
 
       <!-- Portrait particle effect (desktop only) -->
-      <script type="module" src="./js/portrait-particles.js"></script>
+      <script type="module" src="./js/portrait-particles.js?v=20261019"></script>
     </section>
-  </main>
+  </section>
 
   <!-- SECTION: ABOUT -->
   <section id="about" class="stage altar-screen" data-section="about" aria-label="About" tabindex="-1">
+    <h2 class="sr-only">About</h2>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -638,6 +658,8 @@
         <defs>
           <!-- Orbital path for spores & curved title -->
           <path id="orbit" d="M50,5 A45,45 0 1,1 49.99,5" />
+          <!-- The same orbit run the other way, a little wider, so the bottom phrase reads upright -->
+          <path id="orbit-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
           <!-- Mycelial filaments -->
           <path id="hypha1" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
@@ -647,13 +669,6 @@
         <circle cx="50" cy="50" r="48" class="halo"/>
         <!-- Ring stroke -->
         <circle cx="50" cy="50" r="45" class="ring-stroke"/>
-
-        <!-- Title along the orbit -->
-        <text class="ring-text">
-          <textPath href="#orbit" startOffset="2%">
-            • ABOUT - ARIS ZOUNARAKIS - PLAIN, RELIABLE SOFTWARE - TOOLS YOU CAN TRUST •
-          </textPath>
-        </text>
 
         <!-- Hyphae filaments -->
         <use class="filament" href="#hypha1"/>
@@ -675,6 +690,13 @@
             <mpath href="#orbit"/>
           </animateMotion>
         </circle>
+
+        <!-- Title along the orbit, one phrase in each gap between the cards (placed in altar.css),
+             above the spores so they pass under the letters -->
+        <text class="ring-text ring-text--top"><textPath href="#orbit" startOffset="50%">• ABOUT •</textPath></text>
+        <text class="ring-text ring-text--right"><textPath href="#orbit" startOffset="50%">ARIS ZOUNARAKIS</textPath></text>
+        <text class="ring-text ring-text--bottom"><textPath href="#orbit-under" startOffset="50%">PLAIN, RELIABLE SOFTWARE</textPath></text>
+        <text class="ring-text ring-text--left"><textPath href="#orbit" startOffset="50%">TOOLS YOU CAN TRUST</textPath></text>
       </svg>
 
       <div class="core" aria-hidden="true">
@@ -687,11 +709,11 @@
 
       <!-- THREE NECRO-SLABS (now treated as "papers") -->
       <article class="slab slab-about paper" data-paper aria-label="About text" tabindex="0">
-        <h2>Background</h2>
+        <h3>Background</h3>
         <p>Software engineer (M.Sc.). I build reliable systems, Java/Spring services and local-first tools for LLMs. Comfortable in ambiguity, allergic to heroics, big on documentation.</p>
       </article>
 
-      <section class="slab slab-expertise paper" data-paper aria-label="What I value" tabindex="0">
+      <article class="slab slab-expertise paper" data-paper aria-label="What I value" tabindex="0">
         <h3>What I value</h3>
         <ul class="kv about-values">
           <li><span>Clarity</span><span>Simple interfaces, explicit contracts.</span></li>
@@ -705,14 +727,14 @@
           <li><strong>Talos</strong>: local-first workspace operator for governed developer tasks.</li>
           <li><strong>TrueRolls</strong>: verifiable dice with signed drand receipts and documented limits.</li>
         </ul>
-      </section>
+      </article>
 
       <article class="slab slab-paramour paper" data-paper aria-label="Art's paramour" tabindex="0">
-        <h2>Art's paramour</h2>
+        <h3>Art's paramour</h3>
         <p>Moved by music, image, and story, with a lifelong commitment to the craft. I play, I learn, I feel it in my chest, and I let it change me.</p>
       </article>
 
-      <aside class="slab slab-vitals paper" data-paper aria-label="Contact" tabindex="0">
+      <article class="slab slab-vitals paper" data-paper aria-label="Contact" tabindex="0">
         <h3>Contact</h3>
         <p>Best way to reach me is email (<a href="mailto:aris@zounarakis.com">aris@zounarakis.com</a>).</p>
         <h3 style="margin-top:16px;">Now</h3>
@@ -722,12 +744,13 @@
           <li>Building <strong>Talos</strong> (local workspace operator) and <strong>TrueRolls</strong>.</li>
           <li>Enjoying Barcelona.</li>
         </ul>
-      </aside>
+      </article>
     </div>
   </section>
 
   <!-- SECTION: SKILLS -->
   <section id="skills" class="stage altar-screen" data-section="skills" aria-label="Skills" tabindex="-1">
+    <h2 class="sr-only">Skills</h2>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -741,18 +764,13 @@
       <svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs>
           <path id="orbit-skills" d="M50,5 A45,45 0 1,1 49.99,5" />
+          <path id="orbit-skills-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
           <path id="hypha1-skills" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2-skills" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
         </defs>
 
         <circle cx="50" cy="50" r="48" class="halo"/>
         <circle cx="50" cy="50" r="45" class="ring-stroke"/>
-
-        <text class="ring-text">
-          <textPath href="#orbit-skills" startOffset="2%">
-            • SKILLS - TECH STACK - SYSTEMS THINKING - USER INTERFACE - SCIENTIFIC RIGOR •
-          </textPath>
-        </text>
 
         <use class="filament" href="#hypha1-skills"/>
         <use class="filament thin" href="#hypha2-skills"/>
@@ -772,6 +790,11 @@
             <mpath href="#orbit-skills"/>
           </animateMotion>
         </circle>
+
+        <text class="ring-text ring-text--top"><textPath href="#orbit-skills" startOffset="50%">SKILLS - TECH STACK</textPath></text>
+        <text class="ring-text ring-text--right"><textPath href="#orbit-skills" startOffset="50%">SYSTEMS THINKING</textPath></text>
+        <text class="ring-text ring-text--bottom"><textPath href="#orbit-skills-under" startOffset="50%">USER INTERFACE</textPath></text>
+        <text class="ring-text ring-text--left"><textPath href="#orbit-skills" startOffset="50%">SCIENTIFIC RIGOR</textPath></text>
       </svg>
 
       <div class="core" aria-hidden="true">
@@ -784,8 +807,8 @@
 
       <!-- THREE SKILL CARDS -->
       <article class="slab slab-systems paper" data-paper aria-label="Systems Thinking" tabindex="0">
-        <h2>Systems Thinking</h2>
-        <h3>Backend & Infrastructure</h3>
+        <h3>Systems Thinking</h3>
+        <h4>Backend & Infrastructure</h4>
         <ul class="tech-stack">
           <li>Java</li>
           <li>Spring Framework</li>
@@ -802,8 +825,8 @@
       </article>
 
       <article class="slab slab-interface paper" data-paper aria-label="User Interface" tabindex="0">
-        <h2>User Interface</h2>
-        <h3>Frontend & UX</h3>
+        <h3>User Interface</h3>
+        <h4>Frontend & UX</h4>
         <ul class="tech-stack">
           <li>React</li>
           <li>Angular</li>
@@ -817,8 +840,8 @@
       </article>
 
       <article class="slab slab-scientific paper" data-paper aria-label="Scientific Rigor" tabindex="0">
-        <h2>Scientific Rigor</h2>
-        <h3>Environmental Research & Analysis</h3>
+        <h3>Scientific Rigor</h3>
+        <h4>Environmental Research & Analysis</h4>
         <ul class="tech-stack">
           <li>Python</li>
           <li>Data Analysis & Modeling</li>
@@ -830,7 +853,7 @@
       </article>
 
       <article class="slab slab-restoflife paper" data-paper aria-label="The rest of my life" tabindex="0">
-        <h2>The rest of my life</h2>
+        <h3>The rest of my life</h3>
         <ul class="tech-stack">
           <li>Guitar</li>
           <li>Piano</li>
@@ -845,6 +868,7 @@
 
   <!-- SECTION: BLOG (Mycelium Network - Petri Dish) -->
   <section id="blog" class="stage blog-screen blog-stage panel-screen" data-section="blog" data-mode="map" aria-label="Blog" tabindex="-1">
+    <h2 class="sr-only">Blog</h2>
     <button class="blog-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -1042,6 +1066,7 @@
 
   <!-- SECTION: WORK (Mycelial Globe) -->
   <section id="work" class="stage work-globe-screen panel-screen" data-section="work" aria-label="Work Experience" tabindex="-1">
+    <h2 class="sr-only">Work</h2>
     <button class="work-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -1073,7 +1098,7 @@
   </section>
 
   <!-- SECTION: CONTACT -->
-  <section id="contact" class="stage" data-section="contact" aria-label="Contact">
+  <section id="contact" class="stage" data-section="contact" aria-label="Contact" tabindex="-1">
     <button class="contact-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
     <nav class="section-nav" aria-label="Section navigation">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
@@ -1097,10 +1122,7 @@
       <form id="contact-form" class="notebook-form" novalidate>
         <h2 class="notebook-header">Get in Touch</h2>
         <a class="contact-email" href="mailto:aris@zounarakis.com">aris@zounarakis.com</a>
-        <p class="notebook-subheader notebook-quote">&ldquo;Alone we can do so little, together we can do so much.&rdquo;</p>
-        <p class="notebook-cite">Helen Keller</p>
-
-        <div class="form-status" data-status aria-live="polite"></div>
+        <p class="notebook-subheader notebook-quote">Some things only become possible when we find each other.</p>
 
         <div class="notebook-field">
           <label for="name" class="notebook-label">Your Name</label>
@@ -1172,11 +1194,10 @@
           <input type="text" id="nickname" name="nickname" tabindex="-1" autocomplete="off" />
         </div>
 
-        <!-- Form Controls: Turnstile + Submit -->
+        <!-- Form Controls: Turnstile, status and Submit -->
         <div class="form-controls">
-          <div class="turnstile-field" data-turnstile data-sitekey="0x4AAAAAAB_wPDpP2-KNVfsi">
-            <div class="turnstile-placeholder" aria-hidden="true">Loading verification…</div>
-          </div>
+          <div class="turnstile-field" data-turnstile data-sitekey="0x4AAAAAAB_wPDpP2-KNVfsi"></div>
+          <div class="form-status" data-status aria-live="polite"></div>
           <button type="submit" class="notebook-submit" data-submit>
             <span class="submit-label" data-submit-label>Send Message</span>
             <span class="notebook-spinner" data-spinner aria-hidden="true"></span>
@@ -1185,6 +1206,7 @@
       </form>
     </div>
   </section>
+  </main>
 
 
   <!-- Global backdrop for note focus (full-viewport, not a rectangle) -->
@@ -1213,12 +1235,14 @@
       </button>
     </div>
     <div class="graphics-control__help" id="graphics-help-panel" role="region" aria-label="Graphics performance guidance" hidden>
+      <p>Auto matches the graphics to this device and eases off if frames slow.</p>
       <p>For the smoothest graphics, use Chrome, Edge, or Brave with hardware acceleration.</p>
       <p>On older laptops or Firefox, choose Quiet or Balanced. In Firefox, Rich and Full are disabled and the hero photo stays still for readability.</p>
       <p class="graphics-control__status" data-graphics-help-status>Current recommendation: Balanced</p>
       <p class="graphics-control__reason" data-graphics-help-reason>Reason: standard browser settings</p>
     </div>
     <div class="graphics-control__menu" id="graphics-profile-menu" hidden>
+      <button type="button" data-graphics-profile="auto">Auto</button>
       <button type="button" data-graphics-profile="quiet">Quiet</button>
       <button type="button" data-graphics-profile="balanced">Balanced</button>
       <button type="button" data-graphics-profile="rich">Rich</button>
@@ -1275,9 +1299,9 @@
       });
     })();
   </script>
-  <script type="module" src="./js/app.js?v=20260913-mobile"></script>
-  <script type="module" src="./js/work-globe/work-index.js?v=20260913"></script>
-  <script type="module" src="./js/altar-culture.js"></script>
-  <script type="module" src="./js/altar-eye.js"></script>
+  <script type="module" src="./js/app.js?v=20261019"></script>
+  <script type="module" src="./js/work-globe/work-index.js?v=20261019"></script>
+  <script type="module" src="./js/altar-culture.js?v=20261019"></script>
+  <script type="module" src="./js/altar-eye.js?v=20261019"></script>
 </body>
 </html>

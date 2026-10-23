@@ -27,6 +27,13 @@
 .ring {
   position: absolute;
   inset: 0;
+  transition: opacity 200ms ease;
+}
+
+/* An opened card does not dim the section, so the ring recedes instead of leaving cut phrases
+   around the card. */
+body.has-paper-open-global .altar-screen .ring {
+  opacity: 0.18;
 }
 
 .halo {
@@ -42,11 +49,27 @@
   stroke-width: 0.8;
 }
 
+/* The ring title is set as four phrases, one in each gap between the cards, so no card covers a
+   word. Each phrase is centred on the bottom of the orbit and turned around the ring centre to its
+   gap: --at is the gap centre in degrees clockwise from 12 o'clock. The bottom phrase runs on a twin
+   orbit the other way, so it reads upright. Units are % of the altar. */
 .ring-text {
-  font: 2.4px/1 system-ui, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Arial;
-  letter-spacing: 0.6px;
+  font: 2px/1 system-ui, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Arial;
+  /* A little tracking, and no more, so the long side phrases clear a lifted card in the tightest gaps. */
+  letter-spacing: 0.25px;
   fill: rgba(232,232,234,0.48);
+  text-anchor: middle;
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  transform: rotate(calc(var(--at, 180deg) - 180deg));
 }
+
+.ring-text--top { --at: 0deg; }
+.ring-text--right { --at: 107deg; }
+.ring-text--bottom { --at: 180deg; }
+.ring-text--left { --at: 277deg; }
+#skills .ring-text--right { --at: 89deg; }
+#skills .ring-text--left { --at: 259deg; }
 
 .filament {
   display: none; /* Hide radial filaments for clean look */
@@ -189,7 +212,11 @@
 /* Aged notebook paper cards */
 .slab {
   position: absolute;
-  width: 36%;
+  /* 36% of the altar, or --w-fit if wider: the width at which the current type step sits at its
+     floor size, so the card widens without its text growing. A wider card wraps fewer lines, runs
+     shorter, and leaves the ring phrases their gaps. */
+  --w: max(36%, var(--w-fit, 322px));
+  width: var(--w);
   max-height: 45%;
 
   /* Container queries: font sizes use cqi (% of card width) so they
@@ -304,11 +331,13 @@
     calc(var(--br-tl-v) * var(--k)) calc(var(--br-tr-v) * var(--k))
     calc(var(--br-br-v) * var(--k)) calc(var(--br-bl-v) * var(--k));
 
-  /* Use filter for the outer shadow because clip-path clips box shadows. */
+  /* Use filter for the outer shadow because clip-path clips box shadows.
+     The wide inset is offset downward so the aging gathers at the top edge, where lines
+     have contrast to spare, and stays off the last line of each card, the tightest one. */
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.22),
-    inset 0 0 calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
-    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.2);
+    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
+    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.14);
   filter:
     drop-shadow(0 calc(10px * var(--k)) calc(16px * var(--k)) rgba(0, 0, 0, 0.5))
     drop-shadow(0 calc(2px * var(--k)) calc(4px * var(--k)) rgba(0, 0, 0, 0.45));
@@ -404,8 +433,8 @@
   transform: translateY(calc(-6px * var(--k))) rotate(calc(var(--rot) * 0.4)) scale(1.035);
   box-shadow:
     inset 0 calc(1px * var(--k)) 0 rgba(255, 245, 225, 0.3),
-    inset 0 0 calc(120px * var(--k)) rgba(101, 67, 33, 0.35),
-    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.25);
+    inset 0 calc(36px * var(--k)) calc(120px * var(--k)) rgba(101, 67, 33, 0.3),
+    inset calc(-20px * var(--k)) 0 calc(40px * var(--k)) rgba(101, 67, 33, 0.14);
   filter:
     drop-shadow(0 calc(22px * var(--k)) calc(34px * var(--k)) rgba(0, 0, 0, 0.6))
     drop-shadow(0 calc(4px * var(--k)) calc(10px * var(--k)) rgba(0, 0, 0, 0.5))
@@ -416,13 +445,13 @@
   transform: var(--base-transform);
   box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.5),
-    inset 0 0 120px rgba(101, 67, 33, 0.3),
-    inset -20px 0 40px rgba(101, 67, 33, 0.2);
+    inset 0 36px 120px rgba(101, 67, 33, 0.3),
+    inset -20px 0 40px rgba(101, 67, 33, 0.14);
   pointer-events: none;
 }
 
-.slab h2,
-.slab h3 {
+.slab h3,
+.slab h4 {
   --h-margin-bottom: 6px;
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
   color: var(--paper-ink);
@@ -437,9 +466,20 @@
   /* cqi: proportional to card width, not viewport */
   font-size: clamp(12px, 4.3cqi, 16px);
   line-height: 1.42;
-  color: #3A3530;
+  color: var(--paper-ink);
   position: relative;
   z-index: 1;
+}
+
+/* Links inside running text: ink like the text, told apart by the underline, not by colour */
+.slab p a {
+  color: var(--paper-ink);
+  text-decoration: underline dashed rgba(101, 67, 33, 0.7);
+  text-underline-offset: 0.18em;
+}
+
+.slab p a:hover {
+  text-decoration-style: solid;
 }
 
 .slab ul {
@@ -474,69 +514,79 @@
   --kv-li-gap: 12px;
   gap: calc(var(--kv-li-gap) * var(--k));
   font-size: clamp(11px, 3.9cqi, 15px);
-  color: #3A3530;
+  color: var(--paper-ink);
 }
 
+/* Key labels are set apart the way a typist would: capitals and spacing at full ink. A lighter
+   ink fails on the kraft, and Special Elite has no italic, so italic was a synthesized slant. */
 .kv li span:first-child {
-  color: #5A5040;
+  color: var(--paper-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .kv a {
   color: var(--paper-ink);
   text-decoration: none;
-  border-bottom: 1px dashed rgba(101, 67, 33, 0.4);
+  border-bottom: 1px dashed rgba(101, 67, 33, 0.7);
 }
 
 .kv a:hover {
-  color: #654321;
-  border-bottom-color: #654321;
+  border-bottom-style: solid;
+  border-bottom-color: var(--paper-ink);
 }
 
+/* The inner edges stay at 38% and 62% of the altar, so a wider card reaches outward. The right
+   column stops 100 px short of the window edge, clear of the section nav. */
+.slab-about, .slab-vitals, .slab-systems, .slab-restoflife {
+  left: calc(38% - var(--w));
+}
+
+.slab-expertise, .slab-paramour, .slab-interface, .slab-scientific {
+  --w: max(36%, min(var(--w-fit, 322px), 38% + (100vw - 100%) / 2 - 100px));
+  right: calc(38% - var(--w));
+}
+
+/* As the window gets shorter the rows ease away from the side phrases: About lifts its top row (its
+   title is short), Skills lowers its bottom row. The Skills top row sinks a little on very short
+   windows, so a lifted card stays off its long title. */
 .slab-about {
-  left: 2%;
-  top: 8%;
+  top: clamp(2%, 16% - 80px, 8%);
   --rot: -3deg;
 }
 
 .slab-expertise {
-  right: 2%;
-  top: 8%;
+  top: clamp(2%, 16% - 80px, 8%);
   --rot: 3deg;
 }
 
 .slab-vitals {
-  left: 2%;
   bottom: 8%;
   --rot: -2deg;
 }
 
 .slab-paramour {
-  right: 2%;
   bottom: 8%;
   --rot: 2deg;
 }
 
 .slab-systems {
-  left: 2%;
-  top: 8%;
+  top: clamp(8%, 5% + 19px, 9%);
   --rot: -3deg;
 }
 
 .slab-interface {
-  right: 2%;
-  top: 8%;
+  top: clamp(8%, 5% + 19px, 9%);
   --rot: 3deg;
 }
 
 .slab-scientific {
-  right: 2%;
-  bottom: 8%;
+  bottom: clamp(4.5%, 29% - 126px, 8%);
   --rot: 3deg;
 }
 
 .slab-restoflife {
-  left: 2%;
-  bottom: 8%;
+  bottom: clamp(4.5%, 29% - 126px, 8%);
   --rot: -2deg;
 }
 
@@ -556,20 +606,87 @@
   z-index: 1;
 }
 
-/* Scale both text and spacing on short desktop screens. */
+/* Scale both text and spacing on short desktop screens. A step names the card width at which its
+   type sits at the floor (--w-fit), and the first step re-aims the About name at its new gap. */
 @media (min-width: 901px) and (max-height: 940px) and (pointer: fine) {
-  .slab { --k: 0.86; }
-  .slab h2, .slab h3 { font-size: clamp(11.5px, 4.3cqi, 20px); }
+  .slab { --k: 0.86; --w-fit: 307px; }
+  .slab h3, .slab h4 { font-size: clamp(11.5px, 4.3cqi, 20px); }
   .slab p, .slab li { font-size: clamp(10.5px, 3.8cqi, 16px); }
   .kv li { font-size: clamp(10px, 3.5cqi, 15px); }
   .tech-stack { font-size: clamp(10px, 3.6cqi, 15px); }
+  #about .ring-text--right { --at: 105deg; }
 }
+
+/* Short desktop windows: the cards reach out into the side room, inner edges unchanged, so they
+   run shorter and the gaps beside the lens hold the ring phrases. */
+@media (min-width: 901px) and (max-height: 820px) and (pointer: fine) {
+  .slab { --w-fit: max(46%, 319px); }
+  #about .ring-text--left { --at: 279deg; }
+}
+
 @media (min-width: 901px) and (max-height: 760px) and (pointer: fine) {
   .slab { --k: 0.76; }
-  .slab h2, .slab h3 { font-size: clamp(11px, 3.9cqi, 18px); }
+  .slab h3, .slab h4 { font-size: clamp(11px, 3.9cqi, 18px); }
   .slab p, .slab li { font-size: clamp(10px, 3.5cqi, 14px); }
   .kv li { font-size: clamp(9.5px, 3.2cqi, 13px); }
   .tech-stack { font-size: clamp(9.5px, 3.3cqi, 13px); }
+  #about .ring-text--left { --at: 282deg; }
+}
+
+/* Below 1220 px wide a bottom right card reaches under the graphics control in the window corner,
+   so on short windows its corner stays 72 px above the window bottom, and the right phrases turn up
+   a little, away from it. */
+@media (min-width: 901px) and (max-width: 1219px) and (max-height: 650px) and (pointer: fine) {
+  .slab-paramour { bottom: max(8%, 72px - (100dvh - 100%) / 2); }
+  .slab-scientific { bottom: max(clamp(4.5%, 29% - 126px, 8%), 72px - (100dvh - 100%) / 2); }
+  #about .ring-text--right { --at: 104.5deg; }
+  #skills .ring-text--right { --at: 86.25deg; }
+}
+
+/* Too short, or too narrow beside the nav, for the name on the right: the name takes the left gap,
+   and TOOLS YOU CAN TRUST, too long for any gap left, is left out. */
+@media (min-width: 901px) and (max-height: 609px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 959px) and (max-height: 959px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 983px) and (min-height: 941px) and (pointer: fine) {
+  #about .ring-text--right { --at: 283deg; }
+  #about .ring-text--left { display: none; }
+}
+
+/* Near-square windows keep the full-size type on a smaller altar: the Skills bottom row steps down
+   and both side phrases turn toward it. */
+@media (min-width: 901px) and (max-width: 983px) and (min-height: 941px) and (pointer: fine) {
+  #skills .slab-scientific, #skills .slab-restoflife { bottom: 5%; }
+  #skills .ring-text--right { --at: 87.5deg; }
+  #skills .ring-text--left { --at: 257deg; }
+}
+
+/* Below 910 px the nav leaves the right column no gap for SYSTEMS THINKING, nor below 590 px tall
+   where the bottom right card keeps clear of the graphics control. */
+@media (min-width: 901px) and (max-width: 909px) and (pointer: fine),
+       (min-width: 901px) and (max-width: 1219px) and (max-height: 589px) and (pointer: fine) {
+  #skills .ring-text--right { display: none; }
+}
+
+/* Touch screens wider than 1366 px show the ring with the full-size type, so on short screens the
+   name takes the wider top gap, the title takes its side, and SCIENTIFIC RIGOR turns down or, below
+   870 px, is left out. Below 770 px TOOLS YOU CAN TRUST and SYSTEMS THINKING give way too, and below
+   740 px the title. */
+@media (min-width: 1367px) and (max-height: 940px) and (pointer: coarse) {
+  #about .ring-text--right { --at: 0deg; }
+  #about .ring-text--top { --at: 106deg; }
+  #about .ring-text--left { --at: 280deg; }
+  #skills .slab-restoflife { bottom: 5%; }
+  #skills .ring-text--right { --at: 90deg; }
+  #skills .ring-text--left { --at: 256deg; }
+}
+@media (min-width: 1367px) and (max-height: 869px) and (pointer: coarse) {
+  #skills .ring-text--left { display: none; }
+}
+@media (min-width: 1367px) and (max-height: 769px) and (pointer: coarse) {
+  #about .ring-text--left, #skills .ring-text--right { display: none; }
+}
+@media (min-width: 1367px) and (max-height: 739px) and (pointer: coarse) {
+  #about .ring-text--top { display: none; }
 }
 
 /* Pencil sketch style tags */
@@ -582,7 +699,7 @@
 
   /* Pencil ink color - no background fill */
   background: transparent;
-  color: #3a342e;
+  color: var(--paper-ink);
 
   /* Main "ink" line - square, no rounded corners */
   --tech-border: 1px;
@@ -756,8 +873,12 @@
 }
 
 
-.altar-screen .paper:focus-visible{
-  outline: 2px dashed rgba(57,39,20,.8); outline-offset: 2px;
+/* Keyboard focus on a paper card. The torn-edge clip-path removes anything drawn outside the box,
+   so the mark sits inside it, deeper than the polygon's notches (up to 1.5% of the height), in the
+   paper ink. Not scoped to .altar-screen, so the opened card in its dialog shows it too. */
+.slab.paper:focus-visible {
+  outline: 2px dashed var(--paper-ink);
+  outline-offset: calc(-10px * var(--k));
 }
 
 .nav-suppressed #bg-front-img {
@@ -982,18 +1103,20 @@
 }
 
 /* target .slab.paper globally (not #skills/#about) so the override follows a card when
-   openPaper() reparents it into the body-level overlay (the zoomed view) */
+   openPaper() reparents it into the body-level overlay (the zoomed view).
+   Lighter kraft and softer stains than the first grime pass (2026-06-16): text runs to the
+   bottom of each card, so the corner stains and the vignette sat under it at about 1.4-2:1. */
 .slab.paper {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.5) 0%, rgba(92,72,46,0.3) 34%, transparent 64%),
-    radial-gradient(ellipse 60% 60% at 92% 108%, rgba(42,30,15,0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 55% at -8% 95%, rgba(48,34,17,0.5) 0%, transparent 62%),
-    radial-gradient(ellipse 72% 82% at 50% 48%, transparent 40%, rgba(38,28,15,0.34) 100%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(58,40,20,0.3) 0%, rgba(92,72,46,0.16) 34%, transparent 64%),
+    radial-gradient(ellipse 50% 45% at 96% 120%, rgba(42,30,15,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 45% at -10% 110%, rgba(48,34,17,0.2) 0%, transparent 62%),
+    radial-gradient(ellipse 72% 82% at 50% 58%, transparent 58%, rgba(38,28,15,0.16) 100%),
     repeating-linear-gradient(0deg, transparent,
       transparent calc(var(--rule-gap) * var(--k)),
       rgba(80, 60, 38, 0.1) calc(var(--rule-gap) * var(--k)),
       rgba(80, 60, 38, 0.1) calc((var(--rule-gap) + var(--rule-thickness)) * var(--k))),
-    linear-gradient(155deg, #b3a37e 0%, #a08f6a 45%, #8a7a56 80%, #756645 100%) !important;
+    linear-gradient(155deg, #d1c19b 0%, #c4b28b 45%, #b8a57e 80%, #ab9873 100%) !important;
 }
 
 /* the hand-drawn grime (dirt specks + soft smudges, no lines), multiplied onto the paper */
@@ -1004,7 +1127,7 @@
   z-index: 0 !important;
   background: url('../artifacts/textures/handgrime.svg?v=20260631') repeat !important;
   background-size: 420px 420px !important;
-  opacity: 0.85 !important;
+  opacity: 0.6 !important;
   mix-blend-mode: multiply !important;
   pointer-events: none !important;
 }

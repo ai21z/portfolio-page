@@ -22,6 +22,7 @@ export const PROJECTS = [
     description: 'Local-first Java CLI workspace operator for governed developer tasks. Talos combines bounded tools, explicit approval gates, local model backends, durable traces, context handling and verification-oriented outcomes.',
     tech: ['Java', 'CLI', 'Approval Gates', 'Lucene', 'llama.cpp', 'Traceability'],
     github: 'https://github.com/ai21z/talos-assistant',
+    site: 'https://taloslocal.com/',
     
     initialAngle: 180,
     orbitRadius: 1.15,

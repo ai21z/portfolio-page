@@ -246,16 +246,19 @@
   margin-bottom: 2px;
 }
 
+/* The job title is set apart with capitals at full ink, like the altar card labels: the lighter
+   ink fell to about 4:1 on the coffee stains, and Special Elite has no italic face. */
 .work-position {
   font-size: 11px;
-  color: #4A443E;
-  font-style: italic;
+  color: var(--paper-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   margin-bottom: 2px;
 }
 
 .work-period {
   font-size: 10px;
-  color: rgba(74, 68, 62, 0.7);
+  color: var(--paper-ink); /* the 70% ink gave 2.7-3.5:1 on the stained paper */
   letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
@@ -265,7 +268,7 @@
   padding-left: 1.2em;
   font-size: 11px;
   line-height: 1.45;
-  color: #3A342E;
+  color: var(--paper-ink);
 }
 
 .work-responsibilities li {
@@ -400,8 +403,16 @@
     margin: auto;
   }
 
+  /* One top bar for the Timeline / Globe toggle and the close (styles/work-timeline.css). Keep
+     the bar at least 52px, the 44px buttons plus 3px padding and 1px border, top and bottom. */
+  #work {
+    --work-bar-top: max(14px, env(safe-area-inset-top, 0px));
+    --work-bar-h: 52px;
+    --work-bar-gap: 14px;
+  }
+
   .work-close {
-    top: max(1rem, env(safe-area-inset-top, 1rem));
+    top: calc(var(--work-bar-top) + (var(--work-bar-h) - 44px) / 2);
     right: max(1rem, env(safe-area-inset-right, 1rem));
     min-width: 44px;
     min-height: 44px;
@@ -638,7 +649,7 @@
 .project-description {
   font-size: 12px;
   line-height: 1.6;
-  color: #3A342E;
+  color: var(--paper-ink);
   margin-bottom: 1rem;
   text-align: left;
   position: relative;
@@ -662,7 +673,7 @@
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #3a342e;
+  color: var(--paper-ink);
 
   background: transparent;
   border-radius: 0;

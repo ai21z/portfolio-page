@@ -1,12 +1,13 @@
 // WebGL globe visualization
 
 import { mat4 } from './work-globe/core/math-utils.js';
-import { cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
+import { bindAttribs, cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js?v=20261019';
+import { warmPrograms } from './gpu-warm.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 import { NECRO_GREEN } from './work-globe/core/palette.js';
 
-import { WORK_LOCATIONS } from './work-globe/data/work-locations.js?v=20260913';
-import { PROJECTS } from './work-globe/data/projects.js?v=20260913';
+import { WORK_LOCATIONS } from './work-globe/data/work-locations.js?v=20261019';
+import { PROJECTS } from './work-globe/data/projects.js?v=20261019';
 
 import { SporeSystem } from './work-globe/systems/spore-system.js';
 import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';
@@ -14,7 +15,7 @@ import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
 import { isCompact } from './compact.js';
-import { getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
+import { frameDue, getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
 import { GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER } from './work-globe/shaders/globe-shaders.js';
@@ -172,6 +173,29 @@ function cacheUniforms(program, programKey, uniformNames) {
   }
 }
 
+// The Work programs with their attribute locations. The idle warm-up links the same list.
+const WORK_PROGRAMS = {
+  globe: { vs: GLOBE_VERTEX_SHADER, fs: GLOBE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  atmosphere: { vs: ATMOSPHERE_VERTEX_SHADER, fs: ATMOSPHERE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1 } },
+  fog: { vs: FOG_VERTEX_SHADER, fs: FOG_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  lightning: { vs: LIGHTNING_VERTEX_SHADER, fs: LIGHTNING_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  mycelium: { vs: MYCELIUM_VERTEX_SHADER, fs: MYCELIUM_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2, age: 3 } },
+  myceliumCore: { vs: MYCELIUM_VERTEX_SHADER, fs: MYCELIUM_CORE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2, age: 3 } },
+  spore: { vs: PARTICLE_VERTEX_SHADER, fs: PARTICLE_FRAGMENT_SHADER, attribs: { position: 0, velocity: 1, life: 2, size: 3, phase: 4 } },
+  pin: { vs: PIN_VERTEX_SHADER, fs: PIN_FRAGMENT_SHADER,
+    attribs: { position: 0, normal: 1, instancePos: 2, instanceColor: 3, instanceHeight: 4, instancePhase: 5 } },
+  dataStream: { vs: DATA_STREAM_VERTEX_SHADER, fs: DATA_STREAM_FRAGMENT_SHADER, attribs: { position: 0, life: 1, phase: 2 } },
+  moon: { vs: MOON_VERTEX_SHADER, fs: MOON_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  textBillboard: { vs: TEXT_BILLBOARD_VERTEX_SHADER, fs: TEXT_BILLBOARD_FRAGMENT_SHADER, attribs: { aPosition: 0, aUv: 1 } }
+};
+
+// Links the Work programs ahead of the first visit, so entering Work finds them in the browser's
+// program cache instead of waiting on the GPU.
+export function warmWorkGlobe() {
+  if (gl) return Promise.resolve(false);
+  return warmPrograms(Object.values(WORK_PROGRAMS), bindAttribs);
+}
+
 function initWorkGlobe() {
   canvas = document.getElementById('work-globe-canvas');
   if (!canvas) {
@@ -213,73 +237,21 @@ function initWorkGlobe() {
 
   resizeCanvas();
 
-  globeProgram = createProgram(gl, GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-  atmosphereProgram = createProgram(gl, ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1
-  });
-  fogProgram = createProgram(gl, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-  lightningProgram = createProgram(gl, LIGHTNING_VERTEX_SHADER, LIGHTNING_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-
-  myceliumProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2,
-    age: 3
-  });
-
-  myceliumCoreProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_CORE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2,
-    age: 3
-  });
-
-  sporeProgram = createProgram(gl, PARTICLE_VERTEX_SHADER, PARTICLE_FRAGMENT_SHADER, {
-    position: 0,
-    velocity: 1,
-    life: 2,
-    size: 3,
-    phase: 4
-  });
-
-  pinProgram = createProgram(gl, PIN_VERTEX_SHADER, PIN_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    instancePos: 2,
-    instanceColor: 3,
-    instanceHeight: 4,
-    instancePhase: 5
-  });
-
-  dataStreamProgram = createProgram(gl, DATA_STREAM_VERTEX_SHADER, DATA_STREAM_FRAGMENT_SHADER, {
-    position: 0,
-    life: 1,
-    phase: 2
-  });
-
-  moonProgram = createProgram(gl, MOON_VERTEX_SHADER, MOON_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-
-  textBillboardProgram = createProgram(gl, TEXT_BILLBOARD_VERTEX_SHADER, TEXT_BILLBOARD_FRAGMENT_SHADER, {
-    aPosition: 0,
-    aUv: 1
-  });
+  const link = (name) => {
+    const { vs, fs, attribs } = WORK_PROGRAMS[name];
+    return createProgram(gl, vs, fs, attribs);
+  };
+  globeProgram = link('globe');
+  atmosphereProgram = link('atmosphere');
+  fogProgram = link('fog');
+  lightningProgram = link('lightning');
+  myceliumProgram = link('mycelium');
+  myceliumCoreProgram = link('myceliumCore');
+  sporeProgram = link('spore');
+  pinProgram = link('pin');
+  dataStreamProgram = link('dataStream');
+  moonProgram = link('moon');
+  textBillboardProgram = link('textBillboard');
 
   if (!textBillboardProgram) {
     console.error('[Work Globe] Failed to create text billboard shader program!');
@@ -491,10 +463,10 @@ function initWorkGlobe() {
   let lastDPR = currentDPR();
   boundDprHandler = () => {
     const dpr = currentDPR();
-    if (dpr !== lastDPR) {
-      lastDPR = dpr;
-      resizeCanvas();
-    }
+    // A resize clears the canvas. While Work fades out its last frame stays on screen instead.
+    if (dpr === lastDPR || !canvas?.closest('.active-section')) return;
+    lastDPR = dpr;
+    resizeCanvas();
   };
   window.addEventListener('dpr-changed', boundDprHandler);
 
@@ -552,6 +524,7 @@ function render(deltaTime) {
       rotationVelocity.y = 0;
       if (t >= 1) focusTween = null;
     } else {
+      // The fling velocity is a per-pointer-event delta, so it is applied per frame.
       rotation.y += rotationVelocity.x;
       rotation.x += rotationVelocity.y;
 
@@ -559,8 +532,9 @@ function render(deltaTime) {
       rotationVelocity.x *= rotDecay;
       rotationVelocity.y *= rotDecay;
 
+      // The idle spin is tuned per 60 Hz frame. Scaling by elapsed time keeps it the same at 120 Hz.
       if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
-        rotation.y += 0.002;
+        rotation.y += 0.002 * deltaTime * 60;
       }
     }
   }
@@ -841,13 +815,13 @@ function animate(timestamp) {
   }
 
   const budget = getGraphicsBudget('work-globe');
-  if (budget.frameIntervalMs && timestamp - lastFrameTime < budget.frameIntervalMs) {
+  if (!frameDue(timestamp - lastFrameTime, budget.frameIntervalMs)) {
     animationFrameId = requestAnimationFrame(animate);
     return;
   }
 
   const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // Cap at 100ms to prevent huge jumps
-  reportFrameSample('work-globe', timestamp - lastFrameTime);
+  reportFrameSample('work-globe', timestamp - lastFrameTime, budget.frameIntervalMs);
   lastFrameTime = timestamp;
 
   render(deltaTime);
@@ -1249,6 +1223,9 @@ function showProjectPanel(moon) {
     <div class="tech-badges">
       ${project.tech.map(t => `<span class="tech-badge">${t}</span>`).join('')}
     </div>
+    ${project.site ? `<a href="${project.site}" class="github-link" target="_blank" rel="noopener noreferrer">
+      Visit ${new URL(project.site).hostname} →
+    </a>` : ''}
     ${project.github ? `<a href="${project.github}" class="github-link" target="_blank" rel="noopener noreferrer">
       View on GitHub →
     </a>` : `<span class="github-link github-link--soon">${project.soon || 'Public release soon'}</span>`}
@@ -1486,7 +1463,7 @@ function onPointerUp(e) {
 // Dynamic DPR helper (updates on zoom/display change)
 function currentDPR() {
   const container = canvas?.parentElement;
-  return cappedDpr(1.5, {
+  return cappedDpr(2, {
     systemName: 'work-globe',
     width: Math.max(1, container?.clientWidth || window.innerWidth),
     height: Math.max(1, container?.clientHeight || window.innerHeight)
@@ -1681,7 +1658,11 @@ function autoInit() {
         if (hasActiveClass && !gl) {
           // Section just became active and globe not initialized
           initWorkGlobe();
-        } else if (!hasActiveClass && gl) {
+        } else if (hasActiveClass && gl && !animationFrameId && globeViewActive) {
+          // Back before the fade-out ended: the scene is intact, so just resume it.
+          lastFrameTime = 0;
+          animationFrameId = requestAnimationFrame(animate);
+        } else if (!hasActiveClass && gl && !workSection.classList.contains('stage-leaving')) {
           // Section just became inactive and globe is initialized
           cleanupWorkGlobe();
         }
@@ -1690,6 +1671,10 @@ function autoInit() {
   });
 
   observer.observe(workSection, { attributes: true });
+  // While the section fades out the globe's last frame stays on screen. Tear down once it left.
+  workSection.addEventListener('stage:left', () => {
+    if (!workSection.classList.contains('active-section') && gl) cleanupWorkGlobe();
+  });
 
   // Rebuild the scene in place when the user picks a new graphics profile while
   // Work is active. The globe bakes particle/geometry budgets at init, so

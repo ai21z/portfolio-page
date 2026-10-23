@@ -22,16 +22,23 @@ const turnstileStubScript = `
 `;
 
 const turnstileErrorStubScript = `
+  window.__checks = 0;
+  var fail = function (options) {
+    window.__checks++;
+    setTimeout(function () {
+      if (options && typeof options['error-callback'] === 'function') {
+        options['error-callback']('600010');
+      }
+    }, 10);
+  };
+  var widget;
   window.turnstile = {
     render: function (container, options) {
-      setTimeout(function () {
-        if (options && typeof options['error-callback'] === 'function') {
-          options['error-callback']();
-        }
-      }, 10);
+      widget = options;
+      fail(options);
       return 'stub-widget';
     },
-    reset: function () {},
+    reset: function () { fail(widget); },
     remove: function () {}
   };
   if (typeof window.__turnstileOnLoad === 'function') {
@@ -111,8 +118,10 @@ test.describe('Contact form', () => {
     await expect(page.locator('[data-status]')).toHaveText(/misconfigured/i);
   });
 
-  test('shows actionable verification feedback when Turnstile fails before submit', async ({ page }) => {
+  test('a failing spam check stays quiet until Send, which then retries it and offers the draft by email', async ({ page }) => {
     await routeTurnstile(page, turnstileErrorStubScript);
+    let posts = 0;
+    await page.route('**/api/contact', (route) => { posts++; return route.abort(); });
 
     await page.goto('/index.html#contact');
     await page.waitForLoadState('domcontentloaded');
@@ -121,12 +130,50 @@ test.describe('Contact form', () => {
       return !!contact && contact.classList.contains('active-section');
     });
     await page.waitForSelector('#contact-form');
+    await expect.poll(() => page.evaluate(() => (window as any).__checks)).toBe(1);
     await page.waitForTimeout(100);
 
-    await expect(page.locator('[data-status]')).toHaveText(/verification could not complete/i);
-    await expect(page.locator('[data-status] a[href^="mailto:"]')).toHaveText(/email me directly/i);
-    await expect(page.locator('[data-status]')).toHaveClass(/error/);
-    await expect(page.getByRole('button', { name: /send message/i })).toBeDisabled();
+    // Nothing to read before the visitor asks to send.
+    await expect(page.locator('[data-status]')).toHaveText('');
+    const send = page.getByRole('button', { name: /send message/i });
+    await expect(send).toBeEnabled();
+
+    await page.getByLabel('Your Name').fill('Test Visitor');
+    await page.getByLabel('Your Email').fill('visitor@example.com');
+    await page.getByLabel('Subject').fill('Testing contact channel');
+    await page.getByLabel('Message').fill('A note that goes by email instead.');
+    await send.click();
+
+    const status = page.locator('[data-status]');
+    await expect(status).toHaveText(/spam check did not clear this time\. press send to try again, or send it by email\./i);
+    await expect(status).not.toHaveClass(/error/);
+    const href = await status.locator('a').getAttribute('href');
+    expect(href).toBe('mailto:aris@zounarakis.com?subject=Testing%20contact%20channel&body=A%20note%20that%20goes%20by%20email%20instead.%0A%0ATest%20Visitor');
+    // Send ran the check once more, and no message went out without a token.
+    expect(await page.evaluate(() => (window as any).__checks)).toBe(2);
+    expect(posts).toBe(0);
+    await expect(send).toBeEnabled();
+    await expect(page.getByLabel('Message')).toHaveValue('A note that goes by email instead.');
+    await expect(page.getByLabel('Message')).toBeEditable();
+  });
+
+  test('a server message that already points to email gets one email link', async ({ page }) => {
+    await routeTurnstile(page);
+    await page.route('**/api/contact', (route) => route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ state: 'not_sent', error: 'Contact service unavailable. Please email me directly.' })
+    }));
+    await page.goto('/index.html#contact');
+    await page.waitForSelector('#contact-form');
+    await page.getByLabel('Your Name').fill('Test Visitor');
+    await page.getByLabel('Your Email').fill('visitor@example.com');
+    await page.getByLabel('Subject').fill('Testing contact channel');
+    await page.getByLabel('Message').fill('A note for a service that is down.');
+    await page.getByRole('button', { name: /send message/i }).click();
+    const status = page.locator('[data-status]');
+    await expect(status).toHaveText('Contact service unavailable. Please email me directly.');
+    await expect(status.locator('a')).toHaveCount(1);
   });
 
   test('keeps the message and shows an error when email delivery is rejected', async ({ page }) => {

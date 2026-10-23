@@ -107,7 +107,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.45);
+  color: rgba(var(--decay-green-rgb), 0.62); /* 6.1:1; 0.45 gave 3.7:1 */
   animation: railGroupIn 0.4s ease both;
 }
 
@@ -256,7 +256,7 @@
 .rail-node-year {
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  color: rgba(170, 195, 184, 0.6);
+  color: rgba(170, 195, 184, 0.75); /* 6.2:1; 0.6 gave 4.3:1 */
 }
 
 .rail-node-title {
@@ -375,7 +375,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(150, 170, 160, 0.45);
+  color: rgba(150, 170, 160, 0.8); /* 5.4:1; 0.45 gave 2.5:1 */
   margin-top: 9px;
 }
 
@@ -514,9 +514,14 @@
   margin-top: 12px;
 }
 
+.work-card-site,
 .work-card-globe {
+  display: block;
+  box-sizing: border-box;
   margin-top: 16px;
   width: 100%;
+  text-align: center;
+  text-decoration: none;
   font-family: 'Special Elite', monospace;
   font-size: 0.76rem;
   letter-spacing: 0.1em;
@@ -530,11 +535,16 @@
   transition: background 0.18s ease;
 }
 
+.work-card-site:hover,
+.work-card-site:focus-visible,
 .work-card-globe:hover,
 .work-card-globe:focus-visible {
   background: rgba(240, 180, 106, 0.16);
-  outline: none;
 }
+
+/* The tint alone changes by about 1.2:1, so focus also gets the outline the close button uses */
+.work-card-site:focus-visible,
+.work-card-globe:focus-visible { outline: 2px solid #b9efd3; outline-offset: 2px; }
 
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),
@@ -544,7 +554,8 @@
     display: flex;
     gap: 4px;
     position: absolute;
-    top: 14px;
+    top: var(--work-bar-top);
+    height: var(--work-bar-h);
     left: 50%;
     transform: translateX(-50%);
     z-index: 30;
@@ -565,7 +576,9 @@
     background: none;
     border: 0;
     border-radius: 3px;
-    padding: 6px 15px;
+    /* The bar sets the 44px target, so base.css's touch rule for buttons cannot grow it */
+    min-height: 0;
+    padding: 0 15px;
     cursor: pointer;
   }
 
@@ -579,7 +592,7 @@
     position: absolute;
     inset: 0;
     width: auto;
-    padding: 56px 16px 10px;
+    padding: calc(var(--work-bar-top) + var(--work-bar-h) + var(--work-bar-gap)) 16px 10px;
     background: #07090a;
     z-index: 20;
     animation: none;
@@ -615,5 +628,89 @@
 
   #work.work-view-timeline .work-auto-writer {
     display: none;
+  }
+
+  /* Narrow or zoomed: the centred bar no longer fits beside the close, so it starts at the legend's edge */
+  @media (max-width: 19.5em) {
+    .work-view-toggle {
+      left: calc((100% - min(100%, 90vmin)) / 2 + 16px);
+      transform: none;
+    }
+
+    .work-view-btn {
+      padding-inline: 10px;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  /* Too narrow for the toggle beside the close (page zoom, large default text). The labels are about
+     5.9em and the bar adds 52px, so it stops fitting near 7.25em + 126px and takes its own row under
+     the close. */
+  @media (max-width: calc(7.25em + 126px)) {
+    .work-view-toggle {
+      top: calc(var(--work-bar-top) + var(--work-bar-h) + 8px);
+    }
+
+    .work-rail {
+      padding-top: calc(var(--work-bar-top) + 2 * var(--work-bar-h) + 8px + var(--work-bar-gap));
+    }
+
+    .work-auto-writer {
+      top: calc(var(--work-bar-top) + 2 * var(--work-bar-h) + 8px + var(--work-bar-gap) - 36px);
+    }
+
+    /* Win back most of the second row */
+    .work-rail-sub {
+      display: none;
+    }
+
+    .work-rail-key {
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 14px;
+      row-gap: 6px;
+    }
+
+    .work-rail-key-row {
+      grid-template-columns: 16px auto;
+      gap: 8px;
+    }
+  }
+
+  /* Short landscape phones: the key in one row and the sort modes beside the title give back more
+     height than the bar takes, so at least one entry shows */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .work-rail-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 12px;
+    }
+
+    .work-rail-key {
+      flex: 0 0 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+      column-gap: 18px;
+      row-gap: 6px;
+      padding: 8px 12px;
+    }
+
+    .work-rail-key-row {
+      grid-template-columns: 16px auto;
+      gap: 8px;
+    }
+
+    .work-rail-title {
+      flex: 1 1 auto;
+    }
+
+    .work-rail-sub {
+      display: none;
+    }
+
+    .work-rail-modes {
+      margin-top: 0;
+    }
   }
 }

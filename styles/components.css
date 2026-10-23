@@ -163,11 +163,10 @@
 }
 
 .foot-coords {
-  opacity: 0.75;
   font-feature-settings: 'tnum' 1;
   font-size: 13px;
   letter-spacing: 0.03em;
-  color: rgba(230, 227, 216, 0.5);
+  color: rgba(230, 227, 216, 0.6); /* 5.9:1 on the abyss; was 0.5 at 75% opacity, 2.9:1 */
   display: block; /* Make it block level for easier centering */
 }
 
@@ -297,6 +296,57 @@
   .living-sigils {
     left: -120px;
     gap: 32px;
+  }
+}
+
+/* Desktop: the landing fits the window, so nothing scrolls and the first wheel steps to About.
+   The spacing follows the window height, the footer is a quiet strip on the bottom edge, and the
+   portrait gives up height before the bio and the project links leave the view. --landing-rest is
+   the height of everything but the portrait, and --landing-reserve any bar kept over the bottom
+   edge (styles/fallback.css). */
+@media (min-width: 901px) and (min-aspect-ratio: 1001/1000) and (pointer: fine),
+       (min-width: 1200px) and (pointer: fine) {
+  .grid {
+    --landing-rest: calc(15.5dvh + 380px);
+    grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1fr) auto;
+    row-gap: clamp(12px, 2.4dvh, 28px);
+    padding-block: max(clamp(14px, 3.5dvh, 40px), env(safe-area-inset-top, 0px)) 14px;
+    /* The portrait's particle canvas reaches past the window edge, which would make the page
+       scroll for nothing. The sides stay visible for the particles that drift into the margin. */
+    overflow-x: visible;
+    overflow-y: clip;
+  }
+
+  .portrait-wrap picture {
+    display: block;
+  }
+
+  .portrait {
+    display: block;
+    max-width: max(200px, calc(100dvh - var(--landing-rest) - var(--landing-reserve, 0px)));
+  }
+
+  .foot {
+    justify-content: flex-start;
+    gap: clamp(16px, 2vw, 32px);
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .footer-sigil {
+    height: 2em;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 800px) and (pointer: fine) {
+  .grid {
+    --landing-rest: calc(15.5dvh + 285px);
+  }
+}
+
+@media (min-width: 901px) and (max-height: 680px) and (pointer: fine) {
+  .grid {
+    --landing-rest: calc(15.5dvh + 280px);
   }
 }
 

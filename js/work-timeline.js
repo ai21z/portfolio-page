@@ -1,5 +1,6 @@
 import { TIMELINE } from './work-globe/data/timeline.js';
 import { isCompact } from './compact.js';
+import { reducedMotion } from './motion.js';
 
 const GLYPH_HINT = { work: 'place', project: 'project', cert: 'credential' };
 
@@ -22,7 +23,6 @@ export function initWorkTimeline() {
   if (!host) return;
   inited = true;
 
-  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const nodes = [...TIMELINE].sort((a, b) => b.sortKey - a.sortKey);
   const workSection = host.closest('.stage') || document.getElementById('work');
 

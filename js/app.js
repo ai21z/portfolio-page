@@ -103,6 +103,8 @@ function syncSvgMotion() {
 
 syncSvgMotion();
 window.addEventListener('motion:preference', syncSvgMotion);
+// Turning reduced motion off brings the landing spores back. Turning it on, their loop stops itself.
+window.addEventListener('motion:preference', () => ensureSporeLoop());
 
 const markUserGraphicsActivity = throttle((reason) => {
   markGraphicsActivity(reason, 700);
@@ -679,9 +681,13 @@ function startSpores() {
   _sporeRafId = requestAnimationFrame(sporeLoop);
 }
 function ensureSporeLoop() {
-  if (_sporeRafId == null && sporeCanvas && isIntroSectionActive() && sporeLoopHasWork()) {
-    _sporeRafId = requestAnimationFrame(sporeLoop);
+  if (_sporeRafId != null || !sporeCanvas || !isIntroSectionActive() || !sporeLoopHasWork()) return;
+  // Spores held back at load by reduced motion are made the first time they are wanted.
+  if (!sporeCtx) {
+    startSpores();
+    return;
   }
+  _sporeRafId = requestAnimationFrame(sporeLoop);
 }
 
 function ritualCatchUp() {

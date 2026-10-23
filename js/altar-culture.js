@@ -1,8 +1,6 @@
 import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { sizeCanvas, lerp, clamp } from './utils.js';
-
-const prefersReducedMotion =
-  window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { reducedMotion } from './motion.js';
 
 // Shared pre-rendered glow sprite (avoids per-frame shadowBlur)
 const GLOW_SIZE = 32;
@@ -222,7 +220,7 @@ function initAltarCulture(sectionId) {
   function ensureLoop() {
     // The section can be active before the lens has measurable dimensions.
     if (!sectionActive()) return;
-    if (prefersReducedMotion) {
+    if (reducedMotion) {
       requestAnimationFrame(() => { if (sectionActive() && lensVisible()) renderStaticFrame(); });
       return;
     }
@@ -290,6 +288,13 @@ function initAltarCulture(sectionId) {
 
   window.addEventListener('graphics:profile-change', () => {
     if (sectionActive()) ensureLoop();
+  });
+
+  // A reduced-motion change while the section is open freezes the scene on one frame, or restarts it.
+  window.addEventListener('motion:preference', () => {
+    if (!sectionActive()) return;
+    pause();
+    ensureLoop();
   });
 
   if (sectionActive()) ensureLoop();

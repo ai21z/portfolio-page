@@ -43,6 +43,24 @@ test('a reduced-motion setting changed while the page is open pauses and resumes
   await expect.poll(async () => (await paused()).every(state => !state)).toBe(true);
 });
 
+test('the Skills altar scene follows a reduced-motion change made while the page is open', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/index.html#skills');
+  await expect(page.locator('#skills')).toHaveClass(/active-section/);
+  const canvas = page.locator('#skills canvas.lens-scry');
+  await expect(canvas).toHaveCount(1);
+  const frame = () => canvas.evaluate(el => (el as HTMLCanvasElement).toDataURL());
+  const changes = async () => { const a = await frame(); await page.waitForTimeout(600); return (await frame()) !== a; };
+  await page.waitForTimeout(400);
+  expect(await changes(), 'held still at load').toBe(false);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect.poll(changes, { message: 'restarted when the setting went off' }).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForTimeout(200);
+  expect(await changes(), 'froze again when the setting came back on').toBe(false);
+});
+
 test('under reduced motion the article scroll buttons jump instead of gliding', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -71,10 +89,11 @@ test('under reduced motion the WebGL views hold still, and a drag still turns th
     const shot = async () => (await cdp.send('Page.captureScreenshot', { format: 'png', clip: { x: 300, y: 80, width: 840, height: 740, scale: 1 } })).data;
     for (const view of ['blog', 'work']) {
       await page.goto(`/index.html#${view}`);
+      await page.waitForTimeout(view === 'work' ? 6000 : 4000);
+      // Read once the scene has had time to start, so a late fallback cannot pass as stillness.
       const live = await page.evaluate(() => Boolean(document.querySelector(`.stage.active-section canvas:not([style*="display: none"])`)) &&
         !document.querySelector('.stage.active-section .webgl-fallback-visible'));
       test.skip(!live, 'no hardware WebGL here');
-      await page.waitForTimeout(view === 'work' ? 6000 : 4000);
       await page.mouse.move(2, 2);
       // A scene in motion differs in every pair. A one-off redraw, such as the governor changing tier
       // under a loaded machine, differs in one pair only.

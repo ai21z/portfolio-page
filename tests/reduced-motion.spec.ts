@@ -56,9 +56,9 @@ test('the Skills altar scene follows a reduced-motion change made while the page
   expect(await changes(), 'held still at load').toBe(false);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect.poll(changes, { message: 'restarted when the setting went off' }).toBe(true);
+  // WebKit delivers the media change on a later rendering update than Chromium, so wait for it.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(200);
-  expect(await changes(), 'froze again when the setting came back on').toBe(false);
+  await expect.poll(changes, { message: 'froze again when the setting came back on' }).toBe(false);
 });
 
 test('under reduced motion the article scroll buttons jump instead of gliding', async ({ page }) => {

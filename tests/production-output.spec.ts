@@ -13,6 +13,19 @@ test('does not serve private or development files', async ({ request }) => {
   }
 });
 
+test('keeps every email address in the page out of Cloudflare email obfuscation', async ({ request }) => {
+  // The obfuscation adds parser-blocking scripts and rewrites mailto links to a page that needs JavaScript.
+  const html = await (await request.get('/index.html')).text();
+  const body = html.slice(html.indexOf('<body>'));
+  const start = body.indexOf('<!--email_off-->');
+  const end = body.indexOf('<!--/email_off-->');
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  const addresses = [...body.matchAll(/[\w.+-]+@[\w-]+\.[\w.]+/g)].map(match => match.index);
+  expect(addresses.length).toBeGreaterThan(0);
+  for (const at of addresses) expect(at > start && at < end, `address at ${at}`).toBe(true);
+});
+
 test('serves the portfolio assets and public documents', async ({ request }) => {
   for (const file of [
     '/index.html', '/js/app.js', '/js/contact.js', '/styles/main.css',

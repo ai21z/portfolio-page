@@ -31,6 +31,7 @@ test('large runtime images have WebP variants referenced by the app', () => {
     ['artifacts/bg_base.png', 'artifacts/bg_base.webp'],
     ['artifacts/blog-articles/1st-year-SE-article-image.png', 'artifacts/blog-articles/1st-year-SE-article-image.webp'],
     ['artifacts/sigil/AZ-01.png', 'artifacts/sigil/AZ-01.webp'],
+    ['artifacts/sigil/AZ-01-192.png', 'artifacts/sigil/AZ-01-192.webp'],
     ['artifacts/sigil/no-bg-seal-sigil.png', 'artifacts/sigil/no-bg-seal-sigil.webp'],
     ['artifacts/work-page/ominus-earth.png', 'artifacts/work-page/ominus-earth.webp'],
     ['artifacts/work-page/ominus-fog-cloud.png', 'artifacts/work-page/ominus-fog-cloud.webp'],
@@ -53,7 +54,9 @@ test('large runtime images have WebP variants referenced by the app', () => {
   expect(globe).toContain('ominus-earth.webp');
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
-  expect(nav).toContain('AZ-01.webp');
+  // The 64 px hub takes a 192 px sigil, not the 1024 px one the particles sample.
+  expect(nav).toContain('AZ-01-192.webp');
+  expect(nav).not.toContain('AZ-01.webp');
   expect(particles).toContain('AZ-01.webp');
 });
 

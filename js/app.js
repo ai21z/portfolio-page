@@ -910,10 +910,25 @@ function scheduleBlogHashAction(action) {
   }, 100);
 }
 
+// A Blog view change can hide the control that held focus (a dish label, Back, a crumb). Focus then
+// moves to the view now shown, so the keyboard keeps its place instead of falling to the page top.
+// Only focus the change hid moves: on a deep-link load it is still on the body and stays there.
+function blogFocusHolder() {
+  const active = document.activeElement;
+  return active && active !== document.body && document.getElementById('blog')?.contains(active) ? active : null;
+}
+
+function restoreBlogFocus(holder, target) {
+  if (!holder || !target) return;
+  if (holder.isConnected && holder.getClientRects().length) return;
+  target.focus({ preventScroll: true });
+}
+
 function enterHub(hubId, { historyMode = 'push' } = {}) {
   if (!hubId || hubId === 'source') {
     return;
   }
+  const focusHolder = blogFocusHolder();
 
   articleRequest?.abort();
   document.getElementById('blog-article-view')?.setAttribute('hidden', '');
@@ -937,6 +952,7 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
   }
+  restoreBlogFocus(focusHolder, document.getElementById('blog-category-title'));
 
   if (historyMode === 'push') {
     history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
@@ -944,6 +960,7 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
 }
 
 function resetBlogMapState({ updateHistory = false } = {}) {
+  const focusHolder = blogFocusHolder();
   clearPendingBlogHashAction();
   articleRequest?.abort();
 
@@ -964,6 +981,7 @@ function resetBlogMapState({ updateHistory = false } = {}) {
   const articleView = document.getElementById('blog-article-view');
   if (categoryView) categoryView.setAttribute('hidden', '');
   if (articleView) articleView.setAttribute('hidden', '');
+  restoreBlogFocus(focusHolder, document.getElementById('blog'));
 
   if (updateHistory) {
     history.pushState({ view: 'map' }, '', '#blog');
@@ -1122,6 +1140,7 @@ function initArticleScrollNav() {
 }
 
 function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
+  const focusHolder = blogFocusHolder();
   enterHub(hubId, { historyMode: 'none' });
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
@@ -1136,6 +1155,7 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
     articleView.removeAttribute('hidden');
     loadArticleContent(hubId, articleId);
   }
+  restoreBlogFocus(focusHolder, document.getElementById('blog-article-content'));
 
   if (historyMode === 'push') {
     history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);

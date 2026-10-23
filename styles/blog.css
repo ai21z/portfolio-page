@@ -716,6 +716,13 @@
   pointer-events: auto;
 }
 
+/* Focus lands here when a view change hides the control that held it. Like a stage, they take
+   focus only so Tab continues from the view shown, and draw no ring. */
+#blog-category-title:focus,
+#blog-article-content:focus {
+  outline: none;
+}
+
 .blog-category-title {
   font-family: var(--font-display);
   font-size: 1.5rem;

@@ -79,6 +79,31 @@ test('on a fresh load the first Tab reaches the skip link, then the navigation, 
   expect(ring).toBe('solid');
 });
 
+// Enter on a dish label hid the label and dropped focus to the body, so the next Tab began at the top.
+test('a Blog view change keeps keyboard focus in the view it shows', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 844 });
+  await page.goto('/index.html#blog');
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  // A dish label where the dish runs, the Field Notes entry where the static fallback shows instead.
+  await page.waitForFunction(() => document.querySelector('#dish-labels .arc-btn') || document.querySelector('#blog .webgl-fallback-visible'));
+  const label = page.locator('#dish-labels .arc-btn[data-hub="codex"]');
+  const opener = (await label.count()) ? label : page.locator('#blog .blog-memo-item[data-hub="codex"]:visible').first();
+  await opener.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#blog-category-view')).toBeVisible();
+  await expect(page.locator('#blog-category-title')).toBeFocused();
+  const article = page.locator('#blog-category-view .blog-article-item').first();
+  await expect(article).toBeVisible();
+  await article.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#blog-article-view')).toBeVisible();
+  await expect(page.locator('#blog-article-content')).toBeFocused();
+  await page.locator('#btn-map-article').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#blog-article-view')).toBeHidden();
+  await expect(page.locator('#blog')).toBeFocused();
+});
+
 test('controls no one can see stay out of the Tab order', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 844 });
   for (const section of ['main', 'about', 'skills', 'work', 'blog', 'contact']) {

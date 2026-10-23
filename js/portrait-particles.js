@@ -420,6 +420,8 @@ class PortraitParticles {
     if (introSection?.classList.contains('active-section')) {
       this.start();
     }
+    // Quiet may have come in while setup waited for idle time: hold no buffers until it lifts.
+    if (this.particles.length === 0) this.releaseBuffers();
   }
 
   createCanvas() {
@@ -844,7 +846,15 @@ class PortraitParticles {
   }
 
   start() {
-    if (this.running || !this.initialized || this.particles.length === 0) return;
+    if (this.running || !this.initialized) return;
+    // Setup sampled nothing if it ran in Quiet. Sample now that the tier allows particles.
+    if (this.particles.length === 0) {
+      const budget = portraitBudget();
+      if (budget.quiet || particleScaleFromBudget(budget) <= 0) return;
+      this.sampleImage();
+      this.sampleSigil();
+      if (this.particles.length === 0) return;
+    }
     if (this.releaseTimer) {
       clearTimeout(this.releaseTimer);
       this.releaseTimer = 0;

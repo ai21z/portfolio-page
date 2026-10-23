@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
 import { fillContact } from './helpers/contact';
 
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, deviceScaleFactor: 2.625 });
@@ -99,6 +99,41 @@ test('desktop social animation initializes only once and stops in Quiet', async 
     await expect(page.locator('.hub-spore')).toHaveCount(0);
   } finally {
     await page.close();
+  }
+});
+
+test('portrait particles survive Quiet arriving before their idle setup, and return with the tier', async ({ browserName, baseURL }) => {
+  // The particles set up in idle time after load. A dip to Quiet in that wait left them gone for good.
+  // They only run on a real GPU, so this launches Chromium with it and skips where there is none.
+  test.skip(browserName !== 'chromium', 'needs a GPU Chromium');
+  const gpu = await chromium.launch({ args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
+  // This file's touch-phone defaults also reach a browser launched here, so they are reset.
+  const page = await gpu.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, hasTouch: false, isMobile: false, baseURL });
+  try {
+    await page.addInitScript(() => localStorage.setItem('aris.graphicsProfile', 'rich'));
+    await page.goto('/index.html', { waitUntil: 'commit' });
+    await page.waitForFunction(() => document.readyState !== 'loading');
+    await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsProfile('quiet', { persist: false });
+    });
+    await page.waitForTimeout(2500);
+    const quiet = await page.evaluate(() => {
+      const canvas = document.querySelector('.portrait-particles-canvas') as HTMLCanvasElement | null;
+      return { running: Boolean((window as any).__portraitParticleStats?.running), pixels: canvas ? canvas.width * canvas.height : 0 };
+    });
+    expect(quiet.running).toBe(false);
+    expect(quiet.pixels).toBeLessThanOrEqual(1);
+    const allowed = await page.evaluate(async () => {
+      const governor = await import('/js/graphics-governor.js');
+      governor.setGraphicsProfile('rich', { persist: false });
+      return !governor.getGraphicsBudget('portrait-particles').quiet;
+    });
+    test.skip(!allowed, 'no hardware WebGL here, so the governor keeps Quiet');
+    await expect.poll(() => page.evaluate(() => (window as any).__portraitParticleStats?.particleCount || 0)).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => Boolean((window as any).__portraitParticleStats?.running))).toBe(true);
+  } finally {
+    await gpu.close();
   }
 });
 

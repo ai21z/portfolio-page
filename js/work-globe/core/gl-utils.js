@@ -81,17 +81,38 @@ export function loadTexture(gl, url, options = {}) {
     return canvas;
   };
 
-  image.onload = () => {
+  // Decoding and scaling run off the main thread when the browser can make an ImageBitmap, so
+  // entering Work only uploads. A bitmap upload ignores the unpack flags, so it is made unflipped
+  // and with straight alpha, as the image upload was.
+  const bitmapSource = () => {
+    if (typeof createImageBitmap !== 'function') return Promise.resolve(null);
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    const largest = Math.max(width, height);
+    const maxSize = options.maxSize || 0;
+    const resize = maxSize && largest > maxSize
+      ? { resizeWidth: Math.max(1, Math.round(width * maxSize / largest)), resizeHeight: Math.max(1, Math.round(height * maxSize / largest)) }
+      : {};
+    return createImageBitmap(image, { premultiplyAlpha: 'none', ...resize }).catch(() => null);
+  };
+
+  image.onload = async () => {
     if (state.cancelled || gl.isContextLost?.() || !gl.isTexture(texture)) {
+      return;
+    }
+    const bitmap = await bitmapSource();
+    if (state.cancelled || gl.isContextLost?.() || !gl.isTexture(texture)) {
+      bitmap?.close();
       return;
     }
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    
+
     // Don't flip Y - we handle orientation in UV generation
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource());
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap || textureSource());
+    bitmap?.close();
     
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
       options.mipmap !== false ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);

@@ -509,10 +509,10 @@
   line-height: 1.6;
 }
 
-.blog-screen.active-section ~ #network-nav,
-.blog-screen.active-section ~ #bg,
-.blog-screen.active-section ~ #spore-canvas,
-.blog-screen.active-section ~ #reveal-canvas {
+/* The landing layers leave as Blog arrives, so the network never shows through while the section
+   left fades out under the dish. They come before the Blog section in the page, so a sibling
+   selector never reached them. */
+body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-canvas) {
   pointer-events: none;
   opacity: 0;
   transition: opacity 400ms ease;

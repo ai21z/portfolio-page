@@ -191,3 +191,20 @@ test('the Blog canvas, black until drawn, stays transparent until its first fram
     expect(await page.locator('#blog-network-canvas').evaluate((c: HTMLCanvasElement) => c.width * c.height)).toBeLessThanOrEqual(1);
   }
 });
+
+// Skills to Blog showed the bright landing network over the half-drawn dish: the rule meant to fade
+// the landing layers out on Blog used a sibling selector, and the layers come before Blog in the page.
+test('the landing layers fade out as Blog arrives and come back after it', async ({ page }) => {
+  await page.goto('/index.html#skills');
+  await expect(page.locator('#skills')).toHaveClass(/active-section/);
+  const opacity = () => page.locator('#bg').evaluate((el) => Number(getComputedStyle(el).opacity));
+  expect(await opacity()).toBeGreaterThan(0.5);
+  await clickSectionLink(page, 'skills', 'blog');
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  // Well inside the 450 ms crossfade the layers are already on their way out.
+  await page.waitForTimeout(250);
+  expect(await opacity()).toBeLessThan(0.5);
+  await expect.poll(opacity).toBe(0);
+  await clickSectionLink(page, 'blog', 'about');
+  await expect.poll(opacity).toBeGreaterThan(0.5);
+});

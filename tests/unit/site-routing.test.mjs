@@ -27,6 +27,31 @@ test('redirects www while preserving paths, queries, and POST requests', async (
   }
 });
 
+test('sends blog URLs to their one address, keeping the query', async () => {
+  const cases = [
+    ['/blog', 'https://zounarakis.com/#blog'],
+    ['/blog/', 'https://zounarakis.com/#blog'],
+    ['/blog/?ref=card', 'https://zounarakis.com/?ref=card#blog'],
+    ['/blog/codex/fail-fast-learn-faster/', 'https://zounarakis.com/blog/codex/fail-fast-learn-faster'],
+    ['/blog/cosmos/first-year-software-engineer/?utm=x', 'https://zounarakis.com/blog/cosmos/first-year-software-engineer?utm=x'],
+    ['/blog/cosmos/first-year-software-%65ngineer/', 'https://zounarakis.com/blog/cosmos/first-year-software-%65ngineer']
+  ];
+  for (const [method, status] of [['GET', 301], ['HEAD', 301], ['POST', 308]]) {
+    for (const [pathname, location] of cases) {
+      const ctx = context(pathname, { method });
+      ctx.next = () => { throw new Error('A redirect must not serve content'); };
+      const response = await onRequest(ctx);
+      assert.equal(response.status, status, `${method} ${pathname}`);
+      assert.equal(response.headers.get('location'), location, pathname);
+    }
+  }
+  // Unknown articles and the hub paths are not invented.
+  for (const pathname of ['/blog/codex/not-a-post/', '/blog/codex/', '/blogs/']) {
+    const response = await onRequest(context(pathname));
+    assert.equal(response.status, 404, pathname);
+  }
+});
+
 test('passes public assets, clean page URLs, and the contact endpoint through', async () => {
   for (const pathname of ['/', '/index.html', '/js/app.js?v=1', '/styles/main.css',
     '/blog/codex/fail-fast-learn-faster', '/blog/codex/fail-fast-learn-faster.html',

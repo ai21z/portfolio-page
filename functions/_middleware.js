@@ -2,14 +2,16 @@ import publicFiles from '../scripts/public-files.json' with { type: 'json' };
 
 const publicPaths = new Set(publicFiles.filter(file => !file.startsWith('_')).map(file => `/${file}`));
 
+const redirect = (context, url) =>
+  Response.redirect(url.toString(), ['GET', 'HEAD'].includes(context.request.method) ? 301 : 308);
+
 async function route(context) {
   const url = new URL(context.request.url);
   if (url.hostname === 'www.zounarakis.com') {
     url.hostname = 'zounarakis.com';
     url.protocol = 'https:';
     url.port = '';
-    const status = ['GET', 'HEAD'].includes(context.request.method) ? 301 : 308;
-    return Response.redirect(url.toString(), status);
+    return redirect(context, url);
   }
 
   let pathname;
@@ -17,6 +19,17 @@ async function route(context) {
     pathname = decodeURIComponent(url.pathname);
   } catch {
     return new Response('Invalid URL', { status: 400 });
+  }
+
+  // The blog lives in the app at #blog. Its articles have one address, without a trailing slash.
+  if (pathname === '/blog' || pathname === '/blog/') {
+    url.pathname = '/';
+    url.hash = 'blog';
+    return redirect(context, url);
+  }
+  if (pathname.length > 1 && pathname.endsWith('/') && publicPaths.has(`${pathname.slice(0, -1)}.html`)) {
+    url.pathname = url.pathname.slice(0, -1);
+    return redirect(context, url);
   }
 
   if (pathname === '/api/contact' || publicPaths.has(pathname) ||

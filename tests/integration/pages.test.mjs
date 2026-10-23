@@ -48,6 +48,12 @@ test('compiled Pages middleware, assets and contact work together with isolated 
     const article = await fetch('/blog/codex/fail-fast-learn-faster');
     assert.equal(article.status, 200);
     assert.equal(article.headers.get('cache-control'), 'no-cache');
+    const slashed = await fetch('/blog/codex/fail-fast-learn-faster/', { redirect: 'manual' });
+    assert.equal(slashed.status, 301);
+    assert.equal(slashed.headers.get('location'), 'https://zounarakis.com/blog/codex/fail-fast-learn-faster');
+    const blog = await fetch('/blog/', { redirect: 'manual' });
+    assert.equal(blog.status, 301);
+    assert.equal(blog.headers.get('location'), 'https://zounarakis.com/#blog');
     for (const method of ['GET', 'POST']) {
       const response = await server.runtime.dispatchFetch('https://www.zounarakis.com/path?q=test', { method, redirect: 'manual' });
       assert.equal(response.status, method === 'GET' ? 301 : 308);

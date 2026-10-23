@@ -8,8 +8,12 @@ const DIRECT_EMAIL = 'aris@zounarakis.com';
 // How long a press of Send waits for the spam check before offering email instead. Turnstile
 // retries a failed check about every 10 s on its own.
 const VERIFY_WAIT_MS = 12000;
+// Contact opens with a 450 ms fade, and mounting the check's cross-origin frame during it held
+// 70 to 130 ms frames. So the check starts once the sheet has settled. A press of Send before then
+// starts it at once.
+const VERIFY_START_DELAY_MS = 550;
 
-// The spam check (Cloudflare Turnstile) runs out of sight from the moment Contact opens, and how
+// The spam check (Cloudflare Turnstile) runs out of sight once Contact has opened, and how
 // it fares stays quiet until the visitor presses Send. Send is never held back for it: the server
 // refuses any message without a valid token, so a disabled button protected nothing and only made
 // the form look broken where the check is blocked or slow. Send waits for the check instead, and
@@ -31,8 +35,17 @@ class NotebookContact {
     // (the script did not load or mount).
     this.verification = 'idle';
     this.tokenWaiter = null;
+    this.verifyStartTimer = 0;
     this.visibilityListener = (event) => {
-      if (event.detail?.visible) this.startVerification();
+      window.clearTimeout(this.verifyStartTimer);
+      if (!event.detail?.visible) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        this.startVerification();
+        return;
+      }
+      this.verifyStartTimer = window.setTimeout(() => {
+        if (this.form?.closest('.active-section')) this.startVerification();
+      }, VERIFY_START_DELAY_MS);
     };
     // A script that arrives after the load timeout still mounts.
     this.lateLoadListener = () => {
@@ -487,6 +500,7 @@ class NotebookContact {
   destroy() {
     if (!this.form) return;
     this.submissionController?.abort();
+    window.clearTimeout(this.verifyStartTimer);
     window.removeEventListener('contact:visible', this.visibilityListener);
     document.removeEventListener('turnstile-loaded', this.lateLoadListener);
     this.settleTokenWaiter('');

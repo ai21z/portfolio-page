@@ -365,6 +365,51 @@ test('contact loads and mounts verification once after opening', async ({ page }
   expect(await page.evaluate(() => (window as any).__verificationMounts)).toBe(1);
 });
 
+test('the spam check waits for the Contact fade, and Send during the fade starts it at once', async ({ page }) => {
+  // Mounting the check's frame during the 450 ms fade held 70 to 130 ms frames.
+  const loads: number[] = [];
+  await page.route('https://challenges.cloudflare.com/**', route => {
+    loads.push(Date.now());
+    return route.fulfill({ contentType: 'application/javascript', body: `
+      window.turnstile = { render(container, options) { options.callback('test-token'); return 'test-widget'; } };
+      window.__turnstileOnLoad();
+    ` });
+  });
+  await page.goto('/index.html');
+  await expect(page.locator('#threshold')).toBeHidden();
+  let opened = Date.now();
+  await page.evaluate(() => { location.hash = 'contact'; });
+  await page.waitForTimeout(350);
+  expect(loads).toEqual([]);
+  await expect.poll(() => loads.length).toBe(1);
+  expect(loads[0] - opened).toBeGreaterThanOrEqual(450);
+
+  await page.goto('/index.html');
+  await expect(page.locator('#threshold')).toBeHidden();
+  loads.length = 0;
+  await page.evaluate(() => {
+    const set = (id: string, value: string) => {
+      const field = document.getElementById(id) as HTMLInputElement;
+      field.value = value;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    set('name', 'Synthetic Visitor');
+    set('email', 'visitor@example.test');
+    set('subject', 'Synthetic contact check');
+    set('message', 'A synthetic message long enough to send.');
+  });
+  // Submitted the moment Contact is active (a click would wait for the sheet to stop moving).
+  opened = await page.evaluate(() => new Promise<number>((resolve) => {
+    window.addEventListener('hashchange', () => requestAnimationFrame(() => {
+      (document.getElementById('contact-form') as HTMLFormElement).requestSubmit();
+      resolve(Date.now());
+    }), { once: true });
+    location.hash = 'contact';
+  }));
+  await expect.poll(() => loads.length).toBe(1);
+  expect(loads[0] - opened).toBeLessThan(400);
+});
+
 test('a blocked verification script is tried again on Send, then the draft goes by email', async ({ page }) => {
   let loads = 0;
   await page.route('https://challenges.cloudflare.com/**', route => { loads++; return route.abort(); });

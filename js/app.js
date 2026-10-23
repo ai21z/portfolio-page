@@ -1380,7 +1380,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const articleId = parts[2];
 
     // Deep-link load: the hash is already correct, so don't touch history.
-    showSectionWithEffects('blog', { historyMode: 'none', instant: true });
+    showSectionWithEffects('blog', { historyMode: 'none', instant: true, focus: false });
 
     if (articleId) {
       scheduleBlogHashAction(() => enterBlogArticle(hubId, articleId, { historyMode: 'none' }));
@@ -1391,7 +1391,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const validSections = ['intro', 'about', 'work', 'contact', 'blog', 'skills'];
     const initialSection = validSections.includes(hash) ? hash : 'intro';
     // Nothing has been seen yet on load, so the landing does not fade out behind the veil.
-    showSectionWithEffects(initialSection, { instant: true });
+    showSectionWithEffects(initialSection, { instant: true, focus: false });
   }
 
   if (hudEnabled) {

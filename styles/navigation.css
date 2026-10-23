@@ -83,10 +83,16 @@
   color: var(--decay-green);
 }
 
+/* The word sits in an absolutely placed span, so an underline on the link never drew. The ring goes
+   on the word itself, matching the sigil's. */
 .network-node-label:focus-visible{
   outline: none;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+}
+
+.network-node-label:focus-visible .node-label{
+  outline: 2px solid rgba(var(--necrotic-rgb),0.8);
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 /* Glowing dot at the center of the node */

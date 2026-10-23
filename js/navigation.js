@@ -416,8 +416,13 @@ export function showSection(sectionName, options = {}) {
   
   const shouldSuppressNav = isPanel;
   document.body.classList.toggle('nav-suppressed', shouldSuppressNav);
+  // The panels cover the sigil and hide the labels, so Tab would land on controls no one can see.
+  const nav = document.getElementById('network-nav');
+  if (nav) nav.inert = shouldSuppressNav;
 
-  if (activeSection && activeSection.getAttribute('tabindex') === '-1') {
+  // A switch moves focus into the section it shows. The first route on load leaves focus where the
+  // browser put it, so the first Tab still reaches the skip link and the navigation.
+  if (options.focus !== false && activeSection && activeSection.getAttribute('tabindex') === '-1') {
     activeSection.focus({ preventScroll: true });
   }
   

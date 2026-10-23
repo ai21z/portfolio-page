@@ -11,10 +11,12 @@
   z-index: 9; /* Same as altar-screen to allow base background through */
 }
 
+/* Hidden once faded, so Tab skips the labels. They show again at once on the way back. */
 body:has(#contact.stage.active-section) .network-node-label {
   pointer-events: none;
   opacity: 0;
-  transition: opacity 400ms ease;
+  visibility: hidden;
+  transition: opacity 400ms ease, visibility 0s linear 400ms;
 }
 
 body:has(#contact.stage.active-section) #hud-canvas {

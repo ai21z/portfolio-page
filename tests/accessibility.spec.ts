@@ -58,6 +58,48 @@ test('skip to content moves focus into the section on screen and stays there', a
   }
 });
 
+// The landing used to focus its own section on load, so the first Tab passed the skip link and the nav.
+test('on a fresh load the first Tab reaches the skip link, then the navigation, with a visible ring', async ({ page, browserName }) => {
+  // WebKit leaves links out of the Tab order by default, as Safari does.
+  test.skip(browserName === 'webkit', 'Tab skips links in WebKit');
+  await page.setViewportSize({ width: 1366, height: 844 });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await expect(page.locator('#main')).toHaveClass(/active-section/);
+  await page.keyboard.press('Tab');
+  await expect(page.locator('a.skip')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('#network-nav')))).toBe(true);
+  // Past the sigil, the first word label. Its ring is on the word, the only part that draws.
+  await page.keyboard.press('Tab');
+  const ring = await page.evaluate(() => {
+    const word = document.activeElement?.querySelector('.node-label');
+    return word ? getComputedStyle(word).outlineStyle : 'no label';
+  });
+  expect(ring).toBe('solid');
+});
+
+test('controls no one can see stay out of the Tab order', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 844 });
+  for (const section of ['main', 'about', 'skills', 'work', 'blog', 'contact']) {
+    await page.goto('/index.html#' + section);
+    await expect(page.locator('html')).toHaveClass(/js-ready/);
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    // The panels cover the sigil and hide the labels. The landing and Contact still show the sigil.
+    const covered = !['main', 'contact'].includes(section);
+    expect(await page.locator('#network-nav').evaluate(el => (el as HTMLElement).inert), section).toBe(covered);
+  }
+  // Contact fades the word labels out, and they leave the Tab order once faded.
+  await expect.poll(() => page.locator('.network-node-label').evaluateAll(labels =>
+    labels.length > 0 && labels.every(label => getComputedStyle(label).visibility === 'hidden'))).toBe(true);
+  // The article scroll buttons show only once the article is scrolled.
+  await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
+  await expect(page.locator('#blog-article-view')).toBeVisible();
+  const scrollNav = page.locator('.article-scroll-nav');
+  await expect(scrollNav).not.toHaveClass(/visible/);
+  await expect.poll(() => scrollNav.evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+});
+
 test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {
   // WCAG 2.1.4: a single-character shortcut fired whenever a visitor typed "Hello".
   await stubVerification(page);

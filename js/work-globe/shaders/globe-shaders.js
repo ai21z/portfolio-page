@@ -37,6 +37,13 @@ uniform bool uUseDaymap;
 // Ocean/land palette, shared by the daymap and procedural branches below.
 const vec3 OCEAN_COLOR = vec3(0.08, 0.12, 0.13);  // Subtle dark teal
 const vec3 LAND_COLOR = vec3(0.55, 0.75, 0.60);   // Keep land brighter
+// The daymap is a dark map: its ocean reads 0.06 to 0.07 luminance and its land 0.12 to 0.19, so the
+// land step sits between the two. At 0.15 to 0.40 most land read as ocean.
+const float LAND_LUMA_LO = 0.08;
+const float LAND_LUMA_HI = 0.13;
+// How far the daymap is pulled toward the palette. A plain mix, never a lighten blend, which
+// collapses over near-black on P3 displays.
+const float PALETTE_STRENGTH = 0.30;
 
 void main() {
   vec3 baseColor;
@@ -50,11 +57,10 @@ void main() {
     
     // Subtle palette shift (much lighter touch)
     float luminance = dot(sampledColor, vec3(0.299, 0.587, 0.114));
-    float landness = smoothstep(0.15, 0.40, luminance);
-    
-    // Very subtle remap (10% strength - mostly shows original texture)
+    float landness = smoothstep(LAND_LUMA_LO, LAND_LUMA_HI, luminance);
+
     vec3 targetColor = mix(OCEAN_COLOR, LAND_COLOR, landness);
-    baseColor = mix(sampledColor, targetColor, 0.10);
+    baseColor = mix(sampledColor, targetColor, PALETTE_STRENGTH);
     
   } else {
     // Fallback: procedural land/ocean

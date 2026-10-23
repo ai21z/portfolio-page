@@ -1,6 +1,7 @@
 import { cappedDpr } from './utils.js';
 import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
+import { warmPrograms } from './gpu-warm.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -430,7 +431,22 @@ function program(gl, vs, fs){
   return p;
 }
 
+// The Blog programs, in the order init links them. The idle warm-up links the same list.
+const BLOG_PROGRAMS = [
+  { vs: VS_FSQ, fs: FS_PAPER },
+  { vs: VS_SEG, fs: FS_SEG },
+  { vs: VS_CYST, fs: FS_CYST },
+  { vs: VS_NODE, fs: FS_NODE }
+];
+
 let initialized = false;
+
+// Links the Blog programs ahead of the first visit, so entering Blog finds them in the browser's
+// program cache instead of waiting on the GPU.
+export function warmBlogNetwork() {
+  if (initialized) return Promise.resolve(false);
+  return warmPrograms(BLOG_PROGRAMS);
+}
 
 async function initBlogNetwork(){
   if (initialized) return;
@@ -607,10 +623,7 @@ async function initBlogNetwork(){
     return { vao, count: nodeCount };
   }
 
-  const progPaper = program(gl, VS_FSQ, FS_PAPER);
-  const progSeg   = program(gl, VS_SEG, FS_SEG);
-  const progCyst  = program(gl, VS_CYST, FS_CYST);
-  const progNode  = program(gl, VS_NODE, FS_NODE);
+  const [progPaper, progSeg, progCyst, progNode] = BLOG_PROGRAMS.map(({ vs, fs }) => program(gl, vs, fs));
 
   // Create main VAO
   const vaoSeg  = makeVAOforSegments();

@@ -116,6 +116,31 @@ test('a desktop builds the mycelium network in idle time before any hover, a pho
   }
 });
 
+test('Blog starts its network once after the idle warm-up loaded its module', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'The shader warm-up runs in Chromium only');
+  test.setTimeout(45_000);
+  await page.addInitScript(() => {
+    localStorage.setItem('aris.graphicsProfile', 'balanced');
+    // Every start of the network asks the Blog canvas for its context, even where it then shows the fallback.
+    (window as any).__blogContexts = 0;
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: any[]) {
+      if (this.id === 'blog-network-canvas') (window as any).__blogContexts++;
+      return (getContext as any).apply(this, args);
+    } as any;
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // The warm-up loads Blog's module, then Work's, so Blog's step is done once Work's module is asked for.
+  const workModule = page.waitForRequest(/\/js\/work-globe-webgl\.js/, { timeout: 25_000 });
+  await page.goto('/index.html');
+  await workModule;
+  await page.evaluate(() => { location.hash = 'blog'; });
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  await expect.poll(() => page.evaluate(() => (window as any).__blogContexts)).toBeGreaterThan(0);
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => (window as any).__blogContexts)).toBe(1);
+});
+
 test('intro ritual toggle and work navigation do not throw route errors', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));

@@ -2,7 +2,7 @@
 window.__appBooted = true;
 document.documentElement.classList.add('js-ready');
 
-import { sizeCanvas, cumulativeLengths, throttle } from './utils.js';
+import { sizeCanvas, cumulativeLengths, isFirefox, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
 import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
@@ -133,9 +133,13 @@ function reloadOnceForRelease(err) {
   return true;
 }
 
+// The section graphics modules, loaded on a visit or ahead of it by the idle warm-up.
+const importBlogNetwork = () => import('./blog-network-webgl.js?v=20261019');
+const importWorkGlobe = () => import('./work-globe-webgl.js?v=20261019');
+
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
-    blogNetworkModulePromise = import('./blog-network-webgl.js?v=20261019').catch((err) => {
+    blogNetworkModulePromise = importBlogNetwork().catch((err) => {
       blogNetworkModulePromise = null;
       if (reloadOnceForRelease(err)) return;
       console.warn('blog network module unavailable:', err);
@@ -143,7 +147,7 @@ function ensureSectionModule(sectionName) {
   }
 
   if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = import('./work-globe-webgl.js?v=20261019').catch((err) => {
+    workGlobeModulePromise = importWorkGlobe().catch((err) => {
       workGlobeModulePromise = null;
       if (reloadOnceForRelease(err)) return;
       console.warn('work globe module unavailable:', err);
@@ -1458,13 +1462,26 @@ if (sigilBtn && menuDlg && typeof menuDlg.showModal === 'function') {
   });
 }
 
+// Links a section's shaders ahead of its first visit. A failed load is left to the visit itself,
+// which knows how to recover from a newer release, so the warm-up never reloads the page. Only in
+// Chromium, where the gain was measured: Firefox may not share linked programs between contexts.
+async function warmSectionShaders(sectionName, load, warm) {
+  if (isFirefox()) return;
+  if (document.getElementById(sectionName)?.classList.contains('active-section')) return;
+  const mod = await load().catch(() => null);
+  await mod?.[warm]?.();
+}
+
 // Once the landing has settled, do in idle time the work that would otherwise be a long frame
-// later: building the navigation graph, which the first hover of a node waits for. One step per
-// idle callback, and only on desktops outside Quiet, since phones may never hover and Quiet
-// sessions asked for less work.
+// later: building the navigation graph, which the first hover of a node waits for, then linking
+// the Blog and Work shaders, which their first visit waits for. One step per idle callback, and
+// only on desktops outside Quiet, since phones may never hover and Quiet sessions asked for less
+// work.
 const IDLE_WARMUP_DELAY_MS = 4000;
 const idleWarmupSteps = [
-  () => ensureMyceliumReady()
+  () => ensureMyceliumReady(),
+  () => warmSectionShaders('blog', importBlogNetwork, 'warmBlogNetwork'),
+  () => warmSectionShaders('work', importWorkGlobe, 'warmWorkGlobe')
 ];
 
 function idleWarmupAllowed() {

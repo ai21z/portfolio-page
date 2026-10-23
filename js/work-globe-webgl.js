@@ -1,7 +1,8 @@
 // WebGL globe visualization
 
 import { mat4 } from './work-globe/core/math-utils.js';
-import { cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
+import { bindAttribs, cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js?v=20261019';
+import { warmPrograms } from './gpu-warm.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 import { NECRO_GREEN } from './work-globe/core/palette.js';
 
@@ -172,6 +173,29 @@ function cacheUniforms(program, programKey, uniformNames) {
   }
 }
 
+// The Work programs with their attribute locations. The idle warm-up links the same list.
+const WORK_PROGRAMS = {
+  globe: { vs: GLOBE_VERTEX_SHADER, fs: GLOBE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  atmosphere: { vs: ATMOSPHERE_VERTEX_SHADER, fs: ATMOSPHERE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1 } },
+  fog: { vs: FOG_VERTEX_SHADER, fs: FOG_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  lightning: { vs: LIGHTNING_VERTEX_SHADER, fs: LIGHTNING_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  mycelium: { vs: MYCELIUM_VERTEX_SHADER, fs: MYCELIUM_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2, age: 3 } },
+  myceliumCore: { vs: MYCELIUM_VERTEX_SHADER, fs: MYCELIUM_CORE_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2, age: 3 } },
+  spore: { vs: PARTICLE_VERTEX_SHADER, fs: PARTICLE_FRAGMENT_SHADER, attribs: { position: 0, velocity: 1, life: 2, size: 3, phase: 4 } },
+  pin: { vs: PIN_VERTEX_SHADER, fs: PIN_FRAGMENT_SHADER,
+    attribs: { position: 0, normal: 1, instancePos: 2, instanceColor: 3, instanceHeight: 4, instancePhase: 5 } },
+  dataStream: { vs: DATA_STREAM_VERTEX_SHADER, fs: DATA_STREAM_FRAGMENT_SHADER, attribs: { position: 0, life: 1, phase: 2 } },
+  moon: { vs: MOON_VERTEX_SHADER, fs: MOON_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  textBillboard: { vs: TEXT_BILLBOARD_VERTEX_SHADER, fs: TEXT_BILLBOARD_FRAGMENT_SHADER, attribs: { aPosition: 0, aUv: 1 } }
+};
+
+// Links the Work programs ahead of the first visit, so entering Work finds them in the browser's
+// program cache instead of waiting on the GPU.
+export function warmWorkGlobe() {
+  if (gl) return Promise.resolve(false);
+  return warmPrograms(Object.values(WORK_PROGRAMS), bindAttribs);
+}
+
 function initWorkGlobe() {
   canvas = document.getElementById('work-globe-canvas');
   if (!canvas) {
@@ -213,73 +237,21 @@ function initWorkGlobe() {
 
   resizeCanvas();
 
-  globeProgram = createProgram(gl, GLOBE_VERTEX_SHADER, GLOBE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-  atmosphereProgram = createProgram(gl, ATMOSPHERE_VERTEX_SHADER, ATMOSPHERE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1
-  });
-  fogProgram = createProgram(gl, FOG_VERTEX_SHADER, FOG_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-  lightningProgram = createProgram(gl, LIGHTNING_VERTEX_SHADER, LIGHTNING_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-
-  myceliumProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2,
-    age: 3
-  });
-
-  myceliumCoreProgram = createProgram(gl, MYCELIUM_VERTEX_SHADER, MYCELIUM_CORE_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2,
-    age: 3
-  });
-
-  sporeProgram = createProgram(gl, PARTICLE_VERTEX_SHADER, PARTICLE_FRAGMENT_SHADER, {
-    position: 0,
-    velocity: 1,
-    life: 2,
-    size: 3,
-    phase: 4
-  });
-
-  pinProgram = createProgram(gl, PIN_VERTEX_SHADER, PIN_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    instancePos: 2,
-    instanceColor: 3,
-    instanceHeight: 4,
-    instancePhase: 5
-  });
-
-  dataStreamProgram = createProgram(gl, DATA_STREAM_VERTEX_SHADER, DATA_STREAM_FRAGMENT_SHADER, {
-    position: 0,
-    life: 1,
-    phase: 2
-  });
-
-  moonProgram = createProgram(gl, MOON_VERTEX_SHADER, MOON_FRAGMENT_SHADER, {
-    position: 0,
-    normal: 1,
-    uv: 2
-  });
-
-  textBillboardProgram = createProgram(gl, TEXT_BILLBOARD_VERTEX_SHADER, TEXT_BILLBOARD_FRAGMENT_SHADER, {
-    aPosition: 0,
-    aUv: 1
-  });
+  const link = (name) => {
+    const { vs, fs, attribs } = WORK_PROGRAMS[name];
+    return createProgram(gl, vs, fs, attribs);
+  };
+  globeProgram = link('globe');
+  atmosphereProgram = link('atmosphere');
+  fogProgram = link('fog');
+  lightningProgram = link('lightning');
+  myceliumProgram = link('mycelium');
+  myceliumCoreProgram = link('myceliumCore');
+  sporeProgram = link('spore');
+  pinProgram = link('pin');
+  dataStreamProgram = link('dataStream');
+  moonProgram = link('moon');
+  textBillboardProgram = link('textBillboard');
 
   if (!textBillboardProgram) {
     console.error('[Work Globe] Failed to create text billboard shader program!');

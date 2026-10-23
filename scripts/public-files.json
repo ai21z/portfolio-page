@@ -48,6 +48,7 @@
   "js/config.js",
   "js/contact.js",
   "js/contact-attempt.js",
+  "js/gpu-warm.js",
   "js/graph.js",
   "js/graphics-governor.js",
   "js/hub-to-icons.js",

@@ -8,6 +8,7 @@ test('release pages avoid stale scripts and styles and share one governor', asyn
   const releaseChanged = new Set([
     '/styles/main.css', '/js/contact.js', '/js/contact-attempt.js', '/js/app.js', '/js/graphics-governor.js', '/js/navigation.js', '/js/routes.js',
     '/js/work-globe-webgl.js', '/js/blog-network-webgl.js', '/js/work-timeline.js', '/js/work-globe/work-index.js',
+    '/js/work-globe/core/gl-utils.js',
     '/js/work-globe/work-index-content.js', '/js/work-globe/data/work-locations.js', '/js/work-globe/data/projects.js',
     '/js/work-globe/data/timeline.js', '/js/portrait-particles.js', '/js/altar-eye.js', '/js/altar-culture.js'
   ]);

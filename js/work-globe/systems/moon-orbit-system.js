@@ -74,7 +74,9 @@ export class MoonOrbitSystem {
     gl.bindVertexArray(null);
   }
   
-  update(dt) {
+  // Held still (reduced motion), the moons keep their hover response but drop the compact pulse and
+  // the shimmer, which run on the wall clock.
+  update(dt, still = false) {
     const isMobile = isCompact();
 
     this.moons.forEach(moon => {
@@ -85,7 +87,7 @@ export class MoonOrbitSystem {
 
       let targetScale = moon.targetScale;
 
-      if (isMobile && Math.abs(moon.targetScale - 1.0) < 0.01) {
+      if (isMobile && !still && Math.abs(moon.targetScale - 1.0) < 0.01) {
          const pulse = Math.sin(Date.now() / 1000 * 3) * 0.5 + 0.5;
          targetScale = 1.0 + pulse * 0.15;
       }
@@ -118,7 +120,10 @@ export class MoonOrbitSystem {
         moon.eyeDilation += eyeDiff * 0.12;
       }
       
-      if (moon.shimmerActive) {
+      if (moon.shimmerActive && still) {
+        moon.shimmerActive = false;
+        moon.shimmerPhase = -1.0;
+      } else if (moon.shimmerActive) {
         const shimmerDuration = 2.0;
         const elapsed = (Date.now() - moon.shimmerStartTime) / 1000;
         moon.shimmerPhase = -1.0 + (elapsed / shimmerDuration) * 2.0;

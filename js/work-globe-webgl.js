@@ -735,7 +735,7 @@ function render(deltaTime) {
   }
 
   if (moonOrbitSystem) {
-    moonOrbitSystem.update(sceneDelta);
+    moonOrbitSystem.update(sceneDelta, still);
   }
 
   if (sporeProgram && sporeSystem && sporeSystem.activeParticles > 0) {
@@ -779,7 +779,10 @@ function render(deltaTime) {
     moonOrbitSystem.render(moonProgram, projectionMatrix, viewMatrix, modelMatrix, time, cameraPos);
   }
 
-  if (dataStreamSystem) {
+  // Held still, a hovered pin streams nothing, since a stream that cannot age would pile up for good.
+  if (dataStreamSystem && still) {
+    dataStreamSystem.clear();
+  } else if (dataStreamSystem) {
     dataStreamSystem.update(sceneDelta);
 
     // Emit streams from hovered pins

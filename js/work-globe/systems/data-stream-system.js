@@ -58,6 +58,13 @@ export class DataStreamSystem {
   stopEmission() {
     this.emitting = false;
   }
+
+  // Drops every particle at once, for a scene held still under reduced motion.
+  clear() {
+    this.emitting = false;
+    this.particles.forEach(p => { p.active = false; });
+    this.activeParticles = 0;
+  }
   
   update(dt) {
     if (this.emitting && Math.random() < 0.5) {

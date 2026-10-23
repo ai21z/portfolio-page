@@ -81,19 +81,15 @@ export function loadTexture(gl, url, options = {}) {
     return canvas;
   };
 
-  // Decoding and scaling run off the main thread when the browser can make an ImageBitmap, so
-  // entering Work only uploads. A bitmap upload ignores the unpack flags, so it is made unflipped
-  // and with straight alpha, as the image upload was.
+  // Decoding runs off the main thread when the browser can make an ImageBitmap, so entering Work
+  // only uploads. A bitmap upload ignores the unpack flags, so it is made with straight alpha, as
+  // the image upload was. Only at full size: Firefox returns wrong alpha for a straight-alpha
+  // bitmap that is also resized, which thickened the fog, so scaled textures keep the canvas path.
   const bitmapSource = () => {
     if (typeof createImageBitmap !== 'function') return Promise.resolve(null);
-    const width = image.naturalWidth || image.width;
-    const height = image.naturalHeight || image.height;
-    const largest = Math.max(width, height);
-    const maxSize = options.maxSize || 0;
-    const resize = maxSize && largest > maxSize
-      ? { resizeWidth: Math.max(1, Math.round(width * maxSize / largest)), resizeHeight: Math.max(1, Math.round(height * maxSize / largest)) }
-      : {};
-    return createImageBitmap(image, { premultiplyAlpha: 'none', ...resize }).catch(() => null);
+    const largest = Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height);
+    if (options.maxSize && largest > options.maxSize) return Promise.resolve(null);
+    return createImageBitmap(image, { premultiplyAlpha: 'none' }).catch(() => null);
   };
 
   image.onload = async () => {

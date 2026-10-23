@@ -13,36 +13,37 @@
   animation: hudFadeIn 1s ease-out 0.5s forwards;
 }
 
-/* ---- header: the legend box, then the title ---- */
+/* ---- header: the title, then a light key under it, then the sort ---- */
 .work-rail-head {
   flex: 0 0 auto;
   margin-bottom: 12px;
-}
-
-/* the key, in a memorandum-style panel */
-.work-rail-key {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  background: rgba(10, 12, 14, 0.85);
-  border: 1px solid rgba(var(--decay-green-rgb), 0.3);
-  border-radius: 4px;
-  padding: 12px 14px;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.work-rail-title { order: 1; }
+.work-rail-sub { order: 2; }
+.work-rail-key { order: 3; }
+.work-rail-modes { order: 4; }
+
+/* The key reads as a caption to the title, one line in the sub's weight, not a panel above it. */
+.work-rail-key {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
   pointer-events: none;
-  margin-bottom: 12px;
 }
 
 .work-rail-key-row {
   display: grid;
-  grid-template-columns: 16px 1fr;
+  grid-template-columns: 12px auto;
   align-items: center;
-  gap: 11px;
-  font-size: 0.72rem;
+  gap: 7px;
+  font-size: 0.66rem;
   letter-spacing: 0.05em;
-  color: rgba(225, 233, 228, 0.88);
+  color: rgba(150, 170, 160, 0.82);
 }
 
 .work-rail-key-row .rail-glyph {
@@ -170,6 +171,26 @@
   scrollbar-color: rgba(var(--decay-green-rgb), 0.3) transparent;
   -webkit-mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
   mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
+}
+
+/* More below: sits on the faded foot of the list, leaves once the end is in view. */
+.work-rail-cue {
+  position: absolute;
+  left: 2px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(var(--decay-green-rgb), 0.62);
+  pointer-events: none;
+  transition: opacity 200ms var(--ease-house);
+}
+
+.work-rail-cue.is-done {
+  opacity: 0;
 }
 
 .work-rail-scroll::-webkit-scrollbar {
@@ -308,6 +329,13 @@
 
 .rail-node.is-centered .rail-glyph--project {
   box-shadow: 0 0 10px rgba(184, 114, 66, 0.75);
+}
+
+/* The chosen entry carries a tag on the spine side and a faint wash, apart from the glow the
+   centred entry gets while the list scrolls. */
+.rail-node.is-selected .rail-dot-btn {
+  box-shadow: inset 2px 0 0 0 rgba(var(--decay-green-rgb), 0.85);
+  background: linear-gradient(90deg, rgba(var(--decay-green-rgb), 0.09), transparent 78%);
 }
 
 .rail-node.is-selected .rail-node-title {
@@ -606,14 +634,36 @@
     max-width: 520px;
   }
 
+  /* Compact keeps the key in its panel above the title, beside the view toggle. */
   .work-rail-head {
     margin-bottom: 8px;
+    display: block;
+    flex-direction: row;
+  }
+
+  .work-rail-head > * {
+    order: 0;
   }
 
   .work-rail-key {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    background: rgba(10, 12, 14, 0.85);
+    border: 1px solid rgba(var(--decay-green-rgb), 0.3);
+    border-radius: 4px;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     padding: 10px 12px;
     gap: 7px;
-    margin-bottom: 9px;
+    margin: 0 0 9px;
+  }
+
+  .work-rail-key-row {
+    grid-template-columns: 16px 1fr;
+    gap: 11px;
+    font-size: 0.72rem;
+    color: rgba(225, 233, 228, 0.88);
   }
 
   /* Touch uses a modal card instead of a hover note. */

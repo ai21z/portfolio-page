@@ -230,6 +230,31 @@ test.describe('Work career rail', () => {
     await expect(page.locator('.work-card-site')).toHaveCount(0);
   });
 
+  // The chosen entry looked like every other, the key sat in a heavy box above the title, and the
+  // list faded out at the bottom as if it ended there.
+  test('desktop: the chosen entry is marked, the key sits under the title, and a cue shows more below', async ({ page }) => {
+    await gotoWork(page, DESKTOP);
+    await page.waitForSelector('.rail-node');
+    const title = (await page.locator('.work-rail-title').boundingBox())!;
+    const key = (await page.locator('.work-rail-key').boundingBox())!;
+    expect(key.y).toBeGreaterThan(title.y + title.height - 1);
+
+    const adp = page.locator('.rail-node[data-id="adp"] .rail-dot-btn');
+    await adp.click();
+    await expect(adp).toHaveAttribute('aria-current', 'true');
+    const tag = await adp.evaluate((el) => getComputedStyle(el).boxShadow);
+    expect(tag).not.toBe('none');
+    await page.locator('.rail-node[data-id="data-annotation"] .rail-dot-btn').click();
+    await expect(adp).not.toHaveAttribute('aria-current', 'true');
+
+    const cue = page.locator('.work-rail-cue');
+    const scroll = page.locator('.work-rail-scroll');
+    await scroll.evaluate((el) => { el.scrollTop = 0; el.dispatchEvent(new Event('scroll')); });
+    await expect.poll(() => cue.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await scroll.evaluate((el) => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')); });
+    await expect.poll(() => cue.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+  });
+
   test('desktop: no toggle, and hover shows the side note rather than the card', async ({ page }) => {
     await gotoWork(page, DESKTOP);
     await page.waitForSelector('.rail-node');

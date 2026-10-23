@@ -60,6 +60,11 @@ export function initWorkTimeline() {
   spine.setAttribute('aria-hidden', 'true');
   const list = el('ol', 'work-rail-list');
   list.setAttribute('aria-label', 'Career timeline');
+  // At the foot of the list while more entries wait below, gone at the end. The list fades out at
+  // the bottom, which on its own read as the end of it.
+  const cue = el('div', 'work-rail-cue');
+  cue.setAttribute('aria-hidden', 'true');
+  cue.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6 8 10 12 6"/></svg><span>more below</span>';
 
   // Button labels already announce milestones. A live region would repeat them on hover.
   const note = el('div', 'work-note');
@@ -106,9 +111,12 @@ export function initWorkTimeline() {
   function selectNode(node, li) {
     // Selection persists, but the note stays tied to hover or focus.
     list.querySelectorAll('.rail-node.is-selected').forEach((n) => {
-      if (n !== li) n.classList.remove('is-selected');
+      if (n === li) return;
+      n.classList.remove('is-selected');
+      n.querySelector('.rail-dot-btn')?.removeAttribute('aria-current');
     });
     li.classList.add('is-selected');
+    li.querySelector('.rail-dot-btn')?.setAttribute('aria-current', 'true');
     showNote(node, li);
     if (node.target) {
       document.dispatchEvent(new CustomEvent('work-timeline:select', {
@@ -162,6 +170,7 @@ export function initWorkTimeline() {
       if (n !== best) n.classList.remove('is-centered');
     });
     if (best) best.classList.add('is-centered');
+    cue.classList.toggle('is-done', scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 24);
   };
 
   function buildGroups(mode) {
@@ -321,6 +330,7 @@ export function initWorkTimeline() {
   scroll.appendChild(list);
   viewport.appendChild(scroll);
   viewport.appendChild(readhead);
+  viewport.appendChild(cue);
   host.appendChild(viewport);
   host.appendChild(note);
   if (workSection) workSection.appendChild(toggle);

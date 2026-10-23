@@ -11,3 +11,12 @@ export const PAPER_CLEANUP_MS = PAPER_MOVE_MS + 60;
 // How long after a section switch the governor treats frames as movement, not slowness. Tied to
 // the fade, so a longer transition cannot outrun it.
 export const SECTION_SWITCH_ACTIVITY_MS = STAGE_FADE_MS * 2;
+
+// The visitor's reduced-motion setting, kept live: it follows a change made while the page is open,
+// and 'motion:preference' tells the scenes that need to restart or freeze.
+const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+export let reducedMotion = reducedQuery.matches;
+reducedQuery.addEventListener?.('change', (event) => {
+  reducedMotion = event.matches;
+  window.dispatchEvent(new CustomEvent('motion:preference', { detail: { reduced: event.matches } }));
+});

@@ -140,3 +140,15 @@ a, button {
     --gap-large: calc(var(--unit) * 10); /* 80px */
   }
 }
+
+/* Reduced motion holds the site still: no looping decoration, no animated entrance, no smooth
+   scroll. An animation ends at once on its final frame, so a state that rests on 'forwards' still holds.
+   SVG animations ignore CSS, so js/app.js pauses those. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}

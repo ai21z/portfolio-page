@@ -15,6 +15,7 @@ import { DataStreamSystem } from './work-globe/systems/data-stream-system.js';
 import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
 import { isCompact } from './compact.js';
+import { reducedMotion } from './motion.js';
 import { frameDue, getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
@@ -504,7 +505,11 @@ function render(deltaTime) {
     deltaTime = 0.016; // Default to 60fps
   }
 
-  time += deltaTime * 0.6;
+  // Under reduced motion the scene holds still: its clock, growth and moving parts stop, while a
+  // drag or a focus from the timeline still turns the globe.
+  const still = prefersReducedMotion();
+  const sceneDelta = still ? 0 : deltaTime;
+  time += sceneDelta * 0.6;
 
   // Additional safeguard - if time becomes NaN, reset it
   if (isNaN(time)) {
@@ -524,6 +529,11 @@ function render(deltaTime) {
       rotationVelocity.y = 0;
       if (t >= 1) focusTween = null;
     } else {
+      // Held still, the globe stops when the pointer lets go instead of coasting.
+      if (still && !isDragging) {
+        rotationVelocity.x = 0;
+        rotationVelocity.y = 0;
+      }
       // The fling velocity is a per-pointer-event delta, so it is applied per frame.
       rotation.y += rotationVelocity.x;
       rotation.x += rotationVelocity.y;
@@ -533,7 +543,7 @@ function render(deltaTime) {
       rotationVelocity.y *= rotDecay;
 
       // The idle spin is tuned per 60 Hz frame. Scaling by elapsed time keeps it the same at 120 Hz.
-      if (autoRotate && Math.abs(rotationVelocity.x) < 0.001) {
+      if (autoRotate && !still && Math.abs(rotationVelocity.x) < 0.001) {
         rotation.y += 0.002 * deltaTime * 60;
       }
     }
@@ -594,7 +604,8 @@ function render(deltaTime) {
 
   // Mycelium Hyphae - Body Pass
   if (myceliumProgram && myceliumVAO && myceliumVertexCount > 0) {
-    myceliumGrowthTime += deltaTime * 50; // Growth speed in units/second (~5-6 seconds to fully reveal)
+    // Growth speed in units/second (~5-6 seconds to fully reveal). Held still, it shows fully grown.
+    myceliumGrowthTime = still ? Math.max(myceliumGrowthTime, 10000) : myceliumGrowthTime + deltaTime * 50;
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -709,11 +720,11 @@ function render(deltaTime) {
     const strobe = strobePhase < 0.04 ? 1.0 : 0.0; // 4% duty cycle
     const lightningIntensity = slowPulse * (0.3 + strobe * 0.7);
 
-    sporeSystem.update(deltaTime, lightningIntensity);
+    sporeSystem.update(sceneDelta, lightningIntensity);
   }
 
   if (workPinSystem) {
-    workPinSystem.update(deltaTime, time);
+    workPinSystem.update(sceneDelta, time);
 
     if (sporeSystem) {
       const orbitals = workPinSystem.getOrbitalParticles(time);
@@ -724,7 +735,7 @@ function render(deltaTime) {
   }
 
   if (moonOrbitSystem) {
-    moonOrbitSystem.update(deltaTime);
+    moonOrbitSystem.update(sceneDelta);
   }
 
   if (sporeProgram && sporeSystem && sporeSystem.activeParticles > 0) {
@@ -769,7 +780,7 @@ function render(deltaTime) {
   }
 
   if (dataStreamSystem) {
-    dataStreamSystem.update(deltaTime); // Use actual delta time
+    dataStreamSystem.update(sceneDelta);
 
     // Emit streams from hovered pins
     if (workPinSystem && workPinSystem.hoveredPin) {
@@ -1296,9 +1307,7 @@ window.addEventListener('ui:close-overlays', () => {
 // ---- Rail coupling: the timeline drives the globe ----
 
 function prefersReducedMotion() {
-  return typeof window !== 'undefined' &&
-    window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return reducedMotion;
 }
 
 // Find the globe rotation {x, y} that brings a model-space point to face the camera (+Z).

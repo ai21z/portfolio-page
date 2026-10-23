@@ -92,6 +92,18 @@ function initImageErrorFallbacks() {
 
 initImageErrorFallbacks();
 
+// SVG animations (the ring spores on the altar) ignore CSS, so reduced motion pauses them here,
+// and a change of the setting while the page is open pauses or resumes them.
+function syncSvgMotion() {
+  for (const svg of document.querySelectorAll('svg')) {
+    if (prefersReducedMotion) svg.pauseAnimations?.();
+    else svg.unpauseAnimations?.();
+  }
+}
+
+syncSvgMotion();
+window.addEventListener('motion:preference', syncSvgMotion);
+
 const markUserGraphicsActivity = throttle((reason) => {
   markGraphicsActivity(reason, 700);
 }, 120);

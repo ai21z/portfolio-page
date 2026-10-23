@@ -1,6 +1,7 @@
 // Centralized application state
 
-export const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Live, from js/motion.js: a module reading it at the moment it acts follows a change of the setting.
+export { reducedMotion as prefersReducedMotion } from './motion.js';
 
 // The nav-route debug overlay is for development only: it opens with ?hud and has no keyboard toggle.
 export const hudEnabled = new URLSearchParams(window.location.search).has('hud');

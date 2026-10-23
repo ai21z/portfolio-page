@@ -2,6 +2,7 @@ import { cappedDpr } from './utils.js';
 import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 import { warmPrograms } from './gpu-warm.js';
+import { reducedMotion } from './motion.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -1093,7 +1094,8 @@ async function initBlogNetwork(){
         return;
       }
       const now = ts || performance.now();
-      const interval = Math.max(33, getGraphicsBudget('blog-network').frameIntervalMs || 33);
+      // Under reduced motion the rim clock moves once a minute instead of sweeping.
+      const interval = reducedMotion ? 60000 : Math.max(33, getGraphicsBudget('blog-network').frameIntervalMs || 33);
       if (now - lastClockTs >= interval) {
         lastClockTs = now;
         renderClockFrame();
@@ -1407,12 +1409,14 @@ async function initBlogNetwork(){
     }
     last = now;
     reportFrameSample('blog-network', dt, frameIntervalMs);
+    // Held still under reduced motion: the scene's clock stops, while hover and zoom still redraw.
+    const sceneSeconds = reducedMotion ? 0 : now * 0.001;
 
     // PAPER (renders background)
     gl.useProgram(progPaper);
     gl.bindVertexArray(null);
     gl.uniform2f(_uCache.paper['uRes'], fit.cssW, fit.cssH);
-    gl.uniform1f(_uCache.paper['uTime'], now*0.001);
+    gl.uniform1f(_uCache.paper['uTime'], sceneSeconds);
     set3('paper','uAbyss', PAL.ABYSS);
     gl.uniform1f(_uCache.paper['uVignette'], 0.35);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1423,7 +1427,7 @@ async function initBlogNetwork(){
       set2('cyst','uOffset', fit.offX, fit.offY);
       set2('cyst','uShift', shift[0], shift[1]);
       set2('cyst','uRes', fit.cssW, fit.cssH);
-      gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
+      gl.uniform1f(_uCache.cyst['uTime'], sceneSeconds);
       gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
       for (let m = 0; m < masses.length; m += 4) {
         const mx = masses[m], my = masses[m+1], msz = masses[m+2], mkind = masses[m+3];
@@ -1499,7 +1503,7 @@ async function initBlogNetwork(){
       set2('node','uOffset', fit.offX, fit.offY);
       set2('node','uShift', shift[0], shift[1]);
       set2('node','uRes', fit.cssW, fit.cssH);
-      gl.uniform1f(_uCache.node['uTime'], now*0.001);
+      gl.uniform1f(_uCache.node['uTime'], sceneSeconds);
       gl.uniform1f(_uCache.node['uDpr'], currentDPR());
       set3('node','uMossDark', PAL.MOSS_DARK);
       set3('node','uMossLight', PAL.MOSS_LIGHT);
@@ -1519,7 +1523,7 @@ async function initBlogNetwork(){
         set2('cyst','uScale', fit.scale, fit.scale);
         set2('cyst','uOffset', fit.offX, fit.offY);
         set2('cyst','uShift', shift[0], shift[1]);
-        gl.uniform1f(_uCache.cyst['uTime'], now*0.001);
+        gl.uniform1f(_uCache.cyst['uTime'], sceneSeconds);
         gl.uniform1f(_uCache.cyst['uDpr'], currentDPR());
         // Petri dish clipping handled by updateDishUniforms() (already set)
         set3('cyst','uGlow1', PAL.EMBER1);

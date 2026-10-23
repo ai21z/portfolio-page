@@ -182,6 +182,15 @@ test('responsive images stay smaller than their full-size sources', () => {
   expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image.webp')).toBeLessThan(170_000);
 });
 
+// The ring spores rode the caption path, so they crossed the lettering on every lap.
+test('the ring spores run an orbit no caption sits on', () => {
+  const html = readText('index.html');
+  const sporePaths = new Set([...html.matchAll(/<mpath href="#([^"]+)"/g)].map((m) => m[1]));
+  const captionPaths = new Set([...html.matchAll(/<textPath href="#([^"]+)"/g)].map((m) => m[1]));
+  expect(sporePaths.size).toBeGreaterThan(0);
+  for (const id of sporePaths) expect(captionPaths.has(id), `#${id} carries a caption`).toBe(false);
+});
+
 // A video with preload="none" and no poster showed every reader a large grey box.
 test('every article video shows a published poster frame before it plays', () => {
   const published = new Set(JSON.parse(readText('scripts/public-files.json')));

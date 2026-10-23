@@ -647,10 +647,12 @@
       <!-- LIVING RING -->
       <svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs>
-          <!-- Orbital path for spores & curved title -->
+          <!-- Orbital path for the curved title -->
           <path id="orbit" d="M50,5 A45,45 0 1,1 49.99,5" />
           <!-- The same orbit run the other way, a little wider, so the bottom phrase reads upright -->
           <path id="orbit-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
+          <!-- The spores run their own orbit inside the ring line, clear of the lettering -->
+          <path id="orbit-spores" d="M50,7 A43,43 0 1,1 49.99,7" />
           <!-- Mycelial filaments -->
           <path id="hypha1" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
@@ -668,22 +670,22 @@
         <!-- Spores orbiting -->
         <circle class="spore" r="0.9">
           <animateMotion dur="9s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit"/>
+            <mpath href="#orbit-spores"/>
           </animateMotion>
         </circle>
         <circle class="spore" r="0.9">
           <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit"/>
+            <mpath href="#orbit-spores"/>
           </animateMotion>
         </circle>
         <circle class="spore ember" r="1.1">
           <animateMotion dur="15s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit"/>
+            <mpath href="#orbit-spores"/>
           </animateMotion>
         </circle>
 
         <!-- Title along the orbit, one phrase in each gap between the cards (placed in altar.css),
-             above the spores so they pass under the letters -->
+             outside the ring line, where the spores never cross them -->
         <text class="ring-text ring-text--top"><textPath href="#orbit" startOffset="50%">• ABOUT •</textPath></text>
         <text class="ring-text ring-text--right"><textPath href="#orbit" startOffset="50%">ARIS ZOUNARAKIS</textPath></text>
         <text class="ring-text ring-text--bottom"><textPath href="#orbit-under" startOffset="50%">PLAIN, RELIABLE SOFTWARE</textPath></text>
@@ -756,6 +758,7 @@
         <defs>
           <path id="orbit-skills" d="M50,5 A45,45 0 1,1 49.99,5" />
           <path id="orbit-skills-under" d="M50,3.55 A46.45,46.45 0 1,0 50.01,3.55" />
+          <path id="orbit-skills-spores" d="M50,7 A43,43 0 1,1 49.99,7" />
           <path id="hypha1-skills" d="M8,62 C18,50 34,44 50,50 66,56 80,68 92,82" />
           <path id="hypha2-skills" d="M6,30 C20,28 32,38 50,50 68,62 82,70 94,68" />
         </defs>
@@ -768,17 +771,17 @@
 
         <circle class="spore" r="0.9">
           <animateMotion dur="9s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit-skills"/>
+            <mpath href="#orbit-skills-spores"/>
           </animateMotion>
         </circle>
         <circle class="spore" r="0.9">
           <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit-skills"/>
+            <mpath href="#orbit-skills-spores"/>
           </animateMotion>
         </circle>
         <circle class="spore ember" r="1.1">
           <animateMotion dur="15s" repeatCount="indefinite" rotate="auto">
-            <mpath href="#orbit-skills"/>
+            <mpath href="#orbit-skills-spores"/>
           </animateMotion>
         </circle>
 

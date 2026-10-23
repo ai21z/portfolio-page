@@ -243,26 +243,18 @@ test('repository documentation matches the Cloudflare Pages deployment', () => {
   expect(readme).not.toContain('Vercel');
 });
 
-test('work content module graph shares one cache-busting version', () => {
-  const references: Array<[string, RegExp]> = [
-    ['index.html', /src="\.\/js\/work-globe\/work-index\.js\?v=([^"]+)"/],
-    ['js/app.js', /import\('\.\/work-globe-webgl\.js\?v=([^']+)'\)/],
-    ['js/app.js', /import\('\.\/work-timeline\.js\?v=([^']+)'\)/],
-    ['js/work-globe-webgl.js', /work-locations\.js\?v=([^']+)'/],
-    ['js/work-globe-webgl.js', /projects\.js\?v=([^']+)'/],
-    ['js/work-timeline.js', /timeline\.js\?v=([^']+)'/],
-    ['js/work-globe/work-index.js', /work-index-content\.js\?v=([^']+)'/],
-    ['js/work-globe/work-index-content.js', /work-locations\.js\?v=([^']+)'/],
-    ['js/work-globe/work-index-content.js', /projects\.js\?v=([^']+)'/]
-  ];
-
-  const versions = references.map(([file, pattern]) => {
-    const match = readText(file).match(pattern);
-    expect(match, `${file} must cache-bust its Work content dependency`).not.toBeNull();
-    return match?.[1];
-  });
-
-  expect(new Set(versions).size).toBe(1);
+test('sources keep no cache tokens by hand, the build sets every one from the content', () => {
+  // A token bumped by hand once froze the live globe on stale code. scripts/build-site.mjs now writes
+  // the import map and every ?v= value, so a source may only mark a file with an empty ?v=.
+  const sources = ['index.html', '404.html', 'blog/codex/fail-fast-learn-faster.html', 'blog/cosmos/first-year-software-engineer.html',
+    ...fs.readdirSync(path.join(repoRoot, 'js'), { recursive: true }).filter((f) => String(f).endsWith('.js')).map((f) => 'js/' + String(f).replace(/\\/g, '/')),
+    ...fs.readdirSync(path.join(repoRoot, 'styles')).filter((f) => f.endsWith('.css')).map((f) => 'styles/' + f)];
+  const handKept: string[] = [];
+  for (const file of sources) {
+    for (const match of readText(file).matchAll(/[\w./-]+\.(?:js|css|webp|png|svg)\?v=([^'"\s)]+)/g)) handKept.push(`${file}: ${match[0]}`);
+  }
+  expect(handKept).toEqual([]);
+  expect(readText('index.html')).toMatch(/<script type="importmap">\s*\{ "imports": \{\} \}\s*<\/script>/);
 });
 
 test('homepage downloads the final resume while preserving the legacy asset as an updated alias', () => {

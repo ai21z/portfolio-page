@@ -81,27 +81,17 @@
   <link rel="manifest" href="./manifest.json" />
 
   <!-- Preload critical resources -->
-  <link rel="preload" href="./styles/main.css?v=20261019" as="style" />
+  <link rel="preload" href="./styles/main.css" as="style" />
   <link rel="preload" href="./artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <!-- Match the portrait source so the preload is reused. -->
-  <link rel="preload" as="image" href="./myOminousGreenPortrait-600.webp" media="(max-width: 900px)" imagesrcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-600.webp 600w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v=20260631 1024w" imagesizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" fetchpriority="high" />
-  <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=20260631" media="(min-width: 901px)" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="./myOminousGreenPortrait-600.webp" media="(max-width: 900px)" imagesrcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-600.webp 600w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v= 1024w" imagesizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="./myOminousGreenPortrait.webp?v=" media="(min-width: 901px)" type="image/webp" fetchpriority="high" />
 
-  <link rel="stylesheet" href="./styles/main.css?v=20261019" />
+  <link rel="stylesheet" href="./styles/main.css" />
 
+  <!-- The build fills this with every module and its content token (scripts/build-site.mjs). -->
   <script type="importmap">
-    {
-      "imports": {
-        "./js/contact.js": "./js/contact.js?v=20261019",
-        "./js/contact-attempt.js": "./js/contact-attempt.js?v=20261019",
-        "./js/navigation.js": "./js/navigation.js?v=20261019",
-        "./js/routes.js": "./js/routes.js?v=20261019",
-        "./js/graphics-governor.js": "./js/graphics-governor.js?v=20261019",
-        "./js/portrait-particles.js": "./js/portrait-particles.js?v=20261019",
-        "./js/social-icons-animation.js": "./js/social-icons-animation.js?v=20260913-mobile",
-        "./js/hub-to-icons.js": "./js/hub-to-icons.js?v=20260913-mobile"
-      }
-    }
+    { "imports": {} }
   </script>
 
   <!-- With scripts on, the plain portfolio nav waits for the app. It shows with scripts off, when
@@ -615,9 +605,9 @@
       <!-- Portrait -->
       <figure class="portrait-wrap">
         <picture>
-          <source media="(max-width: 900px)" srcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-600.webp 600w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v=20260631 1024w" sizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" />
-          <source srcset="./myOminousGreenPortrait.webp?v=20260631" type="image/webp" />
-          <img src="./myOminousGreenPortrait.png?v=20260631" alt="Aris Zounarakis portrait" class="portrait" width="380" height="380" decoding="async" fetchpriority="high" />
+          <source media="(max-width: 900px)" srcset="./myOminousGreenPortrait-480.webp 480w, ./myOminousGreenPortrait-600.webp 600w, ./myOminousGreenPortrait-800.webp 800w, ./myOminousGreenPortrait.webp?v= 1024w" sizes="(max-width: 360px) 240px, (max-width: 390px) 260px, (max-width: 430px) 280px, (max-width: 600px) 300px, 320px" type="image/webp" />
+          <source srcset="./myOminousGreenPortrait.webp?v=" type="image/webp" />
+          <img src="./myOminousGreenPortrait.png?v=" alt="Aris Zounarakis portrait" class="portrait" width="380" height="380" decoding="async" fetchpriority="high" />
         </picture>
       </figure>
 
@@ -638,7 +628,7 @@
       </footer>
 
       <!-- Portrait particle effect (desktop only) -->
-      <script type="module" src="./js/portrait-particles.js?v=20261019"></script>
+      <script type="module" src="./js/portrait-particles.js"></script>
     </section>
   </section>
 
@@ -1300,10 +1290,10 @@
       });
     })();
   </script>
-  <script type="module" src="./js/app.js?v=20261019"></script>
-  <script type="module" src="./js/work-globe/work-index.js?v=20261019"></script>
-  <script type="module" src="./js/altar-culture.js?v=20261019"></script>
-  <script type="module" src="./js/altar-eye.js?v=20261019"></script>
+  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/work-globe/work-index.js"></script>
+  <script type="module" src="./js/altar-culture.js"></script>
+  <script type="module" src="./js/altar-eye.js"></script>
   <!--/email_off-->
 </body>
 </html>

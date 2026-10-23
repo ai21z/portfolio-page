@@ -134,8 +134,8 @@ function reloadOnceForRelease(err) {
 }
 
 // The section graphics modules, loaded on a visit or ahead of it by the idle warm-up.
-const importBlogNetwork = () => import('./blog-network-webgl.js?v=20261019');
-const importWorkGlobe = () => import('./work-globe-webgl.js?v=20261019');
+const importBlogNetwork = () => import('./blog-network-webgl.js');
+const importWorkGlobe = () => import('./work-globe-webgl.js');
 
 function ensureSectionModule(sectionName) {
   if (sectionName === 'blog' && !blogNetworkModulePromise) {
@@ -155,7 +155,7 @@ function ensureSectionModule(sectionName) {
   }
 
   if (sectionName === 'work' && !workTimelineModulePromise) {
-    workTimelineModulePromise = import('./work-timeline.js?v=20261019')
+    workTimelineModulePromise = import('./work-timeline.js')
       .then((mod) => { if (mod && mod.initWorkTimeline) mod.initWorkTimeline(); })
       .catch((err) => {
         workTimelineModulePromise = null;

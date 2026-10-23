@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,7 +91,7 @@ async function bundleStyles(root) {
   return result.outputFiles[0].contents;
 }
 
-// Shipped modules are minified in place: same files, same paths and cache tokens, smaller bytes.
+// Shipped modules are minified in place: same files and paths, smaller bytes.
 // Names are kept, so nothing that reads a function or class name changes.
 async function minifyScripts(output) {
   for (const file of publicFiles.filter(file => /^js\/.+\.js$/.test(file))) {
@@ -101,6 +102,68 @@ async function minifyScripts(output) {
     });
     await writeFile(target, result.code);
   }
+}
+
+// A file's cache token: the start of the SHA-256 of the bytes served. functions/_middleware.js
+// computes the same token to decide whether a response may be cached as immutable.
+export const contentToken = bytes => createHash('sha256').update(bytes).digest('hex').slice(0, 12);
+
+// Sets ?v= on a page reference from the file's content. Every module and stylesheet gets a token,
+// and any other file the source marks with ?v=. External, data and fragment references are left alone.
+function versioned(reference, fromFile, tokens) {
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(reference)) return reference;
+  const base = new URL(fromFile, 'https://site.invalid/');
+  const url = new URL(reference, base);
+  const file = decodeURIComponent(url.pathname.slice(1));
+  if (!tokens.has(file) || !(url.searchParams.has('v') || /^(js|styles)\//.test(file))) return reference;
+  const [beforeHash, fragment] = reference.split('#');
+  const [pathPart, query = ''] = beforeHash.split('?');
+  const params = new URLSearchParams(query);
+  params.set('v', tokens.get(file));
+  return `${pathPart}?${params}${fragment === undefined ? '' : `#${fragment}`}`;
+}
+
+function versionPage(html, page, tokens) {
+  const withRefs = html.replace(/\b(src|href|srcset|imagesrcset)="([^"]*)"/g, (match, attribute, value) => {
+    const next = /srcset$/.test(attribute)
+      ? value.split(',').map(entry => entry.replace(/^(\s*)(\S+)/, (m, space, ref) => space + versioned(ref, page, tokens))).join(',')
+      : versioned(value, page, tokens);
+    return `${attribute}="${next}"`;
+  });
+  // The import map names every module with its token, so imports inside modules, dynamic imports
+  // included, resolve to versioned URLs without any token in the module sources.
+  return withRefs.replace(/(<script type="importmap">)[\s\S]*?(<\/script>)/, (match, open, close) => {
+    const dir = path.posix.dirname(page);
+    const imports = {};
+    for (const file of publicFiles.filter(file => /^js\/.+\.js$/.test(file))) {
+      const key = path.posix.relative(dir, file);
+      const specifier = key.startsWith('.') ? key : `./${key}`;
+      imports[specifier] = `${specifier}?v=${tokens.get(file)}`;
+    }
+    const json = JSON.stringify({ imports }, null, 2).split('\n').join('\n    ');
+    return `${open}\n    ${json}\n  ${close}`;
+  });
+}
+
+async function versionAssets(output) {
+  const tokens = new Map();
+  const hash = async file => tokens.set(file, contentToken(await readFile(path.join(output, file))));
+  for (const file of publicFiles) {
+    if (!file.startsWith('_') && !file.endsWith('.html') && !file.endsWith('.css')) await hash(file);
+  }
+  // Stylesheets can reference other files, so they are versioned once those have tokens.
+  for (const file of publicFiles.filter(file => file.endsWith('.css'))) {
+    const target = path.join(output, file);
+    const css = await readFile(target, 'utf8');
+    await writeFile(target, css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g,
+      (match, quote, ref) => `url(${quote}${versioned(ref, file, tokens)}${quote})`));
+    await hash(file);
+  }
+  for (const page of publicFiles.filter(file => file.endsWith('.html'))) {
+    const target = path.join(output, page);
+    await writeFile(target, versionPage(await readFile(target, 'utf8'), page, tokens));
+  }
+  return tokens;
 }
 
 // The static import graph of the page's module scripts, as the URLs the browser will request
@@ -163,8 +226,10 @@ export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
     .replace('<!-- work-index-content -->', renderWorkIndex())
     .replace('<!-- selected-project-links -->', renderProjectLinks()));
   await writeFile(path.join(output, 'styles/main.css'), styles);
-  await preloadModules(root, homePath);
   await minifyScripts(output);
+  // Tokens come from the bytes served, so they are set after minifying and bundling.
+  await versionAssets(output);
+  await preloadModules(root, homePath);
   const htmlPages = [];
   for (const file of publicFiles.filter(file => file.endsWith('.html'))) {
     htmlPages.push(await readFile(path.join(output, file), 'utf8'));

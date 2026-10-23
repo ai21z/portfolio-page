@@ -1,15 +1,13 @@
-/* Keep imported stylesheet versions aligned with the main.css link in index.html. */
-
-@import 'base.css?v=20261019';
-@import 'canvas.css?v=20261019';
-@import 'navigation.css?v=20261019';
-@import 'layout.css?v=20261019';
-@import 'components.css?v=20261019';
-@import 'contact.css?v=20261019';
-@import 'altar.css?v=20261019';
-@import 'work.css?v=20261019';
-@import 'work-timeline.css?v=20261019';
-@import 'blog.css?v=20261019';
+@import 'base.css';
+@import 'canvas.css';
+@import 'navigation.css';
+@import 'layout.css';
+@import 'components.css';
+@import 'contact.css';
+@import 'altar.css';
+@import 'work.css';
+@import 'work-timeline.css';
+@import 'blog.css';
 @import 'fallback.css';
 /* Last, as it loaded after main.css when it was its own render-blocking stylesheet. */
 @import 'graphics-controls.css';

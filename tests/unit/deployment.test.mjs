@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { buildSite, publicFiles, verifyPublicSite } from '../../scripts/build-site.mjs';
+import { buildSite, contentToken, publicFiles, verifyPublicSite } from '../../scripts/build-site.mjs';
 
 test('deploys only listed public files and removes stale output', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'portfolio-build-'));
@@ -60,17 +60,29 @@ test('minifies shipped modules and preloads the page module graph', async (t) =>
     await writeFile(path.join(root, file), file.endsWith('.js') ? 'export {};\n' : file);
   }
   await writeFile(path.join(root, 'styles/main.css'), 'body { color: blue; }');
-  await writeFile(path.join(root, 'index.html'), '<head><script type="importmap">{"imports":{"./js/contact.js":"./js/contact.js?v=1"}}</script>\n</head><body><script type="module" src="./js/app.js?v=1"></script></body>');
+  await writeFile(path.join(root, 'index.html'), '<head><link rel="stylesheet" href="./styles/main.css" /><script type="importmap">{ "imports": {} }</script>\n</head><body><img src="./icons/favicon-32.png?v=" /><img src="./icons/favicon-16.png" /><a href="#top">top</a><script type="module" src="./js/app.js"></script></body>');
   await writeFile(path.join(root, 'js/app.js'), "// a long explanatory comment\nimport { send } from './contact.js';\nexport const answer = send();\n");
   await writeFile(path.join(root, 'js/contact.js'), 'export function send() {\n  return 42;\n}\n');
   const output = await buildSite(root);
   const app = await readFile(path.join(output, 'js/app.js'), 'utf8');
   assert.ok(!app.includes('explanatory comment'));
   assert.ok(app.includes('./contact.js'));
+  const tokenOf = async file => contentToken(await readFile(path.join(output, file)));
+  const [appToken, contactToken, cssToken, iconToken] = await Promise.all(['js/app.js', 'js/contact.js', 'styles/main.css', 'icons/favicon-32.png'].map(tokenOf));
   const home = await readFile(path.join(output, 'index.html'), 'utf8');
-  assert.match(home, /<link rel="modulepreload" href="\.\/js\/app\.js\?v=1" \/>/);
+  // Every module is in the import map under the token of its own minified bytes.
+  const map = JSON.parse(home.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  assert.equal(map['./js/contact.js'], `./js/contact.js?v=${contactToken}`);
+  assert.equal(Object.keys(map).length, publicFiles.filter(file => /^js\/.+\.js$/.test(file)).length);
+  assert.ok(home.includes(`<script type="module" src="./js/app.js?v=${appToken}">`));
+  assert.ok(home.includes(`href="./styles/main.css?v=${cssToken}"`));
+  // Other files get a token only where the source marks them with ?v=.
+  assert.ok(home.includes(`src="./icons/favicon-32.png?v=${iconToken}"`));
+  assert.ok(home.includes('src="./icons/favicon-16.png"'));
+  assert.ok(home.includes('href="#top"'));
+  assert.match(home, new RegExp(`<link rel="modulepreload" href="\\./js/app\\.js\\?v=${appToken}" />`));
   // The import goes through the import map, so its preload uses the mapped, versioned address.
-  assert.match(home, /<link rel="modulepreload" href="\.\/js\/contact\.js\?v=1" \/>/);
+  assert.match(home, new RegExp(`<link rel="modulepreload" href="\\./js/contact\\.js\\?v=${contactToken}" />`));
   assert.ok(home.indexOf('modulepreload') > home.indexOf('</script>'));
 });
 

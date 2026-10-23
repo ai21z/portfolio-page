@@ -1,13 +1,13 @@
 // WebGL globe visualization
 
 import { mat4 } from './work-globe/core/math-utils.js';
-import { bindAttribs, cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js?v=20261019';
+import { bindAttribs, cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { warmPrograms } from './gpu-warm.js';
 import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 import { NECRO_GREEN } from './work-globe/core/palette.js';
 
-import { WORK_LOCATIONS } from './work-globe/data/work-locations.js?v=20261019';
-import { PROJECTS } from './work-globe/data/projects.js?v=20261019';
+import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';
+import { PROJECTS } from './work-globe/data/projects.js';
 
 import { SporeSystem } from './work-globe/systems/spore-system.js';
 import { WorkPinSystem } from './work-globe/systems/work-pin-system.js';

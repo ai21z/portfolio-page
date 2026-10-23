@@ -28,7 +28,7 @@ test('keeps every email address in the page out of Cloudflare email obfuscation'
 
 test('serves the portfolio assets and public documents', async ({ request }) => {
   for (const file of [
-    '/index.html', '/js/app.js', '/js/contact.js', '/styles/main.css',
+    '/index.html', '/favicon.ico', '/js/app.js', '/js/contact.js', '/styles/main.css',
     '/robots.txt', '/sitemap.xml', '/manifest.json', '/og/og-1200x630.png',
     '/artifacts/network-lite.json', '/artifacts/fonts/LICENSE.txt',
     '/artifacts/resume/Vissarion_Aris_Zounarakis_Software_Engineer_Resume.pdf'

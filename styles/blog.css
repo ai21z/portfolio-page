@@ -398,7 +398,7 @@
 
 .arc-label {
   fill: rgba(228, 189, 140, 0.75); /* Warm brass - slightly brighter base */
-  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+  font-family: var(--font-rim);
   font-weight: 600;
   letter-spacing: 0.35em;
   text-transform: uppercase;
@@ -418,7 +418,7 @@
 
 .zoom-arc-label {
   fill: rgba(180, 160, 130, 0.8); /* Dimmer than hub labels, still 5.3:1 on the abyss */
-  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+  font-family: var(--font-rim);
   font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -469,7 +469,7 @@
   border: 1px solid rgba(228, 189, 140, 0.3);
   border-radius: 6px;
   color: rgba(232, 232, 234, 0.9);
-  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+  font-family: var(--font-rim);
   font-size: 13px;
   line-height: 1.5;
   z-index: 90;

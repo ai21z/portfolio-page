@@ -29,7 +29,7 @@
   position: relative;
   z-index: 3;
   opacity: 0.8 !important;
-  animation: fadeInPortrait 8.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+  animation: fadeInPortrait 8.2s var(--ease-house) 0.4s forwards;
   /* Allow canvas to overflow without clipping */
   overflow: visible;
 }
@@ -53,7 +53,7 @@
   object-fit: contain;
   border: none;
   box-shadow: none;
-  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
   filter: grayscale(0.2) contrast(1.05);
   opacity: 0.95;
 }
@@ -105,7 +105,7 @@
     var(--spectral) 0%,
     transparent 100%);
   opacity: 0;
-  animation: fadeIn 2s cubic-bezier(0.16, 1, 0.3, 1) 1.8s forwards;
+  animation: fadeIn 2s var(--ease-house) 1.8s forwards;
 }
 
 @keyframes fadeIn{
@@ -118,7 +118,7 @@
   transform-origin:left center;
   transform:scaleX(0);
   opacity:0;
-  transition:transform .8s cubic-bezier(.16,1,.3,1) .6s, opacity .8s ease .6s;
+  transition:transform .8s var(--ease-house) .6s, opacity .8s ease .6s;
 }
 .stage.active-section .tape{
   transform:scaleX(1);
@@ -374,7 +374,7 @@
   height: 56px;
   text-decoration: none;
   z-index: 2;
-  transition: filter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: filter 0.3s var(--ease-house);
 }
 
 .sigil-vial:hover {
@@ -425,7 +425,7 @@
     0 0 16px rgba(143, 180, 255, 0.3),
     0 0 24px rgba(var(--necrotic-rgb), 0.2),
     0 4px 16px rgba(0, 0, 0, 0.5);
-  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
 }
 
 .sigil-vial:hover .vial-glass {
@@ -528,7 +528,7 @@
   color: rgba(230, 227, 216, 0.9);
   opacity: 0.85;
   filter: drop-shadow(0 0 4px rgba(var(--necrotic-rgb), 0.4));
-  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
   z-index: 2;
 }
 
@@ -573,7 +573,7 @@
   text-decoration: none;
   transform-origin: center center;
   transform: translateX(-50%) scale(1);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform 0.4s var(--ease-house),
               filter 0.25s ease;
   z-index: 2;
   pointer-events: none; /* Enable once split to avoid premature hover flicker */

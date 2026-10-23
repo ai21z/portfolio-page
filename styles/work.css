@@ -133,7 +133,7 @@
   cursor: default;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.92);
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s var(--ease-house), transform 0.35s var(--ease-house), box-shadow 0.35s var(--ease-house), filter 0.35s var(--ease-house);
   z-index: 1000;
   transform-origin: center center;
 }
@@ -521,7 +521,7 @@
   cursor: default;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.92);
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s var(--ease-house), transform 0.35s var(--ease-house), box-shadow 0.35s var(--ease-house), filter 0.35s var(--ease-house);
   z-index: 1001; /* Above work-location-info */
   transform-origin: center center;
 }

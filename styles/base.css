@@ -19,6 +19,14 @@
   --hub-codex: #e6b03a;
   --hub-convergence: #e66830;
 
+  /* Motion: the house curve and the stage fade. js/motion.js keeps the same numbers for JS timers. */
+  --ease-house: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-stage: 450ms;
+
+  /* Label faces: the landing nav labels and the Blog dish rim labels. */
+  --font-label: "Special Elite", monospace;
+  --font-rim: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+
   /* Repeated UI transition lists (referenced via var, with explicit properties) */
   --ui-transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   --ui-transition-slow: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;

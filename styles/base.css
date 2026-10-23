@@ -22,6 +22,7 @@
   /* Motion: the house curve and the stage fade. js/motion.js keeps the same numbers for JS timers. */
   --ease-house: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-stage: 450ms;
+  --dur-paper: 300ms;
 
   /* Label faces: the landing nav labels and the Blog dish rim labels. */
   --font-label: "Special Elite", monospace;

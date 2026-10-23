@@ -69,6 +69,7 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
+import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import {
   frameDue,
   getGraphicsBudget,
@@ -1241,7 +1242,7 @@ function showSectionWithEffects(sectionName, options = {}) {
   showSection(sectionName, options);
   releaseInactiveFeatureCanvasBuffers();
   setGraphicsSection(sectionName);
-  markGraphicsActivity('section-transition', 900);
+  markGraphicsActivity('section-transition', SECTION_SWITCH_ACTIVITY_MS);
   ensureSectionModule(sectionName);
 
   window.dispatchEvent(new CustomEvent('contact:visible', {
@@ -1931,7 +1932,7 @@ function initPaperFocusForSection(sectionId){
     };
     el.addEventListener('transitionend', onEnd, { once: true });
 
-    visit.settleTimer = setTimeout(applySettle, 350);
+    visit.settleTimer = setTimeout(applySettle, PAPER_SETTLE_MS);
     visit.onEnd = onEnd;
 
     document.body.classList.add('has-paper-open-global');
@@ -1976,7 +1977,7 @@ function initPaperFocusForSection(sectionId){
         cleanup();
       } else {
         openEl.addEventListener('transitionend', cleanup);
-        visit.cleanupTimer = setTimeout(cleanup, 360);
+        visit.cleanupTimer = setTimeout(cleanup, PAPER_CLEANUP_MS);
       }
     }
   }

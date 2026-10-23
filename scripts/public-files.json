@@ -51,6 +51,7 @@
   "js/graph.js",
   "js/graphics-governor.js",
   "js/hub-to-icons.js",
+  "js/motion.js",
   "js/navigation.js",
   "js/portrait-particles.js",
   "js/routes.js",

@@ -793,7 +793,7 @@ body.has-paper-open-global .altar-screen .ring {
              scale(var(--open-scale,1))
              rotate(var(--rot,0deg));
   transform-origin: center center;
-  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--dur-paper) cubic-bezier(0.4, 0, 0.2, 1);
   cursor: inherit;
   /* Simplified shadow for performance - scaled by --k when settled */
   box-shadow: 0 calc(20px * var(--k)) calc(60px * var(--k)) rgba(0, 0, 0, 0.7);

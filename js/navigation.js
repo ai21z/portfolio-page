@@ -14,6 +14,7 @@ import {
   hudEnabled
 } from './state.js';
 import { coverMap } from './viewport.js';
+import { STAGE_LEAVE_MS } from './motion.js';
 
 // Branch-normal offsets pushing labels away from mycelium
 export function computeNavOffsets(){
@@ -55,8 +56,7 @@ export function computeNavOffsets(){
 
 // The outgoing section keeps painting while it fades out (styles/layout.css .stage-leaving), so a
 // switch overlaps the two views instead of cutting to an empty frame. Its modules release their
-// canvases on 'stage:left'. Matches the 450 ms fade with a little margin.
-const STAGE_LEAVE_MS = 500;
+// canvases on 'stage:left'. STAGE_LEAVE_MS (js/motion.js) waits out the fade.
 
 function finishLeaving(stage) {
   window.clearTimeout(stage.__leaveTimer);

@@ -60,7 +60,7 @@
     0 0 12px rgba(var(--necrotic-rgb), 0.5),
     0 0 16px rgba(var(--decay-green-rgb), 0.3);
   filter: drop-shadow(0 0 4px rgba(var(--necrotic-rgb), 0.4));
-  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), scale 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
+  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
 }
 
 .network-node-label:hover,
@@ -68,14 +68,17 @@
   color: rgba(180, 210, 230, 1);
 }
 
-/* The word grows up from its dot while its route is lit (js/sparks.js). Through scale, since the
-   label placement sets the transform inline. */
-.network-node-label .node-label{
+/* The word grows from its own foot while its route is lit (js/sparks.js). It scales inside .node-label,
+   whose transform the label placement writes inline (the ritual walks it along its route), so the
+   growth never scales that offset too. */
+.network-node-label .node-word{
+  display: inline-block;
   transform-origin: 50% 100%;
+  transition: scale 0.4s var(--ease-house);
 }
 
-.network-node-label:hover .node-label,
-.network-node-label:focus-visible .node-label{
+.network-node-label:hover .node-word,
+.network-node-label:focus-visible .node-word{
   scale: 1.2;
 }
 
@@ -310,7 +313,6 @@
   .network-node-label:focus-visible .node-label {
     opacity: 1;
     transform: translateX(-50%) translateY(-1px);
-    scale: 1.2;
   }
 
   .network-sigil-node img {

@@ -106,6 +106,16 @@ export function setLitRoute(id) {
   else if (litRoute) litRoute.target = 0;
 }
 
+// Leaving the landing drops the route at once, so it never fades in again on the way back.
+export function clearLitRoute() {
+  litRoute = null;
+}
+
+// After a resize the route and the sigil sit elsewhere, so the lit span is measured again.
+export function remeasureLitRoute() {
+  if (litRoute) litRoute.start = null;
+}
+
 export function litRouteHasWork() {
   return Boolean(litRoute && (litRoute.target > 0 || litRoute.alpha > 0.01));
 }

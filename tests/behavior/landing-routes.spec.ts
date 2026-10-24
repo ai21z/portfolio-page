@@ -24,11 +24,19 @@ test('each landing label carries its preview as its description, shown on hover 
   }
   const about = page.locator('.network-node-label[data-node="about"]');
   const opacity = () => about.locator('.node-preview').evaluate((el) => getComputedStyle(el).opacity);
-  const scale = () => about.locator('.node-label').evaluate((el) => getComputedStyle(el).scale);
+  const word = about.locator('.node-word');
+  const scale = () => word.evaluate((el) => getComputedStyle(el).scale);
+  const centre = async () => { const b = (await word.boundingBox())!; return { x: b.x + b.width / 2, bottom: b.y + b.height }; };
+  const rest = await centre();
   expect(await opacity()).toBe('0');
   await about.hover();
   await expect.poll(opacity).toBe('1');
   await expect.poll(scale).toBe('1.2');
+  await page.waitForTimeout(500);
+  // It grows from its own foot: centred where it was, its baseline where it was.
+  const grown = await centre();
+  expect(Math.abs(grown.x - rest.x)).toBeLessThan(1);
+  expect(Math.abs(grown.bottom - rest.bottom)).toBeLessThan(1);
   await page.mouse.move(2, 2);
   await expect.poll(opacity).toBe('0');
   // Keyboard parity: the same on focus from the keyboard. WebKit leaves links out of the Tab order,
@@ -67,6 +75,18 @@ test('a hovered label keeps its route lit after the travelling spark has gone', 
     expect(await lit()).toBeGreaterThan(300);
     await page.mouse.move(2, 2);
     await expect.poll(lit, { timeout: 3000 }).toBe(0);
+
+    // A clicked label leaves the landing with its route lit. Back on the landing it stays dark.
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(400);
+    await label.click();
+    await expect(page.locator('#skills')).toHaveClass(/active-section/);
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(600);
+    await page.evaluate(() => { location.hash = ''; });
+    await expect(page.locator('#main')).toHaveClass(/active-section/);
+    await page.waitForTimeout(120);
+    expect(await lit()).toBe(0);
   } finally {
     await gpu.close();
   }

@@ -452,7 +452,7 @@ function createNavLabel(id) {
   
   const displayText = id;
   
-  label.innerHTML = `<span class="node-label">${displayText}</span>`;
+  label.innerHTML = `<span class="node-label"><span class="node-word">${displayText}</span></span>`;
   label.setAttribute('aria-label', `Navigate to ${displayText}`);
   // What the section holds, shown under the dot on hover or focus and read as the link's description.
   if (NAV_PREVIEWS[id]) {
@@ -541,6 +541,8 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
       const nudge = RITUAL_LABEL_NUDGE_PX[id] || { x: 0, y: 0 };
       labelText.style.transform = `translateX(-50%) translate(${tx + nudge.x}px, ${ty + nudge.y}px)`;
     }
+    const preview = el.querySelector('.node-preview');
+    if (preview) preview.style.translate = '';
 
     if (ritualActive && id === 'blog') {
       const target = el.getBoundingClientRect();
@@ -677,5 +679,8 @@ export function updateMovingLabels(dt, pointAtRoute) {
       const nudge = RITUAL_LABEL_NUDGE_PX[id] || { x: 0, y: 0 };
       labelText.style.transform = `translateX(-50%) translate(${dx + nudge.x}px, ${dy + nudge.y}px)`;
     }
+    // The preview walks with its word.
+    const preview = el.querySelector('.node-preview');
+    if (preview) preview.style.translate = `${dx}px ${dy}px`;
   }
 }

@@ -53,6 +53,8 @@ import {
   drawSparks,
   startSparkToPoint,
   setLitRoute,
+  clearLitRoute,
+  remeasureLitRoute,
   litRouteHasWork
 } from './sparks.js';
 import {
@@ -331,6 +333,7 @@ function sparkLoopWrapper(ts) {
   const introActive = _introStage?.classList.contains('active-section');
   if (!introActive || document.hidden) {
     releaseCanvasBacking(sparkCanvas, sparkCtx);
+    clearLitRoute();
     _sparkRafId = null;
     return;
   }
@@ -412,6 +415,7 @@ function restoreIntroCanvasBuffers() {
 
 function resizeAll() {
   if (!COVER.ready) return; // Don't resize until image is loaded
+  remeasureLitRoute();
   computeCoverFromImage();
   if (isIntroSectionActive()) {
     restoreIntroCanvasBuffers();

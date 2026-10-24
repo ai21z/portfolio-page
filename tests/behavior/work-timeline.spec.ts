@@ -89,13 +89,14 @@ test.describe('Work career rail', () => {
 
     const ids = await page.locator('.rail-node').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).dataset.id));
-    expect(ids.length).toBe(16);
+    expect(ids.length).toBe(9);
     expect(ids[0]).toBe('adp');
     expect(ids[ids.length - 1]).toBe('beng');
 
     expect(await page.locator('.rail-node--work').count()).toBeGreaterThanOrEqual(3);
     expect(await page.locator('.rail-node--project').count()).toBe(2);
-    expect(await page.locator('.rail-node--cert').count()).toBeGreaterThanOrEqual(8);
+    // The degrees and the Oracle SQL course, which ended in an exam at the university.
+    expect(await page.locator('.rail-node--cert').count()).toBe(3);
   });
 
   test('hover reveals a field-note; places invite a globe action, credentials do not', async ({ page }) => {
@@ -110,8 +111,8 @@ test.describe('Work career rail', () => {
     await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
     await expect(note.locator('.work-note-cta')).toHaveText('click → locate on Earth');
 
-    await page.locator('.rail-node[data-id="cert-jee8"] .rail-dot-btn').hover();
-    await expect(note.locator('.work-note-title')).toContainText('Java Enterprise Edition 8');
+    await page.locator('.rail-node[data-id="cert-oracle-sql"] .rail-dot-btn').hover();
+    await expect(note.locator('.work-note-title')).toContainText('Oracle SQL');
     await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
   });
 
@@ -148,7 +149,7 @@ test.describe('Work career rail', () => {
     expect(await select('netcompany')).toEqual({ id: 'netcompany', target: { kind: 'location', id: 'greece' } });
     expect(await select('talos')).toEqual({ id: 'talos', target: { kind: 'moon', id: 'talos-cli' } });
     expect(await select('true-rolls')).toEqual({ id: 'true-rolls', target: { kind: 'moon', id: 'true-rolls' } });
-    expect(await select('cert-jee8')).toBeNull();
+    expect(await select('cert-oracle-sql')).toBeNull();
 
     expect(pageErrors).toEqual([]);
   });
@@ -190,8 +191,8 @@ test.describe('Work career rail', () => {
     await page.locator('.work-card-close').click();
     await expect(card).toBeHidden();
 
-    await page.locator('.rail-node[data-id="cert-blockchain"] .rail-dot-btn').click();
-    await expect(page.locator('.work-card-title')).toHaveText('Blockchain Specialization');
+    await page.locator('.rail-node[data-id="cert-oracle-sql"] .rail-dot-btn').click();
+    await expect(page.locator('.work-card-title')).toHaveText('Oracle SQL: Database Design & Programming');
     await expect(page.locator('.work-card-globe')).toHaveCount(0);
     await page.locator('.work-card-close').click();
 

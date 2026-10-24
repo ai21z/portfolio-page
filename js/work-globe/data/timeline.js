@@ -53,16 +53,6 @@ export const TIMELINE = [
     target: { kind: 'location', id: 'greece' }
   },
   {
-    id: 'cert-jee8',
-    type: 'cert',
-    dates: '2023',
-    sortKey: 2023.6,
-    title: 'Java Enterprise Edition 8',
-    subtitle: 'Udemy',
-    summary: 'Enterprise Java across the Java EE 8 stack.',
-    target: null
-  },
-  {
     id: 'freelance-turn',
     type: 'work',
     dates: '2017 - 2022',
@@ -71,26 +61,6 @@ export const TIMELINE = [
     subtitle: 'Freelance · Greece',
     summary: 'Project-based data analysis, dashboards, reporting, localization and digital work for private clients while transitioning into software.',
     target: { kind: 'location', id: 'greece' }
-  },
-  {
-    id: 'cert-js-es6',
-    type: 'cert',
-    dates: '2022',
-    sortKey: 2022.95,
-    title: 'JavaScript: Understanding ES6 and Beyond',
-    subtitle: 'Udemy',
-    summary: 'Modern JavaScript, ES6 and beyond.',
-    target: null
-  },
-  {
-    id: 'cert-js-weird-parts',
-    type: 'cert',
-    dates: '2022',
-    sortKey: 2022.9,
-    title: 'JavaScript: Understanding the Weird Parts',
-    subtitle: 'Udemy',
-    summary: 'JavaScript internals and the language\'s weird parts.',
-    target: null
   },
   {
     id: 'msc',
@@ -103,36 +73,6 @@ export const TIMELINE = [
     target: null
   },
   {
-    id: 'cert-azure-ad',
-    type: 'cert',
-    dates: '2021',
-    sortKey: 2021.7,
-    title: 'Azure Active Directory Identity & Access Management',
-    subtitle: 'Udemy',
-    summary: 'Identity and access management with Azure Active Directory.',
-    target: null
-  },
-  {
-    id: 'cert-devops-smart-cities',
-    type: 'cert',
-    dates: '2021',
-    sortKey: 2021.3,
-    title: 'DevOps Competences for Smart Cities',
-    subtitle: 'University of Nicosia (UNIC) MOOC',
-    summary: 'DevOps practice for smart-city systems.',
-    target: null
-  },
-  {
-    id: 'cert-frontend-gfoss',
-    type: 'cert',
-    dates: '2020',
-    sortKey: 2020.5,
-    title: 'Front-End Development',
-    subtitle: 'GFOSS · Open Technologies Alliance',
-    summary: 'Open-source front-end development.',
-    target: null
-  },
-  {
     id: 'cert-oracle-sql',
     type: 'cert',
     dates: '2018',
@@ -140,16 +80,6 @@ export const TIMELINE = [
     title: 'Oracle SQL: Database Design & Programming',
     subtitle: 'Certification',
     summary: 'Relational database design and SQL programming.',
-    target: null
-  },
-  {
-    id: 'cert-blockchain',
-    type: 'cert',
-    dates: '2018',
-    sortKey: 2018.3,
-    title: 'Blockchain Specialization',
-    subtitle: 'Coursera',
-    summary: 'Blockchain fundamentals and smart contracts.',
     target: null
   },
   {

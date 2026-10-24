@@ -1040,7 +1040,8 @@ body.has-paper-open-global #network-nav {
    0.88 fill under the label's 0.8 opacity gives about 5:1 on the void; 0.34 gave 1.7:1. */
 .myco-sigil-label .menu-arc-letter {
   fill: rgba(143, 180, 255, 0.88);
-  font: 400 10px/1 var(--font-display, "Special Elite", monospace);
+  /* 14 units of the 100-unit label, which is 86 px wide, set the letters at the 12 px floor. */
+  font: 400 14px/1 var(--font-display, "Special Elite", monospace);
   text-anchor: middle;
   dominant-baseline: central;
   letter-spacing: 0;

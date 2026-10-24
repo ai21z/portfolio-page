@@ -36,6 +36,10 @@
   --font-display: "Special Elite", monospace;
   --font-body: "Special Elite", monospace;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  /* Reading text, and labels, data and captions. Text never sets below the floor. */
+  --font-read: 'Literata', 'Literata Fallback', Georgia, serif;
+  --font-data: 'JetBrains Mono', 'JetBrains Mono Fallback', 'JetBrains Mono Fallback Menlo', ui-monospace, monospace;
+  --text-floor: 12px;
   --bone-dim: rgba(230, 227, 216, 0.6);
 
   /* Swiss Grid System - 8px base unit (Precise rhythm) */
@@ -66,6 +70,69 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+}
+
+/* The reading face and the data face (SIL OFL 1.1, licences beside the files): static Latin cuts of
+   Literata at optical size 14 and of JetBrains Mono. Special Elite stays the display face. */
+@font-face {
+  font-family: 'Literata';
+  src: url('../artifacts/fonts/literata-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Literata';
+  src: url('../artifacts/fonts/literata-600.woff2') format('woff2');
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Literata';
+  src: url('../artifacts/fonts/literata-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../artifacts/fonts/jetbrains-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* While a file loads, a local face sized to its metrics holds the text in place (overrides from the
+   files' average advance, ascent and descent). */
+@font-face {
+  font-family: 'Literata Fallback';
+  src: local('Georgia');
+  size-adjust: 104.41%;
+  ascent-override: 112.73%;
+  descent-override: 29.5%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Fallback';
+  src: local('Consolas');
+  size-adjust: 109.13%;
+  ascent-override: 93.47%;
+  descent-override: 27.49%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Fallback Menlo';
+  src: local('Menlo');
+  size-adjust: 99.67%;
+  ascent-override: 102.34%;
+  descent-override: 30.1%;
+  line-gap-override: 0%;
 }
 
 *,*::before,*::after{box-sizing:border-box}

@@ -220,12 +220,14 @@ body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #rev
     max-width: 90vw; /* Prevent text from hitting edges */
   }
 
+  /* Centred lines need no hyphens. Breaking at words, with the lines evened out, reads cleaner. */
   .tape{
     max-width: 100%;
     text-align: center;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    hyphens: auto;
+    hyphens: manual;
+    text-wrap: pretty;
   }
 
   .foot{

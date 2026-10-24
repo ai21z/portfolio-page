@@ -115,6 +115,8 @@
 
 .tape{
   display:inline-block;
+  font-family: var(--font-read);
+  line-height: 1.65;
   transform-origin:left center;
   transform:scaleX(0);
   opacity:0;
@@ -133,6 +135,7 @@
   align-items: center;
   align-self: end;
   color: rgba(230, 227, 216, 0.596);
+  font-family: var(--font-read);
   font-size: 15px;
   line-height: var(--leading-normal);
   letter-spacing: 0.02em;
@@ -166,9 +169,15 @@
   color: var(--necrotic);
 }
 
+/* The colophon reads at the text floor. A bare small fell to 10.8 px. */
+.foot small {
+  font-size: max(var(--text-floor), 0.8em);
+}
+
 .foot-coords {
+  font-family: var(--font-data);
   font-feature-settings: 'tnum' 1;
-  font-size: 13px;
+  font-size: var(--text-floor);
   letter-spacing: 0.03em;
   color: rgba(230, 227, 216, 0.6); /* 5.9:1 on the abyss; was 0.5 at 75% opacity, 2.9:1 */
   display: block; /* Make it block level for easier centering */

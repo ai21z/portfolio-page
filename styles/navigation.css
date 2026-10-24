@@ -22,8 +22,8 @@
   position: absolute;
   transform: translate(-50%, -50%);
   color: rgba(230, 227, 216, 0.9);
-  font: 400 14px var(--font-label);
-  letter-spacing: .04em;
+  font: 400 14px var(--font-data);
+  letter-spacing: .02em;
   pointer-events: auto;
   cursor: var(--cursor-spore), pointer;
   opacity: 1;
@@ -89,8 +89,8 @@
   top: 20px;
   transform: translate(-50%, -4px);
   white-space: nowrap;
-  font: 400 12px/1.3 var(--font-label);
-  letter-spacing: 0.02em;
+  font: 400 12px/1.3 var(--font-data);
+  letter-spacing: 0;
   color: rgba(230, 227, 216, 0.9);
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.95);
   opacity: 0;
@@ -1165,7 +1165,7 @@ body.has-paper-open-global #network-nav {
 .necro-menu-list a{
   display:inline-block; text-decoration:none; color:var(--bone);
   padding: 10px 12px; border-radius: 10px;
-  letter-spacing:.02em; font: 400 18px "Special Elite", monospace;
+  letter-spacing:0; font: 400 16px var(--font-data);
   background: transparent;
   border: none;
   filter: drop-shadow(0 0 0 transparent);
@@ -1207,8 +1207,8 @@ body.has-paper-open-global #network-nav {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  font-family: "Special Elite", monospace;
-  font-size: 13px;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
   font-weight: 400;
   color: rgba(230, 227, 216, 0.62); /* 6.2:1 on the abyss; 0.5 gave 4.4:1 */
   text-decoration: none;

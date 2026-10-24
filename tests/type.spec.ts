@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { stubVerification } from './helpers/contact';
 
-// Step 9 of the type change: the reading face (Literata) and the data face (JetBrains Mono) beside
-// Special Elite, self-hosted, on the surfaces no layout test pins. Text there never sets below 12 px.
+// The type change: the reading face (Literata) and the data face (JetBrains Mono) beside Special Elite,
+// self-hosted. Special Elite keeps the name, titles, headings and stamps. Labels never set below 12 px.
 
 const family = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).fontFamily.replace(/["']/g, ''));
 const size = (locator: Locator) => locator.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
@@ -82,12 +82,31 @@ test('the 404 page reads in Literata with its code and link in JetBrains Mono', 
   expect(await family(page.locator('h1'))).toMatch(/^Special Elite/);
 });
 
-test('a phone landing fetches neither new face, so neither competes with the portrait', async ({ page }) => {
+test('the landing reads in Literata under the Special Elite name, with its labels and coordinates in the mono', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  expect(await family(page.locator('.name'))).toMatch(/^Special Elite/);
+  for (const reading of ['.tape', '.selected-projects a', '.foot small']) expect(await family(page.locator(reading).first()), reading).toMatch(/^Literata,/);
+  const label = page.locator('.network-node-label[data-section="about"]');
+  await expect(label).toBeVisible();
+  for (const data of [label, label.locator('.node-preview'), page.locator('.foot-coords')]) expect(await family(data)).toMatch(/^JetBrains Mono,/);
+  for (const small of ['.foot small', '.foot-coords']) expect(await size(page.locator(small)), small).toBeGreaterThanOrEqual(12);
+  await page.goto('/index.html#about');
+  const link = page.locator('.section-nav-link').first();
+  await expect(link).toBeVisible();
+  expect(await family(link)).toMatch(/^JetBrains Mono,/);
+  expect(await size(link)).toBeGreaterThanOrEqual(12);
+});
+
+// A phone shows no network labels or coordinates on the landing, so the bio's Literata is the only new file
+// beside the portrait. Over HTTP/2, as served, it moved the simulated phone LCP by 0.08 s.
+test('a phone landing fetches Literata for the bio and never the mono', async ({ page }) => {
   const fonts: string[] = [];
-  page.on('request', (request) => { if (/\/artifacts\/fonts\/(literata|jetbrains)/.test(request.url())) fonts.push(request.url()); });
+  page.on('request', (request) => { if (/\/artifacts\/fonts\/(literata|jetbrains)/.test(request.url())) fonts.push(request.url().split('/').pop()!.split('?')[0]); });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/index.html');
   await expect(page.locator('html')).toHaveClass(/js-ready/);
   await page.waitForTimeout(1500);
-  expect(fonts).toEqual([]);
+  expect(fonts).toEqual(['literata-400.woff2']);
 });

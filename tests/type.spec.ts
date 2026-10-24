@@ -18,7 +18,7 @@ test('the fonts ship with their licences, and both article pages preload Special
     expect(text).toContain(holder);
     expect(text).toContain('SIL Open Font License, Version 1.1');
   }
-  for (const font of ['literata-400.woff2', 'literata-600.woff2', 'literata-400-italic.woff2', 'jetbrains-mono-400.woff2']) {
+  for (const font of ['literata-400.woff2', 'literata-600.woff2', 'literata-400-italic.woff2', 'jetbrains-mono-400.woff2', 'jetbrains-mono-600.woff2']) {
     const response = await request.get('/artifacts/fonts/' + font);
     expect(response.status(), font).toBe(200);
     expect((await response.body()).length, font).toBeLessThan(25_000);

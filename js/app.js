@@ -1599,7 +1599,9 @@ const SECTION_FACES = ['400 1em Literata', '600 1em Literata', 'italic 400 1em L
 
 function warmSectionFaces() {
   if (navigator.connection?.saveData || !document.fonts?.load) return;
-  for (const face of SECTION_FACES) document.fonts.load(face).catch(() => {});
+  // The semibold mono only labels the Blog dish, which compact layouts do not show.
+  const faces = isCompact() ? SECTION_FACES : [...SECTION_FACES, '600 1em "JetBrains Mono"'];
+  for (const face of faces) document.fonts.load(face).catch(() => {});
 }
 
 window.addEventListener('load', () => {

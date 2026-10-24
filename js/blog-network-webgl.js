@@ -3,7 +3,7 @@ import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-gover
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 import { warmPrograms } from './gpu-warm.js';
 import { reducedMotion } from './motion.js';
-import { blogPosts, decorateRimLabel } from './blog-categories.js';
+import { blogPosts, decorateRimLabel, dormantCategories } from './blog-categories.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -1198,6 +1198,8 @@ async function initBlogNetwork(){
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const NUCLEUS_REACH = 20;     // world px from the hub centre, inside its 36 px hover radius
   const NUCLEUS_SPREAD = 0.6;   // radians between a hub's nuclei
+  // A restored WebGL context runs this setup again: the layer from the lost one goes first.
+  document.getElementById('dish-nuclei')?.remove();
   const nucleiLayer = document.createElementNS(SVG_NS, 'svg');
   nucleiLayer.setAttribute('class', 'dish-nuclei');
   nucleiLayer.setAttribute('id', 'dish-nuclei');
@@ -1323,7 +1325,8 @@ async function initBlogNetwork(){
       if(d<HOVER_RADIUS && d<minD){ minD=d; idx=i; }
     }
     hoveredHubId = idx>=0 ? (data.hubs[idx].id) : null;
-    canvas.style.cursor = hoveredHubId ? 'pointer' : 'default';
+    // A dormant culture previews on hover but opens nothing, so it keeps the plain cursor.
+    canvas.style.cursor = hoveredHubId && !dormantCategories.has(hoveredHubId) ? 'pointer' : 'default';
 
     // Emit hover events when hub changes
     if (hoveredHubId !== prevHovered) {
@@ -1346,7 +1349,7 @@ async function initBlogNetwork(){
   let lastTouchNav = 0;
   canvas.addEventListener('click', ()=>{
     if (performance.now() - lastTouchNav < 500) return; // ignore the ghost click after a touch tap
-    if (!hoveredHubId) return;
+    if (!hoveredHubId || dormantCategories.has(hoveredHubId)) return;
 
     const now = performance.now();
     if (now - lastClickTime < CLICK_DEBOUNCE) {
@@ -1390,7 +1393,7 @@ async function initBlogNetwork(){
       const d = Math.hypot(dx, dy);
       if (d < TAP_RADIUS && d < minD) { minD = d; idx = i; }
     }
-    if (idx < 0) return;
+    if (idx < 0 || dormantCategories.has(data.hubs[idx].id)) return;
 
     const now = performance.now();
     if (now - lastClickTime < CLICK_DEBOUNCE) return;

@@ -800,9 +800,10 @@ function initBlogControls() {
     }
   });
 
+  // A hub on the canvas and its post nuclei light their rim label, and clear it on the way out.
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
-    if (source === 'hub-point' && hubId) {
+    if ((source === 'hub-point' || source === 'nucleus') && hubId) {
       const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
       if (arcBtn) arcBtn.classList.add('hovered');
     }
@@ -810,7 +811,7 @@ function initBlogControls() {
 
   window.addEventListener('blog:hover-off', (e) => {
     const { hubId, source } = e.detail;
-    if (source === 'hub-point' && hubId) {
+    if ((source === 'hub-point' || source === 'nucleus') && hubId) {
       const arcBtn = document.querySelector(`.arc-btn[data-hub="${hubId}"]`);
       if (arcBtn) arcBtn.classList.remove('hovered');
     }

@@ -76,3 +76,29 @@ test('the how-to line stays over the drawn dish until the dish is first explored
   await page.locator('#dish-labels .arc-btn[data-hub="cosmos"]').dispatchEvent('mouseover');
   await expect.poll(opacity).toBe('0');
 });
+
+// Leaving through a nucleus cleared the dish's hover but left its rim label lit.
+test('a rim label lit through a nucleus goes dark when the pointer leaves', async ({ page }) => {
+  await openDish(page);
+  const nucleus = page.locator('.dish-nucleus[data-hub="cosmos"] .dish-nucleus-hit');
+  const rim = page.locator('#dish-labels .arc-btn[data-hub="cosmos"]');
+  await nucleus.hover();
+  await expect(rim).toHaveClass(/hovered/);
+  await page.mouse.move(600, 700);
+  await expect(rim).not.toHaveClass(/hovered/);
+});
+
+// A restored WebGL context ran the dish setup again and left a second, stale layer of nuclei.
+test('a lost and restored context leaves one layer of nuclei', async ({ page }) => {
+  await openDish(page);
+  await page.evaluate(async () => {
+    const canvas = document.getElementById('blog-network-canvas') as HTMLCanvasElement;
+    const ext = canvas.getContext('webgl2')!.getExtension('WEBGL_lose_context')!;
+    ext.loseContext();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    ext.restoreContext();
+  });
+  await expect(page.locator('#blog-network-canvas')).toHaveClass(/is-drawn/);
+  await expect(page.locator('#dish-nuclei')).toHaveCount(1);
+  await expect(page.locator('.dish-nucleus')).toHaveCount(2);
+});

@@ -43,6 +43,7 @@
   "js/altar-culture.js",
   "js/altar-eye.js",
   "js/app.js",
+  "js/blog-categories.js",
   "js/blog-network-webgl.js",
   "js/compact.js",
   "js/config.js",

@@ -53,9 +53,9 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   const histLen = () => page.evaluate(() => history.length);
 
   const len0 = await histLen();
-  await page.locator('.specimen-slide.slide-craft').click();
+  await page.locator('.specimen-slide.slide-cosmos').click();
   await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
-  const atCraft = await mode();
+  const atCosmos = await mode();
   const len1 = await histLen();
 
   await page.goBack();
@@ -68,10 +68,10 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
 
   expect(errors).toEqual([]);
   expect(len1 - len0).toBe(1);
-  expect(atCraft.hash).toBe('#blog/craft');
-  expect(atCraft.blogMode).toBe('category');
+  expect(atCosmos.hash).toBe('#blog/cosmos');
+  expect(atCosmos.blogMode).toBe('category');
   expect(afterBack.hash === '#blog' || afterBack.hash === '').toBe(true);
   expect(afterBack.blogMode).toBe('map');
-  expect(afterForward.hash).toBe('#blog/craft');
+  expect(afterForward.hash).toBe('#blog/cosmos');
   expect(afterForward.blogMode).toBe('category');
 });

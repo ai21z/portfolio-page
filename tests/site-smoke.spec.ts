@@ -364,14 +364,15 @@ test('uses the desktop blog map and mobile specimen grid at the correct breakpoi
     return 'pending';
   }).not.toBe('pending');
 
-  if (await page.locator('.arc-btn[data-hub="craft"]').count()) {
-    await expect(page.locator('.arc-btn[data-hub="craft"]')).toBeVisible();
-    await page.locator('.arc-btn[data-hub="craft"]').press('Enter');
+  // Craft is a dormant culture, which opens nothing, so the live Codex is the one opened here.
+  if (await page.locator('.arc-btn[data-hub="codex"]').count()) {
+    await expect(page.locator('.arc-btn[data-hub="codex"]')).toBeVisible();
+    await page.locator('.arc-btn[data-hub="codex"]').press('Enter');
   } else {
     await expect(page.locator('#blog .webgl-fallback-visible')).toContainText(/Graphics are reduced/i);
-    await page.locator('.blog-memo-item[data-hub="craft"]').press('Enter');
+    await page.locator('.blog-memo-item[data-hub="codex"]').press('Enter');
   }
-  await expect(page).toHaveURL(/#blog\/craft$/);
+  await expect(page).toHaveURL(/#blog\/codex$/);
   await expect(page.locator('#blog-category-view')).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -380,9 +381,9 @@ test('uses the desktop blog map and mobile specimen grid at the correct breakpoi
 
   await expect(page.locator('#blog-map')).toBeHidden();
   await expect(page.locator('.blog-mobile')).toBeVisible();
-  await expect(page.locator('a.slide-craft')).toBeVisible();
-  await page.locator('a.slide-craft').click();
-  await expect(page).toHaveURL(/#blog\/craft$/);
+  await expect(page.locator('a.slide-codex')).toBeVisible();
+  await page.locator('a.slide-codex').click();
+  await expect(page).toHaveURL(/#blog\/codex$/);
   await expect(page.locator('#blog-category-view')).toBeVisible();
 });
 

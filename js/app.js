@@ -70,6 +70,7 @@ import {
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
+import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories } from './blog-categories.js';
 import {
   frameDue,
   getGraphicsBudget,
@@ -758,17 +759,17 @@ function initBlogControls() {
     if (item.__blogMemoBound) return;
     item.__blogMemoBound = true;
     const hubId = item.dataset.hub;
-    item.setAttribute('aria-label', `Open ${hubId} blog category`);
+    item.setAttribute('aria-label', `Open the ${blogCategory(hubId)?.name || hubId} category`);
     item.addEventListener('click', event => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
-      if (hubId) enterHub(hubId);
+      if (hubId && !dormantCategories.has(hubId)) enterHub(hubId);
     });
   });
 
   window.addEventListener('blog:navigate', (e) => {
     const { hubId } = e.detail;
-    if (hubId) {
+    if (hubId && !dormantCategories.has(hubId)) {
       enterHub(hubId);
     }
   });
@@ -811,7 +812,7 @@ function initBlogControls() {
 
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
-    if (arcBtn && arcBtn.dataset.hub) {
+    if (arcBtn && arcBtn.dataset.hub && !dormantCategories.has(arcBtn.dataset.hub)) {
       const hubId = arcBtn.dataset.hub;
       enterHub(hubId);
     }
@@ -820,7 +821,7 @@ function initBlogControls() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const arcBtn = e.target.closest('.arc-btn');
-      if (arcBtn && arcBtn.dataset.hub) {
+      if (arcBtn && arcBtn.dataset.hub && !dormantCategories.has(arcBtn.dataset.hub)) {
         e.preventDefault();
         const hubId = arcBtn.dataset.hub;
         enterHub(hubId);
@@ -836,18 +837,13 @@ function initBlogControls() {
   }
 
   const hubStatus = document.getElementById('hub-status');
-  const HUB_INFO = {
-    craft: { title: 'CRAFT', desc: 'Tools, code, and making by hand' },
-    cosmos: { title: 'COSMOS', desc: 'Systems, networks, and emergence' },
-    codex: { title: 'CODEX', desc: 'Engineering notes and debugging journals' },
-    convergence: { title: 'CONVERGENCE', desc: 'Where disciplines meet' }
-  };
 
   const tooltip = document.createElement('div');
   tooltip.className = 'blog-hub-tooltip';
   tooltip.innerHTML = `
     <span class="blog-hub-tooltip-title"></span>
     <span class="blog-hub-tooltip-description"></span>
+    <span class="blog-hub-tooltip-state">Dormant, no posts yet.</span>
   `;
   document.querySelector('#blog').appendChild(tooltip);
 
@@ -856,12 +852,14 @@ function initBlogControls() {
 
   window.addEventListener('blog:hover', (e) => {
     const { hubId } = e.detail;
-    if (hubStatus && hubId && HUB_INFO[hubId]) {
-      const info = HUB_INFO[hubId];
-      hubStatus.textContent = `Preview: ${info.title}. ${info.desc}.`;
+    const category = blogCategory(hubId);
+    if (hubStatus && category) {
+      const dormant = dormantCategories.has(hubId);
+      hubStatus.textContent = `Preview: ${category.name}. ${category.line}${dormant ? ' Dormant, no posts yet.' : ''}`;
 
-      tooltipTitle.textContent = info.title;
-      tooltipDesc.textContent = info.desc;
+      tooltipTitle.textContent = category.name;
+      tooltipDesc.textContent = category.line;
+      tooltip.classList.toggle('is-dormant', dormant);
       tooltip.classList.add('visible');
     }
   });
@@ -892,7 +890,7 @@ function getNavigationHash() {
   const hash = window.location.hash.slice(1);
   if (!hash.startsWith('blog?')) return hash;
   const hub = new URLSearchParams(hash.slice(5)).get('hub');
-  return ['craft', 'cosmos', 'codex', 'convergence'].includes(hub) ? `blog/${hub}` : 'blog';
+  return BLOG_CATEGORY_IDS.includes(hub) ? `blog/${hub}` : 'blog';
 }
 
 function clearPendingBlogHashAction() {
@@ -1006,25 +1004,58 @@ async function loadArticlesRegistry() {
     return ARTICLES_REGISTRY;
   } catch (err) {
     console.warn('[Blog] Could not load articles.json, using fallback:', err.message);
-    ARTICLES_REGISTRY = { craft: [], cosmos: [], codex: [], convergence: [] };
+    // Unknown counts, not empty ones: no category goes dormant on a failed load.
+    ARTICLES_REGISTRY = Object.assign(Object.fromEntries(BLOG_CATEGORY_IDS.map((id) => [id, []])), { unavailable: true });
     return ARTICLES_REGISTRY;
   }
 }
 
+// Each category's lines come from the registry and its count from the posts. A category with no posts
+// is a dormant culture: 'dormant' stands in for the count, its entries stop being links, and its
+// crumbs and rim label take no click. A link to #blog/<id> still routes.
 async function populateBlogCounts() {
   const registry = await loadArticlesRegistry();
-  const hubs = ['craft', 'cosmos', 'codex', 'convergence'];
+  dormantCategories.clear();
 
-  hubs.forEach(hub => {
-    const count = (registry[hub] || []).length;
-    const countText = count > 0 ? `(${count})` : '';
+  for (const category of BLOG_CATEGORIES) {
+    const { id, name, line } = category;
+    const count = (registry[id] || []).length;
+    const dormant = count === 0 && !registry.unavailable;
+    if (dormant) dormantCategories.add(id);
 
-    const memoCount = document.querySelector(`.blog-memo-count[data-hub="${hub}"]`);
-    if (memoCount) memoCount.textContent = countText;
+    document.querySelectorAll(`.blog-memo-count[data-hub="${id}"], .specimen-count[data-hub="${id}"]`)
+      .forEach((el) => { el.textContent = dormant ? 'dormant' : count > 0 ? `(${count})` : ''; });
 
-    const specCount = document.querySelector(`.specimen-count[data-hub="${hub}"]`);
-    if (specCount) specCount.textContent = countText;
-  });
+    const memo = document.querySelector(`.blog-memo-item[data-hub="${id}"]`);
+    if (memo) {
+      const desc = memo.querySelector('.blog-memo-desc');
+      if (desc) desc.textContent = line;
+      setCategoryEntry(memo, id, dormant, `Open the ${name} category`);
+    }
+
+    const card = document.querySelector(`.specimen-slide.slide-${id}`);
+    if (card) {
+      const desc = card.querySelector('.specimen-desc');
+      if (desc) desc.textContent = blogCategoryShortLine(category);
+      setCategoryEntry(card, id, dormant, `${name}. ${line}`);
+    }
+
+    document.querySelectorAll(`.blog-nav-link[data-hub="${id}"]`).forEach((crumb) => { crumb.disabled = dormant; });
+  }
+
+  document.querySelectorAll('#dish-labels .arc-btn').forEach(decorateRimLabel);
+}
+
+// A dormant entry keeps its place and text but is no longer a link, so it reads as a note, not a way in.
+function setCategoryEntry(entry, id, dormant, label) {
+  entry.classList.toggle('is-dormant', dormant);
+  if (dormant) {
+    entry.removeAttribute('href');
+    entry.removeAttribute('aria-label');
+  } else {
+    entry.setAttribute('href', `#blog/${id}`);
+    entry.setAttribute('aria-label', label);
+  }
 }
 
 function escapeHtml(value) {
@@ -1044,12 +1075,16 @@ async function loadCategoryContent(hubId) {
   const registry = await loadArticlesRegistry();
   if (document.getElementById('blog-category-view')?.dataset.category !== hubId) return;
   const articles = registry[hubId] || [];
-  const hubTitle = hubId.toUpperCase();
+  const hubTitle = (blogCategory(hubId)?.name || hubId).toUpperCase();
+  // Reached only through a link to #blog/<id>: nothing on the page opens a dormant category.
+  const emptyState = registry.unavailable
+    ? 'These notes could not be loaded. Please try again.'
+    : 'Dormant for now. The first notes are still growing here.';
 
   if (titleEl) titleEl.textContent = hubTitle;
 
   content.innerHTML = `
-    ${articles.length === 0 ? '<p class="blog-empty-state">No articles yet. Check back soon!</p>' : ''}
+    ${articles.length === 0 ? `<p class="blog-empty-state">${emptyState}</p>` : ''}
     <div class="blog-article-list">
       ${articles.map(a => `
         <a class="blog-article-item" href="/blog/${encodeURIComponent(hubId)}/${encodeURIComponent(a.id)}" data-article="${escapeHtml(a.id)}" aria-label="Read ${escapeHtml(a.title)}">

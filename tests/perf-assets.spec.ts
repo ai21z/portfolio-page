@@ -182,6 +182,20 @@ test('responsive images stay smaller than their full-size sources', () => {
   expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image.webp')).toBeLessThan(170_000);
 });
 
+// The categories were described three different ways (dish tooltip, Field Notes, phone cards).
+test('the Blog category lines in the page match the one registry', async () => {
+  const { BLOG_CATEGORIES, blogCategoryShortLine } = await import('../js/blog-categories.js');
+  const html = readText('index.html');
+  const decode = (text: string) => text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  for (const category of BLOG_CATEGORIES) {
+    const memo = new RegExp(`data-hub="${category.id}" href="#blog/${category.id}">[\\s\\S]*?<span class="blog-memo-desc">([^<]*)</span>`).exec(html);
+    expect(memo && decode(memo[1]), `${category.id} Field Notes line`).toBe(category.line);
+    const card = new RegExp(`class="specimen-slide slide-${category.id}"[^>]*aria-label="([^"]*)"[\\s\\S]*?<div class="specimen-desc">([^<]*)</div>`).exec(html);
+    expect(card && decode(card[1]), `${category.id} card label`).toBe(`${category.name}. ${category.line}`);
+    expect(card && decode(card[2]), `${category.id} card line`).toBe(blogCategoryShortLine(category));
+  }
+});
+
 // The ring spores rode the caption path, so they crossed the lettering on every lap.
 test('the ring spores run an orbit no caption sits on', () => {
   const html = readText('index.html');

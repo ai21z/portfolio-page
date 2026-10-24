@@ -135,7 +135,7 @@ test('the dish stays centred where there is room for it', async ({ page }) => {
 
 test('a window resized while a category is open still shows the rim labels back on the map', async ({ page }) => {
   await openBlog(page, { width: 1280, height: 720 });
-  await page.locator('.blog-memo-item[data-hub="craft"]').click();
+  await page.locator('.blog-memo-item[data-hub="cosmos"]').click();
   await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
   await page.setViewportSize({ width: 1440, height: 900 });
   // The module rebuilds the dish 100 ms after the last resize.

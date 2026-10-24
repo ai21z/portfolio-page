@@ -3,6 +3,7 @@ import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-gover
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 import { warmPrograms } from './gpu-warm.js';
 import { reducedMotion } from './motion.js';
+import { decorateRimLabel } from './blog-categories.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -962,6 +963,29 @@ async function initBlogNetwork(){
 
       text.appendChild(textPath);
       grp.appendChild(text);
+
+      // A dormant culture's caption, shown only while the category has no posts. It sits between the
+      // clock dots' track (out to r+37) and the label (from r+48), and reads the same way round.
+      const dormantR = dish.r + 38;
+      const dormantArc = document.createElementNS(svg.namespaceURI,'path');
+      dormantArc.setAttribute('id', `${arcId}-dormant`);
+      dormantArc.setAttribute('d', `M ${cx + dormantR*Math.cos(a0)} ${cy + dormantR*Math.sin(a0)} A ${dormantR} ${dormantR} 0 0 1 ${cx + dormantR*Math.cos(a1)} ${cy + dormantR*Math.sin(a1)}`);
+      dormantArc.setAttribute('fill','none');
+      dormantArc.setAttribute('stroke','none');
+      grp.appendChild(dormantArc);
+      const dormantText = document.createElementNS(svg.namespaceURI,'text');
+      dormantText.setAttribute('class','arc-dormant');
+      dormantText.setAttribute('text-anchor','middle');
+      dormantText.setAttribute('font-size','11');
+      dormantText.setAttribute('aria-hidden','true');
+      const dormantPath = document.createElementNS(svg.namespaceURI,'textPath');
+      dormantPath.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href', `#${arcId}-dormant`);
+      dormantPath.setAttribute('startOffset','50%');
+      dormantPath.textContent = 'DORMANT';
+      dormantText.appendChild(dormantPath);
+      grp.appendChild(dormantText);
+
+      decorateRimLabel(grp);
       svg.appendChild(grp);
     }
 

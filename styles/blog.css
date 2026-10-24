@@ -274,6 +274,34 @@
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
+/* Dormant cultures: categories with no posts yet. The entry stays as a note, not a way in: its orb
+   goes out and stops pulsing, the name dims, and 'dormant' stands where the count was. The text keeps
+   its contrast, since it is still read. */
+.blog-memo-item.is-dormant {
+  cursor: default;
+}
+
+.blog-memo-item.is-dormant:hover {
+  border-color: transparent;
+  background: none;
+}
+
+.blog-memo-item.is-dormant::before {
+  animation: none;
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.blog-memo-item.is-dormant .blog-memo-hub {
+  color: rgba(232, 232, 234, 0.62);
+}
+
+.blog-memo-item.is-dormant .blog-memo-count {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
 .blog-mobile {
   display: none;
 }
@@ -416,6 +444,30 @@
   text-shadow: 0 0 12px rgba(255, 200, 120, 0.8);
 }
 
+/* A dormant culture's rim label dims and takes no click, and its caption shows under it. */
+.arc-btn.is-dormant {
+  cursor: default;
+}
+
+.arc-btn.is-dormant .arc-label,
+.arc-btn.is-dormant:hover .arc-label,
+.arc-btn.is-dormant.hovered .arc-label {
+  fill: rgba(228, 189, 140, 0.4);
+  filter: none;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+}
+
+.arc-dormant {
+  display: none;
+  fill: rgba(201, 194, 179, 0.62);
+  font-family: var(--font-rim);
+  letter-spacing: 0.4em;
+}
+
+.arc-btn.is-dormant .arc-dormant {
+  display: inline;
+}
+
 .zoom-arc-label {
   fill: rgba(180, 160, 130, 0.8); /* Dimmer than hub labels, still 5.3:1 on the abyss */
   font-family: var(--font-rim);
@@ -507,6 +559,25 @@
   color: rgba(232, 232, 234, 0.75);
   font-size: 12px;
   line-height: 1.6;
+}
+
+.blog-hub-tooltip-state {
+  display: none;
+  margin-top: 8px;
+  color: rgba(201, 194, 179, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.blog-hub-tooltip.is-dormant .blog-hub-tooltip-state {
+  display: block;
+}
+
+.blog-nav-link:disabled,
+.blog-nav-link:disabled:hover {
+  color: rgba(201, 194, 179, 0.4);
+  cursor: default;
 }
 
 /* The landing layers leave once the dish has drawn, so the network never shows through it while the
@@ -1225,6 +1296,26 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 
   .specimen-slide:active {
     transform: scale(0.98);
+  }
+
+  /* A dormant culture's card stays as a note: no press, its colony out and still. */
+  .specimen-slide.is-dormant {
+    cursor: default;
+  }
+
+  .specimen-slide.is-dormant:active {
+    transform: none;
+  }
+
+  .specimen-slide.is-dormant .specimen-orb {
+    animation: none;
+    opacity: 0.35;
+    filter: grayscale(0.7);
+  }
+
+  .specimen-slide.is-dormant .specimen-count {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
 
   @media (hover: hover) {

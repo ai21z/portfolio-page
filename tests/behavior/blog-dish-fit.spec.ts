@@ -169,3 +169,12 @@ test('a hub tooltip stays clear of CRAFT and the rail when the rail sits in the 
   }
   await page.mouse.move(0, 0);
 });
+
+// The Field Notes grew with the reading face and ran past the bottom of 700 to 720 px tall windows.
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 1100, height: 700 }, { width: 1366, height: 657 }]) {
+  test(`the Field Notes end inside the window (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    await openBlog(page, viewport);
+    const bottom = await page.locator('.blog-memo-desc').last().evaluate((el) => el.getBoundingClientRect().bottom);
+    expect(bottom).toBeLessThanOrEqual(viewport.height - 8);
+  });
+}

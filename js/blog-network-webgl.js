@@ -1392,14 +1392,14 @@ async function initBlogNetwork(){
     window.dispatchEvent(new CustomEvent('blog:navigate', { detail: { hubId } }));
   }, { passive: true });
 
-  // ESC to exit deep view
+  // ESC leaves the deep view while Blog is on screen. The address is app.js's: it steps back out of a
+  // category or post itself, and elsewhere Escape belongs to the view shown.
   window.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape' && activeHub){
+    if (e.key === 'Escape' && activeHub && document.getElementById('blog')?.classList.contains('active-section')){
       activeHub = null;
       document.dispatchEvent(new CustomEvent('blog:activeHub', {
         detail: { id: null }
       }));
-      history.replaceState(null, '', '#blog');
     }
   });
 

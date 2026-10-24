@@ -90,3 +90,19 @@ test('a Field Notes click opens its category with one history entry', async ({ p
   await page.goBack();
   await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'map');
 });
+
+// Escape stepped Blog back out of a post even after the reader had left Blog, so it pushed a #blog
+// address while About was still on screen.
+test('Escape in another view leaves the Blog history alone', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html#blog/codex');
+  await expect(page.locator('#blog-category-view')).toBeVisible();
+  // In page, so the category stays open behind the next view.
+  await page.evaluate(() => { location.hash = 'about'; });
+  await expect(page.locator('#about')).toHaveClass(/active-section/);
+  const before = await page.evaluate(() => ({ url: location.href, length: history.length }));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => ({ url: location.href, length: history.length }))).toEqual(before);
+  await expect(page.locator('#about')).toHaveClass(/active-section/);
+});

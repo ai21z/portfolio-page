@@ -1459,8 +1459,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   initWheelSteps(showSectionWithEffects);
 
+  // Escape steps back out of a post or a category, only while Blog is the view on screen. Elsewhere it
+  // belongs to that view (a card, a dialog) and must not rewrite the Blog history behind it.
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && document.getElementById('blog')?.classList.contains('active-section')) {
       const articleView = document.getElementById('blog-article-view');
       const categoryView = document.getElementById('blog-category-view');
 

@@ -880,9 +880,35 @@ body.has-paper-open-global .altar-screen .ring {
 /* Keyboard focus on a paper card. The torn-edge clip-path removes anything drawn outside the box,
    so the mark sits inside it, deeper than the polygon's notches (up to 1.5% of the height), in the
    paper ink. Not scoped to .altar-screen, so the opened card in its dialog shows it too. */
-.slab.paper:focus-visible {
+.slab.paper:focus-visible,
+.slab.paper:has(.paper-trigger:focus-visible) {
   outline: 2px dashed var(--paper-ink);
   outline-offset: calc(-10px * var(--k));
+}
+
+/* The button that opens a card is its heading's text, set exactly as the heading. Its focus shows as
+   the card's mark above. */
+.slab .paper-trigger {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  text-indent: inherit;
+  text-shadow: inherit;
+  cursor: inherit;
+}
+
+.slab .paper-trigger:focus {
+  outline: none;
 }
 
 .nav-suppressed #bg-front-img {

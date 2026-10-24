@@ -1771,20 +1771,40 @@ if (!mqCompact.matches) {
   initSkillsPaperFocus();
 }
 
-function disableCompactCardFocus() {
-  const papers = document.querySelectorAll('#about [data-paper], #skills [data-paper]');
-  papers.forEach(el => {
-    if (el.hasAttribute('tabindex')) el.removeAttribute('tabindex');
-    el.removeAttribute('aria-disabled');
+// A wide card opens from a button in its heading, which says it opens a dialog and whether it is
+// open. The card itself takes focus only from code, when it opens. Compact layouts show every card
+// in full, so there the heading is plain text again and the card takes no focus.
+function paperTrigger(card) {
+  return card.querySelector(':scope > h2 > .paper-trigger');
+}
+
+function setPaperTriggers(enabled) {
+  document.querySelectorAll('#about [data-paper], #skills [data-paper]').forEach(card => {
+    const heading = card.querySelector(':scope > h2');
+    const button = paperTrigger(card);
+    if (enabled && heading && !button) {
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'paper-trigger';
+      trigger.setAttribute('aria-haspopup', 'dialog');
+      trigger.setAttribute('aria-expanded', String(card.classList.contains('paper-open')));
+      trigger.append(...heading.childNodes);
+      heading.append(trigger);
+    } else if (!enabled && button) {
+      heading.replaceChildren(...button.childNodes);
+    }
+    if (enabled) card.setAttribute('tabindex', '-1');
+    else card.removeAttribute('tabindex');
+    card.removeAttribute('aria-disabled');
   });
 }
 
+function disableCompactCardFocus() {
+  setPaperTriggers(false);
+}
+
 function restoreWideCardFocus() {
-  const papers = document.querySelectorAll('#about [data-paper], #skills [data-paper]');
-  papers.forEach(el => {
-    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-    el.removeAttribute('aria-disabled');
-  });
+  setPaperTriggers(true);
 }
 
 if (mqCompact.matches) disableCompactCardFocus(); else restoreWideCardFocus();
@@ -1931,12 +1951,12 @@ function initPaperFocusForSection(sectionId){
 
   const papers = section.querySelectorAll('.paper');
   papers.forEach(p => {
-    if (!p.hasAttribute('tabindex')) p.setAttribute('tabindex','0');
     ensurePaperCloseButton(p, closePaper);
 
     p.addEventListener('click', (event) => {
       if (isCompact()) return;
-      if (event.target.closest('a, button, input, textarea, select')) return;
+      const fromTrigger = Boolean(event.target.closest('.paper-trigger'));
+      if (!fromTrigger && event.target.closest('a, button, input, textarea, select')) return;
       if (p.classList.contains('paper-open')) {
         closePaper();
       } else {
@@ -2070,6 +2090,7 @@ function initPaperFocusForSection(sectionId){
     visit.onEnd = onEnd;
 
     document.body.classList.add('has-paper-open-global');
+    paperTrigger(el)?.setAttribute('aria-expanded', 'true');
     dialog.showModal();
     el.focus({ preventScroll:true });
     document.body.classList.remove('hovering-paper');
@@ -2102,8 +2123,10 @@ function initPaperFocusForSection(sectionId){
         restorePaperElement(openEl);
         visit.dialog.remove();
         document.body.classList.remove('has-paper-open-global');
+        const trigger = paperTrigger(openEl);
+        trigger?.setAttribute('aria-expanded', 'false');
         if (!options.immediate && section.classList.contains('active-section') && openEl.getClientRects().length) {
-          openEl.focus({ preventScroll: true });
+          (trigger || openEl).focus({ preventScroll: true });
         }
       };
       visit.onCleanup = cleanup;

@@ -205,12 +205,27 @@ for (const section of ['about', 'skills']) {
   test(`${section} card keeps keyboard focus inside and restores its trigger`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1366, height: 900 });
     await page.goto(`/index.html#${section}`);
-    const trigger = page.locator(`#${section} .paper`).first();
+    // The card opens from a button in its heading, named by the heading, never from a focusable
+    // article posing as a button.
+    const name = section === 'about' ? 'Background' : 'Systems Thinking';
+    const heading = page.getByRole('heading', { level: 2, name, exact: true });
+    const trigger = heading.getByRole('button', { name, exact: true });
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    const first = page.locator(`#${section} .paper`).first();
+    await expect(first).not.toHaveAttribute('role');
+    await expect(first).not.toHaveAttribute('aria-label');
+    await expect(first).toHaveAttribute('tabindex', '-1');
+    // A key press first, so the focus that follows counts as keyboard focus in every engine.
+    await page.keyboard.press('Shift');
     await trigger.focus();
+    await expect(first).toHaveCSS('outline-style', 'dashed');
+    await expect(trigger).toHaveCSS('outline-style', 'none');
     await trigger.press('Enter');
     const card = page.locator('.paper-open');
     await expect(card).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveAccessibleName(/\S/);
+    await expect(page.getByRole('dialog')).toHaveAccessibleName(name);
+    await expect(card.locator('.paper-trigger')).toHaveAttribute('aria-expanded', 'true');
     await audit(page, testInfo, section + '-dialog');
     await card.locator('.paper-card-close').focus();
     for (let i = 0; i < 4; i++) {
@@ -221,7 +236,8 @@ for (const section of ['about', 'skills']) {
     await expect.poll(() => card.evaluate(el => el.contains(document.activeElement))).toBe(true);
     await page.keyboard.press('Escape');
     await expect(card).toHaveCount(0);
-    await expect(page.locator(`#${section} .paper`).first()).toBeFocused();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 }
 
@@ -278,12 +294,18 @@ test('closing a paper during routing or resize does not leave an inert page', as
 test('compact cards keep their child links enabled after resize', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto('/index.html#about');
+  await expect(page.locator('#about .paper-trigger, #skills .paper-trigger')).toHaveCount(8);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#about [data-paper][tabindex], #skills [data-paper][tabindex]')).toHaveCount(0);
+  // Compact cards do not open, so their headings are plain headings again.
+  await expect(page.locator('#about .paper-trigger, #skills .paper-trigger')).toHaveCount(0);
+  await expect(page.locator('#about .slab-about h2')).toHaveText('Background');
   const email = page.locator('#about a[href="mailto:aris@zounarakis.com"]');
   await expect(email).toBeEnabled();
   await email.focus();
   await expect(email).toBeFocused();
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await expect(page.locator('#about .paper-trigger, #skills .paper-trigger')).toHaveCount(8);
 });
 
 test('mobile menu and work dialog preserve keyboard focus and names', async ({ page }, testInfo) => {

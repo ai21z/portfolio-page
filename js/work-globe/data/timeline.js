@@ -29,7 +29,7 @@ export const TIMELINE = [
     sortKey: 2026.55,
     title: 'TrueRolls',
     subtitle: 'Verifiable tabletop rolls',
-    summary: 'Verifiable dice with Ed25519-signed drand receipts. Receipts replay offline; witnessed fairness remains a v2 goal.',
+    summary: 'Verifiable dice with Ed25519-signed drand receipts that replay offline. Witnessed fairness against operator suppression is the v2 goal.',
     target: { kind: 'moon', id: 'true-rolls' }
   },
   {

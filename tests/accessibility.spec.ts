@@ -20,25 +20,65 @@ for (const width of [390, 1366]) {
   }
 }
 
-// Every view sits inside the one main landmark and names itself with a heading. The other views are
-// inert, so a screen reader meets exactly one main and the heading of the view on screen.
-test('each view has the main landmark and its own heading', async ({ page, browserName }) => {
+// Every view sits inside the one main landmark and names itself with its own h1. The other views are
+// inert, so a screen reader meets exactly one main and one h1, the heading of the view on screen.
+test('each view has the main landmark and its own h1', async ({ page, browserName }) => {
   await stubVerification(page);
-  const views = [['main', 1, 'Aris Zounarakis'], ['about', 2, 'About'], ['skills', 2, 'Skills'], ['blog', 2, 'Blog'],
-    ['work', 2, 'Work'], ['contact', 2, 'Get in Touch']] as const;
-  for (const [section, level, name] of views) {
+  const views = [['main', 'Aris Zounarakis'], ['about', 'About'], ['skills', 'Skills'], ['blog', 'Blog'],
+    ['work', 'Work'], ['contact', 'Get in Touch']] as const;
+  for (const [section, name] of views) {
     await page.goto('/index.html#' + section);
     await expect(page.locator('html')).toHaveClass(/js-ready/);
     await expect(page.locator('#' + section)).toHaveClass(/active-section/);
     await expect(page.getByRole('main')).toHaveCount(1);
-    await expect(page.getByRole('heading', { level, name, exact: true })).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1, name, exact: true })).toHaveCount(1);
     // Playwright's role lookup in WebKit does not leave out inert content (Safari itself does), so the
     // other views are checked in Chromium and Firefox.
     if (browserName === 'webkit') continue;
-    for (const [other, , otherName] of views) {
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    for (const [other, otherName] of views) {
       if (other !== section) await expect(page.getByRole('heading', { name: otherName, exact: true })).toHaveCount(0);
     }
   }
+});
+
+// The tab names the view, so history, bookmarks and a screen reader's window title say where you are.
+test('each view names the browser tab, and Back puts the name back', async ({ page }) => {
+  await stubVerification(page);
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await expect(page).toHaveTitle('Aris Zounarakis | Software Engineer in Barcelona');
+  for (const [section, title] of [['about', 'About'], ['skills', 'Skills'], ['work', 'Work'], ['blog', 'Blog'], ['contact', 'Contact']]) {
+    await page.goto('/index.html#' + section);
+    await expect(page.locator('#' + section)).toHaveClass(/active-section/);
+    await expect(page).toHaveTitle(`${title} | Aris Zounarakis`);
+  }
+  await page.goto('/index.html#blog/codex');
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
+  await expect(page).toHaveTitle('Codex | Blog | Aris Zounarakis');
+  await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
+  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await expect(page).toHaveTitle('Fail Fast, Learn Faster - Instinct, on Purpose | Aris Zounarakis');
+  await page.goBack();
+  await expect(page).toHaveTitle('Codex | Blog | Aris Zounarakis');
+  await page.goto('/index.html#about');
+  await expect(page).toHaveTitle('About | Aris Zounarakis');
+  await page.locator('#about .altar-close').click();
+  await expect(page.locator('#main')).toHaveClass(/active-section/);
+  await expect(page).toHaveTitle('Aris Zounarakis | Software Engineer in Barcelona');
+});
+
+// An open post brings its own h1, so the Blog heading steps aside and the page keeps one h1.
+test('an open post is the only h1 in the Blog view', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Playwright role lookup in WebKit keeps inert views');
+  await stubVerification(page);
+  await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
+  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await page.goto('/index.html#blog/codex');
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
+  await expect(page.getByRole('heading', { level: 1, name: 'Blog', exact: true })).toHaveCount(1);
 });
 
 // Skip to content was routed as a hash, so from any view but the landing it returned to the landing.

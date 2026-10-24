@@ -15,6 +15,7 @@ import {
 } from './state.js';
 import { coverMap } from './viewport.js';
 import { STAGE_LEAVE_MS } from './motion.js';
+import { refreshViewTitle } from './view-title.js';
 
 // Branch-normal offsets pushing labels away from mycelium
 export function computeNavOffsets(){
@@ -426,8 +427,9 @@ export function showSection(sectionName, options = {}) {
   if (options.focus !== false && activeSection && activeSection.getAttribute('tabindex') === '-1') {
     activeSection.focus({ preventScroll: true });
   }
-  
+
   updateSectionNavActive(sectionName);
+  refreshViewTitle();
 }
 
 export function updateSectionNavActive(sectionName) {

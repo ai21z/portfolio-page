@@ -75,6 +75,7 @@ import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
+import { postTitle, refreshViewTitle } from './view-title.js';
 import {
   frameDue,
   getGraphicsBudget,
@@ -978,6 +979,7 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
   const categoryView = document.getElementById('blog-category-view');
   if (categoryView) {
     categoryView.setAttribute('data-category', hubId);
+    categoryView.dataset.categoryName = blogCategory(hubId)?.name || hubId;
     categoryView.removeAttribute('hidden');
     loadCategoryContent(hubId);
   }
@@ -986,6 +988,14 @@ function enterHub(hubId, { historyMode = 'push' } = {}) {
   if (historyMode === 'push') {
     history.pushState({ view: 'category', hubId }, '', `#blog/${hubId}`);
   }
+  setBlogHeadingShown(true);
+  refreshViewTitle();
+}
+
+// An open post brings its own h1, so the Blog heading steps aside while it is shown.
+function setBlogHeadingShown(shown) {
+  const heading = document.getElementById('blog-heading');
+  if (heading) heading.hidden = !shown;
 }
 
 function resetBlogMapState({ updateHistory = false } = {}) {
@@ -1015,6 +1025,8 @@ function resetBlogMapState({ updateHistory = false } = {}) {
   if (updateHistory) {
     history.pushState({ view: 'map' }, '', '#blog');
   }
+  setBlogHeadingShown(true);
+  refreshViewTitle();
 }
 
 function exitToMap() {
@@ -1219,6 +1231,10 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
   const articleView = document.getElementById('blog-article-view');
   if (articleView) {
     articleView.dataset.hub = hubId;
+    // The registry names the post until its page arrives with its own title.
+    const known = ARTICLES_REGISTRY?.[hubId]?.find?.(post => post.id === articleId)?.title;
+    if (known) articleView.dataset.title = postTitle(known);
+    else delete articleView.dataset.title;
     articleView.removeAttribute('hidden');
     loadArticleContent(hubId, articleId);
   }
@@ -1227,6 +1243,7 @@ function enterBlogArticle(hubId, articleId, { historyMode = 'push' } = {}) {
   if (historyMode === 'push') {
     history.pushState({ view: 'article', hubId, articleId }, '', `#blog/${hubId}/${articleId}`);
   }
+  refreshViewTitle();
 }
 
 function exitBlogArticle() {
@@ -1267,6 +1284,10 @@ function loadArticleContent(hubId, articleId) {
           }
         });
         content.innerHTML = article.innerHTML;
+        const articleView = document.getElementById('blog-article-view');
+        if (articleView && doc.title) articleView.dataset.title = doc.title;
+        setBlogHeadingShown(!content.querySelector('h1'));
+        refreshViewTitle();
 
         setupArticleNavigation(content);
       } else {

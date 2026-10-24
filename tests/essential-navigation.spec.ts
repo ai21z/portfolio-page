@@ -63,11 +63,11 @@ for (const width of [390, 1366]) {
       await expect.poll(() => page.evaluate(() => Array.from(document.fonts)
         .some(font => font.family.includes('Special Elite') && font.status === 'loaded'))).toBe(true);
       const before = await page.locator('.grid').boundingBox();
-      const heading = await page.locator('h1').boundingBox();
+      const heading = await page.locator('#main h1').boundingBox();
       release();
       await expect(page.locator('html')).toHaveClass(/js-ready/);
       const after = await page.locator('.grid').boundingBox();
-      const settledHeading = await page.locator('h1').boundingBox();
+      const settledHeading = await page.locator('#main h1').boundingBox();
       expect(after!.y).toBeCloseTo(before!.y, 0);
       expect(settledHeading!.y).toBeCloseTo(heading!.y, 0);
       expect(settledHeading!.height).toBeCloseTo(heading!.height, 0);

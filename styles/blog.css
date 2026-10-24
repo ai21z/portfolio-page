@@ -48,6 +48,8 @@
   transition: opacity 300ms ease-out;
 }
 
+/* The how-to line. Over the canvas, which hid it the moment the dish first drew, and up until the dish
+   is first explored (js/app.js adds .is-explored), then it fades for the visit. */
 .blog-intro-caption {
   position: absolute;
   top: 80px;
@@ -56,9 +58,15 @@
   color: rgba(201, 194, 179, 0.85);
   font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
   text-align: center;
-  z-index: 10;
+  white-space: nowrap;
+  z-index: 45;
   pointer-events: none;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.9);
+  transition: opacity 400ms ease;
+}
+
+.blog-screen.is-explored .blog-intro-caption {
+  opacity: 0;
 }
 
 .blog-intro-caption strong {
@@ -366,6 +374,84 @@
   z-index: 30;
 }
 
+/* z:35. Post nuclei inside the hubs (js/blog-network-webgl.js). The layer passes the pointer through
+   to the canvas, and only the nuclei take it. Each is a dark core inside a thin membrane in its
+   culture's colour, and names its post in the label face on hover or focus. */
+.dish-nuclei {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 35;
+}
+
+.blog-screen.in-category .dish-nuclei {
+  display: none;
+}
+
+.dish-nucleus {
+  --nucleus: var(--bone);
+  pointer-events: auto;
+  cursor: var(--cursor-spore, pointer), pointer;
+  outline: none;
+}
+
+.dish-nucleus[data-hub="craft"] { --nucleus: var(--hub-craft); }
+.dish-nucleus[data-hub="cosmos"] { --nucleus: var(--hub-cosmos); }
+.dish-nucleus[data-hub="codex"] { --nucleus: var(--hub-codex); }
+.dish-nucleus[data-hub="convergence"] { --nucleus: var(--hub-convergence); }
+
+.dish-nucleus-hit {
+  fill: transparent;
+}
+
+.dish-nucleus-halo {
+  fill: color-mix(in oklab, var(--nucleus), transparent 82%);
+  transition: fill 200ms var(--ease-house);
+}
+
+.dish-nucleus-ring {
+  fill: rgba(8, 9, 10, 0.85);
+  stroke: var(--nucleus);
+  stroke-width: 1.2;
+}
+
+.dish-nucleus-core {
+  fill: color-mix(in oklab, var(--nucleus), var(--bone) 35%);
+}
+
+.dish-nucleus-title {
+  font-family: var(--font-label);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  fill: var(--bone);
+  paint-order: stroke;
+  stroke: rgba(8, 9, 10, 0.92);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-house);
+}
+
+.dish-nucleus:hover .dish-nucleus-halo,
+.dish-nucleus:focus-visible .dish-nucleus-halo {
+  fill: color-mix(in oklab, var(--nucleus), transparent 55%);
+}
+
+.dish-nucleus:focus-visible .dish-nucleus-ring {
+  stroke: var(--bone);
+  stroke-width: 2;
+}
+
+.dish-nucleus:hover .dish-nucleus-title,
+.dish-nucleus:focus-visible .dish-nucleus-title {
+  opacity: 1;
+}
+
 /* z:40 */
 .dish-labels {
   position: absolute;
@@ -649,6 +735,15 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
   .blog-intro-caption {
     top: 60px;
     font-size: 12px;
+  }
+}
+
+/* Phones and compact layouts show the specimen cards, not the dish the line describes. */
+@media (max-width: 900px),
+       (max-width: 1199px) and (max-aspect-ratio: 1/1),
+       (max-width: 1366px) and (pointer: coarse) {
+  .blog-intro-caption {
+    display: none;
   }
 }
 

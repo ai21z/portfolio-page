@@ -70,7 +70,7 @@ import {
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
-import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories } from './blog-categories.js';
+import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
 import {
   frameDue,
   getGraphicsBudget,
@@ -810,6 +810,30 @@ function initBlogControls() {
     }
   });
 
+  // The how-to line stays until the dish is first explored: a preview, a zoom, or focus on a rim label
+  // or a nucleus. A pointer merely crossing the page does not count, or it would vanish on arrival.
+  const blogStage = document.getElementById('blog');
+  const markExplored = () => blogStage?.classList.add('is-explored');
+  window.addEventListener('blog:hover', markExplored, { once: true });
+  // The rest of a wheel gesture that stepped into Blog is not a zoom (js/navigation.js marks it).
+  const canvasEl = document.getElementById('blog-network-canvas');
+  canvasEl?.addEventListener('wheel', function onZoom() {
+    if (document.documentElement.hasAttribute('data-wheel-step-tail')) return;
+    markExplored();
+    canvasEl.removeEventListener('wheel', onZoom);
+  }, { passive: true });
+  blogStage?.addEventListener('focusin', (event) => {
+    if (event.target.closest?.('.arc-btn, .dish-nucleus')) markExplored();
+  });
+
+  // A post nucleus in the dish opens its post in the reader. A modified click keeps its own way.
+  document.addEventListener('click', (e) => {
+    const nucleus = e.target.closest?.('.dish-nucleus');
+    if (!nucleus || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    enterBlogArticle(nucleus.dataset.hub, nucleus.dataset.article);
+  });
+
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
     if (arcBtn && arcBtn.dataset.hub && !dormantCategories.has(arcBtn.dataset.hub)) {
@@ -1044,6 +1068,7 @@ async function populateBlogCounts() {
   }
 
   document.querySelectorAll('#dish-labels .arc-btn').forEach(decorateRimLabel);
+  if (!registry.unavailable) setBlogPosts(registry);
 }
 
 // A dormant entry keeps its place and text but is no longer a link, so it reads as a note, not a way in.

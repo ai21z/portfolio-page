@@ -15,6 +15,16 @@ export const blogCategory = (id) => BLOG_CATEGORIES.find((category) => category.
 // The first sentence, for the phone cards, which hold one short line.
 export const blogCategoryShortLine = (category) => category.line.split('. ')[0] + '.';
 
+// The posts of each category, once the post list has loaded. The dish draws one nucleus per post and
+// rebuilds them on 'blog:posts'.
+export const blogPosts = new Map();
+
+export function setBlogPosts(registry) {
+  blogPosts.clear();
+  for (const id of BLOG_CATEGORY_IDS) blogPosts.set(id, registry[id] || []);
+  window.dispatchEvent(new CustomEvent('blog:posts'));
+}
+
 // A category with no posts is a dormant culture: its rim label dims and carries a caption, it shows no
 // count, and nothing opens an empty view from it. A link to #blog/<id> still routes.
 export const dormantCategories = new Set();

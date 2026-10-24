@@ -3,7 +3,7 @@ import { frameDue, getGraphicsBudget, reportFrameSample } from './graphics-gover
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 import { warmPrograms } from './gpu-warm.js';
 import { reducedMotion } from './motion.js';
-import { decorateRimLabel } from './blog-categories.js';
+import { blogPosts, decorateRimLabel } from './blog-categories.js';
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -1191,13 +1191,88 @@ async function initBlogNetwork(){
 
     return { scale, offX, offY, cssW, cssH, dishCx };
   }
+
+  // Each post is a nucleus inside its culture's hub: a link that names the post on hover or focus and
+  // opens it. They sit in their own layer over the canvas, turned toward the dish centre, and follow
+  // the dish's zoom and pan. A dormant culture has none.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const NUCLEUS_REACH = 20;     // world px from the hub centre, inside its 36 px hover radius
+  const NUCLEUS_SPREAD = 0.6;   // radians between a hub's nuclei
+  const nucleiLayer = document.createElementNS(SVG_NS, 'svg');
+  nucleiLayer.setAttribute('class', 'dish-nuclei');
+  nucleiLayer.setAttribute('id', 'dish-nuclei');
+  canvas.insertAdjacentElement('afterend', nucleiLayer);
+  let nuclei = [];
+
+  function buildNuclei() {
+    nucleiLayer.replaceChildren();
+    nuclei = [];
+    for (const hub of data.hubs || []) {
+      const posts = blogPosts.get(hub.id) || [];
+      const toCentre = Math.atan2(netCy - hub.y, netCx - hub.x);
+      posts.forEach((post, i) => {
+        const angle = toCentre + (i - (posts.length - 1) / 2) * NUCLEUS_SPREAD;
+        const link = document.createElementNS(SVG_NS, 'a');
+        link.setAttribute('class', 'dish-nucleus');
+        link.setAttribute('href', `/blog/${encodeURIComponent(hub.id)}/${encodeURIComponent(post.id)}`);
+        link.setAttribute('aria-label', `Read ${post.title}`);
+        link.dataset.hub = hub.id;
+        link.dataset.article = post.id;
+        // A 28 px target around a small mark, so the pointer and the finger find it.
+        for (const [cls, r] of [['dish-nucleus-hit', 14], ['dish-nucleus-halo', 9], ['dish-nucleus-ring', 5.5], ['dish-nucleus-core', 2.4]]) {
+          const circle = document.createElementNS(SVG_NS, 'circle');
+          circle.setAttribute('class', cls);
+          circle.setAttribute('r', String(r));
+          link.appendChild(circle);
+        }
+        const title = document.createElementNS(SVG_NS, 'text');
+        title.setAttribute('class', 'dish-nucleus-title');
+        title.setAttribute('aria-hidden', 'true');
+        title.setAttribute('dy', '0.35em');
+        title.textContent = post.title;
+        link.appendChild(title);
+        link.addEventListener('pointerenter', () => {
+          window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId: hub.id, source: 'nucleus' } }));
+        });
+        link.addEventListener('pointerleave', () => {
+          window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId: hub.id, source: 'nucleus' } }));
+        });
+        nucleiLayer.appendChild(link);
+        nuclei.push({ link, title, x: hub.x + Math.cos(angle) * NUCLEUS_REACH, y: hub.y + Math.sin(angle) * NUCLEUS_REACH });
+      });
+    }
+    placeNuclei();
+  }
+
+  // World to screen, the inverse of the hover picking below. The title opens toward the dish centre:
+  // sideways from a hub at the side, above or below one at the top or bottom, so it never runs onto
+  // the rim lettering.
+  function placeNuclei() {
+    if (!fit) return;
+    const centreX = fit.offX + (netCx + shift[0]) * fit.scale;
+    const centreY = fit.offY + (netCy + shift[1]) * fit.scale;
+    for (const nucleus of nuclei) {
+      const sx = fit.offX + (nucleus.x + shift[0]) * fit.scale;
+      const sy = fit.offY + (nucleus.y + shift[1]) * fit.scale;
+      nucleus.link.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)})`);
+      const dx = sx - centreX, dy = sy - centreY;
+      const side = Math.abs(dx) >= Math.abs(dy);
+      nucleus.title.setAttribute('text-anchor', side ? (dx >= 0 ? 'end' : 'start') : 'middle');
+      nucleus.title.setAttribute('x', side ? (dx >= 0 ? '-16' : '16') : '0');
+      nucleus.title.setAttribute('y', side ? '0' : (dy >= 0 ? '-22' : '22'));
+    }
+  }
+
+  window.addEventListener('blog:posts', buildNuclei);
+
   let fit = resize();
+  buildNuclei();
 
   // Debounced resize handler to prevent rapid resizing
   window.addEventListener('resize', ()=>{
     if (resizeTimeout) clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      if (running) fit = resize();
+      if (running) { fit = resize(); placeNuclei(); }
     }, 100); // Wait 100ms after last resize event
   });
 
@@ -1209,7 +1284,7 @@ async function initBlogNetwork(){
       lastDPR = dpr;
       // A resize clears the canvas. A section fading out keeps its last frame, and startLoop
       // resizes on the way back in.
-      if (running && canvas.closest('.active-section')) fit = resize();
+      if (running && canvas.closest('.active-section')) { fit = resize(); placeNuclei(); }
     }
   });
 
@@ -1231,6 +1306,7 @@ async function initBlogNetwork(){
       panOffsetY = dy;
       fit.offX = fit.dishCx - VIEW.W * fit.scale / 2 + panOffsetX;
       fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2 + panOffsetY;
+      placeNuclei();
       return;
     }
 
@@ -1341,7 +1417,7 @@ async function initBlogNetwork(){
   // Listen for external hover events (from rim labels and memo)
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
-    if ((source === 'rim-label' || source === 'memo') && hubId && hubId !== 'source') {
+    if ((source === 'rim-label' || source === 'memo' || source === 'nucleus') && hubId && hubId !== 'source') {
       hoveredHubId = hubId;
       canvas.style.cursor = 'pointer';
     }
@@ -1393,6 +1469,7 @@ async function initBlogNetwork(){
     // Recalculate offsets to keep zoom centered
     fit.offX = fit.dishCx - VIEW.W * fit.scale / 2;
     fit.offY = (fit.cssH - VIEW.H * fit.scale) / 2;
+    placeNuclei();
     updateZoomIndicator();
   }, { passive: false });
 
@@ -1583,6 +1660,7 @@ async function initBlogNetwork(){
   const startLoop = () => {
     if (running && !document.hidden && !rafId) {
       fit = resize();
+      placeNuclei();
       last = performance.now();
       rafId = requestAnimationFrame(loop);
     }

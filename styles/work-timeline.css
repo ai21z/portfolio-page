@@ -372,8 +372,9 @@
 }
 
 .work-note-kicker {
-  font-size: 0.58rem;
-  letter-spacing: 0.2em;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(var(--decay-green-rgb), 0.7);
 }
@@ -385,14 +386,15 @@
 }
 
 .work-note-meta {
-  font-size: 0.66rem;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
   letter-spacing: 0.04em;
   color: rgba(150, 180, 168, 0.72);
   margin-top: 3px;
 }
 
 .work-note-summary {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-read);
   font-size: 0.9rem;
   line-height: 1.4;
   color: rgba(210, 220, 213, 0.85);
@@ -408,13 +410,14 @@
 
 .work-facts div {
   display: grid;
-  grid-template-columns: 64px 1fr;
+  grid-template-columns: 72px 1fr;
   gap: 8px;
 }
 
 .work-facts dt {
-  font-size: 0.56rem;
-  letter-spacing: 0.18em;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(var(--decay-green-rgb), 0.7);
   padding-top: 2px;
@@ -422,14 +425,15 @@
 
 .work-facts dd {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-read);
   font-size: 0.8rem;
   line-height: 1.35;
   color: rgba(210, 220, 213, 0.85);
 }
 
 .work-note-cta {
-  font-size: 0.58rem;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(150, 170, 160, 0.8); /* 5.4:1; 0.45 gave 2.5:1 */
@@ -557,14 +561,15 @@
 }
 
 .work-card-meta {
-  font-size: 0.74rem;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
   letter-spacing: 0.04em;
   color: rgba(150, 180, 168, 0.75);
   margin-top: 5px;
 }
 
 .work-card-summary {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-read);
   font-size: 1rem;
   line-height: 1.5;
   color: rgba(214, 224, 217, 0.9);

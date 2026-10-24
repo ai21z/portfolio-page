@@ -926,13 +926,10 @@ async function initBlogNetwork(){
       const x0 = cx + outerR*Math.cos(a0), y0 = cy + outerR*Math.sin(a0);
       const x1 = cx + outerR*Math.cos(a1), y1 = cy + outerR*Math.sin(a1);
 
-      // Clickable group with hit zone and text
-      const grp = document.createElementNS(svg.namespaceURI,'g');
+      // A link to the category, with its hit zone and text. decorateRimLabel sets its href and name.
+      const grp = document.createElementNS(svg.namespaceURI,'a');
       grp.classList.add('arc-btn');
       grp.dataset.hub = c.id;
-      grp.setAttribute('tabindex','0');
-      grp.setAttribute('role','button');
-      grp.setAttribute('aria-label', `${c.text}, open category`);
 
       // Hit zone path - covers rim through label area
       const hitPath = document.createElementNS(svg.namespaceURI,'path');

@@ -843,23 +843,12 @@ function initBlogControls() {
     enterBlogArticle(nucleus.dataset.hub, nucleus.dataset.article);
   });
 
+  // A rim label is a link to its category, so Enter clicks it and a modified click opens it apart.
   document.addEventListener('click', (e) => {
     const arcBtn = e.target.closest('.arc-btn');
-    if (arcBtn && arcBtn.dataset.hub && !dormantCategories.has(arcBtn.dataset.hub)) {
-      const hubId = arcBtn.dataset.hub;
-      enterHub(hubId);
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const arcBtn = e.target.closest('.arc-btn');
-      if (arcBtn && arcBtn.dataset.hub && !dormantCategories.has(arcBtn.dataset.hub)) {
-        e.preventDefault();
-        const hubId = arcBtn.dataset.hub;
-        enterHub(hubId);
-      }
-    }
+    if (!arcBtn || !arcBtn.dataset.hub || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (!dormantCategories.has(arcBtn.dataset.hub)) enterHub(arcBtn.dataset.hub);
   });
 
   const btnMap = document.getElementById('btn-map');
@@ -908,11 +897,10 @@ function initBlogControls() {
 
 function updateBlogNavActive(hubId) {
   document.querySelectorAll('.blog-nav-link').forEach(link => {
-    if (link.dataset.hub === hubId) {
-      link.classList.add('active');
-    } else {
-      link.classList.remove('active');
-    }
+    const active = link.dataset.hub === hubId;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'true');
+    else link.removeAttribute('aria-current');
   });
 }
 
@@ -1084,7 +1072,11 @@ async function populateBlogCounts() {
       setCategoryEntry(card, id, dormant, `${name}. ${line}`);
     }
 
-    document.querySelectorAll(`.blog-nav-link[data-hub="${id}"]`).forEach((crumb) => { crumb.disabled = dormant; });
+    // A dormant crumb keeps its word but loses its address, like the other dormant entries.
+    document.querySelectorAll(`.blog-nav-link[data-hub="${id}"]`).forEach((crumb) => {
+      if (dormant) crumb.removeAttribute('href');
+      else crumb.setAttribute('href', `#blog/${id}`);
+    });
   }
 
   document.querySelectorAll('#dish-labels .arc-btn').forEach(decorateRimLabel);
@@ -1555,9 +1547,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-map-category')?.addEventListener('click', exitToMap);
   document.getElementById('btn-map-article')?.addEventListener('click', exitToMap);
 
+  // The crumbs are links to the map and the categories. A modified click opens one apart.
   document.querySelectorAll('.blog-nav-link').forEach(link => {
-    link.addEventListener('click', () => {
+    link.addEventListener('click', (event) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
       const hubId = link.dataset.hub;
+      if (!link.hasAttribute('href')) return;
       if (hubId === 'map') {
         exitToMap();
       } else {

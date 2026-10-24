@@ -29,7 +29,7 @@ export function setBlogPosts(registry) {
 // count, and nothing opens an empty view from it. A link to #blog/<id> still routes.
 export const dormantCategories = new Set();
 
-// Marks a dish rim label (an .arc-btn group in the labels SVG) for a dormant category, or clears it.
+// Marks a dish rim label (an .arc-btn link in the labels SVG) for a dormant category, or clears it.
 // The dish rebuilds its labels on every resize, and the post counts arrive after the first build, so
 // both call this.
 export function decorateRimLabel(group) {
@@ -38,8 +38,18 @@ export function decorateRimLabel(group) {
   if (!category) return;
   const dormant = dormantCategories.has(id);
   group.classList.toggle('is-dormant', dormant);
-  group.setAttribute('tabindex', dormant ? '-1' : '0');
+  // A link to the category. A dormant one keeps its place as a disabled link with no address. The Tab
+  // order is set outright, since engines disagree about an SVG link's default.
+  if (dormant) {
+    group.removeAttribute('href');
+    group.setAttribute('role', 'link');
+    group.setAttribute('aria-disabled', 'true');
+    group.setAttribute('tabindex', '-1');
+  } else {
+    group.setAttribute('href', `#blog/${id}`);
+    group.removeAttribute('role');
+    group.removeAttribute('aria-disabled');
+    group.setAttribute('tabindex', '0');
+  }
   group.setAttribute('aria-label', dormant ? `${category.name.toUpperCase()}, dormant, no posts yet` : `${category.name.toUpperCase()}, open category`);
-  if (dormant) group.setAttribute('aria-disabled', 'true');
-  else group.removeAttribute('aria-disabled');
 }

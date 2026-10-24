@@ -30,9 +30,13 @@ test('the Field Notes show a dormant culture as a note, and a live one as a way 
   await expect(cosmos.locator('.blog-memo-count')).toHaveText('(1)');
   await cosmos.click();
   await expect(page.locator('#blog-category-view')).toBeVisible();
-  // The crumbs to a dormant culture take no click either.
-  await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]')).toBeDisabled();
-  await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="codex"]')).toBeEnabled();
+  // The crumbs are links, and the one to a dormant culture keeps its word but has no address.
+  await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]')).not.toHaveAttribute('href');
+  await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]')).toHaveText('Craft');
+  await expect(page.locator('#blog-category-view').getByRole('link', { name: 'Codex', exact: true })).toHaveAttribute('href', '#blog/codex');
+  await page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]').click();
+  await page.waitForTimeout(300);
+  await expect(page.locator('#blog-category-view')).toHaveAttribute('data-category', 'cosmos');
 });
 
 test('a dormant rim label dims, carries its caption, and leaves the Tab order', async ({ page }) => {
@@ -42,12 +46,16 @@ test('a dormant rim label dims, carries its caption, and leaves the Tab order', 
   await expect(page.locator('#dish-labels .arc-btn')).toHaveCount(4);
   const craft = page.locator('#dish-labels .arc-btn[data-hub="craft"]');
   await expect(craft).toHaveClass(/is-dormant/);
-  await expect(craft).toHaveAttribute('tabindex', '-1');
+  // A disabled link with no address, so it is out of the Tab order.
+  await expect(craft).not.toHaveAttribute('href');
+  await expect(craft).toHaveAttribute('role', 'link');
   await expect(craft).toHaveAttribute('aria-disabled', 'true');
+  await expect(craft).toHaveAttribute('tabindex', '-1');
   const caption = (hub: string) => page.locator(`#dish-labels .arc-btn[data-hub="${hub}"] .arc-dormant`)
     .evaluate((el) => getComputedStyle(el).display);
   expect(await caption('craft')).not.toBe('none');
   expect(await caption('cosmos')).toBe('none');
+  await expect(page.locator('#dish-labels .arc-btn[data-hub="cosmos"]')).toHaveAttribute('href', '#blog/cosmos');
   await expect(page.locator('#dish-labels .arc-btn[data-hub="cosmos"]')).toHaveAttribute('tabindex', '0');
 
   await craft.dispatchEvent('click');
@@ -82,4 +90,38 @@ test('a failed post list leaves every culture open rather than calling them all 
   await page.waitForTimeout(800);
   await expect(page.locator('.blog-memo-item.is-dormant')).toHaveCount(0);
   await expect(page.locator('.blog-memo-item[data-hub="craft"]')).toHaveAttribute('href', '#blog/craft');
+});
+
+// The rim labels and the crumb bars were buttons. They are links now, to the views they open, so a
+// reader can open one apart, and a plain click still changes the view in place with one history step.
+test('rim labels and crumbs are links that change the view in place with one history entry', async ({ page }) => {
+  await drawTheDish(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html#blog');
+  const codex = page.locator('#dish-labels').getByRole('link', { name: 'CODEX, open category' });
+  await expect(codex).toHaveAttribute('href', '#blog/codex');
+  const length = () => page.evaluate(() => history.length);
+  const before = await length();
+  await codex.dispatchEvent('click', { button: 0 });
+  await expect(page.locator('#blog-category-view')).toBeVisible();
+  await expect(page).toHaveURL(/#blog\/codex$/);
+  expect(await length()).toBe(before + 1);
+
+  const crumbs = page.locator('#blog-category-view nav.blog-nav');
+  await expect(crumbs.getByRole('link', { name: 'Map', exact: true })).toHaveAttribute('href', '#blog');
+  await expect(crumbs.getByRole('link', { name: 'Codex', exact: true })).toHaveAttribute('aria-current', 'true');
+  await crumbs.getByRole('link', { name: 'Cosmos', exact: true }).click();
+  await expect(page.locator('#blog-category-view')).toHaveAttribute('data-category', 'cosmos');
+  await expect(page).toHaveURL(/#blog\/cosmos$/);
+  expect(await length()).toBe(before + 2);
+  await crumbs.getByRole('link', { name: 'Map', exact: true }).click();
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'map');
+  expect(await length()).toBe(before + 3);
+
+  // Enter on a focused rim label follows it, once.
+  await page.keyboard.press('Shift');
+  await codex.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#blog-category-view')).toHaveAttribute('data-category', 'codex');
+  expect(await length()).toBe(before + 4);
 });

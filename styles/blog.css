@@ -467,6 +467,8 @@
   cursor: pointer;
   pointer-events: auto;
   transition: opacity 180ms ease;
+  /* A link, drawn only as its label. */
+  text-decoration: none;
 }
 
 .arc-btn:hover,
@@ -660,8 +662,9 @@
   display: block;
 }
 
-.blog-nav-link:disabled,
-.blog-nav-link:disabled:hover {
+/* A dormant category's crumb keeps its word and loses its address. */
+.blog-nav-link:not([href]),
+.blog-nav-link:not([href]):hover {
   color: rgba(201, 194, 179, 0.4);
   cursor: default;
 }
@@ -988,13 +991,18 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
   pointer-events: auto;
 }
 
+/* Links set as the buttons they were. */
 .blog-nav-link {
+  display: inline-block;
   background: none;
   border: none;
   padding: 4px 8px;
   color: var(--bone-dim);
   font-family: var(--font-body);
   font-size: 13px;
+  line-height: normal;
+  letter-spacing: normal;
+  text-decoration: none;
   cursor: pointer;
   transition: color 150ms ease;
   white-space: nowrap;

@@ -97,7 +97,10 @@ const CONFIG = {
   CONSTELLATION_RAMP_MS: 400,
   CONSTELLATION_DRIFT: 0.15,
 
-  PORTRAIT_IDLE_OPACITY: 0.2,
+  // At rest the portrait shows as on a phone and the particles are a faint aura over it. Stirring them
+  // (the pointer, the constellation) fades the image out and brings the particles to full strength.
+  PORTRAIT_IDLE_OPACITY: 0.9,
+  PARTICLE_REST_OPACITY: 0.35,
   ACTIVATION_RADIUS: 200,
   ACTIVATION_RAMP_MS: 300,
 
@@ -320,6 +323,7 @@ class PortraitParticles {
 
     this.activationLevel = 0;
     this.targetActivation = 0;
+    this.particleOpacity = CONFIG.PARTICLE_REST_OPACITY;
     this.cursorDistToWrapper = 9999;
     this.cursorInsideWrapper = false;
 
@@ -941,9 +945,15 @@ class PortraitParticles {
 
     this.constellationLevel = ramp(this.constellationLevel, this.targetConstellationLevel, CONFIG.CONSTELLATION_RAMP_MS, dt);
 
+    const stirred = Math.max(this.activationLevel, this.constellationLevel);
     if (this.img) {
-      const portraitOpacity = CONFIG.PORTRAIT_IDLE_OPACITY * (1 - this.activationLevel);
+      const portraitOpacity = CONFIG.PORTRAIT_IDLE_OPACITY * (1 - stirred);
       this.img.style.opacity = String(portraitOpacity);
+    }
+    const particleOpacity = CONFIG.PARTICLE_REST_OPACITY + (1 - CONFIG.PARTICLE_REST_OPACITY) * Math.max(stirred, this.streamLevel);
+    if (Math.abs(particleOpacity - this.particleOpacity) > 0.004) {
+      this.particleOpacity = particleOpacity;
+      this.canvas.style.opacity = particleOpacity.toFixed(3);
     }
 
     const timeSinceInteraction = now - this.lastInteractionTime;

@@ -502,6 +502,7 @@ window.addEventListener('orientationchange', resizeAllThrottled, { passive: true
 
 function toggleRitualFromSigil(el){
   setRitualActive(!ritualActive);
+  el.setAttribute('aria-pressed', String(ritualActive));
   if (!GRAPH) {
     void ensureMyceliumReady().then((ready) => {
       if (ready && ritualActive) {

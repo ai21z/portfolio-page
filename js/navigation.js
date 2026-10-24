@@ -473,7 +473,9 @@ function createSigilNode() {
   sigil.dataset.node = 'intro';
   sigil.dataset.section = 'intro';
   sigil.className = 'network-sigil-node';
-  sigil.setAttribute('aria-label', 'Toggle ritual');
+  // The ritual sets the labels drifting along the network. A toggle, so its state is aria-pressed.
+  sigil.setAttribute('aria-label', 'Drifting labels');
+  sigil.setAttribute('aria-pressed', String(ritualActive));
   // 192 px covers the 64 px hub on screens up to 3x. The portrait particles sample the full-size sigil.
   sigil.innerHTML = '<picture><source srcset="./artifacts/sigil/AZ-01-192.webp" type="image/webp"><img id="sigil" src="./artifacts/sigil/AZ-01-192.png" alt="" width="64" height="64" decoding="async" loading="lazy"></picture>';
   return sigil;

@@ -149,9 +149,12 @@ test('intro ritual toggle and work navigation do not throw route errors', async 
   await page.goto('/index.html');
   await page.waitForLoadState('domcontentloaded');
 
-  const sigil = page.locator('.network-sigil-node');
+  // A toggle with a plain name, its state in aria-pressed.
+  const sigil = page.getByRole('button', { name: 'Drifting labels', exact: true });
   await expect(sigil).toBeVisible();
+  await expect(sigil).toHaveAttribute('aria-pressed', 'false');
   await sigil.click();
+  await expect(sigil).toHaveAttribute('aria-pressed', 'true');
 
   const workNode = page.locator('.network-node-label[data-node="work"]');
   await expect(workNode).toBeVisible();

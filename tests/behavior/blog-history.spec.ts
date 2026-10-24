@@ -75,3 +75,18 @@ test('blog Back/Forward traverses map <-> category without losing Forward', asyn
   expect(afterForward.hash).toBe('#blog/cosmos');
   expect(afterForward.blogMode).toBe('category');
 });
+
+// A Field Notes click was handled twice, by app.js and by an inline script, and pushed two history
+// entries, so Back took two presses to leave the category.
+test('a Field Notes click opens its category with one history entry', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html#blog');
+  await expect(page.locator('#blog')).toHaveClass(/active-section/);
+  const before = await page.evaluate(() => history.length);
+  await page.locator('.blog-memo-item[data-hub="codex"]').click();
+  await expect(page.locator('#blog-category-view')).toHaveAttribute('data-category', 'codex');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => history.length)).toBe(before + 1);
+  await page.goBack();
+  await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'map');
+});

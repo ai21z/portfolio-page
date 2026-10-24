@@ -1712,7 +1712,8 @@ function paperTrigger(card) {
 }
 
 function setPaperTriggers(enabled) {
-  document.querySelectorAll('#about [data-paper], #skills [data-paper]').forEach(card => {
+  // An open card sits in its dialog under body, so it is looked for there too.
+  document.querySelectorAll('#about [data-paper], #skills [data-paper], .paper-modal [data-paper]').forEach(card => {
     const heading = card.querySelector(':scope > h2');
     const button = paperTrigger(card);
     if (enabled && heading && !button) {
@@ -1956,15 +1957,20 @@ function initPaperFocusForSection(sectionId){
     dialog.addEventListener('cancel', event => { event.preventDefault(); closePaper(); });
     dialog.addEventListener('close', () => closePaper({ immediate: true }));
     dialog.addEventListener('click', event => { if (event.target === dialog) closePaper(); });
+    // Tab stays in the open card. The card itself holds focus when it opens but is no Tab stop, so
+    // from there Shift+Tab wraps to the last stop like the first one does.
     dialog.addEventListener('keydown', event => {
       if (event.key !== 'Tab') return;
-      const stops = [el, ...el.querySelectorAll('a[href], button, input, textarea, select, [tabindex]')]
+      const stops = [...el.querySelectorAll('a[href], button, input, textarea, select, [tabindex]')]
         .filter(node => node.tabIndex >= 0 && !node.disabled && node.getClientRects().length);
-      const next = event.shiftKey ? stops.at(-1) : stops[0];
-      if ((event.shiftKey && document.activeElement === stops[0]) ||
-          (!event.shiftKey && document.activeElement === stops.at(-1))) {
+      if (!stops.length) {
         event.preventDefault();
-        next.focus();
+        return;
+      }
+      const atStart = document.activeElement === el || document.activeElement === stops[0];
+      if (event.shiftKey ? atStart : document.activeElement === stops.at(-1)) {
+        event.preventDefault();
+        (event.shiftKey ? stops.at(-1) : stops[0]).focus();
       }
     });
     el.classList.add('paper-open');

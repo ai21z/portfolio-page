@@ -252,6 +252,10 @@ for (const section of ['about', 'skills']) {
     await expect(card).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveAccessibleName(name);
     await expect(card.locator('.paper-trigger')).toHaveAttribute('aria-expanded', 'true');
+    // Focus starts on the card itself, which is no Tab stop. Shift+Tab from there stays in the card.
+    await expect(card).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect.poll(() => card.evaluate(el => el.contains(document.activeElement) && document.activeElement !== el)).toBe(true);
     await audit(page, testInfo, section + '-dialog');
     await card.locator('.paper-card-close').focus();
     for (let i = 0; i < 4; i++) {

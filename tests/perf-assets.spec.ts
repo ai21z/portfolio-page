@@ -93,7 +93,7 @@ test('homepage exposes a clear professional search entity', () => {
   const h1s = [...html.matchAll(/<h1\b[^>]*>([^<]*)<\/h1>/gi)].map((match) => match[1]);
   expect(h1s).toEqual(['Aris Zounarakis', 'About', 'Skills', 'Blog', 'Work', 'Get in Touch']);
   expect(html).toContain('<h1 class="name glitch-text">Aris Zounarakis</h1>');
-  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I work on global HCM and payroll systems, mostly across full stack product and platform tooling. Outside work, it is tinkering, music, side projects, and a cold one. If you like it here, cheers!');
+  expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I build country-compliant payroll features on a global HCM platform, and local-first developer tools you can verify. Outside work, it is music and side projects. If you like it here, write to me.');
   expect(html).not.toContain(`${formerFullName} |`);
   expect(html).not.toContain(`<h1 class="name glitch-text">${formerFullName}</h1>`);
 

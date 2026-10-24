@@ -39,8 +39,14 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }
       });
       expect(clippedText, section + ' text reflow').toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width + 1);
-      expect(await page.locator('img:visible').evaluateAll(images => images.every(image =>
-        (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+      // Every shown image is loaded. A lazy one waits until it nears the window (the sized footer sigil
+      // sits far below it on a short screen), so it counts once it is in view.
+      expect(await page.locator('img:visible').evaluateAll(images => images.filter(image => {
+        const img = image as HTMLImageElement;
+        if (img.loading !== 'lazy') return true;
+        const r = img.getBoundingClientRect();
+        return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+      }).every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
     }
     expect(errors).toEqual([]);
   });

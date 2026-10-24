@@ -159,3 +159,17 @@ test('stacked cards on a phone set nothing under 12 px', async ({ page }) => {
     expect(Math.min(...sizes), section).toBeGreaterThanOrEqual(12);
   }
 });
+
+// Jurors praised the typewriter notebook, so its labels, writing and Send keep Special Elite.
+test('the Contact notebook keeps the typewriter, with the quote in Literata and the address and counter in the mono', async ({ page }) => {
+  await stubVerification(page);
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/index.html#contact');
+    await expect(page.locator('.notebook-header')).toBeVisible();
+    for (const typed of ['.notebook-header', '.notebook-label', '#name', '.notebook-submit']) expect(await family(page.locator(typed).first()), typed).toMatch(/^Special Elite/);
+    expect(await family(page.locator('.notebook-quote'))).toMatch(/^Literata,/);
+    for (const data of ['.contact-email', '.char-count']) expect(await family(page.locator(data)), data).toMatch(/^JetBrains Mono,/);
+    expect(await size(page.locator('.char-count'))).toBeGreaterThanOrEqual(12);
+  }
+});

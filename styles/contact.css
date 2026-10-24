@@ -271,12 +271,11 @@ body:has(#contact.stage.active-section) .dish-labels {
 /* Beside Send, where the eye is after pressing it. Empty, it takes no line of its own. */
 .form-status {
   grid-column: 1;
-  font-family: 'Special Elite', monospace;
-  font-size: 0.85rem;
+  font-family: var(--font-read);
+  font-size: 0.9rem;
   color: var(--paper-ink);
   line-height: var(--row);
   text-align: right;
-  letter-spacing: 0.3px;
   transition: color 0.3s ease;
 }
 
@@ -350,6 +349,8 @@ body:has(#contact.stage.active-section) .dish-labels {
 
 .contact-email {
   display: block;
+  font-family: var(--font-data);
+  font-size: 0.95rem;
   width: fit-content;
   margin-inline: auto;
   line-height: var(--row);
@@ -364,8 +365,12 @@ body:has(#contact.stage.active-section) .dish-labels {
   line-height: var(--row);
 }
 
-/* Contact epigraph: one typed line on the notebook paper, then a blank ruled line before the form */
+/* Contact epigraph: one line in the reading face's italic on the notebook paper, then a blank ruled
+   line before the form. The labels, the writing and Send keep the typewriter. */
 .notebook-quote {
+  font-family: var(--font-read);
+  font-style: italic;
+  font-size: 0.95rem;
   margin-bottom: var(--row);
 }
 
@@ -451,8 +456,8 @@ body:has(#contact.stage.active-section) .dish-labels {
 }
 
 .char-count {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.75rem;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.75rem);
   color: var(--paper-ink);
 }
 
@@ -462,8 +467,8 @@ body:has(#contact.stage.active-section) .dish-labels {
 
 .validation-msg {
   min-height: var(--row);
-  font-family: 'Special Elite', monospace;
-  font-size: 0.75rem;
+  font-family: var(--font-read);
+  font-size: max(var(--text-floor), 0.8rem);
   line-height: var(--row);
   color: var(--notebook-error);
   opacity: 0;
@@ -811,12 +816,9 @@ body:has(#contact.stage.active-section) .dish-labels {
     max-height: calc(6 * var(--row));
   }
 
-  .char-count {
-    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
-  }
-
+  .char-count,
   .validation-msg {
-    font-size: clamp(0.7rem, 2.5vw, 0.75rem);
+    font-size: max(var(--text-floor), clamp(0.7rem, 2.5vw, 0.75rem));
   }
 
   .notebook-form {

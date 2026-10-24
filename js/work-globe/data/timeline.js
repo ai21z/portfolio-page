@@ -9,6 +9,11 @@ export const TIMELINE = [
     title: 'ADP',
     subtitle: 'Software Engineer · Barcelona',
     summary: 'Software Engineer on the Lyric HCM payroll platform. Cross-region integrations under strict compliance, with runbooks and ADRs.',
+    facts: {
+      role: 'Software Engineer, Lyric HCM',
+      stack: 'Java, Spring Boot',
+      outcome: 'Country-compliant payroll features shipped across regions. Second place and the Creativity and Innovation Trophy at the 2025 ADP hackathon.'
+    },
     target: { kind: 'location', id: 'spain' }
   },
   {
@@ -20,6 +25,11 @@ export const TIMELINE = [
     subtitle: 'Local workspace operator',
     summary: 'Installable local-first Java workspace operator with bounded tools, approval gates, local model backends and durable traces.',
     site: 'https://taloslocal.com/',
+    facts: {
+      role: 'Author and maintainer',
+      stack: 'Java 21, Picocli, Gradle, Apache Lucene, llama.cpp, Ollama',
+      outcome: 'Installable developer betas for Windows x64 and Ubuntu or WSL x64, with documented trust, privacy and capability boundaries.'
+    },
     target: { kind: 'moon', id: 'talos-cli' }
   },
   {
@@ -30,6 +40,11 @@ export const TIMELINE = [
     title: 'TrueRolls',
     subtitle: 'Verifiable tabletop rolls',
     summary: 'Verifiable dice with Ed25519-signed drand receipts that replay offline. Witnessed fairness against operator suppression is the v2 goal.',
+    facts: {
+      role: 'Author',
+      stack: 'Rust, Axum, WebAssembly, React, Three.js, PostgreSQL, Redis',
+      outcome: 'Every roll carries an Ed25519-signed receipt that anyone can replay offline, in the browser or on the command line.'
+    },
     target: { kind: 'moon', id: 'true-rolls' }
   },
   {
@@ -40,6 +55,11 @@ export const TIMELINE = [
     title: 'DataAnnotation',
     subtitle: 'AI model evaluation · remote',
     summary: 'Evaluating AI models on code generation and reasoning. Prompt, rubric and acceptance-test design for coding tasks.',
+    facts: {
+      role: 'AI model evaluation contractor',
+      stack: 'Java, JavaScript, TypeScript, Python, C#, SQL',
+      outcome: 'Scored and corrected LLM-generated code and reasoning, and designed the prompts and acceptance tests that judged it.'
+    },
     target: { kind: 'location', id: 'spain' }
   },
   {
@@ -50,6 +70,11 @@ export const TIMELINE = [
     title: 'Netcompany-Intrasoft',
     subtitle: 'Software Engineer · remote',
     summary: 'Full-stack work on EU statistical platforms. Java and Spring on the back, React and Angular on the front.',
+    facts: {
+      role: 'Software Engineer, EU Programmes',
+      stack: 'Java, Spring, React, Angular, SQL',
+      outcome: 'Features on ESDEN and SDMX-RI, two live EU statistical platforms, and a legacy team database migrated on a short timeline.'
+    },
     target: { kind: 'location', id: 'greece' }
   },
   {
@@ -60,6 +85,11 @@ export const TIMELINE = [
     title: 'The turn to software',
     subtitle: 'Freelance · Greece',
     summary: 'Project-based data analysis, dashboards, reporting, localization and digital work for private clients while transitioning into software.',
+    facts: {
+      role: 'Independent contractor',
+      stack: 'Excel, Python, SQL, Google Data Studio, JavaScript, TypeScript',
+      outcome: 'Dashboards, multi-page reports and property comparisons for a private real estate investment engagement.'
+    },
     target: { kind: 'location', id: 'greece' }
   },
   {

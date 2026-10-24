@@ -82,6 +82,15 @@ export function initWorkTimeline() {
     note.style.top = top + 'px';
   }
 
+  // Role, stack and outcome under the summary, for the jobs and projects that have them.
+  function factsHtml(node) {
+    if (!node.facts) return '';
+    return '<dl class="work-facts">' +
+      [['Role', node.facts.role], ['Stack', node.facts.stack], ['Outcome', node.facts.outcome]]
+        .map(([term, text]) => '<div><dt>' + term + '</dt><dd>' + text + '</dd></div>').join('') +
+      '</dl>';
+  }
+
   function showNote(node, li) {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
     activeLi = li;
@@ -93,6 +102,7 @@ export function initWorkTimeline() {
       '<div class="work-note-title">' + node.title + '</div>' +
       '<div class="work-note-meta">' + node.dates + (node.subtitle ? ' · ' + node.subtitle : '') + '</div>' +
       '<div class="work-note-summary">' + node.summary + '</div>' +
+      factsHtml(node) +
       '<div class="work-note-cta' + (node.target ? ' work-note-cta--live' : '') + '">' + driveHint + '</div>';
     note.hidden = false;
     note.classList.add('is-visible');
@@ -275,6 +285,7 @@ export function initWorkTimeline() {
       '<div class="work-card-title">' + node.title + '</div>' +
       '<div class="work-card-meta">' + node.dates + (node.subtitle ? ' · ' + node.subtitle : '') + '</div>' +
       '<div class="work-card-summary">' + node.summary + '</div>' +
+      factsHtml(node) +
       (node.site ? '<a class="work-card-site" href="' + node.site + '" target="_blank" rel="noopener noreferrer">Visit ' + new URL(node.site).hostname + '</a>' : '') +
       (node.target ? '<button type="button" class="work-card-globe">See it on the globe</button>' : '');
     const globeBtn = cardBody.querySelector('.work-card-globe');

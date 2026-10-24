@@ -399,6 +399,35 @@
   margin-top: 8px;
 }
 
+/* Role, stack and outcome under the summary, in the note and the phone card. */
+.work-facts {
+  display: grid;
+  gap: 4px;
+  margin: 9px 0 0;
+}
+
+.work-facts div {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+}
+
+.work-facts dt {
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(var(--decay-green-rgb), 0.7);
+  padding-top: 2px;
+}
+
+.work-facts dd {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(210, 220, 213, 0.85);
+}
+
 .work-note-cta {
   font-size: 0.58rem;
   letter-spacing: 0.1em;

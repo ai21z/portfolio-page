@@ -110,9 +110,13 @@ test.describe('Work career rail', () => {
     await expect(note).toContainText('Lyric HCM');
     await expect(note.locator('.work-note-cta')).toHaveClass(/work-note-cta--live/);
     await expect(note.locator('.work-note-cta')).toHaveText('click → locate on Earth');
+    // A job or project names its role, stack and outcome.
+    await expect(note.locator('.work-facts dt')).toHaveText(['Role', 'Stack', 'Outcome']);
+    await expect(note.locator('.work-facts dd').first()).toHaveText('Software Engineer, Lyric HCM');
 
     await page.locator('.rail-node[data-id="cert-oracle-sql"] .rail-dot-btn').hover();
     await expect(note.locator('.work-note-title')).toContainText('Oracle SQL');
+    await expect(note.locator('.work-facts')).toHaveCount(0);
     await expect(note.locator('.work-note-cta')).not.toHaveClass(/work-note-cta--live/);
   });
 
@@ -187,6 +191,7 @@ test.describe('Work career rail', () => {
     const card = page.locator('.work-card-backdrop');
     await expect(card).toHaveClass(/is-open/);
     await expect(page.locator('.work-card-title')).toHaveText('ADP');
+    await expect(page.locator('.work-card-body .work-facts dt')).toHaveText(['Role', 'Stack', 'Outcome']);
     await expect(page.locator('.work-card-globe')).toHaveCount(1);
     await page.locator('.work-card-close').click();
     await expect(card).toBeHidden();

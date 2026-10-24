@@ -120,6 +120,8 @@ const CONFIG = {
   RENDER_MODE: 'auto',
 };
 
+const SAMPLE_BASE_WIDTH = 1024;
+
 function renderModeForBudget() {
   if (CONFIG.RENDER_MODE !== 'auto') return CONFIG.RENDER_MODE;
   return (FIREFOX || WEBKIT) ? 'fillrect' : 'imagedata';
@@ -597,7 +599,9 @@ class PortraitParticles {
       return;
     }
     const data = imageData.data;
-    const spacing = Math.max(CONFIG.SAMPLE_SPACING, Math.round(CONFIG.SAMPLE_SPACING / Math.max(0.2, particleScale)));
+    // The spacing is set for the 1024 px portrait. The browser now picks a smaller file on most screens
+    // (480 to 800 px), so the grid scales with the file and the particle count stays the same.
+    const spacing = Math.max(CONFIG.SAMPLE_SPACING, Math.round(CONFIG.SAMPLE_SPACING / Math.max(0.2, particleScale))) * imgW / SAMPLE_BASE_WIDTH;
     const skipProbability = Math.min(0.92, CONFIG.PARTICLE_SKIP_PROBABILITY + (1 - particleScale) * 0.55);
     const darkSkipProbability = Math.min(0.92, CONFIG.DARK_SKIP_PROBABILITY + (1 - particleScale) * 0.35);
     const scaleX = this.width / imgW;
@@ -607,8 +611,10 @@ class PortraitParticles {
     this.bins = new Array(PALETTE.length);
     for (let b = 0; b < PALETTE.length; b++) this.bins[b] = [];
 
-    for (let y = 0; y < imgH; y += spacing) {
-      for (let x = 0; x < imgW; x += spacing) {
+    for (let gy = 0; gy < imgH; gy += spacing) {
+      const y = Math.min(imgH - 1, Math.round(gy));
+      for (let gx = 0; gx < imgW; gx += spacing) {
+        const x = Math.min(imgW - 1, Math.round(gx));
         const i = (y * imgW + x) * 4;
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
 

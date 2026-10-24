@@ -70,3 +70,28 @@ test('the first-year article discovers its font before CSS', async ({ page }) =>
   await page.evaluate(() => document.fonts.ready);
   expect(await page.evaluate(() => performance.getEntriesByType('resource').filter(r => r.name.endsWith('SpecialElite-Regular.woff2')).length)).toBe(1);
 });
+
+// A desktop portrait is 380 to 520 px wide, so it takes the file for its slot instead of the 1024 px one
+// (427 KB), and the preload asks for the same file, so the portrait is fetched once.
+for (const device of [
+  { width: 1440, height: 900, dpr: 2, source: '-800.webp' },
+  { width: 1440, height: 900, dpr: 1, source: '-480.webp' },
+  { width: 1920, height: 1080, dpr: 1, source: '-480.webp' },
+  { width: 2560, height: 1440, dpr: 2, source: 'myOminousGreenPortrait.webp' }
+]) {
+  test(`desktop portrait takes the ${device.source} file at ${device.width}x${device.height}@${device.dpr}x`, async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ viewport: { width: device.width, height: device.height }, deviceScaleFactor: device.dpr, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    const images: string[] = [];
+    page.on('request', (request) => { if (request.url().includes('myOminousGreenPortrait')) images.push(request.url()); });
+    try {
+      await page.goto(baseURL + '/index.html');
+      const portrait = page.locator('.portrait');
+      await expect.poll(() => portrait.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+      expect(images).toHaveLength(1);
+      expect(images[0].split('/').pop()!.split('?')[0]).toMatch(new RegExp(device.source.replace('.', '\.') + '$'));
+    } finally {
+      await context.close();
+    }
+  });
+}

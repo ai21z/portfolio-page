@@ -88,8 +88,10 @@ test('homepage exposes a clear professional search entity', () => {
   expect(manifest.short_name).toBe('AZ');
   expect(manifest.description).toBe('Barcelona based software engineer at ADP working on global HCM/payroll systems across full stack product and platform tooling');
 
-  const h1Matches = html.match(/<h1\b/gi) ?? [];
-  expect(h1Matches).toHaveLength(1);
+  // The landing's h1 is the name, and it comes first. Each other view names itself with its own h1,
+  // and only the view on screen is exposed (the others are inert).
+  const h1s = [...html.matchAll(/<h1\b[^>]*>([^<]*)<\/h1>/gi)].map((match) => match[1]);
+  expect(h1s).toEqual(['Aris Zounarakis', 'About', 'Skills', 'Blog', 'Work', 'Get in Touch']);
   expect(html).toContain('<h1 class="name glitch-text">Aris Zounarakis</h1>');
   expect(html).toContain('I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I work on global HCM and payroll systems, mostly across full stack product and platform tooling. Outside work, it is tinkering, music, side projects, and a cold one. If you like it here, cheers!');
   expect(html).not.toContain(`${formerFullName} |`);
@@ -264,8 +266,8 @@ test('fallback routing and static response headers are explicit', () => {
 
 test('quick links prioritize active professional profiles', () => {
   const html = readText('index.html');
-  const quickNavStart = html.indexOf('<nav class="living-sigils"');
-  const quickNavEnd = html.indexOf('</nav>', quickNavStart);
+  const quickNavStart = html.indexOf('<div class="living-sigils" role="group" aria-label="Profiles">');
+  const quickNavEnd = html.indexOf('<!-- Portrait -->', quickNavStart);
   const quickNav = html.slice(quickNavStart, quickNavEnd);
   const labels = ['GitHub', 'LinkedIn', 'Email', 'Download Resume (PDF)', 'GitLab'];
   const positions = labels.map((label) => quickNav.indexOf(`aria-label="${label}"`));

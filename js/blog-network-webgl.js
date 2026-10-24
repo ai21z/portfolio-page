@@ -1056,7 +1056,6 @@ async function initBlogNetwork(){
       userTimezone = 'Europe/Madrid';
     }
 
-    let lastMinute = -1;
     let lastClockTs = 0;
 
     // One formatter, hoisted (formatToParts in a single call instead of 3
@@ -1095,17 +1094,7 @@ async function initBlogNetwork(){
       minDot.setAttribute('cy', cy + clockR * Math.sin(minAngle));
       secDot.setAttribute('cx', cx + clockR * Math.cos(secAngle));
       secDot.setAttribute('cy', cy + clockR * Math.sin(secAngle));
-
-      // Update sr-only time for accessibility (only on minute change)
-      if (m !== lastMinute) {
-        lastMinute = m;
-        const hubStatus = document.getElementById('hub-status');
-        if (hubStatus) {
-          const h12 = (h % 12) || 12;
-          const ampm = h < 12 ? 'AM' : 'PM';
-          hubStatus.textContent = `Current time: ${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
-        }
-      }
+      // The clock is decoration. It is never announced: the live region carries the hub previews only.
     }
 
     // Throttle the clock to the graphics budget.

@@ -155,7 +155,9 @@ const importBlogNetwork = () => import('./blog-network-webgl.js');
 const importWorkGlobe = () => import('./work-globe-webgl.js');
 
 function ensureSectionModule(sectionName) {
-  if (sectionName === 'blog' && !blogNetworkModulePromise) {
+  // Compact layouts hide the Blog map, so they never load the dish. A window that widens on Blog
+  // loads it then (the compact query's change listener below).
+  if (sectionName === 'blog' && !blogNetworkModulePromise && !isCompact()) {
     blogNetworkModulePromise = importBlogNetwork().catch((err) => {
       blogNetworkModulePromise = null;
       if (reloadOnceForRelease(err)) return;
@@ -1763,6 +1765,7 @@ mqCompact.addEventListener('change', e => {
     restoreWideCardFocus();
     initAboutPaperFocus();
     initSkillsPaperFocus();
+    if (document.getElementById('blog')?.classList.contains('active-section')) ensureSectionModule('blog');
   }
 });
 

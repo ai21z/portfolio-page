@@ -16,6 +16,7 @@ import { MoonOrbitSystem } from './work-globe/systems/moon-orbit-system.js';
 import { cappedDpr, isFirefox } from './utils.js';
 import { isCompact } from './compact.js';
 import { reducedMotion } from './motion.js';
+import { createStillPacer } from './still-pacer.js';
 import { frameDue, getGraphicsBudget, markGraphicsActivity, reportFrameSample } from './graphics-governor.js';
 import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFallback } from './webgl-health.js';
 
@@ -50,6 +51,7 @@ let focusTween = null; // { fromX, fromY, toX, toY, elapsed, dur } while the rai
 let globeViewActive = true; // false while the compact timeline view covers the globe (pause render)
 let time = 0;
 let lastFrameTime = 0;
+let workPacer = null; // paces the held globe under reduced motion (js/still-pacer.js)
 
 // Cached uniform locations (avoid getUniformLocation every frame)
 let uniformCache = {};
@@ -493,6 +495,9 @@ function initWorkGlobe() {
     console.warn('[Work Globe] Auto-writer init failed:', e);
   }
 
+  // One pacer for the page: the globe is built again on every visit.
+  workPacer ??= createStillPacer(document.getElementById('work'));
+  workPacer.touch();
   animationFrameId = requestAnimationFrame(animate);
 
 }
@@ -839,6 +844,17 @@ function animate(timestamp) {
   lastFrameTime = timestamp;
 
   render(deltaTime);
+  // Held still under reduced motion, with no input for a while: wait instead of redrawing. A drag or
+  // a turn toward a timeline entry keeps every frame.
+  if (workPacer?.shouldIdle(timestamp) && !isDragging && !focusTween) {
+    animationFrameId = null;
+    workPacer.wait(() => {
+      if (animationFrameId || !gl || document.hidden || !canvas?.closest('.active-section') || !globeViewActive) return;
+      lastFrameTime = 0;
+      animationFrameId = requestAnimationFrame(animate);
+    });
+    return;
+  }
   animationFrameId = requestAnimationFrame(animate);
 }
 
@@ -1523,6 +1539,7 @@ function cleanupWorkGlobe() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
+  workPacer?.cancel();
 
   if (autoWriterTimeoutId) {
     clearTimeout(autoWriterTimeoutId);

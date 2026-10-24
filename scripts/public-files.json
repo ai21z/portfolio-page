@@ -60,6 +60,7 @@
   "js/social-icons-animation.js",
   "js/sparks.js",
   "js/state.js",
+  "js/still-pacer.js",
   "js/ua.js",
   "js/utils.js",
   "js/view-title.js",

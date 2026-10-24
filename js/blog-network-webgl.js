@@ -4,6 +4,13 @@ import { installWebGLContextHealth, requestProtectedWebGL2Context, showWebGLFall
 import { warmPrograms } from './gpu-warm.js';
 import { reducedMotion } from './motion.js';
 import { blogPosts, decorateRimLabel, dormantCategories } from './blog-categories.js';
+import { compactMediaQuery, isCompact } from './compact.js';
+import { createStillPacer } from './still-pacer.js';
+
+// The dish shows only where its map does. Compact layouts list the cultures as cards and hide the
+// map (styles/blog.css), so there the dish is neither built nor drawn.
+let blogPacer = null;
+const dishShown = (blogStage) => Boolean(blogStage?.classList.contains('active-section')) && !isCompact();
 
 const BLOG_NETWORK_VERSION = window.__BLOG_NETWORK_VERSION || '20260615-physarum-voronoi-9b';
 if (!window.__BLOG_NETWORK_VERSION) {
@@ -477,12 +484,19 @@ async function initBlogNetwork(){
     canvas.classList.remove('is-drawn');
   };
 
+  let clockTimer = 0;
+  let restartClock = null;
   const stopClockLoop = () => {
     if (clockRafId) {
       cancelAnimationFrame(clockRafId);
       clockRafId = null;
     }
+    clearTimeout(clockTimer);
+    clockTimer = 0;
   };
+  // One pacer for the page: a restored context runs init again.
+  const pacer = blogPacer ??= createStillPacer(document.getElementById('blog'));
+  let resumedFromIdle = false;
 
   installWebGLContextHealth(canvas, {
     onLost: () => {
@@ -495,7 +509,7 @@ async function initBlogNetwork(){
     },
     onRestored: () => {
       initialized = false;
-      if (document.getElementById('blog')?.classList.contains('active-section')) {
+      if (dishShown(document.getElementById('blog'))) {
         void initBlogNetwork();
       }
     }
@@ -1097,6 +1111,19 @@ async function initBlogNetwork(){
       // The clock is decoration. It is never announced: the live region carries the hub previews only.
     }
 
+    // Under reduced motion the rim clock moves once a minute, so it sleeps until the next minute
+    // instead of asking for every frame.
+    function scheduleClock() {
+      if (reducedMotion) {
+        clockTimer = setTimeout(() => {
+          clockTimer = 0;
+          clockRafId = requestAnimationFrame(animateClock);
+        }, 60000 - (Date.now() % 60000) + 20);
+      } else {
+        clockRafId = requestAnimationFrame(animateClock);
+      }
+    }
+
     // Throttle the clock to the graphics budget.
     function animateClock(ts) {
       if (!running || document.hidden) {
@@ -1104,19 +1131,20 @@ async function initBlogNetwork(){
         return;
       }
       const now = ts || performance.now();
-      // Under reduced motion the rim clock moves once a minute instead of sweeping.
-      const interval = reducedMotion ? 60000 : Math.max(33, getGraphicsBudget('blog-network').frameIntervalMs || 33);
-      if (now - lastClockTs >= interval) {
+      const interval = Math.max(33, getGraphicsBudget('blog-network').frameIntervalMs || 33);
+      if (reducedMotion || now - lastClockTs >= interval) {
         lastClockTs = now;
         renderClockFrame();
       }
-      clockRafId = requestAnimationFrame(animateClock);
+      scheduleClock();
     }
 
     renderClockFrame();
-    if (running && !document.hidden) {
-      clockRafId = requestAnimationFrame(animateClock);
-    }
+    restartClock = () => {
+      stopClockLoop();
+      if (running && !document.hidden) scheduleClock();
+    };
+    if (running && !document.hidden) scheduleClock();
   }
 
   const [netCx, netCy] = computeNetworkCentroid(data.paths);
@@ -1489,6 +1517,11 @@ async function initBlogNetwork(){
       rafId = null;
       return;
     }
+    // Back from an idle wait: the gap is a pause, not a slow frame.
+    if (resumedFromIdle) {
+      resumedFromIdle = false;
+      last = now - (getGraphicsBudget('blog-network').frameIntervalMs || 0);
+    }
 
     const budget = getGraphicsBudget('blog-network');
     const frameIntervalMs = budget.frameIntervalMs || 0;
@@ -1636,10 +1669,18 @@ async function initBlogNetwork(){
       canvas.classList.add('is-drawn');
     }
 
-    if (running && !document.hidden) {
-      rafId = requestAnimationFrame(loop);
-    } else {
+    if (!running || document.hidden) {
       rafId = null;
+    } else if (pacer.shouldIdle(now) && !isPanning) {
+      // Held still under reduced motion, with no input for a while: wait instead of redrawing.
+      rafId = null;
+      pacer.wait(() => {
+        if (!running || document.hidden || rafId) return;
+        resumedFromIdle = true;
+        rafId = requestAnimationFrame(loop);
+      });
+    } else {
+      rafId = requestAnimationFrame(loop);
     }
   }
 
@@ -1648,6 +1689,7 @@ async function initBlogNetwork(){
   // Pause/resume when blog section visibility changes
   const startLoop = () => {
     if (running && !document.hidden && !rafId) {
+      pacer.touch();
       fit = resize();
       placeNuclei();
       last = performance.now();
@@ -1659,29 +1701,35 @@ async function initBlogNetwork(){
       cancelAnimationFrame(rafId);
     }
     rafId = null;
+    pacer.cancel();
     stopClockLoop();
     if (!keepFrame) releaseCanvasBuffer();
   };
   const blogStage = document.querySelector('.blog-screen');
   if (blogStage) {
-    const obs = new MutationObserver(() => {
-      const isActive = blogStage.classList.contains('active-section');
-      running = isActive;
-      if (isActive) startLoop();
+    const sync = () => {
+      const shown = dishShown(blogStage);
+      running = shown;
+      if (shown) startLoop();
       // While the section fades out its last frame stays on screen. 'stage:left' releases it.
       else stopLoop({ keepFrame: blogStage.classList.contains('stage-leaving') });
-    });
+    };
+    const obs = new MutationObserver(sync);
     obs.observe(blogStage, { attributes: true, attributeFilter: ['class'] });
+    // A window that turns compact hides the map, so the dish stops, and comes back when it widens.
+    compactMediaQuery().addEventListener('change', sync);
     blogStage.addEventListener('stage:left', () => {
       if (!blogStage.classList.contains('active-section')) releaseCanvasBuffer();
     });
 
     // Initial check
-    running = blogStage.classList.contains('active-section');
+    running = dishShown(blogStage);
     if (!running) {
       releaseCanvasBuffer();
     }
   }
+  // The clock waits a minute between ticks under reduced motion, and sweeps again without it.
+  window.addEventListener('motion:preference', () => restartClock?.());
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopLoop();
@@ -1706,21 +1754,25 @@ function watchForBlogSection() {
   if (!blogSection) return;
 
   // Check if already visible
-  if (blogSection.classList.contains('active-section')) {
+  if (dishShown(blogSection)) {
     initBlogNetwork();
     return;
   }
 
-  // Watch for visibility changes. A section switch changes the class several times in one batch,
-  // so check once per batch: init is async, and a call per record started the network twice.
-  const observer = new MutationObserver(() => {
-    if (!blogSection.classList.contains('active-section')) return;
+  // Watch for the dish to show: Blog opening on a wide layout, or a compact window on Blog widening.
+  // A section switch changes the class several times in one batch, so check once per batch: init is
+  // async, and a call per record started the network twice.
+  const mq = compactMediaQuery();
+  const check = () => {
+    if (!dishShown(blogSection)) return;
     observer.disconnect(); // Stop watching after init
+    mq.removeEventListener('change', check);
     initBlogNetwork();
-  });
-
+  };
+  const observer = new MutationObserver(check);
   observer.observe(blogSection, {
     attributes: true,
     attributeFilter: ['class']
   });
+  mq.addEventListener('change', check);
 }

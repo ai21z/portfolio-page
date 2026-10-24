@@ -51,7 +51,9 @@ import {
 import {
   startSpark,
   drawSparks,
-  startSparkToPoint
+  startSparkToPoint,
+  setLitRoute,
+  litRouteHasWork
 } from './sparks.js';
 import {
   computeNavOffsets,
@@ -322,7 +324,7 @@ function sparkLoopHasWork() {
   const budget = getGraphicsBudget('intro-sparks');
   return !prefersReducedMotion
     && !budget.quiet
-    && (ritualActive || ACTIVE_ANIMS.length > 0);
+    && (ritualActive || ACTIVE_ANIMS.length > 0 || litRouteHasWork());
 }
 
 function sparkLoopWrapper(ts) {
@@ -1398,6 +1400,7 @@ function wireNavigationStreams() {
       if (!id) return;
       if (GRAPH || prefersReducedMotion) {
         handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+        setLitRoute(id === 'intro' ? null : id);
         ensureSparkLoop();
         return;
       }
@@ -1406,6 +1409,7 @@ function wireNavigationStreams() {
         if (!ready) return;
         if (el.matches(':hover') || document.activeElement === el) {
           handleNavEnter(id, el, startSpark, startSparkToPoint, pointAtRoute);
+          setLitRoute(id === 'intro' ? null : id);
           ensureSparkLoop();
         }
       });
@@ -1425,6 +1429,7 @@ function wireNavigationStreams() {
 
     el.addEventListener('pointerleave', () => {
       handleNavLeave(id, el);
+      setLitRoute(null);
       stopStream();
     });
 
@@ -1435,6 +1440,7 @@ function wireNavigationStreams() {
 
     el.addEventListener('blur', () => {
       handleNavLeave(id, el);
+      setLitRoute(null);
       stopStream();
     });
   });

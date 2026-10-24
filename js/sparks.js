@@ -92,11 +92,99 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
   });
 }
 
+// The route a hovered or focused label lights, from the hub to the label, eased in and out under
+// the travelling spark. It needs the spark loop, so Quiet (and reduced motion, which runs Quiet) has
+// none, and the label's preview line carries the same news there.
+const LIT_IN_PER_SEC = 1 / 0.14;
+const LIT_OUT_PER_SEC = 1 / 0.26;
+// The sigil's drawn radius, where a tie to a route that passes near the hub begins.
+const HUB_EDGE = 26;
+let litRoute = null;
+
+export function setLitRoute(id) {
+  if (id) litRoute = { id, alpha: litRoute?.id === id ? litRoute.alpha : 0, target: 1 };
+  else if (litRoute) litRoute.target = 0;
+}
+
+export function litRouteHasWork() {
+  return Boolean(litRoute && (litRoute.target > 0 || litRoute.alpha > 0.01));
+}
+
+function drawLitRoute(dt, pointAtRoute) {
+  if (!litRouteHasWork()) return;
+  const step = (litRoute.target > litRoute.alpha ? LIT_IN_PER_SEC : LIT_OUT_PER_SEC) * dt;
+  litRoute.alpha = litRoute.target > litRoute.alpha
+    ? Math.min(litRoute.target, litRoute.alpha + step)
+    : Math.max(litRoute.target, litRoute.alpha - step);
+  const route = LOCKED_ROUTES[litRoute.id];
+  const pts = route?.projPts;
+  if (!pts || pts.length < 2) return;
+  // From the hub to where the label sits now (its home, or wherever the ritual has walked it). The
+  // traced route runs on past the hub, so it starts at its point nearest the sigil.
+  if (litRoute.start == null) {
+    litRoute.hub = hubPoint();
+    litRoute.start = nearestS(route, litRoute.hub);
+  }
+  const labelS = Math.min(route.len, route.s ?? route.len);
+  const s0 = Math.min(litRoute.start, labelS);
+  const s1 = Math.max(litRoute.start, labelS);
+  // Where the traced path only passes near the hub, a short tie from the sigil's edge.
+  const first = pointAtRoute(route, litRoute.start);
+  const hub = litRoute.hub;
+  const gap = hub ? Math.hypot(first[0] - hub[0], first[1] - hub[1]) : 0;
+  const a = litRoute.alpha;
+  sparkCtx.save();
+  sparkCtx.lineCap = 'round';
+  sparkCtx.lineJoin = 'round';
+  for (const [style, width] of [[`rgba(143,180,255,${0.12 * a})`, 7], [`rgba(122,174,138,${0.4 * a})`, 3], [`rgba(220,255,235,${0.6 * a})`, 1.2]]) {
+    sparkCtx.strokeStyle = style;
+    sparkCtx.lineWidth = width;
+    sparkCtx.beginPath();
+    if (gap > HUB_EDGE) {
+      const k = HUB_EDGE / gap;
+      sparkCtx.moveTo(hub[0] + (first[0] - hub[0]) * k, hub[1] + (first[1] - hub[1]) * k);
+      sparkCtx.lineTo(first[0], first[1]);
+    }
+    const from = pointAtRoute(route, s0);
+    sparkCtx.moveTo(from[0], from[1]);
+    for (let i = 1; i < pts.length; i++) {
+      if (route.cum[i] <= s0) continue;
+      if (route.cum[i] >= s1) break;
+      sparkCtx.lineTo(pts[i][0], pts[i][1]);
+    }
+    const to = pointAtRoute(route, s1);
+    sparkCtx.lineTo(to[0], to[1]);
+    sparkCtx.stroke();
+  }
+  sparkCtx.restore();
+  if (!litRouteHasWork()) litRoute = null;
+}
+
+function hubPoint() {
+  const r = document.querySelector('.network-sigil-node')?.getBoundingClientRect();
+  return r && r.width ? [r.left + r.width / 2, r.top + r.height / 2] : null;
+}
+
+// The distance along a route to its point nearest p, or 0 without one.
+function nearestS(route, p) {
+  if (!p) return 0;
+  let best = Infinity, bestS = 0;
+  for (let i = 1; i < route.projPts.length; i++) {
+    const [x0, y0] = route.projPts[i - 1], [x1, y1] = route.projPts[i];
+    const dx = x1 - x0, dy = y1 - y0;
+    const t = Math.max(0, Math.min(1, ((p[0] - x0) * dx + (p[1] - y0) * dy) / Math.max(1e-6, dx * dx + dy * dy)));
+    const d = Math.hypot(x0 + dx * t - p[0], y0 + dy * t - p[1]);
+    if (d < best) { best = d; bestS = route.cum[i - 1] + t * (route.cum[i] - route.cum[i - 1]); }
+  }
+  return bestS;
+}
+
 export function drawSparks(dt, pointAtRoute) {
   if (!sparkCtx || !sparkCanvas) return;
   const cssW = window.innerWidth;
   const cssH = window.innerHeight;
   sparkCtx.clearRect(0, 0, cssW, cssH);
+  drawLitRoute(dt, pointAtRoute);
 
   const trailLen = 60;
   const survivors = [];

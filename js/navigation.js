@@ -1,6 +1,6 @@
 // Navigation and label management
 
-import { NAV_COORDS, NAV_ORDER, LABEL_OFFSET_PX, NAV_SPEED_WHEN_ACTIVE, RITUAL_LABEL_NUDGE_PX } from './config.js';
+import { NAV_COORDS, NAV_ORDER, NAV_PREVIEWS, LABEL_OFFSET_PX, NAV_SPEED_WHEN_ACTIVE, RITUAL_LABEL_NUDGE_PX } from './config.js';
 import {
   prefersReducedMotion,
   COVER,
@@ -454,6 +454,15 @@ function createNavLabel(id) {
   
   label.innerHTML = `<span class="node-label">${displayText}</span>`;
   label.setAttribute('aria-label', `Navigate to ${displayText}`);
+  // What the section holds, shown under the dot on hover or focus and read as the link's description.
+  if (NAV_PREVIEWS[id]) {
+    const preview = document.createElement('span');
+    preview.className = 'node-preview';
+    preview.id = `node-preview-${id}`;
+    preview.textContent = NAV_PREVIEWS[id];
+    label.appendChild(preview);
+    label.setAttribute('aria-describedby', preview.id);
+  }
   return label;
 }
 

@@ -60,12 +60,45 @@
     0 0 12px rgba(var(--necrotic-rgb), 0.5),
     0 0 16px rgba(var(--decay-green-rgb), 0.3);
   filter: drop-shadow(0 0 4px rgba(var(--necrotic-rgb), 0.4));
-  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
+  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), scale 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
 }
 
 .network-node-label:hover,
 .network-node-label:focus-visible{
   color: rgba(180, 210, 230, 1);
+}
+
+/* The word grows up from its dot while its route is lit (js/sparks.js). Through scale, since the
+   label placement sets the transform inline. */
+.network-node-label .node-label{
+  transform-origin: 50% 100%;
+}
+
+.network-node-label:hover .node-label,
+.network-node-label:focus-visible .node-label{
+  scale: 1.2;
+}
+
+/* What the section holds, under the dot, on hover or focus. Also the link's description. */
+.network-node-label .node-preview{
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translate(-50%, -4px);
+  white-space: nowrap;
+  font: 400 12px/1.3 var(--font-label);
+  letter-spacing: 0.02em;
+  color: rgba(230, 227, 216, 0.9);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease-house), transform 0.25s var(--ease-house);
+}
+
+.network-node-label:hover .node-preview,
+.network-node-label:focus-visible .node-preview{
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .network-node-label:hover .node-label,
@@ -267,12 +300,17 @@
                 transform 0.4s var(--ease-house);
   }
 
-  .network-node-label:hover .node-label,
-  .network-node-label:focus-visible .node-label,
   .network-node-label.active .node-label,
   .network-node-label.motion-highlight .node-label {
     opacity: 1;
     transform: translateX(-50%) translateY(-1px);
+  }
+
+  .network-node-label:hover .node-label,
+  .network-node-label:focus-visible .node-label {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-1px);
+    scale: 1.2;
   }
 
   .network-sigil-node img {

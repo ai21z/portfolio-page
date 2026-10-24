@@ -14,6 +14,15 @@ export const NAV_COORDS = {
 
 export const NAV_ORDER = ['intro','about','work','blog','contact','skills'];
 
+// One line under each landing label on hover or focus, saying what the section holds.
+export const NAV_PREVIEWS = {
+  about: 'Background, values, and what I am building now.',
+  skills: 'The stack I trust, and the thinking behind it.',
+  work: 'Roles, projects, and credentials on a living globe.',
+  blog: 'Field notes, grown in a petri dish.',
+  contact: 'A notebook page that reaches me directly.'
+};
+
 export const LABEL_OFFSET_PX = {
   intro: 34, about: 26, work: 24,
   blog: 26, contact: 20, skills: 24

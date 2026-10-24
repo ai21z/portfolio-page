@@ -20,8 +20,10 @@ test('the Field Notes show a dormant culture as a note, and a live one as a way 
   const craft = page.locator('.blog-memo-item[data-hub="craft"]');
   await expect(craft).toHaveClass(/is-dormant/);
   await expect(craft).not.toHaveAttribute('href');
+  await expect(craft).toHaveAttribute('aria-disabled', 'true');
   await expect(craft.locator('.blog-memo-count')).toHaveText('dormant');
-  await craft.click();
+  // Disabled, so the click is forced to show it opens nothing.
+  await craft.click({ force: true });
   await page.waitForTimeout(300);
   await expect(page.locator('#blog-category-view')).toBeHidden();
 
@@ -82,6 +84,9 @@ test('on a phone a dormant culture card is a note, not a link', async ({ page })
   const craft = page.locator('.specimen-slide.slide-craft');
   await expect(craft).toHaveClass(/is-dormant/);
   await expect(craft).not.toHaveAttribute('href');
+  // A disabled link, so no crawler reads an address-less anchor as a script-only link.
+  await expect(craft).toHaveAttribute('role', 'link');
+  await expect(craft).toHaveAttribute('aria-disabled', 'true');
   await expect(craft.locator('.specimen-count')).toHaveText('dormant');
   await expect(page.locator('.specimen-slide.slide-codex')).toHaveAttribute('href', '#blog/codex');
 });

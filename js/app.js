@@ -1029,15 +1029,20 @@ async function populateBlogCounts() {
   if (!registry.unavailable) setBlogPosts(registry);
 }
 
-// A dormant entry keeps its place and text but is no longer a link, so it reads as a note, not a way in.
+// A dormant entry keeps its place and text but loses its address: a disabled link, as its crumb and rim
+// label are, so it reads as an inactive control and no crawler takes it for a script-only link.
 function setCategoryEntry(entry, id, dormant, label) {
   entry.classList.toggle('is-dormant', dormant);
   if (dormant) {
     entry.removeAttribute('href');
     entry.removeAttribute('aria-label');
+    entry.setAttribute('role', 'link');
+    entry.setAttribute('aria-disabled', 'true');
   } else {
     entry.setAttribute('href', `#blog/${id}`);
     entry.setAttribute('aria-label', label);
+    entry.removeAttribute('role');
+    entry.removeAttribute('aria-disabled');
   }
 }
 

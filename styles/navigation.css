@@ -130,7 +130,8 @@
   border-radius: 2px;
 }
 
-/* Glowing dot at the center of the node */
+/* Glowing dot at the center of the node, in a thin bone ring that no decorative bead of the network has, so
+   the five ways in read apart from the beads. The ring is an outline, clear of the breathing glow. */
 .network-node-label::after {
   content: "";
   position: absolute;
@@ -147,9 +148,11 @@
   box-shadow:
     0 0 8px 4px rgba(var(--necrotic-rgb), 0.3),
     0 0 20px 8px rgba(143, 180, 255, 0.2);
+  outline: 1px solid rgba(230, 227, 216, 0.72);
+  outline-offset: 3px;
   pointer-events: none;
   opacity: 1;
-  transition: var(--ui-transition-slow);
+  transition: var(--ui-transition-slow), outline-color 0.4s var(--ease-house), outline-offset 0.4s var(--ease-house);
   animation: sporeBreathing 3s ease-in-out infinite;
 }
 
@@ -166,6 +169,12 @@
       0 0 30px 12px rgba(143, 180, 255, 0.3);
     transform: translate(-50%, -50%) scale(1.15);
   }
+}
+
+.network-node-label:hover::after,
+.network-node-label:focus-visible::after {
+  outline-color: rgba(236, 232, 220, 1);
+  outline-offset: 4px;
 }
 
 .network-node-label:hover::after {

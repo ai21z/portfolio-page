@@ -8,6 +8,10 @@ const family = (locator: Locator) => locator.evaluate((el) => getComputedStyle(e
 const size = (locator: Locator) => locator.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
 const loaded = (page: Page, face: string) => page.evaluate(async (f) => { await document.fonts.ready; return document.fonts.check(`16px "${f}"`); }, face);
 
+// A trace's page snapshots lay out the hidden sections and so fetch faces a browser never fetches for
+// content-visibility: hidden, which would hide what a phone landing really loads. No traces in this file.
+test.use({ trace: 'off' });
+
 test('the fonts ship with their licences, and both article pages preload Special Elite', async ({ page, request }) => {
   for (const [file, holder] of [['OFL-Literata.txt', 'Literata Project Authors'], ['OFL-JetBrainsMono.txt', 'JetBrains Mono Project Authors']]) {
     const text = await (await request.get('/artifacts/fonts/' + file)).text();
@@ -100,13 +104,58 @@ test('the landing reads in Literata under the Special Elite name, with its label
 });
 
 // A phone shows no network labels or coordinates on the landing, so the bio's Literata is the only new file
-// beside the portrait. Over HTTP/2, as served, it moved the simulated phone LCP by 0.08 s.
-test('a phone landing fetches Literata for the bio and never the mono', async ({ page }) => {
+// beside the portrait. Over HTTP/2, as served, it moved the simulated phone LCP by 0.08 s. The closed
+// sections' faces come once the page has loaded, before a visitor opens one.
+test('a phone landing fetches only the bio\'s Literata until it has loaded, then the rest in the background', async ({ page }) => {
   const fonts: string[] = [];
   page.on('request', (request) => { if (/\/artifacts\/fonts\/(literata|jetbrains)/.test(request.url())) fonts.push(request.url().split('/').pop()!.split('?')[0]); });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/index.html');
+  await page.goto('/index.html', { waitUntil: 'load' });
   await expect(page.locator('html')).toHaveClass(/js-ready/);
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1000);
   expect(fonts).toEqual(['literata-400.woff2']);
+  await expect.poll(() => [...fonts].sort(), { timeout: 4000 })
+    .toEqual(['jetbrains-mono-400.woff2', 'literata-400-italic.woff2', 'literata-400.woff2', 'literata-600.woff2']);
+});
+
+// Card text sat 2 px from the binding holes, so the holes read as touching the first letter of each line.
+test('cards read in Literata under Special Elite headings, with keys and tags in the mono, clear of the holes', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const section of ['about', 'skills']) {
+    await page.goto(`/index.html#${section}`);
+    const cards = page.locator(`#${section} .slab`);
+    await expect(cards.first()).toBeVisible();
+    for (let index = 0; index < await cards.count(); index++) {
+      const card = cards.nth(index);
+      expect(await family(card.locator('h2'))).toMatch(/^Special Elite/);
+      const clearance = await card.evaluate((slab) => {
+        const holes = getComputedStyle(slab, '::before');
+        const tile = parseFloat(holes.backgroundSize);
+        // The hole's dark disc reaches 0.5 of its tile's farthest corner from the tile's middle.
+        return parseFloat(getComputedStyle(slab).paddingLeft) - (parseFloat(holes.left) + tile / 2 + 0.5 * tile * Math.SQRT1_2);
+      });
+      expect(clearance, `${section} card ${index}`).toBeGreaterThanOrEqual(6);
+    }
+  }
+  await page.goto('/index.html#about');
+  expect(await family(page.locator('.slab-about p'))).toMatch(/^Literata,/);
+  expect(await family(page.locator('.about-values span').first())).toMatch(/^JetBrains Mono,/);
+  expect(await family(page.locator('.about-values span').nth(1))).toMatch(/^Literata,/);
+  // The values start on one column, measured in the card's own frame since the card is turned.
+  const starts = await page.locator('.about-values li span:nth-child(2)').evaluateAll((spans) => spans.map((s) => (s as HTMLElement).offsetLeft));
+  expect(new Set(starts).size).toBe(1);
+  await page.goto('/index.html#skills');
+  expect(await family(page.locator('.slab-systems .tech-stack li').first())).toMatch(/^JetBrains Mono,/);
+});
+
+test('stacked cards on a phone set nothing under 12 px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const section of ['about', 'skills']) {
+    await page.goto(`/index.html#${section}`);
+    await expect(page.locator(`#${section} .slab`).first()).toBeVisible();
+    const sizes = await page.locator(`#${section} .slab`).evaluateAll((slabs) => slabs.flatMap((slab) =>
+      [...slab.querySelectorAll('h2, h3, p, li, span')].filter((el) => getComputedStyle(el).display !== 'none')
+        .map((el) => parseFloat(getComputedStyle(el).fontSize))));
+    expect(Math.min(...sizes), section).toBeGreaterThanOrEqual(12);
+  }
 });

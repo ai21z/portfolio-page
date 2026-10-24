@@ -1591,6 +1591,17 @@ function scheduleIdleWarmupStep() {
   requestIdleCallback(runIdleWarmup);
 }
 
+// The closed sections hold their reading and data faces back (styles/layout.css), so the landing
+// loads only the faces it shows. Once it has loaded, the rest come in the background, so the first
+// section opened draws in its own faces instead of swapping from the fallback.
+const FACE_WARMUP_DELAY_MS = 2000;
+const SECTION_FACES = ['400 1em Literata', '600 1em Literata', 'italic 400 1em Literata', '400 1em "JetBrains Mono"'];
+
+function warmSectionFaces() {
+  if (navigator.connection?.saveData || !document.fonts?.load) return;
+  for (const face of SECTION_FACES) document.fonts.load(face).catch(() => {});
+}
+
 window.addEventListener('load', () => {
   if (COVER.ready) {
     computeCoverFromImage();
@@ -1600,6 +1611,8 @@ window.addEventListener('load', () => {
   }
 
   initHubToIcons();
+
+  setTimeout(warmSectionFaces, FACE_WARMUP_DELAY_MS);
 
   // Safari has no idle callback, so it keeps the work where it was.
   if (typeof window.requestIdleCallback === 'function') {

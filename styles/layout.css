@@ -54,6 +54,21 @@
   contain: layout paint style;
 }
 
+/* While the app loads, the closed sections are not laid out either. A section the address names
+   still shows, and a failed start lays everything out again, as the scripts-off fallback needs. */
+.js:not(.js-ready):not(.js-failed) .stage:not(.active-section):not(:target) {
+  content-visibility: hidden;
+}
+
+/* A closed section sets its reading and data faces in their local fallbacks, since Firefox and
+   Safari fetch a face for text under content-visibility: hidden. So the landing fetches only the
+   faces it shows, never a card's beside the portrait. A leaving section keeps its faces through the
+   fade, and js/app.js fetches them all once the page has loaded. */
+.js:not(.js-failed) .stage:not(.active-section):not(.stage-leaving):not(:target) {
+  --font-read: 'Literata Fallback', Georgia, serif;
+  --font-data: 'JetBrains Mono Fallback', 'JetBrains Mono Fallback Menlo', ui-monospace, monospace;
+}
+
 .stage.active-section {
   content-visibility: visible;
 }

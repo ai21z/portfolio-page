@@ -52,6 +52,7 @@
   "js/app.js",
   "js/blog-categories.js",
   "js/blog-network-webgl.js",
+  "js/calm-field.js",
   "js/compact.js",
   "js/config.js",
   "js/contact.js",

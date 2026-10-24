@@ -72,6 +72,7 @@ import { portraitParticles } from './portrait-particles.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
 import { postTitle, refreshViewTitle } from './view-title.js';
+import './calm-field.js';
 import {
   frameDue,
   getGraphicsBudget,

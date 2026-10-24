@@ -105,6 +105,21 @@ body.has-paper-open-global #bg-front-img {
   mix-blend-mode:multiply;
 }
 
+/* The calm field: the network fades out under the name, the portrait, the bio and the colophon, and still
+   frames the screen from the right. js/calm-field.js sizes the ellipse from that text on wide layouts. */
+#main[data-calm]::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background: radial-gradient(ellipse var(--calm-rx) var(--calm-ry) at var(--calm-x) var(--calm-y),
+    rgba(11, 11, 12, 0.9) 0%,
+    rgba(11, 11, 12, 0.78) 42%,
+    rgba(11, 11, 12, 0.35) 68%,
+    transparent 86%);
+}
+
 .glitch-text{
   position:relative;
 }

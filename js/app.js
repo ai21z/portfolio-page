@@ -773,6 +773,23 @@ function initBlogControls() {
       event.preventDefault();
       if (hubId && !dormantCategories.has(hubId)) enterHub(hubId);
     });
+    // A Field Notes entry previews its culture in the dish, as the rim label does.
+    item.addEventListener('mouseenter', () => {
+      window.dispatchEvent(new CustomEvent('blog:hover', { detail: { hubId, source: 'memo' } }));
+    });
+    item.addEventListener('mouseleave', () => {
+      window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { source: 'memo' } }));
+    });
+  });
+
+  // The Field Notes mark the culture being previewed, from wherever it is hovered.
+  window.addEventListener('blog:hover', (e) => {
+    document.querySelectorAll('.blog-memo-item').forEach(item => {
+      item.classList.toggle('highlight', item.dataset.hub === e.detail.hubId);
+    });
+  });
+  window.addEventListener('blog:hover-off', () => {
+    document.querySelectorAll('.blog-memo-item.highlight').forEach(item => item.classList.remove('highlight'));
   });
 
   window.addEventListener('blog:navigate', (e) => {

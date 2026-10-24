@@ -28,7 +28,7 @@ for (const scripts of ['disabled', 'blocked-app', 'broken-module']) {
         await page.goForward();
         await expect(page.locator('#contact .contact-email')).toBeVisible();
         await page.getByRole('navigation', { name: 'Portfolio navigation' }).getByRole('link', { name: 'Home' }).click();
-        const email = page.getByRole('link', { name: 'Email Aris', exact: true });
+        const email = page.getByRole('link', { name: 'email me', exact: true });
         await email.scrollIntoViewIfNeeded();
         const footer = await email.boundingBox();
         const navigation = await page.getByRole('navigation', { name: 'Portfolio navigation' }).boundingBox();

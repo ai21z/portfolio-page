@@ -122,6 +122,7 @@
     .threshold__svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
     .thr-fil{stroke:#7aae8a;fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0.55;
       animation:thr-grow 640ms cubic-bezier(0.16,1,0.3,1) forwards;animation-delay:var(--d,0ms)}
+    .thr-fil:nth-child(2){--d:90ms}.thr-fil:nth-child(3){--d:160ms}.thr-fil:nth-child(4){--d:120ms}.thr-fil:nth-child(5){--d:210ms}.thr-fil:nth-child(6){--d:260ms}
     @keyframes thr-grow{to{stroke-dashoffset:0}}
     .threshold__seal{position:absolute;inset:17%;background:center/contain no-repeat;
       background-image:url("./artifacts/sigil/no-bg-seal-sigil.png");
@@ -158,12 +159,12 @@
           </filter>
         </defs>
         <g filter="url(#thr-rough)" stroke-width="0.5">
-          <path class="thr-fil" style="--d:0ms"   pathLength="1" d="M6,92 C24,78 33,66 50,47"/>
-          <path class="thr-fil" style="--d:90ms"  pathLength="1" d="M95,90 C80,74 64,58 50,47"/>
-          <path class="thr-fil" style="--d:160ms" pathLength="1" d="M50,47 C51,31 53,17 57,6"/>
-          <path class="thr-fil" style="--d:120ms" pathLength="1" d="M31,67 C24,60 22,50 28,43 C37,46 44,46 50,47"/>
-          <path class="thr-fil" style="--d:210ms" pathLength="1" d="M7,41 C23,43 36,45 50,47"/>
-          <path class="thr-fil" style="--d:260ms" pathLength="1" d="M71,15 C62,28 56,38 50,47"/>
+          <path class="thr-fil" pathLength="1" d="M6,92 C24,78 33,66 50,47"/>
+          <path class="thr-fil" pathLength="1" d="M95,90 C80,74 64,58 50,47"/>
+          <path class="thr-fil" pathLength="1" d="M50,47 C51,31 53,17 57,6"/>
+          <path class="thr-fil" pathLength="1" d="M31,67 C24,60 22,50 28,43 C37,46 44,46 50,47"/>
+          <path class="thr-fil" pathLength="1" d="M7,41 C23,43 36,45 50,47"/>
+          <path class="thr-fil" pathLength="1" d="M71,15 C62,28 56,38 50,47"/>
         </g>
       </svg>
       <div class="threshold__seal"></div>
@@ -200,7 +201,7 @@
   <canvas id="reveal-canvas" aria-hidden="true"></canvas>
 
   <!-- Network Navigation Nodes (rendered via JS with smart placement) -->
-  <div id="network-nav" role="navigation" aria-label="Main navigation"></div>
+  <nav id="network-nav" aria-label="Main navigation"></nav>
 
   <!-- The six views share one main landmark. Only the active view is reachable: the others are inert. -->
   <main>
@@ -209,7 +210,7 @@
     <!-- Ambient photographic fungus (very dim) -->
     <div class="fungi-ambient" aria-hidden="true"></div>
 
-    <section class="grid">
+    <div class="grid">
 
       <!-- Mobile Myco Strip (placeholder row) -->
       <div class="myco-strip" id="myco-strip">
@@ -524,7 +525,7 @@
       <h1 class="name glitch-text">Aris Zounarakis</h1>
 
       <!-- Living Sigils - Vertical Vial Icons (left of portrait) -->
-      <nav class="living-sigils" aria-label="Quick navigation">
+      <div class="living-sigils" role="group" aria-label="Profiles">
         <!-- Connecting Vine -->
         <svg class="sigil-vine" viewBox="0 0 4 100" preserveAspectRatio="none" aria-hidden="true">
           <path d="M2,0 Q1,25 2,50 Q3,75 2,100" stroke="rgba(63,255,159,0.15)" stroke-width="0.5" fill="none"/>
@@ -600,7 +601,7 @@
             </div>
           </div>
         </a>
-      </nav>
+      </div>
 
       <!-- Portrait -->
       <figure class="portrait-wrap">
@@ -613,30 +614,30 @@
 
       <!-- Text column (left) -->
       <div class="text-column">
-        <p class="tape" aria-live="polite">
+        <p class="tape">
           I&rsquo;m Aris Zounarakis, a Barcelona based software engineer at ADP. I work on global HCM and payroll systems, mostly across full stack product and platform tooling. Outside work, it is tinkering, music, side projects, and a cold one. If you like it here, cheers!
         </p>
-        <nav class="selected-projects" aria-label="Selected projects"><!-- selected-project-links --></nav>
+        <div class="selected-projects" role="group" aria-label="Selected projects"><!-- selected-project-links --></div>
       </div>
 
       <!-- Footer (grid row 4) -->
-      <footer class="foot" aria-label="Footer">
+      <footer class="foot">
         <small>
-            Lovecrafted by · <picture><source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" /><img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" loading="lazy" decoding="async" /></picture> · Aris Zounarakis 2026 · <a href="mailto:aris@zounarakis.com" aria-label="Email Aris" style="color: var(--necrotic);">email me</a>
+            Lovecrafted by · <picture><source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" /><img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="AZ" class="footer-sigil" width="1024" height="1024" loading="lazy" decoding="async" /></picture> · Aris Zounarakis 2026 · <a class="foot-email" href="mailto:aris@zounarakis.com">email me</a>
         </small>
         <span class="foot-coords">41.3874° N, 2.1686° E</span>
       </footer>
 
       <!-- Portrait particle effect (desktop only) -->
       <script type="module" src="./js/portrait-particles.js"></script>
-    </section>
+    </div>
   </section>
 
   <!-- SECTION: ABOUT -->
   <section id="about" class="stage altar-screen" data-section="about" aria-label="About" tabindex="-1">
     <h1 class="sr-only">About</h1>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    <nav class="section-nav" aria-label="Section navigation">
+    <nav class="section-nav" aria-label="Section navigation, About">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
@@ -745,7 +746,7 @@
   <section id="skills" class="stage altar-screen" data-section="skills" aria-label="Skills" tabindex="-1">
     <h1 class="sr-only">Skills</h1>
     <button class="altar-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    <nav class="section-nav" aria-label="Section navigation">
+    <nav class="section-nav" aria-label="Section navigation, Skills">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
@@ -864,7 +865,7 @@
   <section id="blog" class="stage blog-screen blog-stage panel-screen" data-section="blog" data-mode="map" aria-label="Blog" tabindex="-1">
     <h1 id="blog-heading" class="sr-only">Blog</h1>
     <button class="blog-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    <nav class="section-nav" aria-label="Section navigation">
+    <nav class="section-nav" aria-label="Section navigation, Blog">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
@@ -968,7 +969,7 @@
     <!-- Category View (hidden by default) -->
     <div id="blog-category-view" class="blog-category-view category-panel" hidden>
       <!-- Top Navigation Bar -->
-      <nav class="blog-nav" aria-label="Blog navigation">
+      <nav class="blog-nav" aria-label="Blog map and categories">
         <a class="blog-nav-link" data-hub="map" href="#blog">Map</a>
         <span class="blog-nav-sep">/</span>
         <a class="blog-nav-link" data-hub="craft" href="#blog/craft">Craft</a>
@@ -989,7 +990,7 @@
     <!-- Article View (hidden by default) -->
     <div id="blog-article-view" class="blog-article-view category-panel" hidden>
       <!-- Top Navigation Bar -->
-      <nav class="blog-nav" aria-label="Blog navigation">
+      <nav class="blog-nav" aria-label="Blog map and categories, from the post">
         <a class="blog-nav-link" data-hub="map" href="#blog">Map</a>
         <span class="blog-nav-sep">/</span>
         <a class="blog-nav-link" data-hub="craft" href="#blog/craft">Craft</a>
@@ -1014,45 +1015,6 @@
       <button class="scroll-nav-btn" data-action="bottom" aria-label="Scroll to bottom"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5 8 7.5 12 3.5"/><path d="M4 7.5 8 11.5 12 7.5"/></svg></button>
     </nav>
 
-    <!-- Memorandum Hover Interactions -->
-    <script type="module">
-      // Memorandum items trigger same hover effects as petri dish
-      document.querySelectorAll('.blog-memo-item').forEach(item => {
-        const hubId = item.dataset.hub;
-
-        item.addEventListener('mouseenter', () => {
-          window.dispatchEvent(new CustomEvent('blog:hover', {
-            detail: { hubId, source: 'memo' }
-          }));
-        });
-
-        item.addEventListener('mouseleave', () => {
-          window.dispatchEvent(new CustomEvent('blog:hover-off', {
-            detail: { source: 'memo' }
-          }));
-        });
-
-        item.addEventListener('click', () => {
-          window.dispatchEvent(new CustomEvent('blog:navigate', {
-            detail: { hubId }
-          }));
-        });
-      });
-
-      // Sync memorandum highlight with petri dish hover
-      window.addEventListener('blog:hover', (e) => {
-        const { hubId } = e.detail;
-        document.querySelectorAll('.blog-memo-item').forEach(item => {
-          item.classList.toggle('highlight', item.dataset.hub === hubId);
-        });
-      });
-
-      window.addEventListener('blog:hover-off', () => {
-        document.querySelectorAll('.blog-memo-item').forEach(item => {
-          item.classList.remove('highlight');
-        });
-      });
-    </script>
   </section>
 
   <!-- SECTION: RESUME (Space-Time Spiral Timeline) - DISABLED FOR NOW -->
@@ -1062,7 +1024,7 @@
   <section id="work" class="stage work-globe-screen panel-screen" data-section="work" aria-label="Work Experience" tabindex="-1">
     <h1 class="sr-only">Work</h1>
     <button class="work-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    <nav class="section-nav" aria-label="Section navigation">
+    <nav class="section-nav" aria-label="Section navigation, Work">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
@@ -1094,7 +1056,7 @@
   <!-- SECTION: CONTACT -->
   <section id="contact" class="stage" data-section="contact" aria-label="Contact" tabindex="-1">
     <button class="contact-close" data-action="go-intro" aria-label="Close and return to intro">×</button>
-    <nav class="section-nav" aria-label="Section navigation">
+    <nav class="section-nav" aria-label="Section navigation, Contact">
       <a href="#about" class="section-nav-link" data-section="about">About</a>
       <a href="#skills" class="section-nav-link" data-section="skills">Skills</a>
       <a href="#work" class="section-nav-link" data-section="work">Work</a>
@@ -1106,7 +1068,7 @@
       <div class="wax-seal" aria-hidden="true">
         <picture>
           <source srcset="./artifacts/sigil/no-bg-seal-sigil-512.webp" type="image/webp" />
-          <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" class="seal-sigil" loading="lazy" decoding="async" />
+          <img src="./artifacts/sigil/no-bg-seal-sigil.png" alt="" class="seal-sigil" width="1024" height="1024" loading="lazy" decoding="async" />
         </picture>
       </div>
 
@@ -1142,6 +1104,7 @@
             id="email"
             name="email"
             class="notebook-input"
+            autocomplete="email"
             required
             placeholder="your.email@example.com"
           />

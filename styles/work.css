@@ -246,18 +246,20 @@
   margin-bottom: 2px;
 }
 
-/* The job title is set apart with capitals at full ink, like the altar card labels: the lighter
-   ink fell to about 4:1 on the coffee stains, and Special Elite has no italic face. */
+/* The job title is set apart with capitals at full ink in the data face, like the altar card keys: the
+   lighter ink fell to about 4:1 on the coffee stains. */
 .work-position {
-  font-size: 11px;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
   color: var(--paper-ink);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   margin-bottom: 2px;
 }
 
 .work-period {
-  font-size: 10px;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
   color: var(--paper-ink); /* the 70% ink gave 2.7-3.5:1 on the stained paper */
   letter-spacing: 0.05em;
   margin-bottom: 6px;
@@ -266,8 +268,9 @@
 .work-responsibilities {
   margin: 0;
   padding-left: 1.2em;
-  font-size: 11px;
-  line-height: 1.45;
+  font-family: var(--font-read);
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--paper-ink);
 }
 
@@ -647,7 +650,8 @@
 }
 
 .project-description {
-  font-size: 12px;
+  font-family: var(--font-read);
+  font-size: 13px;
   line-height: 1.6;
   color: var(--paper-ink);
   margin-bottom: 1rem;
@@ -670,8 +674,9 @@
 .tech-badge {
   position: relative;
   padding: 2px 6px;
-  font-size: 10px;
-  letter-spacing: 0.05em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--paper-ink);
 
@@ -716,9 +721,9 @@
   justify-content: center;
   gap: 6px;
 
-  font-family: 'Special Elite', monospace;
-  font-size: 11px;
-  letter-spacing: 1.2px;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--paper-ink);
 
@@ -919,7 +924,7 @@
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--bone, #e6e3d8);
-  font-family: 'Special Elite', monospace;
+  font-family: var(--font-read);
   text-align: left;
 }
 #work:has(.webgl-fallback-visible) .work-index {
@@ -945,11 +950,12 @@
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--bone, #e6e3d8);
-  font-family: 'Special Elite', monospace;
+  font-family: var(--font-read);
   text-align: left;
 }
 
 .work-index-title {
+  font-family: var(--font-display);
   font-size: clamp(15px, 2vw, 19px);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -970,12 +976,14 @@
 }
 .work-index-entry:last-child { border-bottom: 0; }
 .work-index-entry h3 {
+  font-family: var(--font-display);
   font-size: clamp(14px, 1.6vw, 16px);
   margin: 0 0 4px;
   color: var(--bone, #e6e3d8);
 }
 .work-index-meta {
-  font-size: clamp(12px, 1.3vw, 13px);
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
   color: var(--bone-dim, rgba(230, 227, 216, 0.6));
   margin: 0 0 8px;
 }

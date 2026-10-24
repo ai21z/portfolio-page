@@ -41,8 +41,9 @@
   grid-template-columns: 12px auto;
   align-items: center;
   gap: 7px;
-  font-size: 0.66rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0;
   color: rgba(150, 170, 160, 0.82);
 }
 
@@ -58,8 +59,9 @@
 }
 
 .work-rail-sub {
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.02em;
   color: rgba(150, 170, 160, 0.82);
   margin-top: 3px;
 }
@@ -73,9 +75,9 @@
 }
 
 .work-rail-mode {
-  font-family: 'Special Elite', monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(180, 200, 190, 0.78);
   background: rgba(var(--decay-green-rgb), 0.03);
@@ -105,8 +107,9 @@
 /* cluster label shown in the by-type / by-place layouts */
 .rail-group {
   padding: 16px 0 5px 34px;
-  font-size: 0.58rem;
-  letter-spacing: 0.22em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(var(--decay-green-rgb), 0.62); /* 6.1:1; 0.45 gave 3.7:1 */
   animation: railGroupIn 0.4s ease both;
@@ -181,8 +184,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(var(--decay-green-rgb), 0.62);
   pointer-events: none;
@@ -275,8 +279,9 @@
 }
 
 .rail-node-year {
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0;
   color: rgba(170, 195, 184, 0.75); /* 6.2:1; 0.6 gave 4.3:1 */
 }
 
@@ -288,10 +293,12 @@
 }
 
 .rail-node-sub {
-  font-size: 0.64rem;
-  letter-spacing: 0.04em;
+  font-family: var(--font-read);
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: 0;
   color: rgba(150, 170, 160, 0.82);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .rail-node--project .rail-node-title {
@@ -584,9 +591,9 @@
   width: 100%;
   text-align: center;
   text-decoration: none;
-  font-family: 'Special Elite', monospace;
-  font-size: 0.76rem;
-  letter-spacing: 0.1em;
+  font-family: var(--font-data);
+  font-size: max(var(--text-floor), 0.76rem);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(240, 180, 106, 0.92);
   background: rgba(240, 180, 106, 0.08);
@@ -629,10 +636,12 @@
     backdrop-filter: blur(4px);
   }
 
+  /* The data face at the text floor with less tracking runs as wide as the Special Elite labels did, so
+     the toggle's fitting rules below still hold. */
   .work-view-btn {
-    font-family: 'Special Elite', monospace;
-    font-size: 0.66rem;
-    letter-spacing: 0.12em;
+    font-family: var(--font-data);
+    font-size: var(--text-floor);
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: rgba(180, 200, 190, 0.82);
     background: none;
@@ -696,7 +705,7 @@
   .work-rail-key-row {
     grid-template-columns: 16px 1fr;
     gap: 11px;
-    font-size: 0.72rem;
+    font-size: max(var(--text-floor), 0.72rem);
     color: rgba(225, 233, 228, 0.88);
   }
 
@@ -723,7 +732,7 @@
 
     .work-view-btn {
       padding-inline: 10px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0;
     }
   }
 

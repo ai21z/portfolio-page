@@ -465,7 +465,8 @@ body.has-paper-open-global .altar-screen .ring {
 }
 
 .slab h2,
-.slab h3 {
+.slab h3,
+.slab .slab-subhead {
   --h-margin-bottom: 6px;
   margin: 0 0 calc(var(--h-margin-bottom) * var(--k));
   color: var(--paper-ink);
@@ -473,6 +474,19 @@ body.has-paper-open-global .altar-screen .ring {
   font-size: clamp(13.5px, 5cqi, 21px);
   position: relative;
   z-index: 1;
+}
+
+/* A Skills card names its field under its heading in the heading's type, as a line, not a heading. */
+.slab .slab-subhead { font-weight: bold; line-height: inherit; }
+
+/* What an opened Skills card adds: where the skill shows in practice. Hidden at rest, so the cards keep
+   the size they were fitted to. js/app.js shows it before it measures the opened card. */
+.slab .slab-open-line { display: none; }
+.slab.paper-open .slab-open-line,
+.slab.paper-measuring .slab-open-line {
+  display: block;
+  margin: 10px 0 0;
+  font-style: italic;
 }
 
 /* A second topic in the same card, after a list. */
@@ -628,7 +642,7 @@ body.has-paper-open-global .altar-screen .ring {
    type sits at the floor (--w-fit), and the first step re-aims the About name at its new gap. */
 @media (min-width: 901px) and (max-height: 940px) and (pointer: fine) {
   .slab { --k: 0.86; --w-fit: 307px; }
-  .slab h2, .slab h3 { font-size: clamp(11.5px, 4.3cqi, 20px); }
+  .slab h2, .slab h3, .slab .slab-subhead { font-size: clamp(11.5px, 4.3cqi, 20px); }
   .slab p, .slab li { font-size: clamp(10.5px, 3.8cqi, 16px); }
   .kv li { font-size: clamp(10px, 3.5cqi, 15px); }
   .tech-stack { font-size: clamp(10px, 3.6cqi, 15px); }
@@ -644,7 +658,7 @@ body.has-paper-open-global .altar-screen .ring {
 
 @media (min-width: 901px) and (max-height: 760px) and (pointer: fine) {
   .slab { --k: 0.76; }
-  .slab h2, .slab h3 { font-size: clamp(11px, 3.9cqi, 18px); }
+  .slab h2, .slab h3, .slab .slab-subhead { font-size: clamp(11px, 3.9cqi, 18px); }
   .slab p, .slab li { font-size: clamp(10px, 3.5cqi, 14px); }
   .kv li { font-size: clamp(9.5px, 3.2cqi, 13px); }
   .tech-stack { font-size: clamp(9.5px, 3.3cqi, 13px); }

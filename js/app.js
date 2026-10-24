@@ -1946,8 +1946,10 @@ function initPaperFocusForSection(sectionId){
 
     const ipx = (n) => Math.round(Number(n) || 0);
 
-    // Measure the full content before max-height clips it.
+    // Measure the full content before max-height clips it, with what only an opened card shows.
+    el.classList.add('paper-measuring');
     const realContentH = Math.max(el.scrollHeight, r.height);
+    el.classList.remove('paper-measuring');
 
     const placeholder = document.createElement('div');
     placeholder.className = el.className.replace('paper-open', '') + ' paper-placeholder';

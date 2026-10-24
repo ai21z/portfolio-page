@@ -9,15 +9,15 @@ import {
   RESAMPLE_STEP_PX,
   RESAMPLE_MIN_POINTS
 } from './config.js';
-import { LOCKED_ROUTES, setLockedRoutes } from './state.js';
+import { LOCKED_ROUTES, setLockedRoutes, hudEnabled } from './state.js';
 import { coverMap, projectXY } from './viewport.js';
 import { cumulativeLengths, pointAt } from './utils.js';
 
 const LOCKED = new Map();
 
 // Route-layout diagnostics are noisy on normal loads (short routes fall back
-// gracefully). Gate them behind the same ?hud debug flag as the HUD overlay.
-const ROUTE_DEBUG = new URLSearchParams(window.location.search).has('hud');
+// gracefully). Gate them behind the same development-only ?hud flag as the HUD overlay.
+const ROUTE_DEBUG = hudEnabled;
 
 const deg = (graph, id) => (graph.neighbors(id) || []).length;
 

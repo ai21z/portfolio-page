@@ -1,5 +1,8 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { fillContact, stubVerification } from './helpers/contact';
 
 async function audit(page: Page, testInfo: TestInfo, state: string) {
@@ -182,7 +185,7 @@ test('controls no one can see stay out of the Tab order', async ({ page }) => {
   expect(await visibility()).toBe('visible');
 });
 
-test('a typed capital H never opens the route debug overlay, which only ?hud enables', async ({ page }) => {
+test('a typed capital H never opens the route debug overlay, and the production build ignores ?hud', async ({ page }) => {
   // WCAG 2.1.4: a single-character shortcut fired whenever a visitor typed "Hello".
   await stubVerification(page);
   await page.setViewportSize({ width: 1366, height: 900 });
@@ -197,8 +200,31 @@ test('a typed capital H never opens the route debug overlay, which only ?hud ena
   await expect(name).toHaveValue('Hello Hana');
   await expect(page.locator('#hud-canvas')).toHaveCount(0);
 
+  // The overlay is a development tool: the production build ignores ?hud and ships no js/hud.js.
   await page.goto('/index.html?hud');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await page.waitForTimeout(500);
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
+  expect((await page.request.get('/js/hud.js')).status()).toBe(404);
+});
+
+// On the source tree, served as it is with no build, ?hud still opens the overlay.
+test('the source tree keeps the ?hud route overlay for development', async ({ page }) => {
+  const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  await stubVerification(page);
+  await page.route('http://source.test/**', route => {
+    const file = path.join(repo, decodeURIComponent(new URL(route.request().url()).pathname));
+    return file.startsWith(repo + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()
+      ? route.fulfill({ path: file })
+      : route.fulfill({ status: 404, body: '' });
+  });
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto('http://source.test/index.html?hud');
   await expect(page.locator('#hud-canvas')).toHaveCount(1);
+  await page.goto('http://source.test/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await page.waitForTimeout(500);
+  await expect(page.locator('#hud-canvas')).toHaveCount(0);
 });
 
 for (const section of ['about', 'skills']) {

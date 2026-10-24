@@ -26,6 +26,14 @@ test('keeps every email address in the page out of Cloudflare email obfuscation'
   for (const at of addresses) expect(at > start && at < end, `address at ${at}`).toBe(true);
 });
 
+test('serves pages without development comments, keeping only the email_off markers', async ({ request }) => {
+  for (const page of ['/index.html', '/404.html', '/blog/codex/fail-fast-learn-faster', '/blog/cosmos/first-year-software-engineer']) {
+    const html = await (await request.get(page)).text();
+    const comments = [...html.matchAll(/<!--([\s\S]*?)-->/g)].map(match => match[1].trim());
+    expect(comments.filter(text => text !== 'email_off' && text !== '/email_off'), page).toEqual([]);
+  }
+});
+
 test('serves the portfolio assets and public documents', async ({ request }) => {
   for (const file of [
     '/index.html', '/favicon.ico', '/js/app.js', '/js/contact.js', '/styles/main.css',

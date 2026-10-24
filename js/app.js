@@ -11,10 +11,6 @@ import { isCompact, COMPACT_MQ } from './compact.js';
 import {
   prefersReducedMotion,
   hudEnabled,
-  hudCanvas,
-  hudCtx,
-  setHudCanvas,
-  setHudCtx,
   bgImg,
   COVER,
   MYC_MAP,
@@ -211,87 +207,17 @@ function ensureMyceliumReady() {
   return myceliumReadyPromise;
 }
 
-function initHUD() {
-  if (!hudCanvas) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'hud-canvas';
-    canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;';
-    document.body.appendChild(canvas);
-    setHudCanvas(canvas);
-    setHudCtx(canvas.getContext('2d'));
-  }
-  hudCanvas.width = window.innerWidth;
-  hudCanvas.height = window.innerHeight;
-}
-
+// The route-debugging overlay (?hud) is js/hud.js, a development file the production build leaves out.
+// Until it loads, and always in production, drawing it does nothing.
+let hudRender = null;
 function renderHUD() {
-  if (!hudEnabled) return;
-  if (!hudCtx) initHUD();
-
-  hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
-
-  for (const [id, pt] of Object.entries(NAV_COORDS)) {
-    const [tx, ty] = toViewport(pt.x, pt.y);
-
-    hudCtx.fillStyle = '#fff';
-    hudCtx.beginPath();
-    hudCtx.arc(tx, ty, 4, 0, Math.PI * 2);
-    hudCtx.fill();
-
-    hudCtx.fillStyle = '#fff';
-    hudCtx.font = '10px monospace';
-    hudCtx.fillText(`${id} anchor`, tx + 8, ty - 8);
-
-    const route = LOCKED_ROUTES[id];
-    if (route && route.projPts.length > 1) {
-      hudCtx.strokeStyle = 'rgba(0,255,255,.4)';
-      hudCtx.lineWidth = 1;
-      hudCtx.beginPath();
-      hudCtx.moveTo(route.projPts[0][0], route.projPts[0][1]);
-      for (let i = 1; i < route.projPts.length; i++) {
-        hudCtx.lineTo(route.projPts[i][0], route.projPts[i][1]);
-      }
-      hudCtx.stroke();
-      hudCtx.lineWidth = 1;
-    }
-
-    const el = document.querySelector(`[data-node="${id}"]`);
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-
-      hudCtx.fillStyle = '#0f0';
-      hudCtx.beginPath();
-      hudCtx.arc(cx, cy, 3, 0, Math.PI * 2);
-      hudCtx.fill();
-
-      hudCtx.fillStyle = '#0f0';
-      hudCtx.fillText(`live (${Math.round(cx)},${Math.round(cy)})`, cx + 8, cy + 16);
-
-      if (route && route.projPts.length > 1) {
-        let minDist = Infinity;
-        for (let i = 1; i < route.projPts.length; i++) {
-          const [x0, y0] = route.projPts[i - 1];
-          const [x1, y1] = route.projPts[i];
-          const dx = x1 - x0;
-          const dy = y1 - y0;
-          const len = Math.hypot(dx, dy);
-          if (len < 1e-6) continue;
-
-          const t = Math.max(0, Math.min(1, ((cx - x0) * dx + (cy - y0) * dy) / (len * len)));
-          const projX = x0 + t * dx;
-          const projY = y0 + t * dy;
-          const dist = Math.hypot(cx - projX, cy - projY);
-          minDist = Math.min(minDist, dist);
-        }
-
-        if (minDist > 8) {
-          console.warn(`[LOCKED-ROUTE] HUD: ${id} label is ${minDist.toFixed(1)}px off its route (should be <8px)`);
-        }
-      }
-    }
-  }
+  hudRender?.();
+}
+if (hudEnabled) {
+  import('./hud.js').then((hud) => {
+    hudRender = hud.renderHUD;
+    renderHUD();
+  });
 }
 
 if (!sparkCanvas) {
@@ -422,10 +348,6 @@ function resizeAll() {
     restoreIntroCanvasBuffers();
   } else {
     releaseIntroCanvasBuffers();
-  }
-  if (hudEnabled && hudCanvas) {
-    hudCanvas.width = window.innerWidth;
-    hudCanvas.height = window.innerHeight;
   }
   layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
 
@@ -1526,10 +1448,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     showSectionWithEffects(initialSection, { instant: true, focus: false });
   }
 
-  if (hudEnabled) {
-    initHUD();
-    renderHUD();
-  }
+  renderHUD();
 
   initWheelSteps(showSectionWithEffects);
 
@@ -1661,7 +1580,7 @@ window.addEventListener('load', () => {
     computeCoverFromImage();
     computeNavOffsets();
     layoutNavNodes(wireSigilToggle, renderHUD, showSectionWithEffects);
-    if (hudEnabled) renderHUD();
+    renderHUD();
   }
 
   initHubToIcons();

@@ -3,6 +3,7 @@ import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } fr
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, transform } from 'esbuild';
+import { parse } from 'parse5';
 import { renderProjectLinks, renderWorkIndex } from '../js/work-globe/work-index-content.js';
 import { appendContentSecurity } from './content-security.mjs';
 
@@ -98,10 +99,36 @@ async function minifyScripts(output) {
     const target = path.join(output, file);
     const result = await transform(await readFile(target, 'utf8'), {
       loader: 'js', format: 'esm', minify: true, keepNames: true, legalComments: 'none',
+      // Development-only code (the ?hud overlay) reads __DEV__, which the source tree leaves undefined.
+      define: { __DEV__: 'false' },
       target: ['chrome100', 'firefox100', 'safari15.4']
     });
     await writeFile(target, result.code);
   }
+}
+
+// Development notes stay in the source. The served pages carry no comments, except the markers that
+// keep Cloudflare's email rewriting off the addresses. A comment alone on its line takes the line.
+const KEPT_COMMENTS = new Set(['email_off', '/email_off']);
+
+export function stripComments(html) {
+  const ranges = [];
+  (function visit(node) {
+    if (node.nodeName === '#comment' && !KEPT_COMMENTS.has(node.data.trim()) && node.sourceCodeLocation) {
+      ranges.push([node.sourceCodeLocation.startOffset, node.sourceCodeLocation.endOffset]);
+    }
+    for (const child of node.childNodes || []) visit(child);
+    if (node.content) visit(node.content);
+  })(parse(html, { sourceCodeLocationInfo: true }));
+  let out = html;
+  for (const [start, end] of ranges.sort((a, b) => b[0] - a[0])) {
+    const lineStart = out.lastIndexOf('\n', start - 1) + 1;
+    const newline = out.indexOf('\n', end);
+    const lineEnd = newline < 0 ? out.length : newline + 1;
+    const alone = !out.slice(lineStart, start).trim() && !out.slice(end, lineEnd).trim();
+    out = alone ? out.slice(0, lineStart) + out.slice(lineEnd) : out.slice(0, start) + out.slice(end);
+  }
+  return out;
 }
 
 // A file's cache token: the start of the SHA-256 of the bytes served. functions/_middleware.js
@@ -232,7 +259,10 @@ export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
   await preloadModules(root, homePath);
   const htmlPages = [];
   for (const file of publicFiles.filter(file => file.endsWith('.html'))) {
-    htmlPages.push(await readFile(path.join(output, file), 'utf8'));
+    const target = path.join(output, file);
+    const html = stripComments(await readFile(target, 'utf8'));
+    await writeFile(target, html);
+    htmlPages.push(html);
   }
   const headersPath = path.join(output, '_headers');
   await writeFile(headersPath, appendContentSecurity(await readFile(headersPath, 'utf8'), htmlPages, cspMode));

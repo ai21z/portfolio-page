@@ -3,13 +3,9 @@
 // Live, from js/motion.js: a module reading it at the moment it acts follows a change of the setting.
 export { reducedMotion as prefersReducedMotion } from './motion.js';
 
-// The nav-route debug overlay is for development only: it opens with ?hud and has no keyboard toggle.
-export const hudEnabled = new URLSearchParams(window.location.search).has('hud');
-export let hudCanvas = null;
-export let hudCtx = null;
-
-export function setHudCanvas(canvas) { hudCanvas = canvas; }
-export function setHudCtx(ctx) { hudCtx = ctx; }
+// The nav-route debug overlay (js/hud.js) is for development only: it opens with ?hud on the source
+// tree and has no keyboard toggle. The build defines __DEV__ as false, so production never opens it.
+export const hudEnabled = (typeof __DEV__ === 'undefined' || __DEV__) && new URLSearchParams(window.location.search).has('hud');
 
 export const bgImg = document.getElementById('bg-front-img');
 

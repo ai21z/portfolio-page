@@ -30,11 +30,14 @@ test('the Field Notes show a dormant culture as a note, and a live one as a way 
   await expect(cosmos.locator('.blog-memo-count')).toHaveText('(1)');
   await cosmos.click();
   await expect(page.locator('#blog-category-view')).toBeVisible();
-  // The crumbs are links, and the one to a dormant culture keeps its word but has no address.
+  // The crumbs are links, and the one to a dormant culture keeps its word as a disabled link with no
+  // address, so it reads as an inactive control, not as faint text.
   await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]')).not.toHaveAttribute('href');
   await expect(page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]')).toHaveText('Craft');
+  await expect(page.locator('#blog-category-view').getByRole('link', { name: 'Craft', exact: true })).toHaveAttribute('aria-disabled', 'true');
   await expect(page.locator('#blog-category-view').getByRole('link', { name: 'Codex', exact: true })).toHaveAttribute('href', '#blog/codex');
-  await page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]').click();
+  // Disabled, so a click is forced to show it does nothing.
+  await page.locator('#blog-category-view .blog-nav-link[data-hub="craft"]').click({ force: true });
   await page.waitForTimeout(300);
   await expect(page.locator('#blog-category-view')).toHaveAttribute('data-category', 'cosmos');
 });

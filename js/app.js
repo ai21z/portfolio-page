@@ -1011,10 +1011,17 @@ async function populateBlogCounts() {
       setCategoryEntry(card, id, dormant, `${name}. ${line}`);
     }
 
-    // A dormant crumb keeps its word but loses its address, like the other dormant entries.
+    // A dormant crumb keeps its word and loses its address, a disabled link like its rim label.
     document.querySelectorAll(`.blog-nav-link[data-hub="${id}"]`).forEach((crumb) => {
-      if (dormant) crumb.removeAttribute('href');
-      else crumb.setAttribute('href', `#blog/${id}`);
+      if (dormant) {
+        crumb.removeAttribute('href');
+        crumb.setAttribute('role', 'link');
+        crumb.setAttribute('aria-disabled', 'true');
+      } else {
+        crumb.setAttribute('href', `#blog/${id}`);
+        crumb.removeAttribute('role');
+        crumb.removeAttribute('aria-disabled');
+      }
     });
   }
 

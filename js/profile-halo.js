@@ -86,8 +86,10 @@ class ProfileHalo {
       return;
     }
     const width = this.links[0].offsetWidth;
+    // The glass sits a pixel inside its link, and it is the glass that should mirror the hub.
+    const inset = (width - (this.links[0].querySelector('.vial-glass')?.offsetWidth ?? width)) / 2;
     const textLeft = Math.min(...this.text.map((el) => pagePosition(el)[0]));
-    const mirror = window.innerWidth - hubBox.right;
+    const mirror = window.innerWidth - hubBox.right - inset;
     const left = Math.max(CLEARANCE, Math.min(mirror, textLeft - CLEARANCE - width));
     this.rail.style.setProperty('--rail-left', `${(left - pagePosition(frame)[0]).toFixed(1)}px`);
     this.rail.setAttribute('data-rail-left', '');

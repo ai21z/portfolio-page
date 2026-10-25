@@ -4,7 +4,6 @@ document.documentElement.classList.add('js-ready');
 
 import { sizeCanvas, cumulativeLengths, isFirefox, throttle } from './utils.js';
 import { buildGraphFromPaths, aStarPath } from './graph.js';
-import socialIconsAnimation from './social-icons-animation.js';
 import { initHubToIcons } from './hub-to-icons.js';
 import { NAV_COORDS } from './config.js';
 import { isCompact, COMPACT_MQ } from './compact.js';
@@ -1484,8 +1483,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   notebookContact.init();
-
-  socialIconsAnimation.init();
 
   const contactSection = document.getElementById('contact');
   if (contactSection) {

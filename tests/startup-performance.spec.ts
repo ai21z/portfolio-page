@@ -39,12 +39,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
     await expect(page.locator('html')).toHaveAttribute('data-graphics-effective-profile', 'quiet');
     await expect(page.locator('#threshold')).toBeHidden();
     const state = await page.evaluate(async () => {
-      const { default: icons } = await import('/js/social-icons-animation.js');
-      icons.init();
       return {
-        iconCount: icons.icons.length,
-        expectedCount: document.querySelectorAll('.sigil-vial:not(.sigil-vial-split)').length,
-        iconsRunning: icons.isActive,
         canvases: ['spore-canvas', 'reveal-canvas'].map(id => {
           const canvas = document.getElementById(id) as HTMLCanvasElement;
           return canvas.width * canvas.height;
@@ -54,8 +49,6 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
           animation.playState === 'running' && animation.effect?.getTiming().iterations === Infinity).length
       };
     });
-    expect(state.iconCount).toBe(state.expectedCount);
-    expect(state.iconsRunning).toBe(false);
     expect(state.canvases).toEqual([1, 1]);
     expect(state.portraitLoaded).toBe(true);
     expect(state.animatedDecorations).toBe(0);
@@ -70,26 +63,18 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
   });
 }
 
-test('desktop social animation initializes only once and stops in Quiet', async ({ browser }) => {
+test('the desktop profiles rail holds still and the hub spores stop in Quiet', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
   try {
     await page.goto('/index.html');
     await expect(page.locator('#threshold')).toBeHidden();
-    const state = await page.evaluate(async () => {
-      const { default: icons } = await import('/js/social-icons-animation.js');
-      const governor = await import('/js/graphics-governor.js');
-      icons.init();
-      icons.init();
-      const count = icons.icons.length;
-      const expected = document.querySelectorAll('.sigil-vial:not(.sigil-vial-split)').length;
-      governor.setGraphicsProfile('quiet', { persist: false });
-      const stopped = !icons.isActive && icons.animationFrameId === null;
-      governor.setGraphicsProfile('balanced', { persist: false });
-      return { count, expected, stopped, resumed: icons.isActive };
-    });
-    expect(state.count).toBe(state.expected);
-    expect(state.stopped).toBe(true);
-    expect(state.resumed).toBe(true);
+    const places = () => page.locator('.living-sigils .sigil-vial').evaluateAll((links) =>
+      links.map((link) => { const box = link.getBoundingClientRect(); return [Math.round(box.left), Math.round(box.top)]; }));
+    const before = await places();
+    await page.waitForTimeout(1200);
+    expect(await places()).toEqual(before);
+    expect(new Set(before.map(([left]) => left)).size).toBe(1);
+    expect(await page.locator('.living-sigils .sigil-vial[style*="transform"]').count()).toBe(0);
     await page.clock.install();
     await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');

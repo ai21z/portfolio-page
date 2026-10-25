@@ -35,7 +35,7 @@ test('every module and stylesheet is requested with the token of its own bytes, 
   for (const url of urls) perPath.set(url.pathname, (perPath.get(url.pathname) || new Set()).add(url.search));
   for (const [pathname, searches] of perPath) expect(searches.size, pathname).toBe(1);
   for (const pathname of ['/js/contact.js', '/js/navigation.js', '/js/graphics-governor.js',
-    '/js/social-icons-animation.js', '/js/hub-to-icons.js', '/js/portrait-particles.js', '/js/work-globe-webgl.js']) {
+    '/js/hub-to-icons.js', '/js/portrait-particles.js', '/js/work-globe-webgl.js']) {
     expect(urls.filter(url => url.pathname === pathname), pathname).toHaveLength(1);
   }
   expect(urls.some(url => url.pathname === '/js/contact-attempt.js')).toBe(true);

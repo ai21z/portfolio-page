@@ -406,7 +406,6 @@ body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #rev
     max-width: min(520px, 100%) !important;
     margin-inline: auto !important;
   }
-  .sigil-vine{ display: none !important; } /* keep the clean row on mobile */
 
   /* 3) Footer: hide coords + smaller type on phones */
   .foot-coords{ display: none !important; }

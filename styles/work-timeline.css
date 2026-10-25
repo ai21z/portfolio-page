@@ -44,25 +44,26 @@
   font-family: var(--font-data);
   font-size: var(--text-floor);
   letter-spacing: 0;
-  color: rgba(150, 170, 160, 0.82);
+  color: var(--chrome-ink);
 }
 
 .work-rail-key-row .rail-glyph {
   justify-self: center;
 }
 
+/* A heading, so it keeps the typewriter of the titles, in bone like Field Notes. */
 .work-rail-title {
   font-size: 0.92rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.62);
+  color: var(--chrome-ink-hi);
 }
 
 .work-rail-sub {
   font-family: var(--font-data);
   font-size: var(--text-floor);
   letter-spacing: 0.02em;
-  color: rgba(150, 170, 160, 0.82);
+  color: var(--chrome-ink-dim);
   margin-top: 3px;
 }
 
@@ -74,34 +75,54 @@
   pointer-events: auto;
 }
 
+/* Stamps in the chrome ink. The chosen order carries the bead in a ring, as everywhere a choice is made. */
 .work-rail-mode {
+  position: relative;
   font-family: var(--font-data);
   font-size: var(--text-floor);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--chrome-track);
   text-transform: uppercase;
-  color: rgba(180, 200, 190, 0.78);
-  background: rgba(var(--decay-green-rgb), 0.03);
-  border: 1px solid rgba(var(--decay-green-rgb), 0.14);
+  color: var(--chrome-ink);
+  background: var(--chrome-back);
+  border: 1px solid var(--chrome-rule);
   border-radius: 2px;
-  padding: 4px 9px;
+  padding: 4px 10px 4px 26px;
   cursor: pointer;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.work-rail-mode::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  outline: 1px solid var(--chrome-rule);
+  outline-offset: 2px;
 }
 
 .work-rail-mode:hover {
-  color: rgba(210, 230, 220, 0.85);
-  border-color: rgba(var(--decay-green-rgb), 0.3);
+  color: var(--chrome-ink-hi);
+  border-color: var(--chrome-rule-hi);
 }
 
 .work-rail-mode[aria-pressed="true"] {
-  color: rgba(var(--decay-green-rgb), 0.9);
-  border-color: rgba(var(--decay-green-rgb), 0.45);
-  background: rgba(var(--decay-green-rgb), 0.08);
+  color: var(--chrome-ink-hi);
+  border-color: var(--chrome-rule-hi);
+}
+
+.work-rail-mode[aria-pressed="true"]::before {
+  background: var(--chrome-mark);
+  outline-color: var(--chrome-rule-hi);
+  box-shadow: 0 0 8px rgba(var(--necrotic-rgb), 0.55);
 }
 
 .work-rail-mode:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 1px rgba(var(--decay-green-rgb), 0.6);
+  outline: 1px solid var(--chrome-rule-hi);
+  outline-offset: 2px;
 }
 
 /* cluster label shown in the by-type / by-place layouts */
@@ -111,7 +132,7 @@
   font-size: var(--text-floor);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.62); /* 6.1:1; 0.45 gave 3.7:1 */
+  color: var(--chrome-ink-dim);
   animation: railGroupIn 0.4s ease both;
 }
 
@@ -176,7 +197,8 @@
   mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
 }
 
-/* More below: sits on the faded foot of the list, leaves once the end is in view. */
+/* More below: sits on the faded foot of the list, leaves once the end is in view. A small dark slip in
+   the necrotic ink, so it never reads into the faded entry under it. */
 .work-rail-cue {
   position: absolute;
   left: 2px;
@@ -184,11 +206,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 2px;
+  background: var(--chrome-back);
   font-family: var(--font-data);
   font-size: var(--text-floor);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--chrome-track);
   text-transform: uppercase;
-  color: rgba(var(--decay-green-rgb), 0.62);
+  color: var(--chrome-mark);
   pointer-events: none;
   transition: opacity 200ms var(--ease-house);
 }
@@ -628,12 +653,10 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 30;
-    background: rgba(8, 10, 12, 0.82);
-    border: 1px solid rgba(var(--decay-green-rgb), 0.22);
-    border-radius: 4px;
+    background: var(--chrome-back);
+    border: 1px solid var(--chrome-rule);
+    border-radius: 2px;
     padding: 3px;
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
   }
 
   /* The data face at the text floor with less tracking runs as wide as the Special Elite labels did, so
@@ -643,10 +666,10 @@
     font-size: var(--text-floor);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: rgba(180, 200, 190, 0.82);
+    color: var(--chrome-ink);
     background: none;
     border: 0;
-    border-radius: 3px;
+    border-radius: 1px;
     /* The bar sets the 44px target, so base.css's touch rule for buttons cannot grow it */
     min-height: 0;
     padding: 0 15px;
@@ -654,8 +677,24 @@
   }
 
   .work-view-btn[aria-pressed="true"] {
-    color: rgba(var(--decay-green-rgb), 0.95);
-    background: rgba(var(--decay-green-rgb), 0.1);
+    color: var(--chrome-ink-hi);
+    background: rgba(var(--necrotic-rgb), 0.14);
+    box-shadow: inset 0 0 0 1px var(--chrome-rule-hi);
+  }
+
+  /* The sort stamps keep their old width here, so they still share the title's line on short
+     landscape phones, and the chosen one takes the view switch's fill instead of the bead. */
+  .work-rail-mode {
+    padding: 4px 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .work-rail-mode::before {
+    display: none;
+  }
+
+  .work-rail-mode[aria-pressed="true"] {
+    background: rgba(var(--necrotic-rgb), 0.14);
   }
 
   /* timeline view: the rail goes full-width and opaque, covering the globe */
@@ -691,12 +730,9 @@
   .work-rail-key {
     flex-direction: column;
     flex-wrap: nowrap;
-    background: rgba(10, 12, 14, 0.85);
-    border: 1px solid rgba(var(--decay-green-rgb), 0.3);
-    border-radius: 4px;
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    background: var(--chrome-back);
+    border: 1px solid var(--chrome-rule);
+    border-radius: 2px;
     padding: 10px 12px;
     gap: 7px;
     margin: 0 0 9px;
@@ -706,7 +742,7 @@
     grid-template-columns: 16px 1fr;
     gap: 11px;
     font-size: max(var(--text-floor), 0.72rem);
-    color: rgba(225, 233, 228, 0.88);
+    color: var(--chrome-ink-hi);
   }
 
   /* Touch uses a modal card instead of a hover note. */

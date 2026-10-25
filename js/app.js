@@ -51,7 +51,8 @@ import {
   setLitRoute,
   clearLitRoute,
   remeasureLitRoute,
-  litRouteHasWork
+  litRouteHasWork,
+  warmLitRoute
 } from './sparks.js';
 import {
   computeNavOffsets,
@@ -1558,13 +1559,15 @@ async function warmSectionShaders(sectionName, load, warm) {
 }
 
 // Once the landing has settled, do in idle time the work that would otherwise be a long frame
-// later: building the navigation graph, which the first hover of a node waits for, then linking
-// the Blog and Work shaders, which their first visit waits for. One step per idle callback, and
+// later: building the navigation graph, which the first hover of a node waits for, drawing an
+// invisible lit route so its stroke program is compiled before that hover, then linking the Blog
+// and Work shaders, which their first visit waits for. One step per idle callback, and
 // only on desktops outside Quiet, since phones may never hover and Quiet sessions asked for less
 // work.
 const IDLE_WARMUP_DELAY_MS = 4000;
 const idleWarmupSteps = [
   () => ensureMyceliumReady(),
+  () => warmLitRoute(),
   () => warmSectionShaders('blog', importBlogNetwork, 'warmBlogNetwork'),
   () => warmSectionShaders('work', importWorkGlobe, 'warmWorkGlobe')
 ];

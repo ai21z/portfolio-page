@@ -97,6 +97,8 @@ export function startSpark(fromKey, toKey, speedPxPerSec = 650) {
 // none, and the label's preview line carries the same news there.
 const LIT_IN_PER_SEC = 1 / 0.14;
 const LIT_OUT_PER_SEC = 1 / 0.26;
+// The lit route's three strokes, outer glow to core: colour, peak alpha, width.
+const LIT_STROKES = [['143,180,255', 0.12, 7], ['122,174,138', 0.4, 3], ['220,255,235', 0.6, 1.2]];
 // The sigil's drawn radius, where a tie to a route that passes near the hub begins.
 const HUB_EDGE = 26;
 let litRoute = null;
@@ -146,8 +148,8 @@ function drawLitRoute(dt, pointAtRoute) {
   sparkCtx.save();
   sparkCtx.lineCap = 'round';
   sparkCtx.lineJoin = 'round';
-  for (const [style, width] of [[`rgba(143,180,255,${0.12 * a})`, 7], [`rgba(122,174,138,${0.4 * a})`, 3], [`rgba(220,255,235,${0.6 * a})`, 1.2]]) {
-    sparkCtx.strokeStyle = style;
+  for (const [rgb, peak, width] of LIT_STROKES) {
+    sparkCtx.strokeStyle = `rgba(${rgb},${peak * a})`;
     sparkCtx.lineWidth = width;
     sparkCtx.beginPath();
     if (gap > HUB_EDGE) {
@@ -168,6 +170,27 @@ function drawLitRoute(dt, pointAtRoute) {
   }
   sparkCtx.restore();
   if (!litRouteHasWork()) litRoute = null;
+}
+
+// The round-capped strokes need a GPU program the canvas has not drawn with, and the first lit route
+// compiled it inside the first hover's frame (about 55 ms, a shader compile in the GPU process). The idle
+// warm-up strokes an invisible route in a corner first, then clears it.
+export function warmLitRoute() {
+  if (!sparkCtx) return;
+  sparkCtx.save();
+  sparkCtx.lineCap = 'round';
+  sparkCtx.lineJoin = 'round';
+  for (const [rgb, , width] of LIT_STROKES) {
+    sparkCtx.strokeStyle = `rgba(${rgb},0.004)`;
+    sparkCtx.lineWidth = width;
+    sparkCtx.beginPath();
+    sparkCtx.moveTo(2, 2);
+    sparkCtx.lineTo(9, 5);
+    sparkCtx.lineTo(14, 3);
+    sparkCtx.stroke();
+  }
+  sparkCtx.restore();
+  requestAnimationFrame(() => requestAnimationFrame(() => sparkCtx?.clearRect(0, 0, 24, 24)));
 }
 
 function hubPoint() {

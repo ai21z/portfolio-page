@@ -197,23 +197,23 @@
   mask-image: linear-gradient(transparent, #000 7%, #000 86%, transparent);
 }
 
-/* More below: sits on the faded foot of the list, leaves once the end is in view. A small dark slip in
-   the necrotic ink, so it never reads into the faded entry under it. */
+/* More below: sits on the faded foot of the list, leaves once the end is in view. It rides a dark band
+   the width of the list, so no faded entry reads on beside it, in the chrome ink (green marks state). */
 .work-rail-cue {
   position: absolute;
-  left: 2px;
-  bottom: 6px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px 4px 6px;
-  border-radius: 2px;
-  background: var(--chrome-back);
+  padding: 22px 2px 8px;
+  background: linear-gradient(to top, var(--void) 58%, rgba(8, 9, 10, 0));
   font-family: var(--font-data);
   font-size: var(--text-floor);
   letter-spacing: var(--chrome-track);
   text-transform: uppercase;
-  color: var(--chrome-mark);
+  color: var(--chrome-ink);
   pointer-events: none;
   transition: opacity 200ms var(--ease-house);
 }
@@ -564,8 +564,8 @@
 /* Drawn with the section closes (styles/components.css). */
 .work-card-close {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 14px;
+  right: 14px;
   width: 44px;
   height: 44px;
   cursor: pointer;
@@ -657,30 +657,50 @@
     border: 0;
     border-radius: 1px;
     /* The bar sets the 44px target, so base.css's touch rule for buttons cannot grow it */
+    position: relative;
     min-height: 0;
-    padding: 0 15px;
+    padding: 0 8px 0 22px;   /* 30 px in all, as before, with the ring in the left part */
     cursor: pointer;
+  }
+
+  .work-view-btn::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 50%;
+    outline: 1px solid var(--chrome-rule);
+    outline-offset: 2px;
   }
 
   .work-view-btn[aria-pressed="true"] {
     color: var(--chrome-ink-hi);
-    background: rgba(var(--necrotic-rgb), 0.14);
-    box-shadow: inset 0 0 0 1px var(--chrome-rule-hi);
   }
 
-  /* The sort stamps keep their old width here, so they still share the title's line on short
-     landscape phones, and the chosen one takes the view switch's fill instead of the bead. */
-  .work-rail-mode {
-    padding: 4px 9px;
-    letter-spacing: 0.08em;
+  .work-view-btn[aria-pressed="true"]::before {
+    background: var(--chrome-mark);
+    outline-color: var(--chrome-rule-hi);
+    box-shadow: 0 0 8px rgba(var(--necrotic-rgb), 0.55);
   }
 
-  .work-rail-mode::before {
-    display: none;
-  }
+  /* Short landscape phones: the sort stamps keep their old width, so they still share the title's
+     line, and the chosen one takes a fill instead of the bead. */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .work-rail-mode {
+      padding: 4px 9px;
+      letter-spacing: 0.08em;
+    }
 
-  .work-rail-mode[aria-pressed="true"] {
-    background: rgba(var(--necrotic-rgb), 0.14);
+    .work-rail-mode::before {
+      display: none;
+    }
+
+    .work-rail-mode[aria-pressed="true"] {
+      background: rgba(var(--necrotic-rgb), 0.14);
+    }
   }
 
   /* timeline view: the rail goes full-width and opaque, covering the globe */
@@ -752,9 +772,18 @@
       transform: none;
     }
 
+    /* No room for the ring here: the chosen view takes a fill. */
     .work-view-btn {
       padding-inline: 10px;
       letter-spacing: 0;
+    }
+
+    .work-view-btn::before {
+      display: none;
+    }
+
+    .work-view-btn[aria-pressed="true"] {
+      background: rgba(var(--necrotic-rgb), 0.14);
     }
   }
 

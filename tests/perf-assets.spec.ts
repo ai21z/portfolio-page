@@ -54,12 +54,12 @@ test('large runtime images have WebP variants referenced by the app', () => {
   expect(globe).toContain('ominus-earth.webp');
   expect(globe).toContain('ominus-fog-cloud.webp');
   expect(globe).toContain('lightning.webp');
-  // The hub takes the rust seal the loading cover has already fetched, and the particles'
-  // constellation mask the 192 px line sigil. The 1024 px sigil is only a source for the icon
-  // generators and is not shipped.
-  expect(nav).toContain('no-bg-seal-sigil-512.webp');
-  expect(particles).toContain('AZ-01-192.webp');
-  for (const source of [nav, particles]) expect(source).not.toContain('AZ-01.webp');
+  // The 64 px hub and the particles' constellation mask both take the 192 px sigil. The 1024 px
+  // one is only a source for the icon generators and is not shipped.
+  for (const source of [nav, particles]) {
+    expect(source).toContain('AZ-01-192.webp');
+    expect(source).not.toContain('AZ-01.webp');
+  }
   const shipped = JSON.parse(readText('scripts/public-files.json'));
   expect(shipped).not.toContain('artifacts/sigil/AZ-01.webp');
   expect(shipped).not.toContain('artifacts/sigil/AZ-01.png');

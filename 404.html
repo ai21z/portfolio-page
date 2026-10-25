@@ -76,13 +76,12 @@
       text-align: center;
     }
 
-    /* The rust seal as on the hub and the phone menu, its dark ground screened away. */
     .seal {
       width: clamp(104px, 24vw, 156px);
       height: auto;
       margin-bottom: 18px;
-      opacity: 0.9;
-      mix-blend-mode: screen;
+      opacity: 0.72;
+      filter: brightness(0.92) contrast(1.08);
     }
 
     .code {
@@ -130,7 +129,7 @@
 </head>
 <body>
   <main>
-    <img class="seal" src="/artifacts/sigil/no-bg-seal-sigil-512.webp" alt="" width="156" height="156" />
+    <img class="seal" src="/artifacts/sigil/no-bg-seal-sigil.webp" alt="" width="156" height="156" />
     <p class="code">404</p>
     <h1>Page not found</h1>
     <p>The address does not lead to a page on this site.</p>

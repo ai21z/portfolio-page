@@ -87,8 +87,7 @@ const CONFIG = {
   REFORM_STREAM_PHASE_DIST: 150,
 
   // Constellation mode (click easter egg)
-  // The constellation only needs a brightness mask, so it reads the 192 px line sigil (8 KB). The hub's
-  // rust seal has a lit ground, which would fill the whole disc.
+  // The constellation only needs a brightness mask, so it reads the 192 px sigil the hub already loads.
   SIGIL_PATH: './artifacts/sigil/AZ-01-192.webp',
   SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-01-192.png',
   // 48 on the 192 px mask marks the same share of particles as 40 did on the 1024 px one.

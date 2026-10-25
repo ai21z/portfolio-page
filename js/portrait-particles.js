@@ -125,6 +125,23 @@ const CONFIG = {
 
 const SAMPLE_BASE_WIDTH = 1024;
 
+// The widest file in the photo's own srcset, as an absolute URL, so it keeps the build's cache token.
+function largestCandidate(img) {
+  const srcset = img.closest('picture')?.querySelector('source[srcset]')?.getAttribute('srcset') || img.getAttribute('srcset');
+  if (!srcset) return null;
+  let best = null;
+  let bestWidth = 0;
+  for (const candidate of srcset.split(',')) {
+    const [url, descriptor = ''] = candidate.trim().split(/\s+/);
+    const width = parseInt(descriptor, 10);
+    if (url && width > bestWidth) {
+      best = url;
+      bestWidth = width;
+    }
+  }
+  return best ? new URL(best, document.baseURI).href : null;
+}
+
 function renderModeForBudget() {
   if (CONFIG.RENDER_MODE !== 'auto') return CONFIG.RENDER_MODE;
   return (FIREFOX || WEBKIT) ? 'fillrect' : 'imagedata';
@@ -305,6 +322,7 @@ class PortraitParticles {
     this.particles = [];
     this.wrapper = null;
     this.img = null;
+    this.sampleSource = null;
     this.width = 0;
     this.height = 0;
     this.dpr = 1;
@@ -395,11 +413,34 @@ class PortraitParticles {
     this.img = this.wrapper.querySelector('.portrait');
     if (!this.img) return;
 
-    if (this.img.complete && this.img.naturalWidth > 0) {
-      this.scheduleSetup();
-    } else {
-      this.img.addEventListener('load', () => this.scheduleSetup(), { once: true });
-    }
+    const photoReady = this.img.complete && this.img.naturalWidth > 0
+      ? Promise.resolve()
+      : new Promise((resolve) => this.img.addEventListener('load', resolve, { once: true }));
+    const pageLoaded = document.readyState === 'complete'
+      ? Promise.resolve()
+      : new Promise((resolve) => window.addEventListener('load', resolve, { once: true }));
+    Promise.all([photoReady, pageLoaded])
+      .then(() => this.loadSampleSource())
+      .then((source) => {
+        this.sampleSource = source;
+        this.scheduleSetup();
+      });
+  }
+
+  // The particles that travel to a hovered node are the engraving's brightest specks. The smaller files
+  // the browser picks for the photo average those away, and the stream had almost nothing to send, so
+  // the particles sample the full 1024 px file. It is fetched once the page has loaded, so it never
+  // competes with the photo, and the photo stands in if it fails.
+  loadSampleSource() {
+    const full = largestCandidate(this.img);
+    if (!full || full === this.img.currentSrc) return Promise.resolve(this.img);
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => resolve(image.naturalWidth > 0 ? image : this.img);
+      image.onerror = () => resolve(this.img);
+      image.src = full;
+    });
   }
 
   // Sampling reads the portrait's pixels, which held a 100 to 300 ms frame while the page loaded.
@@ -454,6 +495,8 @@ class PortraitParticles {
     const stats = {
       renderMode: this.renderMode,
       particleCount: this.particles.length,
+      // The brightest specks, the ones that travel to a hovered node.
+      dustCount: this.bins?.slice(4).reduce((sum, bin) => sum + bin.length, 0) ?? 0,
       sigilCount: this.sigilCount ?? 0,
       backingWidth: this.canvas?.width ?? 0,
       backingHeight: this.canvas?.height ?? 0,
@@ -588,12 +631,13 @@ class PortraitParticles {
     // A canvas kept in CPU memory, so reading the pixels back is a copy and not a wait on the GPU.
     const offscreen = document.createElement('canvas');
     const offCtx = offscreen.getContext('2d', { willReadFrequently: true });
-    const imgW = this.img.naturalWidth;
-    const imgH = this.img.naturalHeight;
+    const source = this.sampleSource || this.img;
+    const imgW = source.naturalWidth;
+    const imgH = source.naturalHeight;
 
     offscreen.width = imgW;
     offscreen.height = imgH;
-    offCtx.drawImage(this.img, 0, 0, imgW, imgH);
+    offCtx.drawImage(source, 0, 0, imgW, imgH);
 
     let imageData;
     try {
@@ -603,8 +647,8 @@ class PortraitParticles {
       return;
     }
     const data = imageData.data;
-    // The spacing is set for the 1024 px portrait. The browser now picks a smaller file on most screens
-    // (480 to 800 px), so the grid scales with the file and the particle count stays the same.
+    // The spacing is set for the 1024 px file. If only a smaller one is at hand (the photo standing in),
+    // the grid scales with it, so the particle count stays the same.
     const spacing = Math.max(CONFIG.SAMPLE_SPACING, Math.round(CONFIG.SAMPLE_SPACING / Math.max(0.2, particleScale))) * imgW / SAMPLE_BASE_WIDTH;
     const skipProbability = Math.min(0.92, CONFIG.PARTICLE_SKIP_PROBABILITY + (1 - particleScale) * 0.55);
     const darkSkipProbability = Math.min(0.92, CONFIG.DARK_SKIP_PROBABILITY + (1 - particleScale) * 0.35);

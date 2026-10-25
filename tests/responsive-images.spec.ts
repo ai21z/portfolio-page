@@ -89,9 +89,35 @@ for (const device of [
       const portrait = page.locator('.portrait');
       await expect.poll(() => portrait.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
       expect(images).toHaveLength(1);
-      expect(images[0].split('/').pop()!.split('?')[0]).toMatch(new RegExp(device.source.replace('.', '\.') + '$'));
+      expect(images[0].split('/').pop()!.split('?')[0].endsWith(device.source), images[0]).toBe(true);
     } finally {
       await context.close();
     }
   });
 }
+
+// The particles that travel to a hovered node are the engraving's brightest specks (the dust), which the
+// smaller photo files average away: the full file holds about 265 at the sampling grid, the 800 px one 46 and
+// the 480 px one none, so the stream had nothing to send. The particles sample the full file, fetched after
+// load, so the photo stays the small one. The stream itself needs the Rich tier, which the test browsers'
+// software renderers do not reach, so this checks what it sends.
+test('the portrait particles sample the full file after load, so the dust that travels to a hovered node is there', async ({ browser, baseURL, browserName }) => {
+  // Firefox runs no portrait particles, and Safari's lighter budget samples fewer and does not stream on Auto.
+  test.skip(browserName !== 'chromium', 'Only Chromium runs the full particle budget here');
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  try {
+    await page.goto(baseURL + '/index.html');
+    await page.waitForFunction(() => (window as any).__portraitParticleStats?.particleCount > 0, null, { timeout: 20_000 });
+    const requests = await page.evaluate(() => {
+      const load = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      return performance.getEntriesByType('resource').filter((entry) => entry.name.includes('myOminousGreenPortrait'))
+        .map((entry) => ({ file: entry.name.split('/').pop()!.split('?')[0], beforeLoad: entry.startTime < load.loadEventStart }));
+    });
+    expect(requests.filter((r) => r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait-480.webp']);
+    expect(requests.filter((r) => !r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait.webp']);
+    expect(await page.evaluate(() => (window as any).__portraitParticleStats.dustCount)).toBeGreaterThan(150);
+  } finally {
+    await context.close();
+  }
+});

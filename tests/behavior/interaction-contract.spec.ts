@@ -204,10 +204,16 @@ test('mobile intro sigil has a visible menu affordance and clean accessible name
   await expect(sigil).toBeVisible();
   await expect(sigil).toHaveAttribute('aria-label', 'Open menu');
   await expect(sigil.locator('img')).toHaveAttribute('alt', '');
-  await expect(sigil.locator('.myco-sigil-label')).toBeVisible();
-  await expect(sigil.locator('.myco-sigil-label .menu-arc-letter')).toHaveText(['•', 'M', 'E', 'N', 'U', '•']);
-  await expect(sigil.locator('.myco-sigil-label .menu-arc-burger line')).toHaveCount(3);
-  await expect(sigil.locator('.myco-sigil-label textPath')).toHaveCount(0);
+  // MENU is drawn as outlines inside the button, a straight word under the ring with no face to load.
+  const label = sigil.locator('.myco-sigil-label');
+  await expect(label).toBeVisible();
+  await expect(label.locator('path')).toHaveCount(1);
+  await expect(label.locator('text')).toHaveCount(0);
+  const [ring, word, name] = await Promise.all([sigil.boundingBox(), label.boundingBox(), page.locator('.name').boundingBox()]);
+  expect(word!.y).toBeGreaterThan(ring!.y + ring!.height);
+  expect(Math.abs(word!.x + word!.width / 2 - (ring!.x + ring!.width / 2))).toBeLessThan(1);
+  expect(word!.height).toBeGreaterThanOrEqual(9);
+  expect(name!.y - (word!.y + word!.height)).toBeGreaterThanOrEqual(20);
   await expect(await controlsOverlap(page, '.graphics-control', '.foot')).toBe(false);
 
   await sigil.click();

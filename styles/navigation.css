@@ -443,7 +443,8 @@ body.has-paper-open-global #network-nav {
     display: flex;
     align-items: center;
     justify-content: center;    /* center ONLY the sigil */
-    min-height: 80px;
+    min-height: 98px;
+    padding-bottom: 18px;       /* room for MENU under the ring, clear of the name */
     position: relative;
     overflow: visible;
     z-index: 6;                 /* above background, below dialogs */
@@ -454,7 +455,7 @@ body.has-paper-open-global #network-nav {
   .myco-rail{
     position: absolute;
     left: 50%;
-    top: 50%;
+    top: calc(50% - 9px);     /* on the ring's centre, above the MENU room */
     transform: translate(-50%, -50%);
     width: min(92vw, 400px);  /* responsive width, max 400px to match viewBox */
     height: 80px;
@@ -993,166 +994,60 @@ body.has-paper-open-global #network-nav {
   .text-column{ grid-row: 5 !important; }
 }
 
-/* --- Sigil wrapper (for additional glow layers) --- */
+/* --- Phone menu button: the rust seal in a bone ring on a dark disc, MENU set straight under it --- */
 .myco-sigil-wrapper{
   position: relative;
   width: 64px;
   height: 64px;
 }
 
-/* Second burst glow layer - catches right hub bursts (delayed by 2.25s) */
-.myco-sigil-wrapper::before{
-  content:""; position:absolute; inset:-10px; border-radius:50%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(143,180,255,.35), transparent 65%),
-              radial-gradient(70% 70% at 50% 50%, rgba(var(--decay-green-rgb),.25), transparent 75%);
-  filter: blur(12px); opacity:.35; z-index:-1;
-  animation: sigil-burst-glow 4.5s ease-in-out infinite;
-  animation-delay: 2.25s;  /* synced to right hub burst */
-  pointer-events: none;
-}
-
-/* --- Sigil button: cabochon (domed glassy stone) --- */
 .myco-sigil{
   -webkit-tap-highlight-color: transparent;
-  appearance: none; border: 0; padding: 0;
+  appearance: none; padding: 0;
   width: 64px; height: 64px; border-radius: 50%; position: relative; cursor: pointer;
   z-index: 1; /* sits above the rail */
   display: grid; place-items: center;
-  background: radial-gradient(62% 62% at 50% 30%, #30423a 0%, #1a241f 46%, #0b0f0d 100%);
-  box-shadow:
-    inset 0 2px 4px rgba(196, 232, 210, 0.30),   /* top bevel highlight */
-    inset 0 -7px 13px rgba(0, 0, 0, 0.72),        /* bottom dome shade */
-    0 2px 4px rgba(0, 0, 0, 0.45),                /* tight contact shadow */
-    0 8px 18px rgba(0, 0, 0, 0.55),
-    0 0 18px rgba(var(--decay-green-rgb), 0.16);            /* rim glow */
-  transition: transform .16s var(--ease-house), box-shadow .16s ease;
+  background: var(--void);
+  border: 1px solid var(--chrome-rule);
+  transition: border-color .16s ease, transform .16s var(--ease-house);
 }
 
-/* Pointer devices: rise and brighten on approach so it reads as pressable */
 @media (hover: hover) {
-  .myco-sigil:hover{
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 2px 4px rgba(196, 232, 210, 0.34),
-      inset 0 -7px 13px rgba(0, 0, 0, 0.72),
-      0 2px 4px rgba(0, 0, 0, 0.40),
-      0 12px 24px rgba(0, 0, 0, 0.55),            /* lifts higher */
-      0 0 26px rgba(var(--decay-green-rgb), 0.26);
-  }
-  .myco-sigil:hover::after{
-    background: radial-gradient(50% 100% at 50% 0%, rgba(255,255,255,0.55), transparent 72%);
-  }
-  .myco-sigil:hover:active{ transform: translateY(2px) scale(.94); }
+  .myco-sigil:hover{ border-color: var(--chrome-rule-hi); }
 }
 
-.myco-sigil:active{
-  transform: translateY(2px) scale(.94);
-  box-shadow:
-    inset 0 5px 9px rgba(0, 0, 0, 0.72),
-    inset 0 -1px 2px rgba(196, 232, 210, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.40),
-    0 0 10px rgba(var(--decay-green-rgb), 0.12);
-}
+.myco-sigil:active{ transform: scale(.96); }
 
 .myco-sigil:focus-visible{
-  outline: none;
-  box-shadow:
-    inset 0 2px 4px rgba(196, 232, 210, 0.30),
-    inset 0 -7px 13px rgba(0, 0, 0, 0.72),
-    0 0 0 2px rgba(var(--decay-green-rgb), 0.55),           /* keyboard focus ring */
-    0 8px 18px rgba(0, 0, 0, 0.55),
-    0 0 18px rgba(var(--decay-green-rgb), 0.22);
+  outline: 1px solid var(--chrome-rule-hi);
+  outline-offset: 3px;
 }
 
+.myco-sigil[aria-expanded="true"]{ border-color: var(--chrome-rule-hi); }
+
+/* Part of the button, so a tap on the word opens the menu too. 7 px under the ring. */
 .myco-sigil-label {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 86px;
-  height: 86px;
+  top: calc(100% + 7px);
+  width: 40.56px;
+  height: 9.49px;
   overflow: visible;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  fill: var(--chrome-ink);
   pointer-events: none;
-  opacity: 0.8;
-  mix-blend-mode: screen;
 }
 
-/* The letters are the only visible sign that the sigil opens a menu (the SVG is aria-hidden).
-   0.88 fill under the label's 0.8 opacity gives about 5:1 on the void; 0.34 gave 1.7:1. */
-.myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 0.88);
-  /* 14 units of the 100-unit label, which is 86 px wide, set the letters at the 12 px floor. */
-  font: 400 14px/1 var(--font-display, "Special Elite", monospace);
-  text-anchor: middle;
-  dominant-baseline: central;
-  letter-spacing: 0;
-  filter:
-    drop-shadow(0 0 5px rgba(var(--decay-green-rgb), 0.14))
-    drop-shadow(0 0 12px rgba(143, 180, 255, 0.08));
-}
-
-.myco-sigil-label .menu-arc-dot,
-.myco-sigil-label .menu-arc-burger {
-  fill: none;
-  color: rgba(var(--decay-green-rgb), 0.62); /* about 4.3:1, above the 3:1 icons need; 0.34 gave 2:1 */
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  filter:
-    drop-shadow(0 0 5px rgba(var(--decay-green-rgb), 0.12))
-    drop-shadow(0 0 10px rgba(var(--decay-green-rgb), 0.07));
-}
-
-.myco-sigil-label .menu-arc-dot {
-  fill: currentColor;
-  stroke: none;
-  font-size: 10px;
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label {
-  filter:
-    drop-shadow(0 0 5px rgba(230, 227, 216, 0.42))
-    drop-shadow(0 0 10px rgba(184, 114, 66, 0.38));
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-letter {
-  fill: rgba(143, 180, 255, 1);
-}
-
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-dot,
-.myco-sigil[aria-expanded="true"] .myco-sigil-label .menu-arc-burger {
-  color: rgba(var(--decay-green-rgb), 0.8);
-}
+.myco-sigil[aria-expanded="true"] .myco-sigil-label { fill: var(--chrome-ink-hi); }
 
 .myco-sigil picture{
   display: block;
   width: 66%;
   height: 66%;
-  position: relative;
-  z-index: 2; /* the seal floats above the specular highlight */
 }
 .myco-sigil img{
-  width: 100%; height: 100%; display:block; mix-blend-mode: screen; opacity:.95;
-  transition: transform .35s var(--ease-house), filter .35s;
+  width: 100%; height: 100%; display:block; mix-blend-mode: screen;
 }
-.myco-sigil::before{
-  content:""; position:absolute; inset:-8px; border-radius:50%;
-  background: radial-gradient(60% 60% at 55% 45%, rgba(var(--decay-green-rgb),.16), transparent 70%),
-              radial-gradient(80% 80% at 45% 55%, rgba(143,180,255,.10), transparent 80%);
-  filter: blur(7px); opacity:.45; z-index:-1;
-  animation: sigil-base-glow 2.5s ease-in-out infinite;  /* ambient glow halo */
-}
-.myco-sigil::after{
-  content:""; position:absolute; left:20%; top:7%; width:58%; height:34%;
-  border-radius:50%;
-  background: radial-gradient(50% 100% at 50% 0%, rgba(255,255,255,0.42), transparent 72%);
-  filter: blur(2px); z-index:1; pointer-events:none;
-  transition: opacity .16s ease, transform .16s ease, background .16s ease;
-}
-/* On press the light catch dims and slides down, as if the face tilted in */
-.myco-sigil:active::after{ opacity:.45; transform: translateY(1px); }
-.myco-sigil:active img{ transform: scale(.96); }
-@media (prefers-reduced-motion: reduce){ .myco-sigil::before, .myco-sigil::after{ animation:none; } }
 
 @supports (-moz-appearance: none) {
   .myco-rail [filter],
@@ -1160,27 +1055,6 @@ body.has-paper-open-global #network-nav {
   .burst-spore {
     filter: none !important;
   }
-
-  .myco-sigil::before,
-  .myco-sigil::after {
-    filter: none !important;
-    opacity: .25;
-  }
-}
-
-/* Base glow - continuous gentle pulse from regular traveling spores */
-@keyframes sigil-base-glow{
-  0%,100%{ transform: scale(1);   opacity:.45; }
-  50%   { transform: scale(1.08); opacity:.65; }
-}
-
-/* Burst absorption glow - intensifies when burst spores reach sigil (synced to 4.5s burst cycle) */
-@keyframes sigil-burst-glow{
-  0%, 48% { transform: scale(1); opacity:.35; }
-  50% { transform: scale(1); opacity:.35; }  /* burst happens at hubs */
-  75% { transform: scale(1.25); opacity:.85; }  /* spores arrive at sigil - peak absorption glow */
-  85% { transform: scale(1.15); opacity:.65; }  /* gentle fade */
-  100% { transform: scale(1); opacity:.35; }    /* back to base */
 }
 
 /* --- Dialog menu (native <dialog>) --- */
@@ -1199,31 +1073,50 @@ body.has-paper-open-global #network-nav {
   -webkit-backdrop-filter: blur(2px) saturate(.7);
   backdrop-filter: blur(2px) saturate(.7);
 }
-/* menu content */
+/* The five ways in as on the landing: each name led by a bead in a ring, in tracked capitals. */
 .necro-menu-list{
-  display:grid; gap: 10px; padding: 8px 6px 2px;
-  justify-items: center;
+  display:grid; gap: 6px; padding: 8px 6px 2px;
+  justify-content: center;   /* one column, centred, with the beads on one line */
+  justify-items: start;
 }
 .necro-menu-list a{
-  display:inline-block; text-decoration:none; color:var(--bone);
-  padding: 10px 12px; border-radius: 10px;
-  letter-spacing:0; font: 400 16px var(--font-data);
-  background: transparent;
-  border: none;
-  filter: drop-shadow(0 0 0 transparent);
-  transition: transform .2s cubic-bezier(.2,.8,.2,1), filter .2s, background-color .2s, border-color .2s;
-  text-align: center;
+  position: relative;
+  display:inline-block; text-decoration:none; color: var(--chrome-ink-hi);
+  padding: 12px 14px 12px 36px;
+  font: 400 15px var(--font-data);
+  text-transform: uppercase;
+  letter-spacing: var(--chrome-track);
+  transition: color .2s ease;
+}
+.necro-menu-list a::before{
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--chrome-mark);
+  outline: 1px solid var(--chrome-rule);
+  outline-offset: 3px;
+  transition: outline-color .2s ease, box-shadow .2s ease;
 }
 .necro-menu-list a:focus-visible,
-.necro-menu-list a:hover{
-  transform: translateY(-2px);
-  border-color: rgba(var(--necrotic-rgb),.35);
-  background: linear-gradient(180deg, rgba(var(--decay-green-rgb),.12), rgba(143,180,255,.08));
-  filter: drop-shadow(0 6px 14px rgba(var(--decay-green-rgb),.18));
+.necro-menu-list a:hover{ color: #fff; }
+.necro-menu-list a:focus-visible::before,
+.necro-menu-list a:hover::before{
+  outline-color: var(--chrome-rule-hi);
+  box-shadow: 0 0 8px rgba(var(--necrotic-rgb), 0.55);
 }
+.necro-menu-list a:focus-visible{ outline: 1px solid var(--chrome-rule-hi); outline-offset: 2px; }
+/* The close sits under the list, in reach of the thumb and clear of the profiles row. */
 .necro-close{
-  position:absolute; top:8px; right:10px; font-size: 22px; line-height: 1;
-  background: transparent; border:0; color: rgba(230,227,216,.8); cursor: pointer;
+  position: relative;
+  display: block;
+  width: 44px; height: 44px; min-height: 44px;
+  margin: 18px auto 0;
+  cursor: pointer;
 }
 @keyframes menu-in{ from{ transform: translateY(-6px) scale(.98); opacity:0 } to{ transform:none; opacity:1 } }
 @media (prefers-reduced-motion: reduce){ .necro-menu{ animation:none; } }

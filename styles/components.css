@@ -471,7 +471,7 @@
 /* Section closes: a hairline ring on a dark backing with a drawn cross, the chrome's one shape for
    "leave". The x stays in the markup for unstyled pages and is hidden here; each button's
    aria-label names it. Position and stacking stay with each section's stylesheet. */
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn) {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close) {
   display: grid;
   place-items: center;
   padding: 0;
@@ -484,8 +484,8 @@
   transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
 }
 
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn)::before,
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn)::after {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close)::before,
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close)::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -498,21 +498,21 @@
   transition: background-color 150ms ease;
 }
 
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn)::after {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close)::after {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn):hover {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close):hover {
   background: rgba(8, 9, 10, 0.94);
   border-color: var(--chrome-rule-hi);
 }
 
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn):hover::before,
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn):hover::after {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close):hover::before,
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close):hover::after {
   background: var(--chrome-ink-hi);
 }
 
-:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn):focus-visible {
+:is(.altar-close, .blog-close, .work-close, .contact-close, .close-btn, .necro-close):focus-visible {
   outline: 1px solid var(--chrome-rule-hi);
   outline-offset: 4px;
 }

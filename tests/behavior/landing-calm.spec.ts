@@ -17,11 +17,18 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
       const bio = range.getBoundingClientRect();
       // How far into the ellipse each corner of the bio lies, 1 at its edge.
       const reach = (px: number, py: number) => Math.hypot((px - x) / rx, (py - y) / ry);
-      return { corners: [reach(bio.left, bio.top), reach(bio.right, bio.top), reach(bio.left, bio.bottom), reach(bio.right, bio.bottom)], before: getComputedStyle(main, '::before').backgroundImage };
+      const coords = document.querySelector('.foot-coords')!.getBoundingClientRect();
+      return {
+        corners: [reach(bio.left, bio.top), reach(bio.right, bio.top), reach(bio.left, bio.bottom), reach(bio.right, bio.bottom)],
+        colophon: [reach(coords.left, coords.bottom), reach(coords.right, coords.bottom)],
+        before: getComputedStyle(main, '::before').backgroundImage
+      };
     });
     expect(field.before).toContain('radial-gradient');
-    // The whole bio is inside the part of the field that still darkens (it fades out at 0.86).
-    for (const corner of field.corners) expect(corner).toBeLessThan(0.86);
+    // The whole bio sits where the field is at least half dark (its 0.5 stop is at 0.74). The colophon's
+    // far end, the column's bottom right corner and the last place an ellipse reaches, keeps a third.
+    for (const corner of field.corners) expect(corner).toBeLessThan(0.74);
+    for (const end of field.colophon) expect(end).toBeLessThan(0.8);
   });
 }
 

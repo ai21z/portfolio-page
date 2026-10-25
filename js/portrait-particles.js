@@ -100,7 +100,7 @@ const CONFIG = {
   // At rest the portrait shows as on a phone and the particles are a faint aura over it. Stirring them
   // (the pointer, the constellation) fades the image out and brings the particles to full strength.
   PORTRAIT_IDLE_OPACITY: 0.9,
-  PARTICLE_REST_OPACITY: 0.35,
+  PARTICLE_REST_OPACITY: 0.45,
   ACTIVATION_RADIUS: 200,
   ACTIVATION_RAMP_MS: 300,
 

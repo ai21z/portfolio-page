@@ -32,12 +32,13 @@ function place() {
   const top = Math.min(...shown.map((rect) => rect.top)) - box.top;
   const width = Math.max(...shown.map((rect) => rect.right)) - box.left - left;
   const height = Math.max(...shown.map((rect) => rect.bottom)) - box.top - top;
-  // Centred left of the column's middle, where the portrait and the start of every line sit, and wide
-  // enough that the darkest part covers the bio. Fitted to Sitting B's landing C at 1440x900.
-  main.style.setProperty('--calm-x', `${Math.round(left + width * 0.27)}px`);
-  main.style.setProperty('--calm-y', `${Math.round(top + height * 0.48)}px`);
-  main.style.setProperty('--calm-rx', `${Math.round(width * 1.1)}px`);
-  main.style.setProperty('--calm-ry', `${Math.round(height * 0.875)}px`);
+  // Centred left of the column's middle, where the portrait and the start of every line sit. From Sitting
+  // B's landing C, widened after the step 11 panel so the dark plateau also covers the bio's line ends and
+  // the colophon, where strands still crossed the text.
+  main.style.setProperty('--calm-x', `${Math.round(left + width * 0.32)}px`);
+  main.style.setProperty('--calm-y', `${Math.round(top + height * 0.5)}px`);
+  main.style.setProperty('--calm-rx', `${Math.round(width * 1.15)}px`);
+  main.style.setProperty('--calm-ry', `${Math.round(height * 0.95)}px`);
   main.dataset.calm = '';
 }
 

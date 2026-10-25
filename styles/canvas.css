@@ -115,9 +115,9 @@ body.has-paper-open-global #bg-front-img {
   pointer-events:none;
   background: radial-gradient(ellipse var(--calm-rx) var(--calm-ry) at var(--calm-x) var(--calm-y),
     rgba(11, 11, 12, 0.9) 0%,
-    rgba(11, 11, 12, 0.78) 42%,
-    rgba(11, 11, 12, 0.35) 68%,
-    transparent 86%);
+    rgba(11, 11, 12, 0.84) 50%,
+    rgba(11, 11, 12, 0.5) 74%,
+    transparent 92%);
 }
 
 .glitch-text{

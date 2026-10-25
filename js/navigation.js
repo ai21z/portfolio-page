@@ -567,6 +567,19 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
     }
   }
 
+  // A preview centred under its node can run under the hub sigil (About sits just left of it). Such a
+  // preview slides left, to end clear of the sigil.
+  const hub = nav.querySelector('.network-sigil-node')?.getBoundingClientRect();
+  if (hub?.width && !ritualActive) {
+    const clear = 12;
+    for (const preview of nav.querySelectorAll('.network-node-label .node-preview')) {
+      const r = preview.getBoundingClientRect();
+      if (r.bottom > hub.top - clear && r.top < hub.bottom + clear && r.right > hub.left - clear && r.left < hub.right + clear) {
+        preview.style.translate = `${Math.round(hub.left - clear - r.right)}px 0`;
+      }
+    }
+  }
+
   if (hudEnabled && renderHUD) renderHUD();
 }
 

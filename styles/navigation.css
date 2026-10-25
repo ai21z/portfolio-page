@@ -93,6 +93,11 @@
   letter-spacing: 0;
   color: rgba(230, 227, 216, 0.9);
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.95);
+  /* A soft dark patch under the line, so it reads over the brightest strands. */
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(8, 9, 10, 0.72);
+  box-shadow: 0 0 10px 6px rgba(8, 9, 10, 0.72);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s var(--ease-house), transform 0.25s var(--ease-house);

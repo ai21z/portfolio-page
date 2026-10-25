@@ -385,12 +385,13 @@ body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #rev
     max-width: min(92vw, 42ch) !important; /* readable lines */
     text-align: center !important;
   }
-  .text-column::before{ display: none !important; } /* remove left accent line */
   .tape{
     display: block !important;
     text-align: center !important;
     transform-origin: center !important;   /* avoid left-origin pull */
   }
+  /* The project links on the bio's centre line, not flush left under it. */
+  .text-column .selected-projects{ justify-content: center; }
 
   /* 2) Living sigils: make them a real grid item, not abs-pos */
   .living-sigils{

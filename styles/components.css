@@ -28,7 +28,8 @@
   margin: 0;
   position: relative;
   z-index: 3;
-  opacity: 0.8 !important;
+  /* Holds the portrait at full strength, as on a phone (the fade animates only the rise). */
+  opacity: 1 !important;
   animation: fadeInPortrait 8.2s var(--ease-house) 0.4s forwards;
   /* Allow canvas to overflow without clipping */
   overflow: visible;
@@ -56,6 +57,10 @@
   transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
   filter: grayscale(0.2) contrast(1.05);
   opacity: 0.95;
+  /* The image is a disc whose hard edge showed across the shoulders. It fades out from three quarters of
+     its radius, well clear of the face, and on desktop the particles show where it fades. */
+  -webkit-mask-image: radial-gradient(circle closest-side at 50% 47%, #000 72%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side at 50% 47%, #000 72%, transparent 100%);
 }
 
 /* With the particle canvas, js/portrait-particles.js sets the portrait's opacity: 0.9 at rest, fading out
@@ -81,7 +86,7 @@
   pointer-events: none;
   z-index: 2;
   /* A faint aura at rest; js/portrait-particles.js raises it while the particles are stirred. */
-  opacity: 0.35;
+  opacity: 0.45;
 }
 
 .text-column{
@@ -96,25 +101,6 @@
   margin: 0;
 }
 
-.text-column::before {
-  content: '';
-  position: absolute;
-  left: calc(var(--unit) * -4);
-  top: 0;
-  width: 2px;
-  height: 48px;
-  background: linear-gradient(to bottom,
-    var(--spectral) 0%,
-    transparent 100%);
-  opacity: 0;
-  animation: fadeIn 2s var(--ease-house) 1.8s forwards;
-}
-
-@keyframes fadeIn{
-  from{ opacity: 0; }
-  to{ opacity: 0.45; }
-}
-
 .tape{
   display:inline-block;
   font-family: var(--font-read);
@@ -124,6 +110,11 @@
   opacity:0;
   transition:transform .8s var(--ease-house) .6s, opacity .8s ease .6s;
 }
+/* The project links belong to the bio: the column's gap above them, and no more. */
+.text-column .selected-projects {
+  margin-top: 0;
+}
+
 .stage.active-section .tape{
   transform:scaleX(1);
   opacity:.95;
@@ -186,7 +177,7 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-  .tape, .text-column::before{
+  .tape{
     animation: none;
     max-width: var(--tape-w);
     opacity: 0.95;

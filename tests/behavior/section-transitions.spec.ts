@@ -108,15 +108,16 @@ test('the sigil Blog covered fades in as Blog leaves instead of popping over it'
   await expect(page.locator('#blog')).toHaveClass(/active-section/);
   await expect(page.locator('.network-sigil-node')).toBeAttached();
   // Read the fade itself, not the opacity after a fixed wait: the curve starts fast, and a timer
-  // stretched by a loaded machine read the sigil past half way.
+  // stretched by a loaded machine read the sigil past half way. Under a full parallel run WebKit's
+  // first frame can come after the 450 ms fade, so a finished fade counts: it ran, from nothing.
   const fade = await page.evaluate(async () => {
     document.querySelector<HTMLElement>('#blog .section-nav-link[data-section="about"]')!.click();
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const sigil = document.querySelector('.network-sigil-node')!;
     const animation = sigil.getAnimations().find((a) => (a as CSSAnimation).animationName === 'shared-layer-in');
-    return animation ? { running: animation.playState === 'running', from: (animation.effect as KeyframeEffect).getKeyframes()[0].opacity } : null;
+    return animation ? { played: ['running', 'finished'].includes(animation.playState), from: (animation.effect as KeyframeEffect).getKeyframes()[0].opacity } : null;
   });
-  expect(fade).toEqual({ running: true, from: '0' });
+  expect(fade).toEqual({ played: true, from: '0' });
 });
 
 test('leaving a deep-linked Contact keeps the sigil, which Contact never covered, steady', async ({ page }) => {

@@ -465,6 +465,9 @@ function syncControl() {
     const unavailable = isFirefoxUnavailableProfile(profile);
     const active = profile === (explicitProfile || 'auto');
     button.setAttribute('aria-pressed', String(active));
+    // The bead marks the choice. When that is Auto, or the governor overrode it, the level actually
+    // running is named too, so the menu agrees with the label.
+    button.toggleAttribute('data-running', !active && profile === state.effectiveProfile);
     button.toggleAttribute('disabled', unavailable);
     button.setAttribute('aria-disabled', String(unavailable));
     if (unavailable) {

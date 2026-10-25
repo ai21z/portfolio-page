@@ -362,9 +362,9 @@
   height: 100%;
   display: block;
   /* The dish and its rim labels stay clear of the Field Notes column (40 + 260 px) and the
-     section rail (24 px + about 56 px). js/blog-network-webgl.js reads these. */
+     section rail (24 px + 86 px of capitals and node marks). js/blog-network-webgl.js reads these. */
   --dish-clear-left: 328px;
-  --dish-clear-right: 108px;
+  --dish-clear-right: 138px;
 }
 
 /* z:20 */
@@ -635,11 +635,12 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
-/* The section rail sits at top 64px here (navigation.css). Keep the tooltip left of it and right of CRAFT. */
+/* The section rail sits at top 84px here and ends 102 px from the right (navigation.css). Keep the
+   tooltip left of it and right of CRAFT. */
 @media (max-width: 1024px) and (min-width: 901px) and (pointer: fine) {
   .blog-hub-tooltip {
-    right: 82px;
-    max-width: min(280px, calc(50vw - 262px));
+    right: 114px;
+    max-width: min(280px, calc(50vw - 294px));
   }
 }
 

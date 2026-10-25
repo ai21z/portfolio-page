@@ -1213,47 +1213,67 @@ body.has-paper-open-global #network-nav {
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: 24px;
   z-index: 100;
   pointer-events: auto;
 }
 
+/* Capitals in the chrome ink, right-aligned on a column of node marks. Only the open view shows its
+   mark, a bead in a ring as on the landing's nodes, so the rail reads as "you are here", not as a set
+   of options. Hover draws the empty ring. The size never changes, so nothing shifts. */
 .section-nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 24px;
+  padding-right: 22px;
   font-family: var(--font-data);
   font-size: var(--text-floor);
   font-weight: 400;
-  color: rgba(230, 227, 216, 0.62); /* 6.2:1 on the abyss; 0.5 gave 4.4:1 */
+  text-transform: uppercase;
+  letter-spacing: var(--chrome-track);
+  color: var(--chrome-ink-dim);
   text-decoration: none;
-  letter-spacing: 0.04em;
-  text-shadow:
-    0 0 6px rgba(143, 180, 255, 0.3),
-    0 0 10px rgba(var(--necrotic-rgb), 0.2);
-  transition: background-color 0.4s var(--ease-house), border-color 0.4s var(--ease-house), color 0.4s var(--ease-house), opacity 0.4s var(--ease-house), transform 0.4s var(--ease-house), box-shadow 0.4s var(--ease-house), filter 0.4s var(--ease-house), text-shadow 0.4s var(--ease-house);
+  transition: color 0.4s var(--ease-house);
   cursor: var(--cursor-spore), pointer;
 }
 
+.section-nav-link::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  outline: 1px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.4s var(--ease-house), background-color 0.4s var(--ease-house);
+}
+
 .section-nav-link:hover {
-  color: rgba(180, 210, 230, 1);
-  text-shadow:
-    0 0 10px rgba(143, 180, 255, 0.8),
-    0 0 18px rgba(var(--necrotic-rgb), 0.6),
-    0 0 24px rgba(var(--decay-green-rgb), 0.4);
-  filter: drop-shadow(0 0 6px rgba(143, 180, 255, 0.5));
+  color: var(--chrome-ink-hi);
+}
+
+.section-nav-link:hover::after {
+  outline-color: var(--chrome-rule);
 }
 
 .section-nav-link.active {
-  font-size: 14px;
-  color: var(--decay-green, #3fff9f);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 1px;
-  text-shadow:
-    0 0 8px rgba(var(--decay-green-rgb), 0.6),
-    0 0 14px rgba(var(--decay-green-rgb), 0.4),
-    0 0 20px rgba(var(--necrotic-rgb), 0.3);
+  color: var(--chrome-ink-hi);
+}
+
+.section-nav-link.active::after {
+  background: var(--chrome-mark);
+  outline-color: var(--chrome-rule-hi);
+  box-shadow: 0 0 8px rgba(var(--necrotic-rgb), 0.55);
+}
+
+.section-nav-link:focus-visible {
+  outline: 1px solid var(--chrome-rule-hi);
+  outline-offset: 4px;
 }
 
 /* Hide on mobile - too cramped. Aligned to the 900px layout breakpoint so the
@@ -1268,19 +1288,12 @@ body.has-paper-open-global #network-nav {
 
 /* Adjust position for smaller screens */
 @media (max-width: 1024px) and (min-width: 901px) and (pointer: fine) {
+  /* Below the 44 px close (top 24 to 68 px), which the rail met at 64 px. */
   .section-nav {
     right: 16px;
-    top: 64px;
+    top: 84px;
     transform: none;
     gap: 20px;
-  }
-
-  .section-nav-link {
-    font-size: 12px;
-  }
-
-  .section-nav-link.active {
-    font-size: 13px;
   }
 }
 

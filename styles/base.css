@@ -37,6 +37,18 @@
   --text-floor: 12px;
   --bone-dim: rgba(230, 227, 216, 0.6);
 
+  /* Chrome, the controls around the content, in one ink: bone hairline rings and stamps on a dark
+     backing, JetBrains Mono capitals with open tracking, and a necrotic bead in a ring for the open or
+     chosen item, the mark of the landing's nav nodes. Dim ink is 5:1 on the void, ink 7.9:1. */
+  --chrome-ink-dim: rgba(230, 227, 216, 0.56);
+  --chrome-ink: rgba(230, 227, 216, 0.7);
+  --chrome-ink-hi: rgba(242, 239, 232, 0.96);
+  --chrome-rule: rgba(230, 227, 216, 0.3);
+  --chrome-rule-hi: rgba(230, 227, 216, 0.66);
+  --chrome-back: rgba(8, 9, 10, 0.84);
+  --chrome-mark: var(--necrotic);
+  --chrome-track: 0.16em;
+
   /* Swiss Grid System - 8px base unit (Precise rhythm) */
   --unit: 8px;
   --gap: calc(var(--unit) * 3);        /* 24px */

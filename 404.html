@@ -36,6 +36,16 @@
       line-gap-override: 0%;
     }
 
+    /* The chrome tokens of styles/base.css, which this page does not load. */
+    :root {
+      --chrome-ink: rgba(230, 227, 216, 0.7);
+      --chrome-ink-hi: rgba(242, 239, 232, 0.96);
+      --chrome-rule: rgba(230, 227, 216, 0.3);
+      --chrome-rule-hi: rgba(230, 227, 216, 0.66);
+      --chrome-back: rgba(8, 9, 10, 0.84);
+      --chrome-track: 0.16em;
+    }
+
     * { box-sizing: border-box; }
 
     html, body { min-height: 100%; }
@@ -46,7 +56,7 @@
       place-items: center;
       padding: 32px 20px;
       overflow: hidden;
-      color: #d8ded9;
+      color: var(--chrome-ink-hi);
       background: #07090a url("/artifacts/bg_base.webp") center / cover no-repeat;
       font-family: "Special Elite", Georgia, serif;
     }
@@ -66,24 +76,25 @@
       text-align: center;
     }
 
+    /* The rust seal as on the hub and the phone menu, its dark ground screened away. */
     .seal {
       width: clamp(104px, 24vw, 156px);
       height: auto;
       margin-bottom: 18px;
-      opacity: 0.72;
-      filter: brightness(0.92) contrast(1.08);
+      opacity: 0.9;
+      mix-blend-mode: screen;
     }
 
     .code {
-      margin: 0 0 8px;
-      color: #7aae8a;
-      font: 400 0.82rem/1.2 "JetBrains Mono", ui-monospace, Consolas, monospace;
-      letter-spacing: 0;
+      margin: 0 auto 8px;
+      color: var(--chrome-ink);
+      font: 400 12px/1.2 "JetBrains Mono", ui-monospace, Consolas, monospace;
+      letter-spacing: 0.24em;
     }
 
     h1 {
       margin: 0;
-      color: #eef3ef;
+      color: var(--chrome-ink-hi);
       font-size: clamp(2rem, 7vw, 4.4rem);
       line-height: 1.05;
       letter-spacing: 0;
@@ -92,31 +103,34 @@
     p {
       max-width: 42ch;
       margin: 18px auto 28px;
-      color: #abb7af;
+      color: var(--chrome-ink);
       font: 1rem/1.65 "Literata", "Literata Fallback", Georgia, serif;
     }
 
+    /* A stamp in the chrome ink, as Back and the Graphics control are on the site. */
     a {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
-      padding: 10px 16px;
-      border: 1px solid rgba(122, 174, 138, 0.58);
-      border-radius: 6px;
-      color: #cbe2d1;
-      background: rgba(5, 12, 9, 0.78);
-      font: 400 0.95rem/1 "JetBrains Mono", ui-monospace, Consolas, monospace;
+      padding: 10px 18px;
+      border: 1px solid var(--chrome-rule);
+      border-radius: 2px;
+      color: var(--chrome-ink-hi);
+      background: var(--chrome-back);
+      font: 400 12px/1 "JetBrains Mono", ui-monospace, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: var(--chrome-track);
       text-decoration: none;
     }
 
-    a:hover { border-color: #9bcbaa; color: #ffffff; }
-    a:focus-visible { outline: 3px solid #a8d7b5; outline-offset: 4px; }
+    a:hover { border-color: var(--chrome-rule-hi); }
+    a:focus-visible { outline: 1px solid var(--chrome-rule-hi); outline-offset: 3px; }
 
   </style>
 </head>
 <body>
   <main>
-    <img class="seal" src="/artifacts/sigil/no-bg-seal-sigil.webp" alt="" width="156" height="156" />
+    <img class="seal" src="/artifacts/sigil/no-bg-seal-sigil-512.webp" alt="" width="156" height="156" />
     <p class="code">404</p>
     <h1>Page not found</h1>
     <p>The address does not lead to a page on this site.</p>

@@ -123,12 +123,19 @@ test('leaving a deep-linked Contact keeps the sigil, which Contact never covered
   await page.goto('/index.html#contact');
   await expect(page.locator('#contact')).toHaveClass(/active-section/);
   await expect(page.locator('.network-sigil-node')).toBeAttached();
-  const opacity = await page.evaluate(async () => {
+  // Behind any open view the sigil rests as a ghost, so Contact to About keeps it as it was: no fade
+  // from nothing, as a covered sigil gets when its section leaves.
+  const { before, after, fading } = await page.evaluate(async () => {
+    const sigil = document.querySelector('.network-sigil-node')!;
+    const before = Number(getComputedStyle(sigil).opacity);
     document.querySelector<HTMLElement>('#contact .section-nav-link[data-section="about"]')!.click();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    return Number(getComputedStyle(document.querySelector('.network-sigil-node')!).opacity);
+    const fading = sigil.getAnimations().some((a) => (a as CSSAnimation).animationName === 'shared-layer-in');
+    return { before, after: Number(getComputedStyle(sigil).opacity), fading };
   });
-  expect(opacity).toBeGreaterThan(0.5);
+  expect(fading).toBe(false);
+  expect(before).toBeGreaterThan(0.2);
+  expect(after).toBeCloseTo(before, 2);
 });
 
 test('with reduced motion a switch is immediate and the section leaves at once', async ({ page }) => {

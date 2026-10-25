@@ -623,6 +623,8 @@ class PortraitParticles {
     const budget = portraitBudget();
     const particleScale = particleScaleFromBudget(budget);
     if (budget.quiet || particleScale <= 0) {
+      // No particles draw the sigil now, so release it and let the profile links go back.
+      if (this.constellationActive) this.cancelConstellation();
       this.particles = [];
       this.bins = new Array(PALETTE.length);
       for (let b = 0; b < PALETTE.length; b++) this.bins[b] = [];
@@ -1489,14 +1491,17 @@ class PortraitParticles {
     }
   }
 
+  // js/profile-halo.js moves the profile links onto the sigil's corners while it is drawn.
   triggerConstellation() {
     this.constellationActive = true;
     this.targetConstellationLevel = 1;
+    document.dispatchEvent(new CustomEvent('portrait:constellation', { detail: { active: true } }));
   }
 
   cancelConstellation() {
     this.constellationActive = false;
     this.targetConstellationLevel = 0;
+    document.dispatchEvent(new CustomEvent('portrait:constellation', { detail: { active: false } }));
   }
 
   destroy() {

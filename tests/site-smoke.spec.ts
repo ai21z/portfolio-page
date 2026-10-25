@@ -336,6 +336,25 @@ test('keeps the intro composed on short desktop and old-laptop viewports', async
   }
 });
 
+// On laptops the social rail hung into the text column and its last link sat on the bio's first line.
+test('the profile column keeps to the margin, clear of the bio and the portrait, on laptop sizes', async ({ page }) => {
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/index.html');
+    await expect(page.locator('.living-sigils')).toBeVisible();
+    const gap = await page.evaluate(() => {
+      const links = [...document.querySelectorAll('.living-sigils .sigil-vial')].map((a) => a.getBoundingClientRect());
+      const column = Math.min(...['.tape', '.portrait', '.name'].map((selector) => document.querySelector(selector)!.getBoundingClientRect().left));
+      return { toColumn: column - Math.max(...links.map((r) => r.right)), toEdge: Math.min(...links.map((r) => r.left)), lefts: new Set(links.map((r) => Math.round(r.left))).size };
+    });
+    // The glass hovers 2.5px about its place, inside the link's box.
+    const size = `${viewport.width}x${viewport.height}`;
+    expect(gap.toColumn, `${size} column to text column`).toBeGreaterThanOrEqual(16);
+    expect(gap.toEdge, `${size} column to window edge`).toBeGreaterThanOrEqual(16);
+    expect(gap.lefts, `${size} one straight column`).toBe(1);
+  }
+});
+
 test('uses the desktop blog map and mobile specimen grid at the correct breakpoints', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#blog');

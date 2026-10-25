@@ -238,11 +238,11 @@
     line-height: 1.5;
   }
 
-  /* Centred in the margin left of the text column, so no vial reaches the bio. The section is
-     centred, so (100vw - 100%) / 2 is its margin, and a vial is 56px wide. At left: 0 the rail hung
+  /* Centred in the margin left of the text column, so no glass reaches the bio. The section is
+     centred, so (100vw - 100%) / 2 is its margin, and a link is 44px wide. At left: 0 the rail hung
      10 to 17px into the column on laptops. */
   .living-sigils {
-    left: calc((var(--gap-large) - 56px - (100vw - 100%) / 2) / 2);
+    left: calc((var(--gap-large) - 44px - (100vw - 100%) / 2) / 2);
     top: 24%;
     gap: 14px;
   }
@@ -343,11 +343,10 @@
   }
 }
 
-/* Profile links: five small glass sigils, the vial glass of the first rail. On desktop js/profile-halo.js
-   sets them round the portrait (data-halo) and moves them onto the AZ sigil's corners when a click draws
-   it, --land lighting each as it arrives and --lit as the resting spore reaches it. Without the script
-   they stand in a column at the left edge,
-   and on phones and tablets in a row above the name. */
+/* Profile links: five small glass sigils, the vial glass of the first rail, in a column at the left edge.
+   On desktop js/profile-halo.js frees them from it (data-travel) when a click on the portrait draws the
+   AZ sigil and moves each onto a corner, --land lighting it as it arrives. On phones and tablets they
+   stand in a row above the name. */
 .sigil-vial {
   position: relative;
   display: block;
@@ -384,8 +383,8 @@
   box-shadow:
     inset -4px 4px 9px rgba(255, 255, 255, 0.08),
     inset 6px -6px 12px rgba(0, 0, 0, 0.6),
-    0 0 calc(12px + 18px * (var(--land, 0) + var(--lit, 0))) rgba(143, 180, 255, calc(0.3 + 0.4 * (var(--land, 0) + var(--lit, 0)))),
-    0 0 calc(20px + 16px * (var(--land, 0) + var(--lit, 0))) rgba(var(--necrotic-rgb), calc(0.22 + 0.35 * (var(--land, 0) + var(--lit, 0)))),
+    0 0 calc(12px + 18px * var(--land, 0)) rgba(143, 180, 255, calc(0.3 + 0.4 * var(--land, 0))),
+    0 0 calc(20px + 16px * var(--land, 0)) rgba(var(--necrotic-rgb), calc(0.22 + 0.35 * var(--land, 0))),
     0 3px 12px rgba(0, 0, 0, 0.5);
   transition: border-color 0.3s var(--ease-house), filter 0.3s var(--ease-house);
 }
@@ -426,8 +425,8 @@
   border-color: rgba(170, 215, 190, 0.6);
 }
 
-/* The halo: the rail covers the landing grid, and each link sits where the script puts it. */
-.living-sigils[data-halo] {
+/* Travelling: the rail covers the landing grid, and each link sits where the script puts it. */
+.living-sigils[data-travel] {
   inset: 0;
   width: auto;
   height: auto;
@@ -436,7 +435,7 @@
   pointer-events: none;
 }
 
-.living-sigils[data-halo] .sigil-vial {
+.living-sigils[data-travel] .sigil-vial {
   position: absolute;
   left: var(--halo-x, 0px);
   top: var(--halo-y, 0px);
@@ -444,24 +443,8 @@
   pointer-events: auto;
 }
 
-/* The spore that draws the pentacle through the halo at rest (js/profile-halo.js), and its tail. */
-.halo-spore {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: var(--spore-size, 6px);
-  height: var(--spore-size, 6px);
-  margin: calc(var(--spore-size, 6px) / -2) 0 0 calc(var(--spore-size, 6px) / -2);
-  border-radius: 50%;
-  background: rgba(200, 235, 215, var(--spore-alpha, 0.95));
-  box-shadow: 0 0 10px rgba(143, 200, 170, calc(var(--spore-alpha, 0.95) * 0.8));
-  opacity: 0;
-  pointer-events: none;
-  will-change: transform;
-}
-
-/* At rest the halo breathes. A glow ring swells round each glass in turn, clockwise from the top, so one
-   slow pulse circles the five every 9 s, and each glass drifts on its own small orbit. Opacity and
+/* At rest the column breathes. A glow ring swells round each glass in turn, from the top down, so one slow
+   pulse runs through the five every 9 s, and each glass drifts on its own small orbit. Opacity and
    transform only, off under reduced motion and Quiet, and held while another view is open. */
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-graphics-effective-profile="quiet"]) .living-sigils[data-halo] .vial-glass::before {

@@ -297,38 +297,15 @@
 }
 
 
-/* Close button (matches altar-close) */
+/* Close button, drawn with the others (styles/components.css) */
 .work-close {
   position: absolute;
   top: max(24px, env(safe-area-inset-top, 24px));
   right: max(24px, env(safe-area-inset-right, 24px));
   width: 44px;
   height: 44px;
-  background: rgba(15,16,20,0.7);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   cursor: var(--cursor-spore), pointer;
-  color: rgba(232,232,234,0.7);
-  font-size: 20px;
-  line-height: 1;
-  transition: var(--ui-transition);
   z-index: 1000;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-
-.work-close:hover {
-  background: rgba(15,16,20,0.9);
-  border-color: rgba(45,212,175,0.45);
-  color: var(--decay-green);
-  transform: rotate(90deg);
-}
-
-.work-close:focus-visible {
-  outline: 2px solid var(--decay-green);
-  outline-offset: 4px;
 }
 
 /* HUD elements */
@@ -421,7 +398,6 @@
     min-height: 44px;
     width: 44px;
     height: 44px;
-    font-size: 20px;
   }
 
   .work-location-info,
@@ -628,25 +604,9 @@
   right: 16px;
   width: 44px;
   height: 44px;
-  background: rgba(15,16,20,0.7);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   cursor: var(--cursor-spore), pointer;
-  color: rgba(232,232,234,0.7);
-  font-size: 20px;
-  line-height: 1;
-  transition: var(--ui-transition);
   z-index: 10;
   pointer-events: auto;
-}
-
-.close-btn:hover {
-  background: rgba(15,16,20,0.9);
-  border-color: rgba(45,212,175,0.45);
-  color: var(--decay-green);
-  transform: rotate(90deg);
 }
 
 .project-description {
@@ -879,12 +839,6 @@
   animation: pencil-wobble 260ms ease-in-out infinite alternate;
 }
 
-/* Disable hover effects on touch devices */
-@media (hover: none) {
-  .work-close:hover {
-    transform: none;
-  }
-}
 
 /* Keep the text fallback reachable by keyboard and available without WebGL. */
 .work-index {

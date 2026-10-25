@@ -35,33 +35,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   right: max(24px, env(safe-area-inset-right, 24px));
   width: 44px;
   height: 44px;
-  background: rgba(15,16,20,0.7);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   cursor: var(--cursor-spore), pointer;
-  color: rgba(232,232,234,0.7);
-  font-size: 20px;
-  line-height: 1;
-  transition: var(--ui-transition-slow);
   z-index: 11;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  padding: 0;
-}
-
-
-.contact-close:hover {
-  background: rgba(15,16,20,0.9);
-  border-color: rgba(45,212,175,0.45);
-  color: var(--decay-green);
-  transform: rotate(90deg);
-}
-
-.contact-close:focus-visible {
-  outline: 2px solid var(--decay-green);
-  outline-offset: 4px;
 }
 
 .wax-seal {
@@ -753,7 +728,6 @@ body:has(#contact.stage.active-section) .dish-labels {
     right: calc(clamp(1rem, 3vw, 1.5rem) - 4px);
     width: 44px; /* Maintain 44px minimum touch target */
     height: 44px;
-    font-size: 18px;
   }
 
   .notebook-page {
@@ -897,9 +871,3 @@ body:has(#contact.stage.active-section) .dish-labels {
   }
 }
 
-/* Disable hover effects on touch devices */
-@media (hover: none) {
-  .contact-close:hover {
-    transform: none;
-  }
-}

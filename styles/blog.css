@@ -588,30 +588,9 @@
   right: 24px;
   width: 44px;
   height: 44px;
-  background: rgba(15, 16, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
   cursor: var(--cursor-spore, pointer);
-  color: rgba(232, 232, 234, 0.7);
-  font-size: 20px;
-  line-height: 1;
-  transition: var(--ui-transition);
   z-index: 100;
   pointer-events: auto;
-}
-
-.blog-close:hover {
-  background: rgba(15, 16, 20, 0.9);
-  border-color: rgba(45, 212, 175, 0.45);
-  color: var(--decay-green);
-  transform: rotate(90deg);
-}
-
-.blog-close:focus-visible {
-  outline: 2px solid var(--decay-green);
-  outline-offset: 4px;
 }
 
 .blog-hub-tooltip {
@@ -712,12 +691,6 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
     right: max(12px, env(safe-area-inset-right, 12px));
     width: 44px;
     height: 44px;
-  }
-}
-
-@media (hover: none) {
-  .blog-close:hover {
-    transform: none;
   }
 }
 

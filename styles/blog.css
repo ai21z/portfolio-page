@@ -986,6 +986,7 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 }
 
 .blog-nav-link {
+  position: relative;
   display: inline-block;
   background: none;
   border: none;
@@ -1014,6 +1015,20 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 
 .blog-nav-link.active {
   color: var(--chrome-ink-hi);
+}
+
+/* The open culture keeps its own hue and takes the bead under its name. */
+.blog-nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--chrome-mark);
+  box-shadow: 0 0 6px rgba(var(--necrotic-rgb), 0.6);
 }
 
 .blog-nav-link.active[data-hub="craft"] { color: var(--hub-craft); }

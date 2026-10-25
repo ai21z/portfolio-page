@@ -63,7 +63,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }
   });
 }
 
-test('the desktop profiles rail holds still and the hub spores stop in Quiet', async ({ browser }) => {
+test('the desktop profile links rest still round the portrait and the hub spores stop in Quiet', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, hasTouch: false });
   try {
     await page.goto('/index.html');
@@ -73,8 +73,7 @@ test('the desktop profiles rail holds still and the hub spores stop in Quiet', a
     const before = await places();
     await page.waitForTimeout(1200);
     expect(await places()).toEqual(before);
-    expect(new Set(before.map(([left]) => left)).size).toBe(1);
-    expect(await page.locator('.living-sigils .sigil-vial[style*="transform"]').count()).toBe(0);
+    await expect(page.locator('.living-sigils')).toHaveAttribute('data-halo', '');
     await page.clock.install();
     await page.evaluate(async () => {
       const governor = await import('/js/graphics-governor.js');

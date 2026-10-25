@@ -69,6 +69,7 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
+import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
 import { postTitle, refreshViewTitle } from './view-title.js';
@@ -1483,6 +1484,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   notebookContact.init();
+
+  profileHalo.init();
 
   const contactSection = document.getElementById('contact');
   if (contactSection) {

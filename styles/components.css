@@ -343,25 +343,15 @@
   }
 }
 
-/* Profiles rail: still rings threaded on one bone hairline, the icons in the chrome ink. The glass
-   vials, their swirl and their bob are gone (four jurors read the bob as a wobble), so the rail holds
-   the left edge as one column. The ring is drawn on the void, so no strand crosses an icon. */
-.living-sigils::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -28px;
-  bottom: -28px;
-  width: 1px;
-  background: linear-gradient(transparent, var(--chrome-rule) 16%, var(--chrome-rule) 84%, transparent);
-  pointer-events: none;
-}
-
+/* Profile links: five small glass sigils, the vial glass of the first rail. On desktop js/profile-halo.js
+   sets them round the portrait (data-halo) and moves them onto the AZ sigil's corners when a click draws
+   it, --land lighting each as it arrives. Without the script they stand in a column at the left edge,
+   and on phones and tablets in a row above the name. */
 .sigil-vial {
   position: relative;
   display: block;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   text-decoration: none;
   z-index: 2;
 }
@@ -377,12 +367,26 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--chrome-rule);
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: var(--void);
-  transition: border-color 150ms ease;
+  background:
+    radial-gradient(ellipse 30% 38% at 70% 30%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 30%, transparent 65%),
+    radial-gradient(ellipse 44% 52% at 65% 35%, rgba(143, 180, 255, 0.3) 0%, rgba(var(--necrotic-rgb), 0.2) 40%, transparent 70%),
+    radial-gradient(ellipse 12% 60% at 95% 50%, rgba(143, 180, 255, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 52% 16% at 50% 8%, rgba(255, 255, 255, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 52% 68% at 20% 50%, rgba(0, 0, 0, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 56% 22% at 50% 90%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 80%),
+    radial-gradient(circle at 50% 50%, rgba(var(--necrotic-rgb), 0.12) 0%, rgba(var(--necrotic-rgb), 0.06) 40%, transparent 70%),
+    radial-gradient(circle at 40% 40%, rgba(19, 20, 23, 0.85) 0%, rgba(11, 11, 12, 0.95) 100%);
+  border: 1.5px solid rgba(143, 180, 255, 0.38);
+  box-shadow:
+    inset -4px 4px 9px rgba(255, 255, 255, 0.08),
+    inset 6px -6px 12px rgba(0, 0, 0, 0.6),
+    0 0 calc(12px + 18px * var(--land, 0)) rgba(143, 180, 255, calc(0.3 + 0.4 * var(--land, 0))),
+    0 0 calc(20px + 16px * var(--land, 0)) rgba(var(--necrotic-rgb), calc(0.22 + 0.35 * var(--land, 0))),
+    0 3px 12px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s var(--ease-house), filter 0.3s var(--ease-house);
 }
 
 .vial-icon {
@@ -390,20 +394,22 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 20px;
-  height: 20px;
-  color: var(--chrome-ink);
-  transition: color 150ms ease;
+  width: 19px;
+  height: 19px;
+  color: rgba(230, 227, 216, 0.92);
+  filter: drop-shadow(0 0 4px rgba(var(--necrotic-rgb), 0.45));
+  transition: color 0.3s var(--ease-house);
 }
 
 .sigil-vial:hover .vial-glass,
 .sigil-vial:focus-visible .vial-glass {
-  border-color: var(--chrome-rule-hi);
+  border-color: rgba(143, 180, 255, 0.65);
+  filter: brightness(1.15);
 }
 
 .sigil-vial:hover .vial-icon,
 .sigil-vial:focus-visible .vial-icon {
-  color: var(--chrome-ink-hi);
+  color: rgba(242, 239, 232, 1);
 }
 
 .sigil-vial:focus-visible {
@@ -412,10 +418,32 @@
 
 .sigil-vial:focus-visible .vial-glass {
   outline: 1px solid var(--chrome-rule-hi);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
 
-/* Phones and tablets: the same rings in a row under one level hairline, at the same icon size. */
+.sigil-vial[data-on-corner] .vial-glass {
+  border-color: rgba(170, 215, 190, 0.6);
+}
+
+/* The halo: the rail covers the landing grid, and each link sits where the script puts it. */
+.living-sigils[data-halo] {
+  inset: 0;
+  width: auto;
+  height: auto;
+  display: block;
+  transform: none;
+  pointer-events: none;
+}
+
+.living-sigils[data-halo] .sigil-vial {
+  position: absolute;
+  left: var(--halo-x, 0px);
+  top: var(--halo-y, 0px);
+  margin: -22px 0 0 -22px;
+  pointer-events: auto;
+}
+
+/* Phones and tablets: the same glass in a row above the name. */
 @media (max-width: 900px),
        (max-width: 1199px) and (max-aspect-ratio: 1/1),
        (max-width: 1366px) and (pointer: coarse) {
@@ -437,21 +465,6 @@
     z-index: 5;
   }
 
-  .living-sigils::before {
-    left: 6%;
-    right: 6%;
-    top: calc(var(--gap-small) * 0.5 + 22px);
-    bottom: auto;
-    width: auto;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--chrome-rule) 14%, var(--chrome-rule) 86%, transparent);
-  }
-
-  .sigil-vial {
-    width: 44px;
-    height: 44px;
-  }
-
   .name {
     margin: 0 auto 0 auto !important; /* Top spacing + horizontal centering */
   }
@@ -461,10 +474,6 @@
   .living-sigils {
     gap: clamp(12px, 3vw, 18px);
     padding: calc(var(--gap-small) * 0.25) 0 calc(var(--gap) * 0.4);
-  }
-
-  .living-sigils::before {
-    top: calc(var(--gap-small) * 0.25 + 22px);
   }
 }
 

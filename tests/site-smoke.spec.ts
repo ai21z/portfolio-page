@@ -287,7 +287,7 @@ test('keeps the intro composed on short desktop and old-laptop viewports', async
 
       const essentialSelectors = ['.name', '.portrait-wrap', '.text-column', '.graphics-control'];
       const essentialRects = essentialSelectors.map(rectFor);
-      const optionalRects = ['.living-sigils'].map(rectFor);
+      const optionalRects = [1, 2, 3, 4, 5].map((n) => rectFor(`.living-sigils .sigil-vial:nth-of-type(${n})`));
       const visibleLabelRects = Array.from(document.querySelectorAll('.network-node-label .node-label'))
         .map((element) => {
           const parent = element.closest('.network-node-label');
@@ -333,24 +333,6 @@ test('keeps the intro composed on short desktop and old-laptop viewports', async
     expect(result.overflowX, `${viewport.width}x${viewport.height} overflow`).toBeLessThanOrEqual(2);
     expect(result.outsideViewport, `${viewport.width}x${viewport.height} clipped intro elements`).toEqual([]);
     expect(result.labelOverlaps, `${viewport.width}x${viewport.height} labels overlap hero`).toEqual([]);
-  }
-});
-
-// On laptops the social rail hung into the text column and its last vial sat on the bio's first line.
-test('the social rail keeps to the margin, clear of the bio and the portrait, on laptop sizes', async ({ page }) => {
-  for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }]) {
-    await page.setViewportSize(viewport);
-    await page.goto('/index.html');
-    await expect(page.locator('.living-sigils')).toBeVisible();
-    const gap = await page.evaluate(() => {
-      const rail = document.querySelector('.living-sigils')!.getBoundingClientRect();
-      const column = Math.min(...['.tape', '.portrait', '.name'].map((selector) => document.querySelector(selector)!.getBoundingClientRect().left));
-      return { toColumn: column - rail.right, toEdge: rail.left };
-    });
-    // The vials sway about 8px either side of the rail.
-    const size = `${viewport.width}x${viewport.height}`;
-    expect(gap.toColumn, `${size} rail to text column`).toBeGreaterThanOrEqual(16);
-    expect(gap.toEdge, `${size} rail to window edge`).toBeGreaterThanOrEqual(16);
   }
 });
 

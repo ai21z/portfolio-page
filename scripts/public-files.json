@@ -64,6 +64,7 @@
   "js/motion.js",
   "js/navigation.js",
   "js/portrait-particles.js",
+  "js/profile-halo.js",
   "js/routes.js",
   "js/sparks.js",
   "js/state.js",

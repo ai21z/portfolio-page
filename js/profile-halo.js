@@ -1,4 +1,5 @@
-// The five profile links, glass sigils in a column at the left edge. When a click on the portrait draws the
+// The five profile links, glass sigils in a column at the left edge, as far in from it as the hub sigil's
+// right edge stands from the right one, so the two marks frame the landing alike. When a click on the portrait draws the
 // AZ sigil in particles, each one leaves the column and travels round and in onto a corner of the sigil,
 // and back into the column when the sigil is released. Desktop only: phones and tablets keep the row of
 // glass above the name.
@@ -12,6 +13,8 @@ const NOSE = [0.475, 0.504];
 // crossbar left, so the five go round the sigil clockwise from the top.
 const SIGIL_SIZE = 192;
 const CORNERS = [[96, 37], [143, 66], [141, 137], [51, 136], [49, 66]];
+// The column never comes closer than this to the text column or the window's edge.
+const CLEARANCE = 16;
 const TRAVEL_MS = 900;
 const STAGGER_MS = 70;
 const SWING = 0.55;
@@ -42,12 +45,17 @@ class ProfileHalo {
     if (this.rail) return;
     this.rail = document.querySelector('.living-sigils');
     this.portrait = document.querySelector('.portrait');
+    this.text = ['.name', '.portrait', '.tape'].map((selector) => document.querySelector(selector)).filter(Boolean);
     if (!this.rail || !this.portrait) return;
     this.links = [...this.rail.querySelectorAll('.sigil-vial')];
     if (this.links.length !== CORNERS.length) return;
 
     compactMediaQuery().addEventListener('change', () => this.sync());
-    window.addEventListener('resize', () => this.layout());
+    // The hub moves when the network re-lays itself out on resize, so read it a frame later.
+    window.addEventListener('resize', () => requestAnimationFrame(() => { this.alignColumn(); this.layout(); }));
+    window.addEventListener('load', () => this.alignColumn());
+    const nav = document.getElementById('network-nav');
+    if (nav) new MutationObserver(() => this.alignColumn()).observe(nav, { childList: true });
     document.addEventListener('portrait:constellation', (event) => this.travel(event.detail?.active ? 1 : 0));
     this.sync();
   }
@@ -57,6 +65,7 @@ class ProfileHalo {
   sync() {
     const on = !compactMediaQuery().matches;
     this.rail.toggleAttribute('data-halo', on);
+    this.alignColumn();
     if (!on) {
       cancelAnimationFrame(this.frame);
       this.progress = this.target = 0;
@@ -64,6 +73,24 @@ class ProfileHalo {
     } else if (this.progress > 0) {
       this.layout();
     }
+  }
+
+  // The column's left edge mirrors the hub sigil's gap to the right edge, held clear of the text.
+  alignColumn() {
+    const hub = document.querySelector('.network-sigil-node');
+    const hubBox = hub?.getBoundingClientRect();
+    const frame = this.rail.offsetParent;
+    if (!this.rail.hasAttribute('data-halo') || !hubBox?.width || !frame) {
+      this.rail.removeAttribute('data-rail-left');
+      this.rail.style.removeProperty('--rail-left');
+      return;
+    }
+    const width = this.links[0].offsetWidth;
+    const textLeft = Math.min(...this.text.map((el) => pagePosition(el)[0]));
+    const mirror = window.innerWidth - hubBox.right;
+    const left = Math.max(CLEARANCE, Math.min(mirror, textLeft - CLEARANCE - width));
+    this.rail.style.setProperty('--rail-left', `${(left - pagePosition(frame)[0]).toFixed(1)}px`);
+    this.rail.setAttribute('data-rail-left', '');
   }
 
   // Back in the column: the links return to its flow, exactly where they stood.

@@ -337,21 +337,25 @@ test('keeps the intro composed on short desktop and old-laptop viewports', async
 });
 
 // On laptops the social rail hung into the text column and its last link sat on the bio's first line.
-test('the profile column keeps to the margin, clear of the bio and the portrait, on laptop sizes', async ({ page }) => {
-  for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }]) {
+// Where there is room the column stands as far from the left edge as the hub sigil from the right one.
+test('the profile column mirrors the hub sigil gap to the edge, and keeps clear of the bio and the portrait', async ({ page }) => {
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 1440, height: 900 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/index.html');
     await expect(page.locator('.living-sigils')).toBeVisible();
+    await expect(page.locator('.living-sigils')).toHaveAttribute('data-rail-left', '');
     const gap = await page.evaluate(() => {
       const links = [...document.querySelectorAll('.living-sigils .sigil-vial')].map((a) => a.getBoundingClientRect());
       const column = Math.min(...['.tape', '.portrait', '.name'].map((selector) => document.querySelector(selector)!.getBoundingClientRect().left));
-      return { toColumn: column - Math.max(...links.map((r) => r.right)), toEdge: Math.min(...links.map((r) => r.left)), lefts: new Set(links.map((r) => Math.round(r.left))).size };
+      const hubGap = innerWidth - document.querySelector('.network-sigil-node')!.getBoundingClientRect().right;
+      return { toColumn: column - Math.max(...links.map((r) => r.right)), toEdge: Math.min(...links.map((r) => r.left)), lefts: new Set(links.map((r) => Math.round(r.left))).size, hubGap, roomy: column - 16 - 44 >= hubGap && hubGap >= 16 };
     });
     // The glass hovers 2.5px about its place, inside the link's box.
     const size = `${viewport.width}x${viewport.height}`;
     expect(gap.toColumn, `${size} column to text column`).toBeGreaterThanOrEqual(16);
     expect(gap.toEdge, `${size} column to window edge`).toBeGreaterThanOrEqual(16);
     expect(gap.lefts, `${size} one straight column`).toBe(1);
+    if (gap.roomy) expect(Math.abs(gap.toEdge - gap.hubGap), `${size} column mirrors the hub's gap`).toBeLessThan(1.5);
   }
 });
 

@@ -425,6 +425,11 @@
   border-color: rgba(170, 215, 190, 0.6);
 }
 
+/* The script sets the column's left edge to mirror the hub sigil's gap to the window's right edge. */
+.living-sigils[data-rail-left] {
+  left: var(--rail-left);
+}
+
 /* Travelling: the rail covers the landing grid, and each link sits where the script puts it. */
 .living-sigils[data-travel] {
   inset: 0;

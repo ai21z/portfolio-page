@@ -395,7 +395,7 @@ body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #rev
 
   /* 2) Living sigils: make them a real grid item, not abs-pos */
   .living-sigils{
-    position: static !important;           /* stop absolute positioning */
+    position: relative !important;         /* in the grid flow, and the box its hairline is drawn in */
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
     justify-self: center !important;       /* center as a grid child */

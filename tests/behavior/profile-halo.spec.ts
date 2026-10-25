@@ -93,3 +93,52 @@ test('a click on the portrait sends the five to the sigil\'s corners, and a seco
   }, { timeout: 5000 }).toBeLessThan(1.5);
   expect((await measure(page)).links.some((link) => link.corner)).toBe(false);
 });
+
+test('at rest a spore draws the pentacle: the star from the first link, a lap, then the next star from the next link', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'One browser is enough for a 13 s choreography.');
+  test.setTimeout(45_000);
+  await page.addInitScript(() => {
+    (window as any).__sporeArrivals = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      const rail = document.querySelector<HTMLElement>('.living-sigils')!;
+      new MutationObserver(() => (window as any).__sporeArrivals.push(Number(rail.dataset.sporeAt)))
+        .observe(rail, { attributes: true, attributeFilter: ['data-spore-at'] });
+    });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  await page.mouse.move(4, 4);
+  // The star from link 0 (to 2, 4, 1, 3 and back to 0), the lap to link 1, the next star's first point.
+  await expect.poll(() => page.evaluate(() => (window as any).__sporeArrivals.length), { timeout: 30_000 }).toBeGreaterThanOrEqual(7);
+  expect((await page.evaluate(() => (window as any).__sporeArrivals)).slice(0, 7)).toEqual([2, 4, 1, 3, 0, 1, 3]);
+});
+
+test('the spore rests whenever the halo should be still: under reduced motion, in another view and while the sigil is drawn', async ({ browser, browserName }) => {
+  test.skip(browserName !== 'chromium', 'The particles that draw the sigil run on the Chromium budget in this rig.');
+  const sporeShows = (page: Page) => page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('.halo-spore')].some((dot) => getComputedStyle(dot).opacity !== '0'));
+  const reduced = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  const still = await reduced.newPage();
+  await still.goto('/index.html');
+  await still.waitForTimeout(4500);
+  expect(await sporeShows(still), 'reduced motion').toBe(false);
+  await reduced.close();
+
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await page.goto('/index.html');
+  await page.mouse.move(4, 4);
+  await expect.poll(() => sporeShows(page), { timeout: 15_000 }).toBe(true);
+  await page.evaluate(() => { location.hash = 'about'; });
+  await expect(page.locator('#about')).toHaveClass(/active-section/);
+  await expect.poll(() => sporeShows(page)).toBe(false);
+  await page.evaluate(() => { location.hash = ''; });
+  await expect(page.locator('#main')).toHaveClass(/active-section/);
+  await expect.poll(() => sporeShows(page), { timeout: 5000 }).toBe(true);
+  await page.waitForFunction(() => (window as any).__portraitParticleStats?.initialized && (window as any).__portraitParticleStats?.particleCount > 0, null, { timeout: 20_000 });
+  const box = (await page.locator('.portrait').boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.45);
+  await page.mouse.move(4, 4);
+  await expect.poll(() => sporeShows(page)).toBe(false);
+  await context.close();
+});

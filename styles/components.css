@@ -345,7 +345,8 @@
 
 /* Profile links: five small glass sigils, the vial glass of the first rail. On desktop js/profile-halo.js
    sets them round the portrait (data-halo) and moves them onto the AZ sigil's corners when a click draws
-   it, --land lighting each as it arrives. Without the script they stand in a column at the left edge,
+   it, --land lighting each as it arrives and --lit as the resting spore reaches it. Without the script
+   they stand in a column at the left edge,
    and on phones and tablets in a row above the name. */
 .sigil-vial {
   position: relative;
@@ -383,8 +384,8 @@
   box-shadow:
     inset -4px 4px 9px rgba(255, 255, 255, 0.08),
     inset 6px -6px 12px rgba(0, 0, 0, 0.6),
-    0 0 calc(12px + 18px * var(--land, 0)) rgba(143, 180, 255, calc(0.3 + 0.4 * var(--land, 0))),
-    0 0 calc(20px + 16px * var(--land, 0)) rgba(var(--necrotic-rgb), calc(0.22 + 0.35 * var(--land, 0))),
+    0 0 calc(12px + 18px * (var(--land, 0) + var(--lit, 0))) rgba(143, 180, 255, calc(0.3 + 0.4 * (var(--land, 0) + var(--lit, 0)))),
+    0 0 calc(20px + 16px * (var(--land, 0) + var(--lit, 0))) rgba(var(--necrotic-rgb), calc(0.22 + 0.35 * (var(--land, 0) + var(--lit, 0)))),
     0 3px 12px rgba(0, 0, 0, 0.5);
   transition: border-color 0.3s var(--ease-house), filter 0.3s var(--ease-house);
 }
@@ -441,6 +442,77 @@
   top: var(--halo-y, 0px);
   margin: -22px 0 0 -22px;
   pointer-events: auto;
+}
+
+/* The spore that draws the pentacle through the halo at rest (js/profile-halo.js), and its tail. */
+.halo-spore {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--spore-size, 6px);
+  height: var(--spore-size, 6px);
+  margin: calc(var(--spore-size, 6px) / -2) 0 0 calc(var(--spore-size, 6px) / -2);
+  border-radius: 50%;
+  background: rgba(200, 235, 215, var(--spore-alpha, 0.95));
+  box-shadow: 0 0 10px rgba(143, 200, 170, calc(var(--spore-alpha, 0.95) * 0.8));
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* At rest the halo breathes. A glow ring swells round each glass in turn, clockwise from the top, so one
+   slow pulse circles the five every 9 s, and each glass drifts on its own small orbit. Opacity and
+   transform only, off under reduced motion and Quiet, and held while another view is open. */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-graphics-effective-profile="quiet"]) .living-sigils[data-halo] .vial-glass::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 46%, rgba(143, 180, 255, 0.34) 58%, rgba(var(--necrotic-rgb), 0.2) 70%, transparent 82%);
+    opacity: 0.12;
+    animation: halo-breath 9s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  html:not([data-graphics-effective-profile="quiet"]) .living-sigils[data-halo] .vial-container {
+    animation: halo-hover var(--hover, 9s) linear infinite;
+  }
+
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(2) .vial-glass::before { animation-delay: 1.8s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(3) .vial-glass::before { animation-delay: 3.6s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(4) .vial-glass::before { animation-delay: 5.4s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(5) .vial-glass::before { animation-delay: 7.2s; }
+
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(1) .vial-container { --hover: 8.2s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(2) .vial-container { --hover: 10.6s; animation-direction: reverse; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(3) .vial-container { --hover: 9.4s; animation-delay: -3s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(4) .vial-container { --hover: 7.4s; animation-direction: reverse; animation-delay: -2s; }
+  .living-sigils[data-halo] .sigil-vial:nth-of-type(5) .vial-container { --hover: 11s; animation-delay: -5s; }
+
+  .stage:not(.active-section) .living-sigils .vial-glass::before,
+  .stage:not(.active-section) .living-sigils .vial-container {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes halo-breath {
+  0%, 100% { opacity: 0.12; }
+  18% { opacity: 1; }
+  45% { opacity: 0.12; }
+}
+
+@keyframes halo-hover {
+  0% { transform: translate(2.5px, 0); }
+  12.5% { transform: translate(1.8px, 1.8px); }
+  25% { transform: translate(0, 2.5px); }
+  37.5% { transform: translate(-1.8px, 1.8px); }
+  50% { transform: translate(-2.5px, 0); }
+  62.5% { transform: translate(-1.8px, -1.8px); }
+  75% { transform: translate(0, -2.5px); }
+  87.5% { transform: translate(1.8px, -1.8px); }
+  100% { transform: translate(2.5px, 0); }
 }
 
 /* Phones and tablets: the same glass in a row above the name. */

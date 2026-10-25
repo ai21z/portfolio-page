@@ -1034,11 +1034,10 @@ body.has-paper-open-global #network-nav {
   height: 9.49px;
   overflow: visible;
   transform: translateX(-50%);
-  fill: var(--chrome-ink);
+  fill: var(--chrome-ink-hi);
   pointer-events: none;
 }
 
-.myco-sigil[aria-expanded="true"] .myco-sigil-label { fill: var(--chrome-ink-hi); }
 
 .myco-sigil picture{
   display: block;
@@ -1073,7 +1072,8 @@ body.has-paper-open-global #network-nav {
   -webkit-backdrop-filter: blur(2px) saturate(.7);
   backdrop-filter: blur(2px) saturate(.7);
 }
-/* The five ways in as on the landing: each name led by a bead in a ring, in tracked capitals. */
+/* The five ways in, each led by an empty ring in tracked capitals. The bead fills it on hover and
+   focus only, since the bead marks what is open or chosen everywhere else. */
 .necro-menu-list{
   display:grid; gap: 6px; padding: 8px 6px 2px;
   justify-content: center;   /* one column, centred, with the beads on one line */
@@ -1097,16 +1097,15 @@ body.has-paper-open-global #network-nav {
   height: 6px;
   margin-top: -3px;
   border-radius: 50%;
-  background: var(--chrome-mark);
-  outline: 1px solid var(--chrome-rule);
+  outline: 1px solid var(--chrome-rule-hi);
   outline-offset: 3px;
-  transition: outline-color .2s ease, box-shadow .2s ease;
+  transition: outline-color .2s ease, background-color .2s ease, box-shadow .2s ease;
 }
 .necro-menu-list a:focus-visible,
 .necro-menu-list a:hover{ color: #fff; }
 .necro-menu-list a:focus-visible::before,
 .necro-menu-list a:hover::before{
-  outline-color: var(--chrome-rule-hi);
+  background: var(--chrome-mark);
   box-shadow: 0 0 8px rgba(var(--necrotic-rgb), 0.55);
 }
 .necro-menu-list a:focus-visible{ outline: 1px solid var(--chrome-rule-hi); outline-offset: 2px; }

@@ -139,13 +139,14 @@
   text-underline-offset: 3px;
 }
 
+/* A heading, so it keeps the typewriter of the titles and outranks the hub names under it. */
 .blog-memo-title {
   font-family: 'Special Elite', monospace;
-  font-size: var(--text-floor);
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(201, 194, 179, 0.72); /* 6.1:1 on the abyss; 0.5 gave 3.5:1 */
+  color: var(--chrome-ink-hi);
 }
 
 .blog-memo-list {
@@ -659,10 +660,10 @@
   display: block;
 }
 
-/* A dormant category's crumb keeps its word and loses its address. */
+/* A dormant category's crumb keeps its word and loses its address, an inactive control. */
 .blog-nav-link:not([href]),
 .blog-nav-link:not([href]):hover {
-  color: rgba(201, 194, 179, 0.4);
+  color: rgba(230, 227, 216, 0.42);
   cursor: default;
 }
 
@@ -916,18 +917,21 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
   color: var(--hub-codex);
 }
 
+/* Back to the dish: a stamp in the chrome ink, set apart from the round close, which leaves Blog. */
 .blog-map-btn {
-  padding: 10px 20px;
+  padding: 10px 18px;
   min-width: 44px;
   min-height: 44px;
-  background: rgba(18, 20, 22, 0.85);
-  border: 1px solid rgba(201, 194, 179, 0.2);
-  border-radius: 4px;
-  color: var(--bone);
+  background: var(--chrome-back);
+  border: 1px solid var(--chrome-rule);
+  border-radius: 2px;
+  color: var(--chrome-ink-hi);
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: var(--chrome-track);
   cursor: pointer;
-  transition: var(--ui-transition);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
   white-space: nowrap;
   pointer-events: auto;
   position: fixed;
@@ -955,44 +959,43 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 
 .blog-map-btn:hover,
 .blog-map-btn:focus {
-  background: rgba(25, 26, 28, 0.95);
-  border-color: var(--ember);
-  color: var(--ember-text);
+  background: rgba(8, 9, 10, 0.94);
+  border-color: var(--chrome-rule-hi);
 }
 
 .blog-map-btn:focus-visible {
-  outline: 2px solid var(--ember);
-  outline-offset: 2px;
+  outline: 1px solid var(--chrome-rule-hi);
+  outline-offset: 3px;
 }
 
+/* The map, then its four cultures side by side: a stamp in the chrome ink. The map stands apart
+   behind a rule, and the cultures are set off by dots, since they are siblings, not a path. */
 .blog-nav {
   position: fixed;
   top: 24px;
   left: 24px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: rgba(18, 20, 22, 0.85);
-  border: 1px solid rgba(201, 194, 179, 0.2);
-  border-radius: 4px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--chrome-back);
+  border: 1px solid var(--chrome-rule);
+  border-radius: 2px;
   z-index: 101;
   pointer-events: auto;
 }
 
-/* Links set as the buttons they were. */
 .blog-nav-link {
   display: inline-block;
   background: none;
   border: none;
-  padding: 4px 8px;
-  color: var(--bone-dim);
+  padding: 6px 6px;
+  color: var(--chrome-ink);
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: var(--text-floor);
   line-height: normal;
-  letter-spacing: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   text-decoration: none;
   cursor: pointer;
   transition: color 150ms ease;
@@ -1001,17 +1004,16 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 
 .blog-nav-link:hover,
 .blog-nav-link:focus {
-  color: var(--ember-text);
+  color: var(--chrome-ink-hi);
 }
 
 .blog-nav-link:focus-visible {
-  outline: 1px solid var(--ember);
+  outline: 1px solid var(--chrome-rule-hi);
   outline-offset: 2px;
 }
 
 .blog-nav-link.active {
-  color: var(--bone);
-  font-weight: 600;
+  color: var(--chrome-ink-hi);
 }
 
 .blog-nav-link.active[data-hub="craft"] { color: var(--hub-craft); }
@@ -1020,9 +1022,17 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #spore-canvas, #reveal-can
 .blog-nav-link.active[data-hub="convergence"] { color: var(--hub-convergence); }
 
 .blog-nav-sep {
-  color: rgba(201, 194, 179, 0.25);
-  font-size: 12px;
-  user-select: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--chrome-rule);
+}
+
+.blog-nav-sep--rule {
+  width: 1px;
+  height: 16px;
+  margin-inline: 4px;
+  border-radius: 0;
 }
 
 .blog-category-content {

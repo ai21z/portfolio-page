@@ -101,7 +101,7 @@ for (const device of [
 // the 480 px one none, so the stream had nothing to send. The particles sample the full file, fetched after
 // load, so the photo stays the small one. The stream itself needs the Rich tier, which the test browsers'
 // software renderers do not reach, so this checks what it sends.
-test('the portrait particles sample the full file after load, so the dust that travels to a hovered node is there', async ({ browser, baseURL, browserName }) => {
+test('the portrait particles sample the full file after load and after a reload, so the dust that travels to a hovered node is there', async ({ browser, baseURL, browserName }) => {
   // Firefox runs no portrait particles, and Safari's lighter budget samples fewer and does not stream on Auto.
   test.skip(browserName !== 'chromium', 'Only Chromium runs the full particle budget here');
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
@@ -117,6 +117,11 @@ test('the portrait particles sample the full file after load, so the dust that t
     expect(requests.filter((r) => r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait-480.webp']);
     expect(requests.filter((r) => !r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait.webp']);
     expect(await page.evaluate(() => (window as any).__portraitParticleStats.dustCount)).toBeGreaterThan(150);
+    // A reload draws the photo from the cached full file, and a srcset photo reports its natural size in its
+    // slot's pixels (379), so the particles must still sample their own copy of the file.
+    await page.reload();
+    await page.waitForFunction(() => (window as any).__portraitParticleStats?.particleCount > 0, null, { timeout: 20_000 });
+    expect(await page.evaluate(() => (window as any).__portraitParticleStats.dustCount), 'after a reload').toBeGreaterThan(150);
   } finally {
     await context.close();
   }

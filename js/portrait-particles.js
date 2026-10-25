@@ -430,10 +430,12 @@ class PortraitParticles {
   // The particles that travel to a hovered node are the engraving's brightest specks. The smaller files
   // the browser picks for the photo average those away, and the stream had almost nothing to send, so
   // the particles sample the full 1024 px file. It is fetched once the page has loaded, so it never
-  // competes with the photo, and the photo stands in if it fails.
+  // competes with the photo, and the photo stands in if it fails. Always a separate image, even when the
+  // photo shows the same file (a reload draws it from the cache): a srcset photo reports its natural size
+  // in its slot's pixels, 379 for the 1024 px file, so sampling the photo itself loses the specks again.
   loadSampleSource() {
-    const full = largestCandidate(this.img);
-    if (!full || full === this.img.currentSrc) return Promise.resolve(this.img);
+    const full = largestCandidate(this.img) || this.img.currentSrc;
+    if (!full) return Promise.resolve(this.img);
     return new Promise((resolve) => {
       const image = new Image();
       image.decoding = 'async';

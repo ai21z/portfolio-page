@@ -272,12 +272,13 @@
   transition: opacity 0.45s var(--ease-house), filter 0.45s var(--ease-house);
 }
 
+/* The disc's edge holds a faint rust glow, so the seal reads as lit from inside the network, not laid on it. */
 .network-sigil-node::before {
   content: '';
   position: absolute;
-  inset: -8px;
+  inset: -10px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, var(--void) 76%, rgba(8, 9, 10, 0) 100%);
+  background: radial-gradient(closest-side, var(--void) 70%, rgba(184, 114, 66, 0.2) 82%, rgba(8, 9, 10, 0) 100%);
 }
 
 .network-sigil-node::after {
@@ -320,8 +321,13 @@
 }
 
 body:not(:has(#main.stage.active-section)) .network-sigil-node {
-  opacity: 0.3;
+  opacity: 0.24;
   filter: grayscale(1) brightness(1.5);
+}
+
+/* A ghost, not a control: no ring behind an open view. */
+body:not(:has(#main.stage.active-section)) .network-sigil-node::after {
+  border-color: transparent;
 }
 
 @media (min-width: 901px) and (max-height: 800px) {

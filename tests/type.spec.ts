@@ -66,7 +66,7 @@ test('the Work note reads in Literata with its labels in JetBrains Mono, none un
   }
 });
 
-test('the Graphics control and the ring captions take the data face, the info mark the reading face', async ({ page }) => {
+test('the Graphics control, its info mark and the ring captions take the data face', async ({ page }) => {
   await stubVerification(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#about');
@@ -74,7 +74,7 @@ test('the Graphics control and the ring captions take the data face, the info ma
   await expect(toggle).toBeVisible();
   expect(await family(toggle)).toMatch(/^JetBrains Mono,/);
   expect(await size(toggle)).toBeGreaterThanOrEqual(12);
-  expect(await family(page.locator('.graphics-control__info'))).toMatch(/^Literata,/);
+  expect(await family(page.locator('.graphics-control__info'))).toMatch(/^JetBrains Mono,/);
   expect(await family(page.locator('#about .ring-text--top'))).toMatch(/^JetBrains Mono,/);
 });
 

@@ -88,6 +88,8 @@ const CONFIG = {
 
   // Constellation mode (click easter egg)
   // The constellation only needs a brightness mask, so it reads the 192 px sigil the hub already loads.
+  // The photo's pixels the particles read, reduced to their brightness bands (generate-portrait-sampling-map.mjs).
+  SAMPLE_MAP_PATH: './artifacts/portrait-sampling-map.png',
   SIGIL_PATH: './artifacts/sigil/AZ-01-192.webp',
   SIGIL_FALLBACK_PATH: './artifacts/sigil/AZ-01-192.png',
   // 48 on the 192 px mask marks the same share of particles as 40 did on the 1024 px one.
@@ -124,23 +126,6 @@ const CONFIG = {
 };
 
 const SAMPLE_BASE_WIDTH = 1024;
-
-// The widest file in the photo's own srcset, as an absolute URL, so it keeps the build's cache token.
-function largestCandidate(img) {
-  const srcset = img.closest('picture')?.querySelector('source[srcset]')?.getAttribute('srcset') || img.getAttribute('srcset');
-  if (!srcset) return null;
-  let best = null;
-  let bestWidth = 0;
-  for (const candidate of srcset.split(',')) {
-    const [url, descriptor = ''] = candidate.trim().split(/\s+/);
-    const width = parseInt(descriptor, 10);
-    if (url && width > bestWidth) {
-      best = url;
-      bestWidth = width;
-    }
-  }
-  return best ? new URL(best, document.baseURI).href : null;
-}
 
 function renderModeForBudget() {
   if (CONFIG.RENDER_MODE !== 'auto') return CONFIG.RENDER_MODE;
@@ -428,20 +413,16 @@ class PortraitParticles {
   }
 
   // The particles that travel to a hovered node are the engraving's brightest specks. The smaller files
-  // the browser picks for the photo average those away, and the stream had almost nothing to send, so
-  // the particles sample the full 1024 px file. It is fetched once the page has loaded, so it never
-  // competes with the photo, and the photo stands in if it fails. Always a separate image, even when the
-  // photo shows the same file (a reload draws it from the cache): a srcset photo reports its natural size
-  // in its slot's pixels, 379 for the 1024 px file, so sampling the photo itself loses the specks again.
+  // the browser picks for the photo average those away, so the particles read the full 1024 px file's
+  // pixels, from a 31 KB map of just the pixels they sample (the full file is 419 KB). It is fetched once
+  // the page has loaded, so it never competes with the photo, and the photo stands in if it fails.
   loadSampleSource() {
-    const full = largestCandidate(this.img) || this.img.currentSrc;
-    if (!full) return Promise.resolve(this.img);
     return new Promise((resolve) => {
       const image = new Image();
       image.decoding = 'async';
       image.onload = () => resolve(image.naturalWidth > 0 ? image : this.img);
       image.onerror = () => resolve(this.img);
-      image.src = full;
+      image.src = CONFIG.SAMPLE_MAP_PATH;
     });
   }
 
@@ -651,8 +632,8 @@ class PortraitParticles {
       return;
     }
     const data = imageData.data;
-    // The spacing is set for the 1024 px file. If only a smaller one is at hand (the photo standing in),
-    // the grid scales with it, so the particle count stays the same.
+    // The spacing is set for the 1024 px file. The map is that file at every second pixel, so it reads every
+    // pixel of the map, and a photo standing in scales the grid the same way, so the count stays the same.
     const spacing = Math.max(CONFIG.SAMPLE_SPACING, Math.round(CONFIG.SAMPLE_SPACING / Math.max(0.2, particleScale))) * imgW / SAMPLE_BASE_WIDTH;
     const skipProbability = Math.min(0.92, CONFIG.PARTICLE_SKIP_PROBABILITY + (1 - particleScale) * 0.55);
     const darkSkipProbability = Math.min(0.92, CONFIG.DARK_SKIP_PROBABILITY + (1 - particleScale) * 0.35);

@@ -98,10 +98,11 @@ for (const device of [
 
 // The particles that travel to a hovered node are the engraving's brightest specks (the dust), which the
 // smaller photo files average away: the full file holds about 265 at the sampling grid, the 800 px one 46 and
-// the 480 px one none, so the stream had nothing to send. The particles sample the full file, fetched after
-// load, so the photo stays the small one. The stream itself needs the Rich tier, which the test browsers'
-// software renderers do not reach, so this checks what it sends.
-test('the portrait particles sample the full file after load and after a reload, so the dust that travels to a hovered node is there', async ({ browser, baseURL, browserName }) => {
+// the 480 px one none, so the stream had nothing to send. The particles read the full file's sampled pixels
+// from a 31 KB map fetched after load (the full file is 419 KB), so the photo stays the small one. The stream
+// itself needs the Rich tier, which the test browsers' software renderers do not reach, so this checks what
+// it sends.
+test('the portrait particles sample the map of the full file after load and after a reload, so the dust that travels to a hovered node is there', async ({ browser, baseURL, browserName }) => {
   // Firefox runs no portrait particles, and Safari's lighter budget samples fewer and does not stream on Auto.
   test.skip(browserName !== 'chromium', 'Only Chromium runs the full particle budget here');
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
@@ -111,14 +112,14 @@ test('the portrait particles sample the full file after load and after a reload,
     await page.waitForFunction(() => (window as any).__portraitParticleStats?.particleCount > 0, null, { timeout: 20_000 });
     const requests = await page.evaluate(() => {
       const load = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      return performance.getEntriesByType('resource').filter((entry) => entry.name.includes('myOminousGreenPortrait'))
+      return performance.getEntriesByType('resource').filter((entry) => /myOminousGreenPortrait|portrait-sampling-map/.test(entry.name))
         .map((entry) => ({ file: entry.name.split('/').pop()!.split('?')[0], beforeLoad: entry.startTime < load.loadEventStart }));
     });
     expect(requests.filter((r) => r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait-480.webp']);
-    expect(requests.filter((r) => !r.beforeLoad).map((r) => r.file)).toEqual(['myOminousGreenPortrait.webp']);
+    expect(requests.filter((r) => !r.beforeLoad).map((r) => r.file)).toEqual(['portrait-sampling-map.png']);
     expect(await page.evaluate(() => (window as any).__portraitParticleStats.dustCount)).toBeGreaterThan(150);
-    // A reload draws the photo from the cached full file, and a srcset photo reports its natural size in its
-    // slot's pixels (379), so the particles must still sample their own copy of the file.
+    // A srcset photo reports its natural size in its slot's pixels, so after a reload the particles must still
+    // sample their own map and not the photo.
     await page.reload();
     await page.waitForFunction(() => (window as any).__portraitParticleStats?.particleCount > 0, null, { timeout: 20_000 });
     expect(await page.evaluate(() => (window as any).__portraitParticleStats.dustCount), 'after a reload').toBeGreaterThan(150);

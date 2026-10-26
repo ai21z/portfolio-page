@@ -829,6 +829,8 @@ function animate(timestamp) {
   if (lastFrameTime === 0) {
     lastFrameTime = timestamp;
     render(0.016); // First frame uses assumed 60fps
+    // The landing's transition opens its lens on a drawn globe (js/grow-transition.js).
+    canvas.classList.add('is-drawn');
     animationFrameId = requestAnimationFrame(animate);
     return;
   }

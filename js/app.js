@@ -72,6 +72,7 @@ import { portraitParticles } from './portrait-particles.js';
 import { initPlates } from './article-plates.js';
 import { warmNotebookPaint, warmPaperPaint } from './paint-warmup.js';
 import { startLandingPulses } from './landing-pulses.js';
+import { finishGrowTransition } from './grow-transition.js';
 import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
@@ -1342,6 +1343,8 @@ function closeTransientUi() {
 }
 
 function showSectionWithEffects(sectionName, options = {}) {
+  // Any other route change ends a landing transition at once, so the page lands where it is sent.
+  if (!options.grow) finishGrowTransition();
   closeTransientUi();
   // Switch the classes before the governor announces the new section, so canvases of the section
   // fading out see it as inactive and keep their last frame instead of resizing (which clears them).

@@ -1,0 +1,81 @@
+import { expect, test, type Page } from '@playwright/test';
+
+// A landing node's click grows its route into the section through a lens (js/grow-transition.js). It
+// must always end where the router says: cleanly when left alone, at once when any other route change
+// comes mid-way, and never at all under reduced motion or Quiet.
+const leftovers = (page: Page) => page.evaluate(() => ({
+  layer: document.querySelectorAll('.grow-transition-layer').length,
+  growing: document.body.classList.contains('grow-transition'),
+  inline: [...document.querySelectorAll<HTMLElement>('.stage')]
+    .filter((s) => s.style.clipPath || s.style.opacity || s.style.contentVisibility).map((s) => s.id)
+}));
+
+async function landing(page: Page, profile = 'balanced') {
+  await page.addInitScript((p) => localStorage.setItem('aris.graphicsProfile', p), profile);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  await expect(page.locator('html')).toHaveClass(/js-ready/);
+  await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
+  await page.mouse.move(5, 5);
+}
+
+test.describe('the landing transition', () => {
+  // Headless Firefox and WebKit render in software, which the governor keeps on Quiet: the plain switch.
+  test.skip(({ browserName }) => browserName !== 'chromium', 'Only Chromium reaches Balanced here');
+
+  test('a node grows into its section and leaves nothing behind', async ({ page }) => {
+    await landing(page);
+    const before = await page.evaluate(() => history.length);
+    await page.locator('.network-node-label[data-node="about"]').click();
+    // Mid-way: the layer is up, the section is already the active one, behind its lens.
+    await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
+    await expect(page.locator('#about')).toHaveClass(/active-section/);
+    expect(await page.locator('#about').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
+    // Done well inside 0.9 s of motion, with nothing left over.
+    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, growing: false, inline: [] });
+    await expect(page).toHaveURL(/#about$/);
+    expect(await page.evaluate(() => history.length)).toBe(before + 1);
+    expect(await page.evaluate(() => document.getElementById('about')!.contains(document.activeElement))).toBe(true);
+    await expect.poll(() => page.locator('#main').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+  });
+
+  test('Back mid-way ends it at once on the landing', async ({ page }) => {
+    await landing(page);
+    await page.locator('.network-node-label[data-node="work"]').click();
+    await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
+    await page.goBack();
+    await expect(page.locator('#main')).toHaveClass(/active-section/);
+    expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+    await expect.poll(() => page.locator('#main').evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await expect.poll(() => page.locator('#work').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+  });
+
+  test('another route mid-way ends it at once where that route goes', async ({ page }) => {
+    await landing(page);
+    await page.locator('.network-node-label[data-node="about"]').click();
+    await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
+    await page.evaluate(() => { location.hash = 'contact'; });
+    await expect(page.locator('#contact')).toHaveClass(/active-section/);
+    expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+    await expect.poll(() => page.locator('#about').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+  });
+
+  for (const [name, setup] of [
+    ['reduced motion', async (page: Page) => { await page.emulateMedia({ reducedMotion: 'reduce' }); await landing(page); }],
+    ['Quiet', async (page: Page) => landing(page, 'quiet')]
+  ] as const) {
+    test(`${name} keeps the plain switch`, async ({ page }) => {
+      await setup(page);
+      await page.evaluate(() => {
+        (window as any).__layers = 0;
+        new MutationObserver(() => { if (document.querySelector('.grow-transition-layer')) (window as any).__layers++; })
+          .observe(document.body, { childList: true });
+      });
+      await page.locator('.network-node-label[data-node="skills"]').click();
+      await expect(page.locator('#skills')).toHaveClass(/active-section/);
+      await page.waitForTimeout(900);
+      expect(await page.evaluate(() => (window as any).__layers)).toBe(0);
+      expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+    });
+  }
+});

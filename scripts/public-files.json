@@ -65,6 +65,7 @@
   "js/gpu-warm.js",
   "js/graph.js",
   "js/graphics-governor.js",
+  "js/grow-transition.js",
   "js/hub-to-icons.js",
   "js/landing-pulses.js",
   "js/motion.js",

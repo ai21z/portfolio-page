@@ -1190,3 +1190,19 @@ body.has-paper-open-global #network-nav {
   }
 }
 
+/* The landing's transition into a section (js/grow-transition.js): its layer of route, margin and dim
+   over everything, and the node previews out of the way while it runs. */
+.grow-transition-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5000;
+}
+
+body.grow-transition .node-preview {
+  opacity: 0 !important;
+  transition: none !important;
+}
+

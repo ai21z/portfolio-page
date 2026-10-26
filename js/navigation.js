@@ -16,6 +16,7 @@ import {
 import { coverMap } from './viewport.js';
 import { STAGE_LEAVE_MS } from './motion.js';
 import { refreshViewTitle } from './view-title.js';
+import { growInto, growTransitionAllowed } from './grow-transition.js';
 
 // Branch-normal offsets pushing labels away from mycelium
 export function computeNavOffsets(){
@@ -508,8 +509,13 @@ export function layoutNavNodes(wireSigilToggle, renderHUD, showSectionCallback) 
           const targetStage = document.querySelector(`.stage[data-section="${id}"]`);
           if (targetStage) {
             event.preventDefault();
-            showSectionCallback(id, { historyMode: 'push' });
-            targetStage.focus?.({ preventScroll: false });
+            const open = () => {
+              showSectionCallback(id, { historyMode: 'push', grow: true });
+              targetStage.focus?.({ preventScroll: false });
+            };
+            // From the landing the route grows into the section (js/grow-transition.js).
+            if (growTransitionAllowed()) growInto(label, id, open);
+            else open();
           }
         });
         frag.appendChild(label);

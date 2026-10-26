@@ -426,18 +426,44 @@ void main(){
 }`;
 
 const q = (sel)=>document.querySelector(sel);
-function compile(gl, type, src){
-  const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
-  if(!gl.getShaderParameter(sh, gl.COMPILE_STATUS)){ throw new Error(gl.getShaderInfoLog(sh)); }
-  return sh;
+// Every program is compiled and linked before any status is read, and where the driver builds them in
+// the background (KHR_parallel_shader_compile) init waits for that across frames. A status query waits
+// for its shader, so read after each compile they built one after another and held Blog's first entry
+// for about 36 ms.
+function buildPrograms(gl, specs){
+  return specs.map(({ vs, fs }) => {
+    const p = gl.createProgram();
+    const shaders = [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]].map(([type, src]) => {
+      const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); gl.attachShader(p, sh);
+      return sh;
+    });
+    gl.linkProgram(p);
+    return { p, shaders };
+  });
 }
-function program(gl, vs, fs){
-  const p = gl.createProgram();
-  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
-  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
-  gl.linkProgram(p);
-  if(!gl.getProgramParameter(p, gl.LINK_STATUS)){ throw new Error(gl.getProgramInfoLog(p)); }
-  return p;
+function programsBuilt(gl, built){
+  const parallel = gl.getExtension('KHR_parallel_shader_compile');
+  if (!parallel) return Promise.resolve();
+  const started = performance.now();
+  return new Promise((resolve) => {
+    const poll = () => {
+      // Given up on after 2 s: the status read below then waits, as it did before.
+      if (built.every(({ p }) => gl.getProgramParameter(p, parallel.COMPLETION_STATUS_KHR)) || performance.now() - started > 2000) resolve();
+      else setTimeout(poll, 4);
+    };
+    // Any read waits for the GPU process, which is still setting up the new context, so the first is
+    // held two frames, while the section draws its own.
+    requestAnimationFrame(() => requestAnimationFrame(poll));
+  });
+}
+function linkedPrograms(gl, built){
+  for (const { p, shaders } of built) {
+    if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
+      const log = shaders.map((sh) => gl.getShaderInfoLog(sh)).filter(Boolean).join(' ');
+      throw new Error(log || gl.getProgramInfoLog(p));
+    }
+  }
+  return built.map(({ p }) => p);
 }
 
 // The Blog programs, in the order init links them. The idle warm-up links the same list.
@@ -640,7 +666,9 @@ async function initBlogNetwork(){
     return { vao, count: nodeCount };
   }
 
-  const [progPaper, progSeg, progCyst, progNode] = BLOG_PROGRAMS.map(({ vs, fs }) => program(gl, vs, fs));
+  const builtPrograms = buildPrograms(gl, BLOG_PROGRAMS);
+  await programsBuilt(gl, builtPrograms);
+  const [progPaper, progSeg, progCyst, progNode] = linkedPrograms(gl, builtPrograms);
 
   // Create main VAO
   const vaoSeg  = makeVAOforSegments();
@@ -1767,7 +1795,9 @@ function watchForBlogSection() {
     if (!dishShown(blogSection)) return;
     observer.disconnect(); // Stop watching after init
     mq.removeEventListener('change', check);
-    initBlogNetwork();
+    // The network starts a frame after the section shows, so laying out the section and creating the
+    // network's context fall in different frames, not in the click's.
+    requestAnimationFrame(() => setTimeout(() => initBlogNetwork()));
   };
   const observer = new MutationObserver(check);
   observer.observe(blogSection, {

@@ -17,7 +17,8 @@ function sizeOf(relativePath: string): number {
 test('navigation uses a compact mycelium graph artifact', () => {
   const litePath = 'artifacts/network-lite.json';
   expect(fs.existsSync(path.join(repoRoot, litePath))).toBe(true);
-  expect(sizeOf(litePath)).toBeLessThan(1_250_000);
+  // The paths travel as step letters (scripts/generate-network-lite.mjs), 138 KB instead of 960 KB.
+  expect(sizeOf(litePath)).toBeLessThan(200_000);
   expect(sizeOf(litePath)).toBeLessThan(sizeOf('artifacts/network.json') / 10);
 
   const app = readText('js/app.js');

@@ -3,7 +3,7 @@ window.__appBooted = true;
 document.documentElement.classList.add('js-ready');
 
 import { sizeCanvas, cumulativeLengths, isFirefox, throttle } from './utils.js';
-import { buildGraphFromPaths, aStarPath } from './graph.js';
+import { buildGraphFromPaths, aStarPath, decodeNetworkPaths } from './graph.js';
 import { initHubToIcons } from './hub-to-icons.js';
 import { NAV_COORDS } from './config.js';
 import { isCompact, COMPACT_MQ } from './compact.js';
@@ -215,7 +215,7 @@ function ensureSectionModule(sectionName) {
 async function loadMycelium() {
   if (MYC_MAP) return MYC_MAP;
   const response = await fetch('artifacts/network-lite.json');
-  const data = await response.json();
+  const data = decodeNetworkPaths(await response.json());
   setMycMap(data);
   return data;
 }

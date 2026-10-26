@@ -1,5 +1,36 @@
 // Graph construction and pathfinding
 
+// network-lite.json writes each path as its start in steps of quant, then a letter per step to one of
+// the 8 neighbours, or a longer step in brackets (scripts/generate-network-lite.mjs). This reads it back
+// to [x, y] points. Plain point arrays pass through.
+const STEP_OFFSETS = { a: [0, -1], b: [1, -1], c: [1, 0], d: [1, 1], e: [0, 1], f: [-1, 1], g: [-1, 0], h: [-1, -1] };
+export function decodeNetworkPaths(data) {
+  if (data?.encoding !== 'steps') return data;
+  const quant = data.quant || 1;
+  const paths = data.paths.map((encoded) => {
+    const start = /^(-?\d+),(-?\d+)/.exec(encoded);
+    let x = Number(start[1]) * quant;
+    let y = Number(start[2]) * quant;
+    const points = [[x, y]];
+    for (let i = start[0].length; i < encoded.length; i++) {
+      let dx;
+      let dy;
+      if (encoded[i] === '(') {
+        const end = encoded.indexOf(')', i);
+        [dx, dy] = encoded.slice(i + 1, end).split(',').map(Number);
+        i = end;
+      } else {
+        [dx, dy] = STEP_OFFSETS[encoded[i]];
+      }
+      x += dx * quant;
+      y += dy * quant;
+      points.push([x, y]);
+    }
+    return points;
+  });
+  return { ...data, paths };
+}
+
 export function buildGraphFromPaths(paths) {
   const QUANT = 3;
   const key = (x, y) => `${Math.round(x / QUANT)},${Math.round(y / QUANT)}`;

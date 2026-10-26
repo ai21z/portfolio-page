@@ -31,11 +31,26 @@ for (const pathPoints of source.paths || []) {
   }
 }
 
+// Each path travels as its start, in steps of quant, then one letter per step: nearly every step is
+// one quant to one of the 8 neighbours, so 83,000 points fit in about a tenth of the plain JSON's bytes.
+// A longer step is written in brackets. js/app.js (decodeNetworkPaths) reads it back.
+const STEP_LETTERS = { '0,-1': 'a', '1,-1': 'b', '1,0': 'c', '1,1': 'd', '0,1': 'e', '-1,1': 'f', '-1,0': 'g', '-1,-1': 'h' };
+const encode = (points) => {
+  let out = `${points[0][0] / quant},${points[0][1] / quant}`;
+  for (let i = 1; i < points.length; i++) {
+    const dx = (points[i][0] - points[i - 1][0]) / quant;
+    const dy = (points[i][1] - points[i - 1][1]) / quant;
+    out += STEP_LETTERS[`${dx},${dy}`] || `(${dx},${dy})`;
+  }
+  return out;
+};
+
 const lite = {
   width: source.width,
   height: source.height,
   quant,
-  paths,
+  encoding: 'steps',
+  paths: paths.map(encode),
 };
 
 fs.writeFileSync(outputPath, `${JSON.stringify(lite)}\n`);

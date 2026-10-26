@@ -332,3 +332,40 @@ test.describe('Work top bar on a touch screen', () => {
     });
   }
 });
+
+// Phones open Work on the timeline, which covers the globe, yet they imported the globe and uploaded its
+// textures on entry (three long frames at 4x CPU). The globe loads once the visitor turns to it, and a
+// "See it on the globe" that loads it still reaches it.
+test.describe('Work globe on a phone', () => {
+  test.beforeEach(async ({ page }) => {
+    await routeTurnstile(page);
+    await page.addInitScript(() => {
+      (window as any).__selects = 0;
+      document.addEventListener('work-timeline:select', () => { (window as any).__selects++; });
+    });
+  });
+
+  const globeRequests = (page: Page) => page.evaluate(() => performance.getEntriesByType('resource')
+    .map((entry) => entry.name.split('/').pop()!.split('?')[0])
+    .filter((file) => /^work-globe-webgl\.js$|^ominus-|^lightning\./.test(file)));
+
+  test('the timeline loads no globe, and the Globe button loads it', async ({ page }) => {
+    await gotoWork(page, MOBILE);
+    await page.waitForSelector('.rail-node');
+    await page.waitForTimeout(800);
+    expect(await globeRequests(page)).toEqual([]);
+    await page.locator('.work-view-btn[data-view="globe"]').click();
+    await expect.poll(() => globeRequests(page)).toContain('work-globe-webgl.js');
+  });
+
+  test('See it on the globe loads the globe and hands it the entry', async ({ page }) => {
+    await gotoWork(page, MOBILE);
+    await page.waitForSelector('.rail-node');
+    await page.locator('.rail-node[data-id="adp"] .rail-dot-btn').click();
+    await page.locator('.work-card-globe').click();
+    await expect(page.locator('#work')).toHaveClass(/work-view-globe/);
+    await expect.poll(() => globeRequests(page)).toContain('work-globe-webgl.js');
+    // Once from the card, once more for the globe once it could listen.
+    await expect.poll(() => page.evaluate(() => (window as any).__selects)).toBe(2);
+  });
+});

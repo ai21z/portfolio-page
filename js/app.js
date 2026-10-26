@@ -157,6 +157,23 @@ function reloadOnceForRelease(err) {
 const importBlogNetwork = () => import('./blog-network-webgl.js');
 const importWorkGlobe = () => import('./work-globe-webgl.js');
 
+// A compact Work opens on its timeline, which covers the globe, so the globe (its module and its
+// textures, three long frames on a slow phone) loads only once the visitor turns to it.
+let pendingGlobeSelect = null;
+let globeModuleLoaded = false;
+function workGlobeWanted() {
+  return !isCompact() || Boolean(document.getElementById('work')?.classList.contains('work-view-globe'));
+}
+
+document.addEventListener('work-view:change', (event) => {
+  if (event.detail?.view === 'globe' && document.getElementById('work')?.classList.contains('active-section')) {
+    ensureSectionModule('work');
+  }
+});
+document.addEventListener('work-timeline:select', (event) => {
+  if (!globeModuleLoaded) pendingGlobeSelect = event.detail;
+});
+
 function ensureSectionModule(sectionName) {
   // Compact layouts hide the Blog map, so they never load the dish. A window that widens on Blog
   // loads it then (the compact query's change listener below).
@@ -168,8 +185,14 @@ function ensureSectionModule(sectionName) {
     });
   }
 
-  if (sectionName === 'work' && !workGlobeModulePromise) {
-    workGlobeModulePromise = importWorkGlobe().catch((err) => {
+  if (sectionName === 'work' && !workGlobeModulePromise && workGlobeWanted()) {
+    workGlobeModulePromise = importWorkGlobe().then(() => {
+      globeModuleLoaded = true;
+      // A "See it on the globe" that loaded the globe asked for its place before the globe could listen.
+      const detail = pendingGlobeSelect;
+      pendingGlobeSelect = null;
+      if (detail) document.dispatchEvent(new CustomEvent('work-timeline:select', { detail }));
+    }).catch((err) => {
       workGlobeModulePromise = null;
       if (reloadOnceForRelease(err)) return;
       console.warn('work globe module unavailable:', err);
@@ -1787,6 +1810,7 @@ mqCompact.addEventListener('change', e => {
     initAboutPaperFocus();
     initSkillsPaperFocus();
     if (document.getElementById('blog')?.classList.contains('active-section')) ensureSectionModule('blog');
+    if (document.getElementById('work')?.classList.contains('active-section')) ensureSectionModule('work');
   }
 });
 

@@ -51,7 +51,19 @@ export function cancelTextureLoad(texture) {
   if (state) state.cancelled = true;
 }
 
+// The anisotropy limit, read once per context. A read waits for the GPU process, so it is read when the
+// textures are asked for, not when they arrive, mid-upload.
+const anisotropyLimits = new WeakMap();
+function anisotropyLimit(gl) {
+  if (!anisotropyLimits.has(gl)) {
+    const ext = gl.getExtension('EXT_texture_filter_anisotropic');
+    anisotropyLimits.set(gl, ext ? { ext, max: gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT) } : null);
+  }
+  return anisotropyLimits.get(gl);
+}
+
 export function loadTexture(gl, url, options = {}) {
+  const anisotropy = anisotropyLimit(gl);
   const texture = gl.createTexture();
   const state = { cancelled: false };
   textureLoadState.set(texture, state);
@@ -85,19 +97,28 @@ export function loadTexture(gl, url, options = {}) {
   // only uploads. A bitmap upload ignores the unpack flags, so it is made with straight alpha, as
   // the image upload was. Only at full size: Firefox returns wrong alpha for a straight-alpha
   // bitmap that is also resized, which thickened the fog, so scaled textures keep the canvas path.
-  const bitmapSource = () => {
-    if (typeof createImageBitmap !== 'function') return Promise.resolve(null);
+  // The bitmap is made from the file, not the image: from an image Chromium decodes a straight-alpha
+  // copy on the main thread, 27 ms of Work's first entry. The file is in the cache by then.
+  const bitmapSource = async () => {
+    if (typeof createImageBitmap !== 'function') return null;
     const largest = Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height);
-    if (options.maxSize && largest > options.maxSize) return Promise.resolve(null);
-    return createImageBitmap(image, { premultiplyAlpha: 'none' }).catch(() => null);
+    if (options.maxSize && largest > options.maxSize) return null;
+    try {
+      const blob = await (await fetch(image.currentSrc || image.src)).blob();
+      return await createImageBitmap(blob, { premultiplyAlpha: 'none' });
+    } catch {
+      return null;
+    }
   };
 
+  // Every texture is cancelled before it is deleted, so the state says whether it is still wanted
+  // without asking the GPU process (gl.isTexture waits for it).
   image.onload = async () => {
-    if (state.cancelled || gl.isContextLost?.() || !gl.isTexture(texture)) {
+    if (state.cancelled || gl.isContextLost?.()) {
       return;
     }
     const bitmap = await bitmapSource();
-    if (state.cancelled || gl.isContextLost?.() || !gl.isTexture(texture)) {
+    if (state.cancelled || gl.isContextLost?.()) {
       bitmap?.close();
       return;
     }
@@ -123,11 +144,9 @@ export function loadTexture(gl, url, options = {}) {
       gl.generateMipmap(gl.TEXTURE_2D);
     }
     
-    const ext = gl.getExtension('EXT_texture_filter_anisotropic');
-    if (ext) {
-      const maxAniso = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-      gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 
-        Math.min(options.anisotropy ?? 8, maxAniso));
+    if (anisotropy) {
+      gl.texParameterf(gl.TEXTURE_2D, anisotropy.ext.TEXTURE_MAX_ANISOTROPY_EXT,
+        Math.min(options.anisotropy ?? 8, anisotropy.max));
     }
     
     if (options.onLoad) {

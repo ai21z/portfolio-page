@@ -6,8 +6,12 @@ export function computeCoverFromImage() {
   const vv = window.visualViewport;
   const vw = window.innerWidth;
   const vh = vv ? Math.round(vv.height) : window.innerHeight;
-  const W = bgImg ? bgImg.naturalWidth : 0;
-  const H = bgImg ? bgImg.naturalHeight : 0;
+  // The network's coordinates are in the full backdrop's 1920x1080 frame (the img's width and height).
+  // Portrait screens load only its middle, which cover places exactly where the full image's middle
+  // would be, so the frame, not the loaded file's size, sets the mapping.
+  const ready = bgImg && bgImg.naturalWidth > 0;
+  const W = ready ? Number(bgImg.getAttribute('width')) : 0;
+  const H = ready ? Number(bgImg.getAttribute('height')) : 0;
   
   if (!W || !H) {
     console.warn('Cover: Image not ready yet, dimensions unavailable');

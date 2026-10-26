@@ -126,3 +126,32 @@ test('the portrait particles sample the full file after load and after a reload,
     await context.close();
   }
 });
+
+// Phones took the 1920 px backdrop (237 KB) although a portrait screen shows only its middle. They take
+// that middle alone now, at full resolution, and the network keeps the full image's 1920x1080 frame, so
+// the nodes sit where they did.
+for (const screen of [
+  { width: 390, height: 844, file: 'bg_base-portrait.webp' },
+  { width: 768, height: 1024, file: 'bg_base-portrait.webp' },
+  { width: 844, height: 390, file: 'bg_base.webp' },
+  { width: 1440, height: 900, file: 'bg_base.webp' }
+]) {
+  test(`a ${screen.width}x${screen.height} screen takes ${screen.file} and maps the network on the full frame`, async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ viewport: { width: screen.width, height: screen.height } });
+    const page = await context.newPage();
+    try {
+      await page.goto(baseURL + '/index.html');
+      await page.waitForFunction(() => document.documentElement.classList.contains('js-ready'));
+      const backdrops = await page.evaluate(() => performance.getEntriesByType('resource')
+        .map((entry) => entry.name.split('/').pop()!.split('?')[0]).filter((file) => file.startsWith('bg_base')));
+      expect(backdrops).toEqual([screen.file]);
+      const cover = await page.evaluate(async () => ({ ...(await import('./js/state.js')).COVER }));
+      const scale = Math.max(screen.width / 1920, screen.height / 1080);
+      expect(cover).toMatchObject({ baseW: 1920, baseH: 1080, ready: true });
+      expect(cover.s).toBeCloseTo(scale, 6);
+      expect(cover.dx).toBeCloseTo((screen.width - 1920 * scale) / 2, 3);
+    } finally {
+      await context.close();
+    }
+  });
+}

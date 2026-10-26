@@ -11,6 +11,9 @@ const assets = [
   { src: 'myOminousGreenPortrait.png', dest: 'myOminousGreenPortrait-600.webp', width: 600, quality: 82 },
   { src: 'myOminousGreenPortrait.png', dest: 'myOminousGreenPortrait-800.webp', width: 800, quality: 82 },
   { src: 'artifacts/bg_base.png', dest: 'artifacts/bg_base.webp', quality: 86 },
+  // Portrait screens show only the middle of the backdrop (cover on a 1920x1080 image): this is that
+  // middle at full resolution, as wide as a 3:4 screen sees and cut on WebP's 16 px blocks, so its pixels match the full file's.
+  { src: 'artifacts/bg_base.png', dest: 'artifacts/bg_base-portrait.webp', extract: { left: 544, top: 0, width: 832, height: 1080 }, quality: 86 },
   { src: 'artifacts/blog-articles/1st-year-SE-article-image.png', dest: 'artifacts/blog-articles/1st-year-SE-article-image-800.webp', width: 800, quality: 86 },
   { src: 'artifacts/blog-articles/1st-year-SE-article-image.png', dest: 'artifacts/blog-articles/1st-year-SE-article-image.webp', quality: 86 },
   { src: 'artifacts/sigil/AZ-01.png', dest: 'artifacts/sigil/AZ-01.webp', quality: 90 },
@@ -33,7 +36,9 @@ for (const asset of assets) {
   const srcPath = path.join(repoRoot, asset.src);
   const destPath = path.join(repoRoot, asset.dest);
 
-  const meta = await sharp(srcPath)
+  let image = sharp(srcPath);
+  if (asset.extract) image = image.extract(asset.extract);
+  const meta = await image
     .resize({ width: asset.width, withoutEnlargement: true })
     .webp({ quality: asset.quality })
     .toFile(destPath);

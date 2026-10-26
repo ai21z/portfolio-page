@@ -180,6 +180,7 @@ test('responsive images stay smaller than their full-size sources', () => {
   expect(sizeOf('myOminousGreenPortrait-600.webp')).toBeLessThan(140_000);
   expect(sizeOf('myOminousGreenPortrait-800.webp')).toBeLessThan(sizeOf('myOminousGreenPortrait.webp') * 0.6);
   expect(sizeOf('artifacts/sigil/no-bg-seal-sigil-512.webp')).toBeLessThan(80_000);
+  expect(sizeOf('artifacts/bg_base-portrait.webp')).toBeLessThan(sizeOf('artifacts/bg_base.webp') * 0.5);
   expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image-800.webp')).toBeLessThan(90_000);
   expect(sizeOf('artifacts/blog-articles/1st-year-SE-article-image.webp')).toBeLessThan(170_000);
 });

@@ -188,6 +188,9 @@
   <!-- Static background (front-only) -->
   <div id="bg" aria-hidden="true">
     <picture>
+      <!-- Portrait screens see only the middle of the backdrop, so they take that middle alone, at full
+           resolution (102 KB instead of 237 KB). js/viewport.js maps both on the 1920x1080 frame. -->
+      <source media="(max-aspect-ratio: 3/4)" srcset="./artifacts/bg_base-portrait.webp" type="image/webp" />
       <source srcset="./artifacts/bg_base.webp" type="image/webp" />
       <!-- fetchpriority=low: decorative backdrop texture, not the LCP element, so it must not
            contend with the high-priority portrait for bandwidth on slow mobile connections. -->

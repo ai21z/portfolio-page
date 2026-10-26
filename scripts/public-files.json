@@ -68,6 +68,7 @@
   "js/hub-to-icons.js",
   "js/motion.js",
   "js/navigation.js",
+  "js/paint-warmup.js",
   "js/portrait-particles.js",
   "js/profile-halo.js",
   "js/routes.js",

@@ -585,3 +585,30 @@
   outline: 1px solid var(--chrome-rule-hi);
   outline-offset: 4px;
 }
+
+/* The idle warm-up's copies of the views (js/paint-warmup.js): painted for a few frames, all but
+   invisible, never hit, never read. A corner copy is pinned to the corner, where 32 px of it paint. */
+.paint-warmup {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  opacity: 0.004;
+  pointer-events: none;
+  z-index: 2147483647;
+  contain: strict;
+}
+
+.paint-warmup--corner {
+  width: 32px;
+  height: 32px;
+}
+
+.paint-warmup--corner > * {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+}
+

@@ -141,6 +141,48 @@ test('Blog starts its network once after the idle warm-up loaded its module', as
   expect(await page.evaluate(() => (window as any).__blogContexts)).toBe(1);
 });
 
+// The first entry into About, Skills or Contact built its GPU programs in the frame that showed it. The
+// idle warm-up paints copies of the cards, the lens and the notebook first (js/paint-warmup.js): one at a
+// time, after the landing's intro, while the pointer rests, hidden from everyone and gone afterwards.
+test('the idle warm-up paints the paper views once, out of reach, while the visitor is still', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'The idle warm-up runs where requestIdleCallback exists');
+  test.setTimeout(45_000);
+  await page.addInitScript(() => {
+    localStorage.setItem('aris.graphicsProfile', 'balanced');
+    const seen: any[] = [];
+    (window as any).__warmCopies = seen;
+    new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (!(node instanceof HTMLElement) || !node.classList.contains('paint-warmup')) continue;
+        seen.push({
+          at: performance.now(),
+          hidden: node.getAttribute('aria-hidden') === 'true' && node.inert,
+          named: node.querySelectorAll('[id], [name], [for]').length,
+          copy: node.firstElementChild?.className
+        });
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  // A pointer that keeps moving holds the copies back.
+  let lastMove = 0;
+  for (let i = 0; i < 36; i++) {
+    await page.mouse.move(20 + (i % 2) * 6, 20);
+    lastMove = await page.evaluate(() => performance.now());
+    await page.waitForTimeout(300);
+  }
+  await expect.poll(() => page.evaluate(() => (window as any).__warmCopies.length), { timeout: 25_000 }).toBe(4);
+  const copies = await page.evaluate(() => (window as any).__warmCopies);
+  expect(copies.map((copy: any) => copy.copy.split(' ')[0])).toEqual(['slab', 'slab', 'altar-lens', 'notebook-page']);
+  for (const copy of copies) {
+    expect(copy.at).toBeGreaterThan(Math.max(9000, lastMove + 1400));
+    expect(copy.hidden).toBe(true);
+    expect(copy.named).toBe(0);
+  }
+  await expect(page.locator('.paint-warmup')).toHaveCount(0);
+});
+
 test('intro ritual toggle and work navigation do not throw route errors', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));

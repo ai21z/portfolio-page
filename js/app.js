@@ -70,6 +70,7 @@ import {
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import { initPlates } from './article-plates.js';
+import { warmNotebookPaint, warmPaperPaint } from './paint-warmup.js';
 import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
@@ -1585,8 +1586,9 @@ async function warmSectionShaders(sectionName, load, warm) {
 
 // Once the landing has settled, do in idle time the work that would otherwise be a long frame
 // later: building the navigation graph, which the first hover of a node waits for, drawing an
-// invisible lit route so its stroke program is compiled before that hover, then linking the Blog
-// and Work shaders, which their first visit waits for. One step per idle callback, and
+// invisible lit route so its stroke program is compiled before that hover, linking the Blog and Work
+// shaders, which their first visit waits for, then painting copies of the paper views, so their first
+// entry does not build their GPU programs (js/paint-warmup.js). One step per idle callback, and
 // only on desktops outside Quiet, since phones may never hover and Quiet sessions asked for less
 // work.
 const IDLE_WARMUP_DELAY_MS = 4000;
@@ -1594,7 +1596,9 @@ const idleWarmupSteps = [
   () => ensureMyceliumReady(),
   () => warmLitRoute(),
   () => warmSectionShaders('blog', importBlogNetwork, 'warmBlogNetwork'),
-  () => warmSectionShaders('work', importWorkGlobe, 'warmWorkGlobe')
+  () => warmSectionShaders('work', importWorkGlobe, 'warmWorkGlobe'),
+  () => warmPaperPaint(),
+  () => warmNotebookPaint()
 ];
 
 function idleWarmupAllowed() {

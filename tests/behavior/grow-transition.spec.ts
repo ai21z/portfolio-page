@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// A landing node's click grows its route into the section through a lens (js/grow-transition.js). It
+// A landing node's click flies into its branch and opens the section through a lens (js/grow-transition.js). It
 // must always end where the router says: cleanly when left alone, at once when any other route change
 // comes mid-way, and never at all under reduced motion or Quiet.
 const leftovers = (page: Page) => page.evaluate(() => ({
-  layer: document.querySelectorAll('.grow-transition-layer').length,
+  layer: document.querySelectorAll('.grow-transition-layer, .grow-transition-flight').length,
+  backdrop: document.getElementById('bg')!.style.opacity,
   growing: document.body.classList.contains('grow-transition'),
   inline: [...document.querySelectorAll<HTMLElement>('.stage')]
     .filter((s) => s.style.clipPath || s.style.opacity || s.style.contentVisibility).map((s) => s.id)
@@ -32,7 +33,7 @@ test.describe('the landing transition', () => {
     await expect(page.locator('#about')).toHaveClass(/active-section/);
     expect(await page.locator('#about').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
     // Done well inside 0.9 s of motion, with nothing left over.
-    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, growing: false, inline: [] });
+    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await expect(page).toHaveURL(/#about$/);
     expect(await page.evaluate(() => history.length)).toBe(before + 1);
     expect(await page.evaluate(() => document.getElementById('about')!.contains(document.activeElement))).toBe(true);
@@ -45,7 +46,7 @@ test.describe('the landing transition', () => {
     await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
     await page.goBack();
     await expect(page.locator('#main')).toHaveClass(/active-section/);
-    expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+    expect(await leftovers(page)).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await expect.poll(() => page.locator('#main').evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
     await expect.poll(() => page.locator('#work').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
@@ -56,7 +57,7 @@ test.describe('the landing transition', () => {
     await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
     await page.evaluate(() => { location.hash = 'contact'; });
     await expect(page.locator('#contact')).toHaveClass(/active-section/);
-    expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+    expect(await leftovers(page)).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await expect.poll(() => page.locator('#about').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
 
@@ -75,7 +76,7 @@ test.describe('the landing transition', () => {
       await expect(page.locator('#skills')).toHaveClass(/active-section/);
       await page.waitForTimeout(900);
       expect(await page.evaluate(() => (window as any).__layers)).toBe(0);
-      expect(await leftovers(page)).toEqual({ layer: 0, growing: false, inline: [] });
+      expect(await leftovers(page)).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     });
   }
 });

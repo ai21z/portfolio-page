@@ -1,29 +1,36 @@
-// The landing's way into a section. A node's click lights its route through the hub to the node, the
-// brightest thing on screen while the rest of the landing dims, and the section opens behind a closed
-// lens at once, so it builds while the route grows. Once the section has painted (its scene drawn, or
-// two frames for the paper views), the lens opens from the node: a hypha-green margin that wanders like
-// a colony's edge, the section inside it, the landing whole outside it. Readable by about 0.5 s, done by
-// 0.9 s.
+// The landing's way into a section. A node's click flares the node and lights its route through the hub,
+// while the landing's words fade and the network alone flies into the branch toward the node. The section
+// opens behind a closed lens at once, so it builds during the flight, and once it has painted (its scene
+// drawn, or two frames for the paper views) the lens opens where the flight arrives. Its edge is a growth
+// front: lobed, thick and bright at the tips, glowing inward, with strands reaching past it. The flown
+// network runs through the lens too, so it is never seen at two scales, and gives way to the backdrop at
+// its own scale behind the section. Readable by about 0.5 s, done by 0.9 s.
 //
-// Any other route change while it runs (Back or Forward, a wheel step, a link, a resize) finishes it at
-// once, so the page always ends where the router says. Reduced motion and Quiet keep the plain switch,
-// and section-to-section moves keep the crossfade.
+// Any other route change while it runs (Back or Forward, a wheel step, a link, a resize, a hidden tab)
+// finishes it at once, so the page always ends where the router says. Reduced motion and Quiet keep the
+// plain switch, and section-to-section moves keep the crossfade.
 import { LOCKED_ROUTES } from './state.js';
 import { getGraphicsBudget } from './graphics-governor.js';
 import { reducedMotion } from './motion.js';
 
 const ROUTE_MS = 280;
-const OPEN_EARLIEST = 220;
-const OPEN_LATEST = 320;
-const OPEN_MS = 400;
-const END_MS = 880;
-const MAX_ROUTE = 420;    // px of route the comet travels, ending at the node
-const DIM = 0.42;
+const PUSH = 1.7;           // the network's flight toward the node
+const PUSH_MS = 620;
+const WORDS_OUT_MS = 170;   // the name, portrait, bio and labels are gone by then
+const OPEN_EARLIEST = 190;
+const OPEN_LATEST = 300;
+const OPEN_MS = 520;
+const END_MS = 890;
+const BACKDROP_IN_MS = 300;
+const MAX_ROUTE = 420;      // px of route the comet travels, ending at the node
+const FRONT_POINTS = 120;
 
-const ease = (t) => 1 - Math.pow(1 - t, 3);
+const easeOut2 = (t) => 1 - (1 - t) * (1 - t);
+const easeOut3 = (t) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const frames = (n) => new Promise((resolve) => { const step = (k) => (k ? requestAnimationFrame(() => step(k - 1)) : resolve()); step(n); });
 const center = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+const trace = (ctx, pts) => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); };
 
 const glow = document.createElement('canvas');
 glow.width = glow.height = 64;
@@ -38,6 +45,20 @@ glow.width = glow.height = 64;
   g.fillRect(0, 0, 64, 64);
 }
 
+// The backdrop's copy for the flight, decoded ahead so the switch never shows it missing.
+let backdropCopy = null;
+function prepareBackdropCopy() {
+  const real = document.getElementById('bg-front-img');
+  const src = real?.currentSrc || real?.src;
+  if (!src || backdropCopy?.dataset.src === src) return;
+  backdropCopy = new Image();
+  backdropCopy.dataset.src = src;
+  backdropCopy.alt = '';
+  backdropCopy.src = src;
+  backdropCopy.decode?.().catch(() => {});
+}
+window.addEventListener('load', () => setTimeout(prepareBackdropCopy, 1500), { once: true });
+
 let current = null;
 
 export function growTransitionAllowed() {
@@ -45,17 +66,66 @@ export function growTransitionAllowed() {
     Boolean(document.querySelector('#main.active-section'));
 }
 
-// The lens margin: a circle whose radius wanders with the angle, slowly turning.
-function marginPoints(seeds, cx, cy, r, t) {
+// The growth front: a circle whose radius wanders with the angle in proportion to its size, so a small
+// lens is nearly round and a large one keeps its lobes. Each point carries its lobe value for the drawing.
+function frontPoints(seeds, cx, cy, r, t) {
   const pts = [];
-  for (let i = 0; i < 96; i++) {
-    const a = (i / 96) * Math.PI * 2;
+  for (let i = 0; i < FRONT_POINTS; i++) {
+    const a = (i / FRONT_POINTS) * Math.PI * 2;
     let k = 0;
-    for (const [f, ph, w] of seeds) k += w * Math.sin(f * a + ph + t * 0.004 * (f % 3 + 1));
-    const rr = Math.max(0, r * (1 + 0.035 * k) + (r > 0 ? 6 * k : 0));
-    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    for (const [f, ph, w] of seeds) k += w * Math.sin(f * a + ph + t * 0.003 * (f % 3 + 1));
+    const rr = Math.max(0, r * (1 + 0.075 * k));
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, a, rr, k]);
   }
   return pts;
+}
+
+function drawFront(ctx, edge, alpha) {
+  // An inward glow, kept inside the lens.
+  ctx.save();
+  trace(ctx, edge);
+  ctx.clip();
+  for (const [w, a] of [[34, 0.07], [20, 0.12], [10, 0.2]]) {
+    ctx.strokeStyle = `rgba(122,174,138,${a * alpha})`;
+    ctx.lineWidth = w;
+    trace(ctx, edge);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // The front itself, thick and bright at the lobe tips, thin in the valleys.
+  for (let i = 0; i < edge.length; i++) {
+    const [x0, y0, , , k0] = edge[i];
+    const [x1, y1, , , k1] = edge[(i + 1) % edge.length];
+    const tip = Math.max(0, (k0 + k1) / 2);
+    for (const [rgb, a, w] of [['150,215,175', 0.45 + 0.5 * tip, 1.4 + 4.2 * tip], ['235,255,242', 0.25 + 0.6 * tip, 0.8 + 1.2 * tip]]) {
+      ctx.strokeStyle = `rgba(${rgb},${a * alpha})`;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
+  }
+  // Strands at the lobe tips and a few between, tapering out past the front.
+  for (let i = 0; i < edge.length; i += 2) {
+    const [x, y, angle, rr, k] = edge[i];
+    const before = edge[(i - 2 + edge.length) % edge.length][4];
+    const after = edge[(i + 2) % edge.length][4];
+    const isTip = k > before && k >= after && k > 0.1;
+    if (!isTip && (i * 7) % 11 !== 0) continue;
+    const length = (isTip ? 10 + 10 * k : 6) * Math.min(1, rr / 90);
+    const bend = (((i * 13) % 7) - 3) * 0.06;
+    const mx = x + Math.cos(angle + bend) * length * 0.55;
+    const my = y + Math.sin(angle + bend) * length * 0.55;
+    const ex = x + Math.cos(angle + bend * 2) * length;
+    const ey = y + Math.sin(angle + bend * 2) * length;
+    ctx.strokeStyle = `rgba(170,225,190,${0.8 * alpha})`;
+    ctx.lineWidth = isTip ? 1.8 : 1.2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(mx, my); ctx.stroke();
+    ctx.strokeStyle = `rgba(170,225,190,${0.45 * alpha})`;
+    ctx.lineWidth = isTip ? 0.9 : 0.6;
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(ex, ey); ctx.stroke();
+  }
 }
 
 // The comet's path: the traced route through the hub to the node, up to MAX_ROUTE px of it, so labels
@@ -93,11 +163,61 @@ function pointAlong(route, s) {
   return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k];
 }
 
-// The section's first frame: its scene drawn where it has one, and two frames for all.
-async function painted(id, stage, started) {
-  await frames(2);
-  const canvas = id === 'blog' ? stage.querySelector('#blog-network-canvas') : id === 'work' ? stage.querySelector('#work-globe-canvas') : null;
-  while (canvas && !canvas.classList.contains('is-drawn') && performance.now() - started < OPEN_LATEST) await frames(1);
+// The flight: the backdrop's copy and frozen frames of the landing's moving layers (they are released
+// as soon as the landing is left), in one layer that flies.
+function buildFlight() {
+  const flight = document.createElement('div');
+  flight.className = 'grow-transition-flight';
+  flight.setAttribute('aria-hidden', 'true');
+  const real = document.getElementById('bg-front-img');
+  if (real && backdropCopy?.complete && backdropCopy.naturalWidth) {
+    const style = getComputedStyle(real);
+    backdropCopy.style.cssText = `filter:${style.filter};opacity:${style.opacity};mix-blend-mode:${style.mixBlendMode}`;
+    flight.append(backdropCopy);
+  }
+  for (const id of ['pulse-canvas', 'spore-canvas', 'reveal-canvas']) {
+    const source = document.getElementById(id);
+    if (!source || source.width < 2) continue;
+    const copy = document.createElement('canvas');
+    copy.width = source.width;
+    copy.height = source.height;
+    copy.getContext('2d')?.drawImage(source, 0, 0);
+    copy.style.mixBlendMode = getComputedStyle(source).mixBlendMode;
+    flight.append(copy);
+  }
+  return flight;
+}
+
+function restore(run, settle) {
+  const { stage, main, nav, bg, flight } = run;
+  for (const el of [stage, main, nav]) {
+    el.style.clipPath = '';
+    el.style.opacity = '';
+    el.style.transform = '';
+    el.style.transformOrigin = '';
+    el.style.transition = 'none';
+  }
+  main.style.contentVisibility = '';
+  nav.style.visibility = '';
+  run.canvas.remove();
+  document.body.classList.remove('grow-transition');
+  if (settle) {
+    // The backdrop comes back at its own scale behind the section as the flown copy fades.
+    flight.style.transition = `opacity ${BACKDROP_IN_MS}ms ease-out`;
+    flight.style.opacity = '0';
+    bg.style.transition = `opacity ${BACKDROP_IN_MS}ms ease-out`;
+    bg.style.opacity = '';
+    run.settleTimer = setTimeout(() => { flight.remove(); bg.style.transition = ''; }, BACKDROP_IN_MS + 20);
+  } else {
+    flight.remove();
+    bg.style.transition = 'none';
+    bg.style.opacity = '';
+  }
+  // The inline transitions stay off for a frame, so nothing fades back from the inline values.
+  requestAnimationFrame(() => {
+    for (const el of [stage, main, nav]) el.style.transition = '';
+    if (!settle) bg.style.transition = '';
+  });
 }
 
 // Ends a running transition at once: the section as the router left it, the landing as CSS has it.
@@ -106,35 +226,25 @@ export function finishGrowTransition() {
   if (!run) return;
   current = null;
   cancelAnimationFrame(run.raf);
-  for (const el of [run.stage, run.main]) {
-    if (!el) continue;
-    el.style.clipPath = '';
-    el.style.opacity = '';
-    el.style.contentVisibility = '';
-    el.style.transition = 'none';
-  }
-  run.canvas.remove();
-  document.body.classList.remove('grow-transition');
-  // The inline transitions stay off for a frame, so nothing fades back from the inline values.
-  requestAnimationFrame(() => {
-    for (const el of [run.stage, run.main]) if (el) el.style.transition = '';
-  });
+  restore(run, false);
 }
 
-// show() switches to the section the usual way; the lens then reveals it.
+// show() switches to the section the usual way; the flight and the lens then carry the eye into it.
 export function growInto(label, id, show) {
   finishGrowTransition();
   const stage = document.querySelector(`.stage[data-section="${id}"]`);
   const main = document.getElementById('main');
-  if (!stage || !main) { show(); return; }
+  const nav = document.getElementById('network-nav');
+  const bg = document.getElementById('bg');
+  if (!stage || !main || !nav || !bg) { show(); return; }
   const node = center(label);
   const hubEl = document.querySelector('.network-sigil-node');
   const hub = hubEl ? center(hubEl) : null;
   const route = routePath(id, node, hub);
   const [nx, ny] = node;
   const radius = Math.max(...[[0, 0], [innerWidth, 0], [0, innerHeight], [innerWidth, innerHeight]]
-    .map(([x, y]) => Math.hypot(x - nx, y - ny))) * 1.12 + 20;
-  const seeds = Array.from({ length: 5 }, (_, i) => [2 + i * 3 + Math.round(Math.random() * 2), Math.random() * Math.PI * 2, 0.5 / (i + 1)]);
+    .map(([x, y]) => Math.hypot(x - nx, y - ny))) * 1.15 + 30;
+  const seeds = Array.from({ length: 6 }, (_, i) => [3 + i * 2 + Math.round(Math.random() * 2), Math.random() * Math.PI * 2, 0.6 / (i + 1)]);
 
   const canvas = document.createElement('canvas');
   canvas.className = 'grow-transition-layer';
@@ -142,23 +252,39 @@ export function growInto(label, id, show) {
   const dpr = Math.min(getGraphicsBudget('section-transition').dprCap || 1, window.devicePixelRatio || 1);
   canvas.width = Math.round(innerWidth * dpr);
   canvas.height = Math.round(innerHeight * dpr);
-  document.body.append(canvas);
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+  const flight = buildFlight();
+  flight.style.transformOrigin = `${nx}px ${ny}px`;
+  document.body.append(flight, canvas);
   document.body.classList.add('grow-transition');
   show();
-  // The section is open behind a closed lens, so it builds now. The landing stays whole until the lens
-  // takes it, laid out past its own leave (0.5 s), since the lens may still be opening then.
-  for (const el of [stage, main]) { el.style.transition = 'none'; el.style.opacity = '1'; }
+  // The section is open behind a closed lens, so it builds now. The landing's words stay until they have
+  // faded, laid out past the landing's own leave, and the labels with them.
+  for (const el of [stage, main, nav]) el.style.transition = 'none';
+  main.style.opacity = '1';
   main.style.contentVisibility = 'visible';
+  nav.style.opacity = '1';
+  nav.style.visibility = 'visible';
+  stage.style.opacity = '1';
+  stage.style.transformOrigin = `${nx}px ${ny}px`;
   stage.style.clipPath = 'polygon(0 0, 0 0, 0 0)';
+  if (flight.childElementCount) {
+    bg.style.transition = 'none';
+    bg.style.opacity = '0';
+  }
 
   const started = performance.now();
-  const run = { stage, main, canvas, raf: 0 };
+  const run = { stage, main, nav, bg, flight, canvas, raf: 0 };
   current = run;
   let readyAt = Infinity;
-  painted(id, stage, started).then(() => { readyAt = performance.now() - started; });
+  (async () => {
+    await frames(2);
+    const scene = id === 'blog' ? stage.querySelector('#blog-network-canvas') : id === 'work' ? stage.querySelector('#work-globe-canvas') : null;
+    while (scene && !scene.classList.contains('is-drawn') && performance.now() - started < OPEN_LATEST) await frames(1);
+    readyAt = performance.now() - started;
+  })();
   let openAt = null;
 
   const frame = (now) => {
@@ -166,26 +292,18 @@ export function growInto(label, id, show) {
     const t = now - started;
     if (openAt == null && t >= OPEN_EARLIEST && (t >= readyAt || t >= OPEN_LATEST)) openAt = t;
     const p = openAt == null ? 0 : Math.min(1, (t - openAt) / OPEN_MS);
-    const r = radius * ease(p);
-    const edge = openAt == null ? null : marginPoints(seeds, nx, ny, r, t);
+    const r = radius * easeOut2(easeOut3(p) * 0.5 + p * 0.5);
+    const z = 1 + (PUSH - 1) * easeInOut(Math.min(1, t / PUSH_MS));
+    flight.style.transform = `scale(${z.toFixed(4)})`;
+    const words = (1 - Math.min(1, t / WORDS_OUT_MS)).toFixed(3);
+    main.style.opacity = words;
+    nav.style.opacity = words;
+    // A touch of depth for the section as the front passes.
+    stage.style.transform = `scale(${(1.05 - 0.05 * easeOut3(p)).toFixed(4)})`;
+    const edge = openAt == null ? null : frontPoints(seeds, nx, ny, r, t);
+    if (edge) stage.style.clipPath = `polygon(${edge.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',')})`;
+
     ctx.clearRect(0, 0, innerWidth, innerHeight);
-
-    // The landing dims around the route while it grows, and clears as the lens opens.
-    const dim = DIM * Math.min(1, t / 120) * (1 - Math.min(1, p * 1.6));
-    if (dim > 0) {
-      ctx.save();
-      ctx.fillStyle = `rgba(4,7,7,${dim})`;
-      if (edge) {
-        ctx.beginPath();
-        ctx.rect(0, 0, innerWidth, innerHeight);
-        edge.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-        ctx.closePath();
-        ctx.clip('evenodd');
-      }
-      ctx.fillRect(0, 0, innerWidth, innerHeight);
-      ctx.restore();
-    }
-
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -196,49 +314,52 @@ export function growInto(label, id, show) {
       ctx.drawImage(glow, nx - 30, ny - 30, 60, 60);
       ctx.globalAlpha = 1;
     }
-    // The route: a lit hypha under a comet head, fading as the lens opens.
-    const routeFade = 1 - Math.min(1, p * 1.8);
-    if (route && routeFade > 0) {
+    // The route: a lit hypha under a comet head, flying with the network, kept outside the lens.
+    const routeFade = 1 - Math.min(1, p * 1.6);
+    if (route && routeFade > 0.01) {
       const grown = easeInOut(Math.min(1, t / ROUTE_MS));
       const head = route.len * grown;
-      const tip = pointAlong(route, head);
-      for (const [rgb, a, w] of [['143,180,255', 0.28, 9], ['122,174,138', 0.8, 3.6], ['230,255,240', 1, 1.6]]) {
-        ctx.strokeStyle = `rgba(${rgb},${a * routeFade})`;
-        ctx.lineWidth = w;
+      const fly = ([x, y]) => [nx + (x - nx) * z, ny + (y - ny) * z];
+      ctx.save();
+      if (edge) {
         ctx.beginPath();
-        ctx.moveTo(route.pts[0][0], route.pts[0][1]);
-        for (let i = 1; i < route.pts.length && route.cum[i] <= head; i++) ctx.lineTo(route.pts[i][0], route.pts[i][1]);
+        ctx.rect(0, 0, innerWidth, innerHeight);
+        edge.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.closePath();
+        ctx.clip('evenodd');
+      }
+      for (const [rgb, a, w] of [['143,180,255', 0.3, 10], ['122,174,138', 0.85, 4], ['235,255,242', 1, 1.8]]) {
+        ctx.strokeStyle = `rgba(${rgb},${a * routeFade})`;
+        ctx.lineWidth = w * Math.sqrt(z);
+        ctx.beginPath();
+        const start = fly(route.pts[0]);
+        ctx.moveTo(start[0], start[1]);
+        for (let i = 1; i < route.pts.length && route.cum[i] <= head; i++) {
+          const q = fly(route.pts[i]);
+          ctx.lineTo(q[0], q[1]);
+        }
+        const tip = fly(pointAlong(route, head));
         ctx.lineTo(tip[0], tip[1]);
         ctx.stroke();
       }
       if (grown < 1) {
+        const tip = fly(pointAlong(route, head));
         ctx.globalAlpha = routeFade;
-        ctx.drawImage(glow, tip[0] - 20, tip[1] - 20, 40, 40);
+        ctx.drawImage(glow, tip[0] - 22, tip[1] - 22, 44, 44);
         ctx.globalAlpha = 1;
       }
+      ctx.restore();
     }
-
+    // The growth front, gone before the lens covers the window.
     if (edge) {
-      stage.style.clipPath = `polygon(${edge.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',')})`;
-      const hole = `M${edge.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')} Z`;
-      main.style.clipPath = `path(evenodd, 'M0 0 H${innerWidth} V${innerHeight} H0 Z ${hole}')`;
-      // The margin, hypha green, gone before the lens covers the window.
-      const marginAlpha = 0.95 * (1 - Math.min(1, p / 0.8));
-      if (marginAlpha > 0.01) {
-        for (const [rgb, a, w] of [['143,180,255', 0.18, 7], ['122,174,138', 0.75, 2.6], ['200,240,215', 0.55, 1]]) {
-          ctx.strokeStyle = `rgba(${rgb},${a * marginAlpha})`;
-          ctx.lineWidth = w;
-          ctx.beginPath();
-          edge.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-          ctx.closePath();
-          ctx.stroke();
-        }
-      }
+      const frontAlpha = 1 - Math.min(1, p / 0.66);
+      if (frontAlpha > 0.01) drawFront(ctx, edge, frontAlpha);
     }
     ctx.globalCompositeOperation = 'source-over';
 
     if ((openAt != null && p >= 1) || t >= END_MS) {
-      finishGrowTransition();
+      current = null;
+      restore(run, true);
       return;
     }
     run.raf = requestAnimationFrame(frame);

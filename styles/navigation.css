@@ -1190,7 +1190,7 @@ body.has-paper-open-global #network-nav {
   }
 }
 
-/* The landing's transition into a section (js/grow-transition.js): its layer of route, margin and dim
+/* The landing's transition into a section (js/grow-transition.js): its layer of route and growth front
    over everything, and the node previews out of the way while it runs. */
 .grow-transition-layer {
   position: fixed;
@@ -1199,6 +1199,24 @@ body.has-paper-open-global #network-nav {
   height: 100%;
   pointer-events: none;
   z-index: 5000;
+}
+
+/* The flight: the backdrop's copy and the landing's frozen moving layers, flying into the branch
+   where the backdrop sits. */
+.grow-transition-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.grow-transition-flight > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 body.grow-transition .node-preview {

@@ -90,7 +90,7 @@ test('defers compact mycelium network data until navigation effects need it', as
 });
 
 test('a desktop builds the mycelium network in idle time before any hover, a phone does not', async ({ browser, browserName }) => {
-  // Safari has no idle callback, so there the first hover still builds it.
+  // Safari has no idle callback, so there a timer builds it (the next test).
   test.skip(browserName === 'webkit', 'WebKit has no requestIdleCallback');
   test.setTimeout(45_000);
   const open = async (viewport: { width: number; height: number }, hasTouch: boolean) => {
@@ -114,6 +114,26 @@ test('a desktop builds the mycelium network in idle time before any hover, a pho
   } finally {
     await Promise.all([desktop.page.close(), phone.page.close()]);
   }
+});
+
+// Safari has no idle callback, and its landing stayed still until a first hover built the graph the
+// pulses run on. Without one, the graph is built on a timer once the intro has played. Headless WebKit
+// renders in software and runs Quiet, so Chromium stands in, with the idle callback taken away.
+test('without an idle callback a desktop builds the network on a timer after the intro, before any hover', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Chromium stands in for Safari here');
+  test.setTimeout(30_000);
+  await page.addInitScript(() => {
+    localStorage.setItem('aris.graphicsProfile', 'balanced');
+    delete (window as any).requestIdleCallback;
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/index.html');
+  const graphAt = () => page.evaluate(async () => ((await import('/js/state.js')).GRAPH ? performance.now() : 0));
+  let builtAt = 0;
+  await expect.poll(async () => (builtAt = await graphAt()), { timeout: 20_000, intervals: [250] }).toBeGreaterThan(0);
+  // Seen within a poll of being built, and not before the timer.
+  expect(builtAt).toBeGreaterThan(8500);
+  expect(builtAt).toBeLessThan(15_000);
 });
 
 test('Blog starts its network once after the idle warm-up loaded its module', async ({ page, browserName }) => {

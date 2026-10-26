@@ -1594,6 +1594,7 @@ async function warmSectionShaders(sectionName, load, warm) {
 // only on desktops outside Quiet, since phones may never hover and Quiet sessions asked for less
 // work.
 const IDLE_WARMUP_DELAY_MS = 4000;
+const GRAPH_TIMER_DELAY_MS = 9000;
 const idleWarmupSteps = [
   () => ensureMyceliumReady(),
   () => warmLitRoute(),
@@ -1651,9 +1652,13 @@ window.addEventListener('load', () => {
 
   setTimeout(warmSectionFaces, FACE_WARMUP_DELAY_MS);
 
-  // Safari has no idle callback, so it keeps the work where it was.
+  // Safari has no idle callback, so it keeps the rest of the warm-up where it was, but builds the
+  // network graph on a timer once the landing's intro has played, in short tasks, so the landing's
+  // pulses run there too instead of waiting for a first hover.
   if (typeof window.requestIdleCallback === 'function') {
     setTimeout(scheduleIdleWarmupStep, IDLE_WARMUP_DELAY_MS);
+  } else {
+    setTimeout(() => { if (idleWarmupAllowed()) void ensureMyceliumReady(); }, GRAPH_TIMER_DELAY_MS);
   }
 });
 

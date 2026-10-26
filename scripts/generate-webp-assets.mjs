@@ -19,6 +19,9 @@ const assets = [
   { src: 'artifacts/sigil/AZ-01.png', dest: 'artifacts/sigil/AZ-01.webp', quality: 90 },
   { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil.webp', quality: 90 },
   { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil-512.webp', width: 512, quality: 86 },
+  // The footer sign (up to 64 px), the Contact seal (up to 100 px) and the 404 seal (up to 156 px).
+  { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil-128.webp', width: 128, quality: 86 },
+  { src: 'artifacts/sigil/no-bg-seal-sigil.png', dest: 'artifacts/sigil/no-bg-seal-sigil-256.webp', width: 256, quality: 86 },
   { src: 'artifacts/work-page/ominus-earth.png', dest: 'artifacts/work-page/ominus-earth.webp', quality: 90 },
   { src: 'artifacts/work-page/ominus-fog-cloud.png', dest: 'artifacts/work-page/ominus-fog-cloud.webp', quality: 86 },
   { src: 'artifacts/work-page/lightning.png', dest: 'artifacts/work-page/lightning.webp', quality: 90 },

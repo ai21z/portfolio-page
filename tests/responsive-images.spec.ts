@@ -156,3 +156,22 @@ for (const screen of [
     }
   });
 }
+
+// The seal served its 512 px file to the 64 px footer sign and the 100 px Contact seal, and the 404 its
+// 1024 px one to a 156 px seal. Each takes the file for its size now.
+for (const dpr of [1, 2]) {
+  test(`the seal takes a file for its size at ${dpr}x`, async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: dpr });
+    const page = await context.newPage();
+    try {
+      const seal = (selector: string) => page.locator(selector).evaluate((img: HTMLImageElement) => img.currentSrc.split('/').pop()!.split('?')[0]);
+      await page.goto(baseURL + '/index.html#contact');
+      await expect(page.locator('#contact .seal-sigil')).toBeVisible();
+      await expect.poll(() => seal('#contact .seal-sigil')).toBe(dpr === 1 ? 'no-bg-seal-sigil-128.webp' : 'no-bg-seal-sigil-256.webp');
+      await page.goto(baseURL + '/404.html');
+      await expect.poll(() => seal('img.seal')).toBe(dpr === 1 ? 'no-bg-seal-sigil-256.webp' : 'no-bg-seal-sigil-512.webp');
+    } finally {
+      await context.close();
+    }
+  });
+}

@@ -1685,8 +1685,11 @@ function autoInit() {
         const hasActiveClass = workSection.classList.contains('active-section');
 
         if (hasActiveClass && !gl) {
-          // Section just became active and globe not initialized
-          initWorkGlobe();
+          // Section just became active and globe not initialized. It is built a frame after the section
+          // shows, so the click's frame lays out the section and the next one builds the scene.
+          requestAnimationFrame(() => setTimeout(() => {
+            if (!gl && workSection.classList.contains('active-section')) initWorkGlobe();
+          }));
         } else if (hasActiveClass && gl && !animationFrameId && globeViewActive) {
           // Back before the fade-out ended: the scene is intact, so just resume it.
           lastFrameTime = 0;

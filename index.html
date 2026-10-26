@@ -112,7 +112,7 @@
     .threshold{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;pointer-events:none;
       background:radial-gradient(120% 90% at 50% 44%,rgba(22,40,36,0.42),transparent 58%),
         radial-gradient(150% 130% at 50% 122%,rgba(8,12,12,0.94),transparent 70%),#07090a;
-      opacity:1;transition:opacity 700ms cubic-bezier(0.16,1,0.3,1)}
+      opacity:1;transition:opacity 600ms cubic-bezier(0.16,1,0.3,1)}
     .threshold--lifted{opacity:0;pointer-events:none}
     .threshold--done{display:none}
     .threshold::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0.05;mix-blend-mode:soft-light;
@@ -173,11 +173,22 @@
     (function () {
       var el = document.getElementById('threshold');
       if (!el) return;
-      var MIN = 650, CAP = 1200, lifted = false;
+      // The scene is ready once the app's modules have run (DOMContentLoaded) and the backdrop has loaded,
+      // since the network is drawn on it. The veil lifts on the next frame, held at least MIN so a fast load
+      // does not flash it. A slow phone fetches the backdrop last, so it is waited for at most BG past
+      // DOMContentLoaded, and CAP lifts the veil whatever is still loading. It held 650 ms past
+      // DOMContentLoaded before, which kept a ready page covered for 0.7 s. The portrait fades in on its own.
+      var MIN = 250, BG = 400, CAP = 1200, lifted = false, start = performance.now();
       function done() { el.classList.add('threshold--done'); el.removeEventListener('transitionend', done); }
-      function lift() { if (lifted) return; lifted = true; el.classList.add('threshold--lifted'); el.addEventListener('transitionend', done); setTimeout(done, 900); }
-      // Do not wait for images before revealing the page.
-      function schedule() { setTimeout(lift, MIN); }
+      function lift() { if (lifted) return; lifted = true; el.classList.add('threshold--lifted'); el.addEventListener('transitionend', done); setTimeout(done, 800); }
+      function frame() { requestAnimationFrame(function () { setTimeout(lift, Math.max(0, MIN - (performance.now() - start))); }); }
+      function schedule() {
+        var bg = document.getElementById('bg-front-img');
+        if (!bg || bg.complete) { frame(); return; }
+        bg.addEventListener('load', frame, { once: true });
+        bg.addEventListener('error', frame, { once: true });
+        setTimeout(frame, BG);
+      }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule); else schedule();
       setTimeout(lift, CAP);
       // Re-veil before a graphics-profile reload (called from the governor).

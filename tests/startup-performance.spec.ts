@@ -476,3 +476,27 @@ test('explicit desktop quality still checks graphics capability', async ({ brows
     await page.close();
   }
 });
+
+// The veil held 650 ms past DOMContentLoaded, so a page ready in 50 ms stayed covered for 0.7 s. It lifts
+// once the app has run and the backdrop the network is drawn on has loaded, never sooner than 250 ms (no
+// flash), and at most 400 ms past DOMContentLoaded while a slow backdrop is still on its way.
+test('the loading veil lifts once the scene is ready, not 650 ms later', async ({ page }) => {
+  await page.addInitScript(() => {
+    const t: Record<string, number> = {};
+    (window as any).__veil = t;
+    document.addEventListener('DOMContentLoaded', () => { t.dcl = performance.now(); });
+    new MutationObserver(() => {
+      if (!t.lift && document.getElementById('threshold')?.classList.contains('threshold--lifted')) t.lift = performance.now();
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+  await page.goto('/index.html');
+  // Not toBeHidden: screens the site treats as touch or narrow never show the veil, but it still lifts.
+  await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
+  const t = await page.evaluate(() => {
+    const bg = performance.getEntriesByType('resource').find((entry) => entry.name.includes('bg_base')) as PerformanceResourceTiming;
+    return { ...(window as any).__veil, bg: bg.responseEnd };
+  });
+  expect(t.lift).toBeGreaterThanOrEqual(240);
+  expect(t.lift - t.dcl).toBeLessThan(560);
+  expect(t.lift - Math.max(t.dcl, t.bg, 250)).toBeLessThan(320);
+});

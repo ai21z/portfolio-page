@@ -71,6 +71,7 @@ import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
 import { initPlates } from './article-plates.js';
 import { warmNotebookPaint, warmPaperPaint } from './paint-warmup.js';
+import { startLandingPulses } from './landing-pulses.js';
 import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
@@ -226,6 +227,7 @@ function ensureMyceliumReady() {
     myceliumReadyPromise = (async () => {
       await loadMycelium();
       await initNetworkAndNav();
+      startLandingPulses();
       return true;
     })().catch((err) => {
       myceliumReadyPromise = null;

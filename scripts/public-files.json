@@ -66,6 +66,7 @@
   "js/graph.js",
   "js/graphics-governor.js",
   "js/hub-to-icons.js",
+  "js/landing-pulses.js",
   "js/motion.js",
   "js/navigation.js",
   "js/paint-warmup.js",

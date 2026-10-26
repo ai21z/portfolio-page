@@ -390,7 +390,7 @@ function mergeBudget(profile, extras = {}) {
 }
 
 function ownerSectionForSystem(systemName) {
-  if (systemName === 'intro-spores' || systemName === 'intro-sparks' || systemName === 'portrait-particles') return 'intro';
+  if (systemName === 'intro-spores' || systemName === 'intro-sparks' || systemName === 'intro-pulses' || systemName === 'portrait-particles') return 'intro';
   if (systemName === 'blog-network') return 'blog';
   if (systemName === 'work-globe') return 'work';
   return null;
@@ -753,6 +753,12 @@ export function getGraphicsBudget(systemName = 'default') {
     budget.particleScale = 0;
     budget.effectsScale = 0;
     budget.quiet = true;
+  }
+
+  if (constrainedEngine && systemName === 'intro-pulses') {
+    budget.dprCap = Math.min(budget.dprCap, 1);
+    budget.maxCanvasPixels = Math.min(budget.maxCanvasPixels, largeViewport ? 550_000 : 900_000);
+    budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 30);
   }
 
   if (constrainedEngine && systemName === 'intro-sparks') {

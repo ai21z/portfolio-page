@@ -95,7 +95,7 @@
 
 /* #contact keeps z-index 9 by id even as :target, so it never covered the sigil. */
 body:has(:is(#blog, .stage:target:not(#contact)).stage-leaving) .network-sigil-node,
-body:has(#main.active-section):has(.stage.stage-leaving) :is(#spore-canvas, #reveal-canvas) {
+body:has(#main.active-section):has(.stage.stage-leaving) :is(#pulse-canvas, #spore-canvas, #reveal-canvas) {
   animation: shared-layer-in var(--dur-stage) var(--ease-house) both;
 }
 

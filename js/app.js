@@ -69,6 +69,7 @@ import {
 } from './routes.js';
 import { notebookContact } from './contact.js';
 import { portraitParticles } from './portrait-particles.js';
+import { initPlates } from './article-plates.js';
 import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
@@ -1238,6 +1239,7 @@ function loadArticleContent(hubId, articleId) {
         refreshViewTitle();
 
         setupArticleNavigation(content);
+        initPlates(content);
       } else {
         content.innerHTML = '<p>Article not found.</p>';
       }

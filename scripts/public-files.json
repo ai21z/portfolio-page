@@ -50,6 +50,7 @@
   "js/altar-culture.js",
   "js/altar-eye.js",
   "js/app.js",
+  "js/article-plates.js",
   "js/blog-categories.js",
   "js/blog-network-webgl.js",
   "js/calm-field.js",

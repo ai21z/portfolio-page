@@ -168,8 +168,17 @@ for (const dpr of [1, 2]) {
       await page.goto(baseURL + '/index.html#contact');
       await expect(page.locator('#contact .seal-sigil')).toBeVisible();
       await expect.poll(() => seal('#contact .seal-sigil')).toBe(dpr === 1 ? 'no-bg-seal-sigil-128.webp' : 'no-bg-seal-sigil-256.webp');
-      await page.goto(baseURL + '/404.html');
-      await expect.poll(() => seal('img.seal')).toBe(dpr === 1 ? 'no-bg-seal-sigil-256.webp' : 'no-bg-seal-sigil-512.webp');
+      // A first visit's choice, in a fresh browser: in this one the landing's veil has already fetched the
+      // 512 px seal, and Chromium may rightly reuse that cached larger file for the 404 at no cost.
+      const cold404 = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: dpr });
+      try {
+        const errorPage = await cold404.newPage();
+        await errorPage.goto(baseURL + '/404.html');
+        const errorSeal = () => errorPage.locator('img.seal').evaluate((img: HTMLImageElement) => img.currentSrc.split('/').pop()!.split('?')[0]);
+        await expect.poll(errorSeal).toBe(dpr === 1 ? 'no-bg-seal-sigil-256.webp' : 'no-bg-seal-sigil-512.webp');
+      } finally {
+        await cold404.close();
+      }
     } finally {
       await context.close();
     }

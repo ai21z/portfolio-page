@@ -139,6 +139,14 @@
   text-underline-offset: 3px;
 }
 
+/* The legend holds every post title only in a tall window. In a shorter one it names the first two,
+   so its last line stays on screen, and every post is still in its culture's list. */
+@media (max-height: 860px) {
+  .blog-reading-links a:nth-child(n + 3) {
+    display: none;
+  }
+}
+
 /* A heading, so it keeps the typewriter of the titles and outranks the hub names under it. */
 .blog-memo-title {
   font-family: 'Special Elite', monospace;
@@ -1931,6 +1939,102 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
 .plate-play:focus-visible {
   outline: 1px solid var(--chrome-rule-hi);
   outline-offset: 4px;
+}
+
+/* A figure is drawn at 400 units for a phone column. On a wider column it stays near that width, so
+   its labels keep the size of the text around it, and its caption reads under the drawing. */
+:is(.article-container, .blog-article-content) .article-figure-art {
+  display: block;
+  width: min(100%, 460px);
+  height: auto;
+  margin: 0 auto;
+}
+
+:is(.article-container, .blog-article-content) .article-figure figcaption {
+  margin: 14px 4px 4px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--chrome-ink);
+}
+
+/* On a narrow phone the plate's frame would set the smallest labels under the 12 px floor, so the
+   drawing runs to the screen's edges between the plate's top and bottom rules. */
+@media (max-width: 480px) {
+  :is(.article-container, .blog-article-content) .article-figure {
+    padding: 0 0 7px;
+    border-inline: 0;
+  }
+
+  /* Out over the gutters: the post page's 20 px, the reader's 24 px. */
+  .article-container .article-figure {
+    margin-inline: -20px;
+  }
+
+  .blog-article-content .article-figure {
+    margin-inline: -24px;
+  }
+
+  :is(.article-container, .blog-article-content) .article-figure figcaption {
+    margin-inline: 20px;
+  }
+}
+
+/* A table is a ledger on the text column: headings in the data face on the bright rule, rows on faint
+   ones, numbers right on tabular figures. A table wider than a phone scrolls inside its own frame. */
+:is(.article-container, .blog-article-content) .article-table {
+  margin: 8px 0 32px;
+  overflow-x: auto;
+}
+
+:is(.article-container, .blog-article-content) :is(.article-table, .article-content pre):focus-visible {
+  outline: 1px solid var(--chrome-rule-hi);
+  outline-offset: 4px;
+}
+
+:is(.article-container, .blog-article-content) .article-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+:is(.article-container, .blog-article-content) .article-table th {
+  padding: 0 14px 8px 0;
+  border-bottom: 1px solid var(--chrome-rule-hi);
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  vertical-align: bottom;
+  color: var(--chrome-ink-hi);
+}
+
+:is(.article-container, .blog-article-content) .article-table td {
+  padding: 10px 14px 10px 0;
+  border-bottom: 1px solid rgba(230, 227, 216, 0.14);
+  vertical-align: top;
+}
+
+:is(.article-container, .blog-article-content) .article-table :is(th, td):last-child {
+  padding-right: 0;
+}
+
+:is(.article-container, .blog-article-content) .article-table .num {
+  text-align: right;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The closing note on what the post describes, set apart from the text above it. */
+:is(.article-container, .blog-article-content) .article-content .article-note {
+  margin-top: 44px;
+  padding-top: 20px;
+  border-top: 1px solid var(--chrome-rule);
+  font-size: 0.92rem;
+  color: var(--chrome-ink);
 }
 
 /* A break between parts: the rule with a gap where the ring would be. */

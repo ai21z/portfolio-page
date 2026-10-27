@@ -1239,7 +1239,8 @@ async function initBlogNetwork(){
   // the dish's zoom and pan. A dormant culture has none.
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const NUCLEUS_REACH = 20;     // world px from the hub centre, inside its 36 px hover radius
-  const NUCLEUS_SPREAD = 0.6;   // radians between a hub's nuclei
+  const NUCLEUS_GAP = 30;       // screen px between a hub's nuclei, so their 28 px targets never overlap
+  const NUCLEUS_STEP = 2.4;     // radians between two nuclei at most, so a pair flanks the way to the centre
   // A restored WebGL context runs this setup again: the layer from the lost one goes first.
   document.getElementById('dish-nuclei')?.remove();
   const nucleiLayer = document.createElementNS(SVG_NS, 'svg');
@@ -1255,7 +1256,6 @@ async function initBlogNetwork(){
       const posts = blogPosts.get(hub.id) || [];
       const toCentre = Math.atan2(netCy - hub.y, netCx - hub.x);
       posts.forEach((post, i) => {
-        const angle = toCentre + (i - (posts.length - 1) / 2) * NUCLEUS_SPREAD;
         const link = document.createElementNS(SVG_NS, 'a');
         link.setAttribute('class', 'dish-nucleus');
         link.setAttribute('href', `/blog/${encodeURIComponent(hub.id)}/${encodeURIComponent(post.id)}`);
@@ -1282,22 +1282,28 @@ async function initBlogNetwork(){
           window.dispatchEvent(new CustomEvent('blog:hover-off', { detail: { hubId: hub.id, source: 'nucleus' } }));
         });
         nucleiLayer.appendChild(link);
-        nuclei.push({ link, title, x: hub.x + Math.cos(angle) * NUCLEUS_REACH, y: hub.y + Math.sin(angle) * NUCLEUS_REACH });
+        nuclei.push({ link, title, hub, toCentre, index: i, count: posts.length });
       });
     }
     placeNuclei();
   }
 
-  // World to screen, the inverse of the hover picking below. The title opens toward the dish centre:
-  // sideways from a hub at the side, above or below one at the top or bottom, so it never runs onto
-  // the rim lettering.
+  // World to screen, the inverse of the hover picking below. A lone nucleus sits toward the dish centre.
+  // Several fan out around their hub on screen, spaced in pixels, so they stay apart at any zoom. The
+  // title opens toward the dish centre: sideways from a hub at the side, above or below one at the top
+  // or bottom, so it never runs onto the rim lettering.
   function placeNuclei() {
     if (!fit) return;
     const centreX = fit.offX + (netCx + shift[0]) * fit.scale;
     const centreY = fit.offY + (netCy + shift[1]) * fit.scale;
     for (const nucleus of nuclei) {
-      const sx = fit.offX + (nucleus.x + shift[0]) * fit.scale;
-      const sy = fit.offY + (nucleus.y + shift[1]) * fit.scale;
+      const step = Math.min(2 * Math.PI / nucleus.count, NUCLEUS_STEP);
+      const reach = nucleus.count > 1
+        ? Math.max(NUCLEUS_REACH * fit.scale, NUCLEUS_GAP / 2 / Math.sin(step / 2))
+        : NUCLEUS_REACH * fit.scale;
+      const angle = nucleus.toCentre + (nucleus.index - (nucleus.count - 1) / 2) * step;
+      const sx = fit.offX + (nucleus.hub.x + shift[0]) * fit.scale + Math.cos(angle) * reach;
+      const sy = fit.offY + (nucleus.hub.y + shift[1]) * fit.scale + Math.sin(angle) * reach;
       nucleus.link.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)})`);
       const dx = sx - centreX, dy = sy - centreY;
       const side = Math.abs(dx) >= Math.abs(dy);

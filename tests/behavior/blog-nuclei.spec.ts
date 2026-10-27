@@ -18,23 +18,43 @@ async function openDish(page: Page) {
   await expect(page.locator('#blog-network-canvas')).toHaveClass(/is-drawn/);
 }
 
-test('each post is a named link in its culture, and a dormant culture has none', async ({ page }) => {
+test('each post is a named link in its culture', async ({ page }) => {
   await openDish(page);
+  const registry = await (await page.request.get('/blog/articles.json')).json();
+  const posts = Object.entries(registry).flatMap(([hub, entries]: [string, any]) =>
+    entries.map((post: { id: string, title: string }) => ({ hub, href: `/blog/${hub}/${post.id}`, label: `Read ${post.title}` })));
   const nuclei = page.locator('#dish-nuclei .dish-nucleus');
-  await expect(nuclei).toHaveCount(2);
+  await expect(nuclei).toHaveCount(posts.length);
   const items = await nuclei.evaluateAll((links) => links.map((link) => ({
     hub: link.getAttribute('data-hub'), href: link.getAttribute('href'), label: link.getAttribute('aria-label')
   })));
+  expect(items).toEqual(expect.arrayContaining(posts));
   expect(items).toEqual(expect.arrayContaining([
     { hub: 'cosmos', href: '/blog/cosmos/first-year-software-engineer', label: 'Read My 1st Year as a Software Engineer: Lessons Learned' },
     { hub: 'codex', href: '/blog/codex/fail-fast-learn-faster', label: 'Read Fail Fast, Learn Faster - Instinct, on Purpose' }
   ]));
-  await expect(page.locator('#dish-nuclei .dish-nucleus[data-hub="craft"], #dish-nuclei .dish-nucleus[data-hub="convergence"]')).toHaveCount(0);
+});
+
+// Two posts in one culture sat 7 px apart, their 28 px targets on top of each other.
+test('the nuclei of one culture keep their targets apart, also when the dish zooms', async ({ page }) => {
+  await openDish(page);
+  const centres = () => page.locator('#dish-nuclei .dish-nucleus-hit').evaluateAll((hits) => hits.map((hit) => {
+    const box = hit.getBoundingClientRect();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2, r: box.width / 2 };
+  }));
+  const closest = (points: { x: number, y: number, r: number }[]) => Math.min(...points.flatMap((a, i) =>
+    points.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.y - b.y) - a.r - b.r)));
+  expect(closest(await centres())).toBeGreaterThanOrEqual(0);
+  const canvas = (await page.locator('#blog-network-canvas').boundingBox())!;
+  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await page.mouse.wheel(0, -480);
+  await page.waitForTimeout(600);
+  expect(closest(await centres())).toBeGreaterThanOrEqual(0);
 });
 
 test('a nucleus names its post on hover, and Enter opens it with focus in the article', async ({ page }) => {
   await openDish(page);
-  const codex = page.locator('.dish-nucleus[data-hub="codex"]');
+  const codex = page.locator('.dish-nucleus[data-article="fail-fast-learn-faster"]');
   const title = codex.locator('.dish-nucleus-title');
   expect(await title.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   await codex.locator('.dish-nucleus-hit').hover();
@@ -51,7 +71,7 @@ test('a nucleus names its post on hover, and Enter opens it with focus in the ar
 
 test('a nucleus stays on its hub when the dish zooms', async ({ page }) => {
   await openDish(page);
-  const hit = page.locator('.dish-nucleus[data-hub="cosmos"] .dish-nucleus-hit');
+  const hit = page.locator('.dish-nucleus[data-article="first-year-software-engineer"] .dish-nucleus-hit');
   const before = (await hit.boundingBox())!;
   const canvas = (await page.locator('#blog-network-canvas').boundingBox())!;
   await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
@@ -80,7 +100,7 @@ test('the how-to line stays over the drawn dish until the dish is first explored
 // Leaving through a nucleus cleared the dish's hover but left its rim label lit.
 test('a rim label lit through a nucleus goes dark when the pointer leaves', async ({ page }) => {
   await openDish(page);
-  const nucleus = page.locator('.dish-nucleus[data-hub="cosmos"] .dish-nucleus-hit');
+  const nucleus = page.locator('.dish-nucleus[data-article="first-year-software-engineer"] .dish-nucleus-hit');
   const rim = page.locator('#dish-labels .arc-btn[data-hub="cosmos"]');
   await nucleus.hover();
   await expect(rim).toHaveClass(/hovered/);
@@ -100,5 +120,6 @@ test('a lost and restored context leaves one layer of nuclei', async ({ page }) 
   });
   await expect(page.locator('#blog-network-canvas')).toHaveClass(/is-drawn/);
   await expect(page.locator('#dish-nuclei')).toHaveCount(1);
-  await expect(page.locator('.dish-nucleus')).toHaveCount(2);
+  const registry = await (await page.request.get('/blog/articles.json')).json();
+  await expect(page.locator('.dish-nucleus')).toHaveCount(Object.values(registry).flat().length);
 });

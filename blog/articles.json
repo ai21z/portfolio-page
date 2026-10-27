@@ -1,6 +1,25 @@
 {
-  "craft": [],
+  "craft": [
+    {
+      "id": "checked-against-the-record",
+      "title": "Checked Against the Record",
+      "date": "October 27, 2026",
+      "excerpt": "In a test case, a local coding agent says it updated two files and the records show one. What a harness can establish about its own turn, how it labels the claims it recognizes and cannot match, and what it states it did not check."
+    },
+    {
+      "id": "inside-a-trust-harness-java-21",
+      "title": "Inside a Trust Harness, in Java 21",
+      "date": "October 27, 2026",
+      "excerpt": "One edit request followed through a local coding assistant written in plain Java 21. Where a model's suggestion becomes an action, which part of the runtime owns each step, and where the containment stops."
+    }
+  ],
   "cosmos": [
+    {
+      "id": "twelve-local-models",
+      "title": "Twelve Local Models, One Harness That Checks Them",
+      "date": "October 27, 2026",
+      "excerpt": "Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality."
+    },
     {
       "id": "first-year-software-engineer",
       "title": "My 1st Year as a Software Engineer: Lessons Learned",
@@ -10,11 +29,24 @@
   ],
   "codex": [
     {
+      "id": "the-work-test-cycle",
+      "title": "The Work-Test Cycle",
+      "date": "October 27, 2026",
+      "excerpt": "How Talos is built. An edit loop and a release gate, six gates in one task, one record per batch, and a few distinctions kept apart. A focused pass is not acceptance, an exit code is not a result, and review agreement is not execution evidence."
+    },
+    {
       "id": "fail-fast-learn-faster",
       "title": "Fail Fast, Learn Faster - Instinct, on Purpose",
       "date": "October 22, 2025",
       "excerpt": "This guide shows how to run safe-to-fail experiments in life plus at work. Build a personal system where every attempt either moves you forward or pays you back in information."
     }
   ],
-  "convergence": []
+  "convergence": [
+    {
+      "id": "from-a-rag-cli-to-an-execution-harness",
+      "title": "From a RAG CLI to an Execution Harness",
+      "date": "October 27, 2026",
+      "excerpt": "How a local retrieval tool called LOQ-J became Talos. The decisions that shaped it, what most of them cost, and what was built and then taken out on purpose."
+    }
+  ]
 }

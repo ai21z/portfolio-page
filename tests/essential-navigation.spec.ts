@@ -17,7 +17,8 @@ for (const scripts of ['disabled', 'blocked-app', 'broken-module']) {
         await expect(page.locator('#work-index')).toContainText('ADP');
         await expect(page.locator('#work-index a[href="https://github.com/ai21z/TrueRolls"]')).toBeVisible();
         await page.getByRole('navigation', { name: 'Portfolio navigation' }).getByRole('link', { name: 'Writing' }).click();
-        await expect(page.getByRole('navigation', { name: 'Published writing' }).getByRole('link')).toHaveCount(2);
+        const registry = await (await context.request.get(baseURL + '/blog/articles.json')).json();
+        await expect(page.getByRole('navigation', { name: 'Published writing' }).getByRole('link')).toHaveCount(Object.values(registry).flat().length);
         await expect(page.getByRole('navigation', { name: 'Published writing' })).toBeVisible();
         await page.reload();
         await expect(page.getByRole('navigation', { name: 'Published writing' })).toBeVisible();

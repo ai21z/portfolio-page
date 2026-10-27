@@ -23,6 +23,20 @@ for (const width of [390, 1366]) {
   }
 }
 
+// The posts carry figures, tables and code blocks: each page is audited at a phone and a laptop width.
+const posts = Object.entries(JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'blog', 'articles.json'), 'utf8')))
+  .flatMap(([hub, entries]) => (entries as { id: string }[]).map((post) => `${hub}/${post.id}`));
+for (const width of [390, 1366]) {
+  for (const slug of posts) {
+    test(`automated accessibility in the post ${slug} at ${width}px`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto('/blog/' + slug);
+      await expect(page.locator('h1')).toBeVisible();
+      await audit(page, testInfo, slug.replace('/', '-'));
+    });
+  }
+}
+
 // Every view sits inside the one main landmark and names itself with its own h1. The other views are
 // inert, so a screen reader meets exactly one main and one h1, the heading of the view on screen.
 test('each view has the main landmark and its own h1', async ({ page, browserName }) => {

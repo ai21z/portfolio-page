@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From a RAG CLI to an Execution Harness | Aris Zounarakis</title>
+    <meta name="description" content="How a local retrieval tool called LOQ-J became Talos. The decisions that shaped it, what most of them cost, and what was built and then taken out on purpose.">
+    <meta name="author" content="Aris Zounarakis">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://zounarakis.com/blog/convergence/from-a-rag-cli-to-an-execution-harness">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Aris Zounarakis">
+    <meta property="og:title" content="From a RAG CLI to an Execution Harness">
+    <meta property="og:description" content="How a local retrieval tool called LOQ-J became Talos. The decisions that shaped it, what most of them cost, and what was built and then taken out on purpose.">
+    <meta property="og:url" content="https://zounarakis.com/blog/convergence/from-a-rag-cli-to-an-execution-harness">
+    <meta property="og:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta property="og:image:alt" content="Aris Zounarakis portfolio">
+    <meta property="article:published_time" content="2026-10-27">
+    <meta property="article:author" content="https://zounarakis.com/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="From a RAG CLI to an Execution Harness">
+    <meta name="twitter:description" content="How a local retrieval tool called LOQ-J became Talos. The decisions that shaped it, what most of them cost, and what was built and then taken out on purpose.">
+    <meta name="twitter:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta name="twitter:image:alt" content="Aris Zounarakis portfolio">
+    <link rel="icon" type="image/png" href="/icons/favicon-32.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "@id": "https://zounarakis.com/blog/convergence/from-a-rag-cli-to-an-execution-harness#article",
+        "headline": "From a RAG CLI to an Execution Harness",
+        "description": "How a local retrieval tool called LOQ-J became Talos. The decisions that shaped it, what most of them cost, and what was built and then taken out on purpose.",
+        "datePublished": "2026-10-27",
+        "inLanguage": "en",
+        "keywords": [
+            "talos",
+            "retrospective",
+            "java",
+            "local models"
+        ],
+        "mainEntityOfPage": "https://zounarakis.com/blog/convergence/from-a-rag-cli-to-an-execution-harness",
+        "author": {
+            "@type": "Person",
+            "@id": "https://zounarakis.com/#person",
+            "name": "Aris Zounarakis",
+            "url": "https://zounarakis.com/"
+        }
+    }
+    </script>
+    <link rel="preload" href="../../artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../styles/main.css">
+</head>
+<body>
+    <a class="skip" href="#top">Skip to article</a>
+    <nav class="article-site-nav" aria-label="Site">
+        <a class="article-site-home" href="/">Aris Zounarakis</a>
+        <span class="article-site-links">
+            <a href="/#about">About</a>
+            <a href="/#skills">Skills</a>
+            <a href="/#work">Work</a>
+            <a href="/#blog" aria-current="true">Blog</a>
+            <a href="/#contact">Contact</a>
+        </span>
+    </nav>
+    <main id="top" class="article-container" tabindex="-1">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="../../index.html#blog">Blog</a> /
+            <a href="../../index.html#blog/convergence">Convergence</a> /
+            <span>From a RAG CLI to an Execution Harness</span>
+        </nav>
+
+        <header class="article-header">
+            <h1 class="article-title">From a RAG CLI to an Execution Harness</h1>
+            <div class="article-meta">
+                <a href="/" rel="author">Aris Zounarakis</a>
+                <time datetime="2026-10-27">October 27, 2026</time>
+                <span>·</span>
+                <span>8 min read</span>
+            </div>
+            <div class="article-tags">
+                <span class="tag">talos</span>
+                <span class="tag">retrospective</span>
+                <span class="tag">java</span>
+                <span class="tag">local models</span>
+            </div>
+        </header>
+
+        <article class="article-content">
+<p><strong>In short.</strong> Talos began in September 2025 as LOQ-J, a local command-line tool for retrieval over documents. Over thirteen months it became what its README calls "a broader local workspace assistant and execution harness", with a runtime that decides what a model may do. The history is a sequence of decisions, several of them reversals, and the removals say as much as the additions.</p>
+<figure class="article-plate article-figure">
+<svg class="article-figure-art" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 854" role="img" aria-labelledby="fig-loq-j-to-talos--a-timeline-t fig-loq-j-to-talos--a-timeline-d">
+<title id="fig-loq-j-to-talos--a-timeline-t">LOQ-J to Talos, a timeline</title>
+<desc id="fig-loq-j-to-talos--a-timeline-d">September 2025, LOQ-J v0.1.0, a local retrieval command line. A 172-day gap between commits. March 2026, work resumes with 37 architecture files. 6 April, renamed Talos with tools, writes and approval. 25 to 29 April, verifier, contract, trace, permissions and checkpoints. 3 May, the llama.cpp backend for a required tool choice. 5 May, no generic shell tool, typed command profiles. 17 June, decomposition stopped. 24 June, a trust audit opens seven findings. 5 July, the tree is cleaned and the wiki and tickets archived. 6 July, the v0.10.8 tag, and hours later the install guidance rewritten for an unsigned developer beta. 10 to 15 July, model qualification of twelve candidates. 18 October, Ollama removed on the development branch.</desc>
+<rect width="400" height="854" fill="#0B0B0C"/>
+<text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">LOQ-J TO TALOS, NOT TO SCALE</text>
+<path d="M126 164 L126 720" stroke="rgb(122,174,138)" stroke-opacity="0.5" stroke-width="2"/>
+<path d="M126 78 L126 108" stroke="rgb(122,174,138)" stroke-opacity="0.5" stroke-width="2"/>
+<text x="20" y="83" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">Sep 2025</text>
+<circle cx="126" cy="78" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4"/>
+<text x="144" y="83" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">LOQ-J v0.1.0</text>
+<text x="144" y="102" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">a local retrieval CLI</text>
+<rect x="20" y="108" width="360" height="56" fill="none" stroke="rgba(230,227,216,0.30)" stroke-dasharray="4 5"/>
+<text x="144" y="132" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">a 172-day gap</text>
+<text x="144" y="151" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">between commits</text>
+<text x="20" y="205" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">Mar 2026</text>
+<circle cx="126" cy="200" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="205" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">work resumes</text>
+<text x="144" y="224" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">37 architecture files</text>
+<text x="20" y="257" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">6 Apr</text>
+<circle cx="126" cy="252" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="257" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">renamed Talos</text>
+<text x="144" y="276" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">tools, writes, approval</text>
+<text x="20" y="309" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">25-29 Apr</text>
+<circle cx="126" cy="304" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="309" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">verifier, contract, trace</text>
+<text x="144" y="328" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">permissions, checkpoints</text>
+<text x="20" y="361" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">3 May</text>
+<circle cx="126" cy="356" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="361" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">llama.cpp backend</text>
+<text x="144" y="380" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">a required tool choice</text>
+<text x="20" y="413" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">5 May</text>
+<circle cx="126" cy="408" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="413" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">no generic shell tool</text>
+<text x="144" y="432" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">typed command profiles</text>
+<text x="20" y="465" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">17 Jun</text>
+<circle cx="126" cy="460" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4"/>
+<text x="144" y="465" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">decomposition stopped</text>
+<text x="144" y="484" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">diminishing returns</text>
+<text x="20" y="517" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">24 Jun</text>
+<circle cx="126" cy="512" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4"/>
+<text x="144" y="517" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">trust audit</text>
+<text x="144" y="536" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">seven findings opened</text>
+<text x="20" y="569" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">5 Jul</text>
+<circle cx="126" cy="564" r="6" fill="none" stroke="#d6603f" stroke-width="1.8"/>
+<text x="144" y="569" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">tree cleaned</text>
+<text x="144" y="588" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">wiki and tickets archived</text>
+<text x="20" y="621" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">6 Jul</text>
+<circle cx="126" cy="616" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4"/>
+<text x="144" y="621" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">v0.10.8 tag</text>
+<text x="144" y="640" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">install guidance rewritten</text>
+<text x="20" y="673" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">10-15 Jul</text>
+<circle cx="126" cy="668" r="6" fill="rgb(122,174,138)"/>
+<text x="144" y="673" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">model qualification</text>
+<text x="144" y="692" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">twelve candidates</text>
+<text x="20" y="725" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">18 Oct</text>
+<circle cx="126" cy="720" r="6" fill="none" stroke="#d6603f" stroke-width="1.8"/>
+<text x="144" y="725" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">Ollama removed</text>
+<text x="144" y="744" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">on the development branch</text>
+<line x1="20" y1="756" x2="380" y2="756" stroke="rgba(230,227,216,0.30)"/>
+<circle cx="30" cy="778" r="6" fill="rgb(122,174,138)"/>
+<text x="46" y="783" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">added</text>
+<circle cx="30" cy="802" r="6" fill="none" stroke="#d6603f" stroke-width="1.8"/>
+<text x="46" y="807" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">removed or archived</text>
+<circle cx="30" cy="826" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4"/>
+<text x="46" y="831" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">decision or milestone</text>
+</svg>
+<figcaption>Figure 1. LOQ-J, the months with no recorded commits, and the Talos decisions from April to October 2026.</figcaption>
+</figure>
+<h2>The starting point</h2>
+<p>The first commit, on 9 September 2025, reads "initial import of LOQ-J v0.1.0". LOQ-J stood for Local-Only Java. It arrived as 57 files, with a picocli command line, Lucene 10 with BM25 and vector search over local documents, a SQLite cache, Ollama for chat and embeddings with <code>qwen3:8b</code> and <code>bge-m3</code> as defaults, a JavaFX first-run wizard that installed Ollama through winget, and a jpackage target for a Windows installer.</p>
+<p>Its default configuration also carried a command allowlist of twenty programs, from <code>git</code> and <code>gradle</code> to <code>powershell</code>, <code>cmd</code> and <code>bash</code>, with a blocklist beside it. No Java code read either list, and both were gone from the default configuration within three days.</p>
+<p>The first month added BM25F field boosts, gating for the REPL's own commands, a redactor, a sandbox, a reworked network policy and a service interface for several engines, of which only Ollama worked. The last commit of that period is dated 9 October 2025. The next commit came 172 days later.</p>
+<h2>Decision one. Tools first, checks second</h2>
+<p>Work resumed on 30 March 2026 with a modernization plan that reserved a seam for tools. On 31 March, 37 commits added 37 architecture files, two overlapping sets with 22 distinct file names. Among their decisions were command line first, multi-agent orchestration not the primary driver, and approval as a core runtime concept, "not optional glue added later."</p>
+<p>On 6 April the project was renamed Talos, a day after a short-lived rename to Loqs. The same day the model first called tools, <code>read_file</code>, <code>grep</code> and <code>retrieve</code>, then <code>write_file</code> and <code>edit_file</code>, with an approval gate for writes. The rename commit records 802 passing tests.</p>
+<p><strong>Cost.</strong> For nearly three weeks Talos could write files after approval but without a verifier or a task contract. <strong>What followed.</strong> Between 25 and 29 April came a static task verifier, a task contract, a local turn trace, declarative allow, ask and deny permissions, and a checkpoint before every approved change. Versions 0.9.1 to 0.9.8 cover those five days.</p>
+<h2>Decision two. An engine that can require a tool call</h2>
+<p>On 3 May a managed llama.cpp backend arrived, after a design written the same day moved the default away from Ollama. The design gives the reason. It found that Ollama's documented native chat shape "does not expose a required tool-choice control", and a turn that must act needs to require a tool call. It also sets a limit that held from then on. Switching engines "is still not a substitute for Talos runtime control."</p>
+<p><strong>Cost.</strong> Two backends were maintained side by side for five months, and request controls such as required tool choice and sampling settings were built around the llama.cpp path. <strong>What followed.</strong> Ollama left the default path with 0.10.6 on 25 June. On 18 October the development branch removed it entirely, deleting 4,401 lines. That last step is recorded only as an owner's rule. A llama.cpp engine had been a stub in September 2025 and was deleted as dead code in April 2026 before it returned as the real backend.</p>
+<h2>Decision three. No generic shell tool</h2>
+<p>On 5 May the command execution design stated its first rule, "Do not add a generic shell tool.", and cited OWASP's entry on excessive agency. Typed command profiles and a Gradle command tool followed. On 12 June workspace-declared profiles gained a trust store keyed by a content hash.</p>
+<p><strong>Cost.</strong> The built-in command set is five Gradle tasks, and anything else needs a declared, pinned profile. <strong>What followed.</strong> Commands became narrow and named, while the programs they launch still run with the user's permissions. A profile is not a sandbox, and the approval request for a command states that the host network is not isolated.</p>
+<h2>Decision four. Stop decomposing</h2>
+<p>Version 0.10.0 was declared a beta candidate on 7 June, with ArchUnit architecture guards. Five candidates followed in three days, the last four with machine-checkable gate ledgers. A full-screen terminal interface was considered and rejected in favor of inline JLine.</p>
+<p>A structural decomposition of the turn executor and the tool loop ended on 17 June by an explicit decision, recorded as "diminishing returns" and "the risk of over-fragmenting". <strong>Cost.</strong> The turn executor was about 2,735 lines at the stop. It has grown to 3,444 since and is the second largest main class at the pin.</p>
+<h2>Decision five. Narrow the claims</h2>
+<p>The trust track began on 16 June with an internal audit of the project's own trust claims, which found many of them broader than the code. The first fix was an honesty pass on the documentation, which made the docs state current limits instead of intended ones, under the line "A documented limitation is not an overclaim." Code fixes followed. A full end-to-end audit on 24 June found that no hard-fail gate fired. It also opened seven follow-up findings. One of them, rated high, covered fabricated read and command claims that sit outside the mutation guard.</p>
+<p><strong>What followed.</strong> A guard for the fabricated git-status case landed within a day, and later work broadened it to other recognized command-output shapes. The README still states that the deterministic correction is strongest for file-mutation turns, and that arbitrary command claims and broad read claims are not completely covered.</p>
+<h2>Decision six. A living wiki, for 22 days</h2>
+<p>On 13 June a living wiki was added, with committed pages with evidence frontmatter, a structural lint that ran with the unit tests, a liveness lint against a generated architecture report, and a close gate run by the candidate cut script. It was archived on 5 July. The archiving commit reads "clean up docs before release", and the work-cycle README it added says wiki state is "not part of the public repository contract".</p>
+<h2>Decision seven. Clean the tree and publish</h2>
+<p>On 5 July a single commit changed 1,115 files and removed 168,074 lines from the tracked tree. Tickets, reports, research notes, the wiki and 25 numbered architecture documents moved to a local archive, a 1,207-line guidance file left the tracked tree, and four short architecture documents replaced the set. A hygiene test now fails the build if the work-cycle runbooks cite archived tickets or the old wiki gate.</p>
+<p>The <code>v0.10.8</code> tag followed on 6 July, and the README in the tagged tree still called the Windows public beta signed-only. Hours later a commit on the development branch rewrote the install guidance. According to the README at the pin, the 0.10.8 developer beta is published as GitHub Release assets for Windows x64 and Ubuntu or WSL x64, and the Windows assets are unsigned and need an explicit flag to install. A signed release and a winget package are not live.</p>
+<p><strong>Cost.</strong> The removed history is still in git and in a local archive, but no longer in the tree a reader browses. <strong>What followed.</strong> The documents that remain are short, and tests pin their load-bearing claims.</p>
+<h2>Decision eight. A catalog with evidence per profile</h2>
+<p>Since May a two-model rule has governed live audits, and the release-candidate runbook still requires it when a release claim depends on model behavior. In June three experimental profiles for two more models were added beside the two accepted ones. From 10 to 15 July a deterministic qualification protocol took twelve open-weight models through preflight, admission or full 72-trial campaigns. Six completed a full campaign, and five new experimental profiles joined the catalog.</p>
+<p><strong>Cost.</strong> The two accepted profiles still rest on an earlier evidence record. GPT-OSS 20B, one of them, scored in the experimental tier on its own 72-trial run in July and keeps its accepted label on that earlier record. The raw qualification packets stay local. <strong>What followed.</strong> Every selectable profile in the catalog must name its evidence, either a qualification packet or an earlier record, and the catalog refuses to load one that does not.</p>
+<h2>Built, then taken out</h2>
+<div class="article-table" role="region" aria-label="Built, then taken out" tabindex="0">
+<table>
+<thead><tr><th scope="col">Item</th><th scope="col">In</th><th scope="col">Out</th></tr></thead>
+<tbody>
+<tr><td>Command allowlist in config, never read by code</td><td>Sep 2025</td><td>within three days</td></tr>
+<tr><td>JavaFX first-run wizard installing Ollama</td><td>Sep 2025</td><td>replaced Apr 2026, dependency removed Jun</td></tr>
+<tr><td><code>rag+memory</code> mode</td><td>Sep 2025</td><td>deprecated, deleted Apr 2026</td></tr>
+<tr><td>llama.cpp stub engine</td><td>Sep 2025</td><td>deleted Apr 2026, real backend from May</td></tr>
+<tr><td>XML tool-call protocol</td><td>Apr 2026</td><td>retired from prompts a week later, parser kept</td></tr>
+<tr><td>Numbered architecture documents</td><td>Mar 2026</td><td>replaced by four documents in Jul</td></tr>
+<tr><td>Living wiki gate</td><td>Jun 2026</td><td>archived in Jul</td></tr>
+<tr><td>Ticket system</td><td>Apr 2026</td><td>out of the tree in Jul, kept locally into Aug, then dated local batch records</td></tr>
+<tr><td>Ollama backend</td><td>Sep 2025</td><td>off the default path Jun, removed on the branch Oct</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>web</code> mode was reserved in September 2025, never implemented, and is still registered as an unselectable stub.</p>
+<p>Most of these removals made a claim smaller. An allowlist implied a shell. A wiki implied a maintained source of truth. What replaced each one is narrower, typed profiles and a short document set. The model catalog went the other way, wider in membership and narrower in what each entry claims.</p>
+<h2>The shape in numbers</h2>
+<div class="article-table" role="region" aria-label="The shape in numbers" tabindex="0">
+<table>
+<thead><tr><th scope="col">Point</th><th scope="col">Date</th><th scope="col" class="num">Main Java lines</th><th scope="col" class="num">Test Java lines</th></tr></thead>
+<tbody>
+<tr><td>LOQ-J v0.1.0</td><td>Sep 2025</td><td class="num">2,765</td><td class="num">164</td></tr>
+<tr><td>Rename to Talos</td><td>Apr 2026</td><td class="num">13,233</td><td class="num">9,008</td></tr>
+<tr><td>0.9.0</td><td>Apr 2026</td><td class="num">24,990</td><td class="num">31,073</td></tr>
+<tr><td><code>v0.10.8</code> tag</td><td>Jul 2026</td><td class="num">100,201</td><td class="num">128,929</td></tr>
+<tr><td>Pin</td><td>Oct 2026</td><td class="num">193,597</td><td class="num">295,319</td></tr>
+</tbody>
+</table>
+</div>
+<p>Counts are physical lines, blanks and comments included. Test code passed main code by 0.9.0 and has stayed ahead. Commit counts say less than they seem to. Large commits became common from mid-July, and from 12 September the messages changed from conventional prefixes to plain sentences, so a quiet month in commits is not a quiet month in work.</p>
+<h2>What converged</h2>
+<p>From the first Talos design onward, the recorded decisions put authority in the runtime rather than in the model. The three largest later model decisions, the llama.cpp backend, the required tool choice and the qualification protocol, made the model easier to check rather than easier to trust.</p>
+<p>There was no generic shell tool. A command allowlist sat in the very first configuration file and never reached code, and when command execution arrived, its design's first rule was the sentence "Do not add a generic shell tool".</p>
+<p>The documents shrank in July while the code kept growing, and the claims in them got narrower. No release has followed 0.10.8. The October records end with lines such as "Release readiness remains unestablished."</p>
+<p class="article-note"><em>Counts and dates come from the repository history up to the local development commit de779a78, 27 October 2026, which has not been pushed, and from the author's dated local evidence notes.</em></p>
+        </article>
+
+        <footer class="article-footer">
+            <a href="../../index.html#blog/convergence" class="back-button">Back to Convergence</a>
+            <a href="/blog/convergence/from-a-rag-cli-to-an-execution-harness" class="article-permalink">Permalink</a>
+            <a href="#top" class="go-top-link" aria-label="Scroll to top">Top</a>
+        </footer>
+    </main>
+    <script type="module" src="../../js/article-plates.js"></script>
+</body>
+</html>

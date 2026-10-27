@@ -160,8 +160,10 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   const combined = contentFiles.map((file) => readText(file)).join('\n');
   const legacyTerms = ['LOQ' + '-J', 'LOQ' + 'J', 'lo' + 'qj', 'R' + 'AG'];
   const legacyPattern = new RegExp(`\\b(?:${legacyTerms.join('|')})\\b`, 'g');
+  // The post title lists name the posts as written, and one tells the history of the old retrieval CLI.
+  const postTitles = /<nav class="(?:blog-reading-links|published-writing)"[\s\S]*?<\/nav>/g;
   const legacyMatches = contentFiles.flatMap((file) => {
-    return Array.from(readText(file).matchAll(legacyPattern))
+    return Array.from(readText(file).replace(postTitles, '').matchAll(legacyPattern))
       .map((match) => `${file}:${match[0]}`);
   });
 
@@ -299,7 +301,8 @@ test('repository documentation matches the Cloudflare Pages deployment', () => {
 test('sources keep no cache tokens by hand, the build sets every one from the content', () => {
   // A token bumped by hand once froze the live globe on stale code. scripts/build-site.mjs now writes
   // the import map and every ?v= value, so a source may only mark a file with an empty ?v=.
-  const sources = ['index.html', '404.html', 'blog/codex/fail-fast-learn-faster.html', 'blog/cosmos/first-year-software-engineer.html',
+  const sources = ['index.html', '404.html',
+    ...fs.readdirSync(path.join(repoRoot, 'blog'), { recursive: true }).filter((f) => String(f).endsWith('.html')).map((f) => 'blog/' + String(f).replace(/\\/g, '/')),
     ...fs.readdirSync(path.join(repoRoot, 'js'), { recursive: true }).filter((f) => String(f).endsWith('.js')).map((f) => 'js/' + String(f).replace(/\\/g, '/')),
     ...fs.readdirSync(path.join(repoRoot, 'styles')).filter((f) => f.endsWith('.css')).map((f) => 'styles/' + f)];
   const handKept: string[] = [];

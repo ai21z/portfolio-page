@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test';
 
 const articles = [
   { hub: 'cosmos', id: 'first-year-software-engineer', title: 'My 1st Year as a Software Engineer: Lessons Learned', date: '2023-03-21' },
-  { hub: 'codex', id: 'fail-fast-learn-faster', title: 'Fail Fast, Learn Faster - Instinct, on Purpose', date: '2025-10-22' }
+  { hub: 'codex', id: 'fail-fast-learn-faster', title: 'Fail Fast, Learn Faster - Instinct, on Purpose', date: '2025-10-22' },
+  { hub: 'craft', id: 'checked-against-the-record', title: 'Checked Against the Record', date: '2026-10-27' },
+  { hub: 'craft', id: 'inside-a-trust-harness-java-21', title: 'Inside a Trust Harness, in Java 21', date: '2026-10-27' },
+  { hub: 'codex', id: 'the-work-test-cycle', title: 'The Work-Test Cycle', date: '2026-10-27' },
+  { hub: 'cosmos', id: 'twelve-local-models', title: 'Twelve Local Models, One Harness That Checks Them', date: '2026-10-27' },
+  { hub: 'convergence', id: 'from-a-rag-cli-to-an-execution-harness', title: 'From a RAG CLI to an Execution Harness', date: '2026-10-27' }
 ];
 
 test('blog fallback keeps article discovery readable', async ({ page }) => {
@@ -129,7 +134,7 @@ for (const article of articles) {
 test('article links retain the reader, normal link actions, and Back/Forward', async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/index.html#blog/cosmos');
-  const link = page.locator('.blog-article-item');
+  const link = page.locator('.blog-article-item[data-article="first-year-software-engineer"]');
   await expect(link).toHaveAttribute('href', '/blog/cosmos/first-year-software-engineer');
   await expect(link).toHaveJSProperty('tagName', 'A');
   const intercepted = await link.evaluate(element => {
@@ -168,14 +173,14 @@ test('old category URLs and article return links select the correct category', a
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/index.html#blog?hub=cosmos');
   await expect(page.locator('#blog-category-title')).toHaveText('COSMOS');
-  await expect(page.locator('.blog-article-item')).toHaveCount(1);
+  await expect(page.locator('.blog-article-item')).toHaveCount(2);
   await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
   await expect(page.locator('#blog-article-content h1')).toHaveText(articles[1].title);
   await page.locator('#blog-article-content .back-button').click();
   await expect(page).toHaveURL(/#blog\/codex$/);
   await expect(page.locator('#blog-category-title')).toHaveText('CODEX');
   await expect(page.locator('#blog-article-view')).toBeHidden();
-  await page.locator('.blog-article-item').click();
+  await page.locator('.blog-article-item[data-article="fail-fast-learn-faster"]').click();
   await page.locator('#blog-article-content .go-top-link').click();
   await expect.poll(() => page.locator('#blog-article-view').evaluate(element => element.scrollTop)).toBeLessThan(5);
   await expect(page).toHaveURL(/#blog\/codex\/fail-fast-learn-faster$/);
@@ -193,6 +198,6 @@ test('article fetch failures remain recoverable', async ({ page }) => {
   await page.locator('#blog-article-view .blog-nav-link[data-hub="cosmos"]').click();
   await expect(page.locator('#blog-category-view')).toBeVisible();
   await page.unroute('**/blog/cosmos/first-year-software-engineer');
-  await page.locator('.blog-article-item').click();
+  await page.locator('.blog-article-item[data-article="first-year-software-engineer"]').click();
   await expect(page.locator('#blog-article-content h1')).toHaveText(articles[0].title);
 });

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Work-Test Cycle | Aris Zounarakis</title>
+    <meta name="description" content="How Talos is built. An edit loop and a release gate, six gates in one task, one record per batch, and a few distinctions kept apart. A focused pass is not acceptance, an exit code is not a result, and review agreement is not execution evidence.">
+    <meta name="author" content="Aris Zounarakis">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://zounarakis.com/blog/codex/the-work-test-cycle">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Aris Zounarakis">
+    <meta property="og:title" content="The Work-Test Cycle">
+    <meta property="og:description" content="How Talos is built. An edit loop and a release gate, six gates in one task, one record per batch, and a few distinctions kept apart. A focused pass is not acceptance, an exit code is not a result, and review agreement is not execution evidence.">
+    <meta property="og:url" content="https://zounarakis.com/blog/codex/the-work-test-cycle">
+    <meta property="og:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta property="og:image:alt" content="Aris Zounarakis portfolio">
+    <meta property="article:published_time" content="2026-10-27">
+    <meta property="article:author" content="https://zounarakis.com/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Work-Test Cycle">
+    <meta name="twitter:description" content="How Talos is built. An edit loop and a release gate, six gates in one task, one record per batch, and a few distinctions kept apart. A focused pass is not acceptance, an exit code is not a result, and review agreement is not execution evidence.">
+    <meta name="twitter:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta name="twitter:image:alt" content="Aris Zounarakis portfolio">
+    <link rel="icon" type="image/png" href="/icons/favicon-32.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "@id": "https://zounarakis.com/blog/codex/the-work-test-cycle#article",
+        "headline": "The Work-Test Cycle",
+        "description": "How Talos is built. An edit loop and a release gate, six gates in one task, one record per batch, and a few distinctions kept apart. A focused pass is not acceptance, an exit code is not a result, and review agreement is not execution evidence.",
+        "datePublished": "2026-10-27",
+        "inLanguage": "en",
+        "keywords": [
+            "talos",
+            "testing",
+            "process",
+            "release engineering"
+        ],
+        "mainEntityOfPage": "https://zounarakis.com/blog/codex/the-work-test-cycle",
+        "author": {
+            "@type": "Person",
+            "@id": "https://zounarakis.com/#person",
+            "name": "Aris Zounarakis",
+            "url": "https://zounarakis.com/"
+        }
+    }
+    </script>
+    <link rel="preload" href="../../artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../styles/main.css">
+</head>
+<body>
+    <a class="skip" href="#top">Skip to article</a>
+    <nav class="article-site-nav" aria-label="Site">
+        <a class="article-site-home" href="/">Aris Zounarakis</a>
+        <span class="article-site-links">
+            <a href="/#about">About</a>
+            <a href="/#skills">Skills</a>
+            <a href="/#work">Work</a>
+            <a href="/#blog" aria-current="true">Blog</a>
+            <a href="/#contact">Contact</a>
+        </span>
+    </nav>
+    <main id="top" class="article-container" tabindex="-1">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="../../index.html#blog">Blog</a> /
+            <a href="../../index.html#blog/codex">Codex</a> /
+            <span>The Work-Test Cycle</span>
+        </nav>
+
+        <header class="article-header">
+            <h1 class="article-title">The Work-Test Cycle</h1>
+            <div class="article-meta">
+                <a href="/" rel="author">Aris Zounarakis</a>
+                <time datetime="2026-10-27">October 27, 2026</time>
+                <span>·</span>
+                <span>10 min read</span>
+            </div>
+            <div class="article-tags">
+                <span class="tag">talos</span>
+                <span class="tag">testing</span>
+                <span class="tag">process</span>
+                <span class="tag">release engineering</span>
+            </div>
+        </header>
+
+        <article class="article-content">
+<p><strong>In short.</strong> Talos, a local coding assistant written in Java, is built with two loops. An edit loop runs while code changes and ends with the required local gates, and a release gate runs only for a candidate. The procedure asks for one short record per coherent batch, and the October records hold the exact commands, source hashes and results of each run. The examples below come from the author's unpublished October 2026 records, and the procedure they follow is about a month old in its current form.</p>
+<h2>A green suite, and 132 failures</h2>
+<p>In October 2026 a Windows CI run of Talos failed 132 of 13,254 unit tests. The end-to-end, coverage and final check steps never ran. The local suite was green, and none of the 132 was a product defect.</p>
+<p>The GitHub runner's temporary folder is an 8.3 short-name alias, <code>C:\Users\RUNNER~1\...</code>, and the checkout sits on drive <code>D:</code>. 113 tests had bound a workspace at the unresolved temporary path while the product resolves real paths. 16 used fake model-artifact identities that returned the configured path where the product records the real one. One test expected a configured model path where the model library stores the real one. One relativized a <code>C:</code> path against a <code>D:</code> working directory. One timing test exceeded a three-second wall-clock limit on the runner.</p>
+<p>The repair took a day and weakened no product check. Its one production change was a package-private counter in one class, read only by a test. A local lane was built to reproduce the runner, with a short-name temporary folder and the project on another drive. Red runs showed which tests failed for the intended reasons, and showed that under a short-name root two alias tests passed only because a different operand was rejected first. A new test pinned a refusal that no test had referenced before. A deliberate mutant, the refusal disabled for one run, proved the new test fails without it. The timing test became a count assertion with its own mutant. The final local full check ran 14,198 tests, 13,255 unit and 943 end-to-end, with 0 failures and the same 19 skips as the previous accepted run, and a manual CI run on the fixed commit passed both jobs on 20 October.</p>
+<p>A green local suite was evidence for one filesystem layout. Several rules of the process exist to keep that kind of distinction explicit.</p>
+<h2>Two loops</h2>
+<figure class="article-plate article-figure">
+<svg class="article-figure-art" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 934" role="img" aria-labelledby="fig-the-edit-loop-and-the-release-gate-t fig-the-edit-loop-and-the-release-gate-d">
+<title id="fig-the-edit-loop-and-the-release-gate-t">The edit loop and the release gate</title>
+<desc id="fig-the-edit-loop-and-the-release-gate-d">The edit loop states scope and invariants, reproduces the failure at the real boundary, fixes it with focused tests, runs adjacent and end-to-end tests, repeats for more changes, runs the full check locally before the batch is accepted, and ends with a batch record and review. The release gate runs only for an authorized candidate. The hard quality gate is a local task. Release staging runs the exact-commit check, builds the SBOM and attests the artifacts in CI. Download verification, the installed-product smoke test from the staged artifact, terminal evidence, the two-model live audit and publishing are not run by the build. A failed candidate is fixed, committed and staged again.</desc>
+<rect width="400" height="934" fill="#0B0B0C"/>
+<text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">EDIT LOOP</text>
+<path d="M40 72 L40 342" stroke="rgb(122,174,138)" stroke-opacity="0.45" stroke-width="2"/>
+<circle cx="40" cy="72" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="77" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">scope and invariants</text>
+<text x="58" y="96" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">stated before editing</text>
+<circle cx="40" cy="126" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="131" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">reproduce at the boundary</text>
+<text x="58" y="150" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">the real one where possible</text>
+<circle cx="40" cy="180" r="6" fill="none" stroke="rgb(122,174,138)" stroke-width="1.8"/>
+<text x="58" y="185" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">fix and focused tests</text>
+<text x="58" y="204" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">cause checked on each red</text>
+<circle cx="40" cy="234" r="6" fill="none" stroke="rgb(122,174,138)" stroke-width="1.8"/>
+<text x="58" y="239" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">adjacent and end-to-end</text>
+<text x="58" y="258" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">before scope widens</text>
+<circle cx="40" cy="288" r="6" fill="none" stroke="rgb(122,174,138)" stroke-width="1.8"/>
+<text x="58" y="293" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">full check, six gates</text>
+<text x="58" y="312" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">local, before acceptance</text>
+<circle cx="40" cy="342" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="347" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">batch record and review</text>
+<text x="58" y="366" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">then the batch is accepted</text>
+<path d="M34 234 C8 214 8 146 34 126" stroke="rgb(122,174,138)" stroke-width="1.4" fill="none" stroke-dasharray="4 4"/>
+<line x1="20" y1="378" x2="380" y2="378" stroke="rgba(230,227,216,0.30)"/>
+<text x="20" y="408" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">RELEASE GATE, ONLY FOR A CANDIDATE</text>
+<path d="M40 444 L40 780" stroke="rgb(122,174,138)" stroke-opacity="0.45" stroke-width="2"/>
+<circle cx="40" cy="444" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="449" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">candidate authorized</text>
+<circle cx="40" cy="492" r="6" fill="none" stroke="rgb(122,174,138)" stroke-width="1.8"/>
+<text x="58" y="497" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">hard quality gate</text>
+<text x="58" y="516" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">local maintainer packet</text>
+<circle cx="40" cy="540" r="6" fill="rgb(122,174,138)"/>
+<text x="58" y="545" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">release staging</text>
+<text x="58" y="564" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">check, SBOM, attest</text>
+<circle cx="40" cy="588" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="593" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">verify the download</text>
+<circle cx="40" cy="636" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="641" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">installed-product smoke</text>
+<text x="58" y="660" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">from the staged artifact</text>
+<circle cx="40" cy="684" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="689" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">real terminal evidence</text>
+<circle cx="40" cy="732" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="737" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">two-model live audit</text>
+<text x="58" y="756" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">when model behavior is claimed</text>
+<circle cx="40" cy="780" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="785" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">publish</text>
+<path d="M34 732 C6 702 6 570 34 540" stroke="#d6603f" stroke-width="1.4" fill="none" stroke-dasharray="4 4"/>
+<text x="58" y="814" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#d6603f" text-anchor="start">on failure, fix, commit, stage again</text>
+<line x1="20" y1="836" x2="380" y2="836" stroke="rgba(230,227,216,0.30)"/>
+<circle cx="40" cy="858" r="6" fill="rgb(122,174,138)"/>
+<text x="58" y="863" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">runs in CI</text>
+<circle cx="40" cy="882" r="6" fill="none" stroke="rgb(122,174,138)" stroke-width="1.8"/>
+<text x="58" y="887" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">a local Gradle task</text>
+<circle cx="40" cy="906" r="6" fill="none" stroke="#E6E3D8" stroke-width="1.4" stroke-dasharray="2.5 2.5"/>
+<text x="58" y="911" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">not run by the build</text>
+</svg>
+<figcaption>Figure 1. The edit loop and the release gate, with each step marked as run in CI, run by a local Gradle task, or not run by the build.</figcaption>
+</figure>
+<p>The maintained procedure, <code>work-cycle-docs/work-test-cycle.md</code>, separates "an inner development loop and a Release QA Gate". A full release packet "is reserved for candidate acceptance, not repeated after every edit."</p>
+<p>The inner loop has seven steps.</p>
+<ol>
+<li>Branch, version and working-tree state are confirmed.</li>
+<li>The objective, preserved invariants, affected boundaries, acceptance checks and stop conditions are stated briefly.</li>
+<li>Source and callers are inspected, and the failure is reproduced through the real affected boundary where possible.</li>
+<li>A coherent correction and focused regression coverage are written.</li>
+<li>Focused checks and <code>git diff --check</code> run. The intended cause of each failed assertion is checked before its expectation is changed.</li>
+<li>Adjacent integration and relevant deterministic end-to-end checks run before scope widens, especially for authority, persistence and shared policy.</li>
+<li>Required local gates and independent review proportional to risk complete before the batch is accepted.</li>
+</ol>
+<p>The release gate starts only when a candidate is authorized. It requires a full automated gate on the exact candidate commit, staged artifacts with checksums, an SBOM and attestations, a smoke test of the product installed from the candidate artifact, manual evidence from a real terminal session, and a live audit on two models when model behavior is part of the release claim. The release runbook stages the artifacts first and runs the product checks on what was staged. Failed staging evidence is not repaired in place. The product or process is fixed, the fix is committed, and staging runs again from the new commit.</p>
+<h2>What one <code>check</code> holds</h2>
+<p>Full Gradle <code>check</code> is required before a batch that touches runtime behavior, release wiring, public documentation contracts or shared policy is accepted. It holds six gates.</p>
+<ul>
+<li><strong>Unit tests</strong>, the <code>src/test</code> source set.</li>
+<li><strong>Deterministic end-to-end tests</strong>, a separate <code>src/e2eTest</code> source set of scripted scenarios with no live model.</li>
+<li><strong>Coverage floors</strong> through JaCoCo. 82 percent of instructions and 62 percent of branches globally, with package floors of 87 and 67 percent for runtime policy, 80 and 62 percent for safety, and 37 and 39 percent for the secret package, a floor that, by the build file's comment, pins the low coverage measured in June 2026 in place.</li>
+<li><strong>A canary scan</strong> over test reports and results, which fails if raw privacy canaries leak into generated artifacts.</li>
+<li><strong>A release ledger check</strong>, which requires the top released CHANGELOG version to equal the build version.</li>
+<li><strong>An architecture ratchet</strong> of six package-direction rules, with a baseline file of accepted violations that is currently empty.</li>
+</ul>
+<p>Up to the commit described here, the passing full checks recorded in October executed between 11,578 and 13,498 unit tests and between 932 and 943 end-to-end tests, and took from about 1 hour 5 minutes to 2 hours 38 minutes on one local machine. The longest run was slowed by another process.</p>
+<h2>Distinctions kept apart</h2>
+<p>The procedure and the local working guidance name several things that look alike and are kept apart.</p>
+<p><strong>A focused pass is not acceptance.</strong> On 9 October a new final-status contract passed its focused and adjacent tests. The required full check then failed 4 of 12,500 unit cases. A cause check found three stale exact-output expectations and one structural assertion pointing at an old location, all consistent with the accepted contract, so those expectations were updated. The rerun completed 12,501 unit cases with no failures and the nineteen existing skips, then failed three end-to-end checks, because a qualification reader rejected the new status event. That run was recorded as "an incomplete failed check, not full acceptance." Only the reader and its fixture were fixed, a regression class covering sixteen malformed or misplaced status events was added, and a fresh full check passed.</p>
+<p><strong>An exit code is not a result.</strong> The build has reporting lanes, <code>candidateTest</code> and <code>candidateE2eTest</code>, that run with <code>ignoreFailures = true</code> so results are preserved when tests fail. Those lanes can finish with exit code zero while failures remain, and the procedure states that "reporting-oriented candidate test tasks can finish with exit code zero while test failures remain." A separate task, <code>qualityReportGate</code>, turns their summaries into a hard gate. It requires zero failures and errors, instruction coverage of at least 82 percent, zero skipped end-to-end tests, every JSON scenario passed, a Qodana result bound to the current source with no critical issue, and an existing jar.</p>
+<p><strong>A passing subset is not a release verdict.</strong> A completed offline batch is kept distinct from installed-product, live-model and exact-candidate acceptance. For document-comparison lanes, the live audit runbook adds that "A passing subset is not evidence that either profile or the candidate has passed the full audit."</p>
+<p><strong>Review agreement is not execution evidence.</strong> In the local working guidance, a review, including one by an automated agent, does not count as execution evidence. In the CI repair and the drive-letter batch of 20 October, code changed after a review finding was run again before the final full check.</p>
+<p><strong>Execution success is not answer correctness.</strong> The current local guidance adds that runtime execution and verification facts do not show that every requested result was answered correctly.</p>
+<h2>Red first, then a mutant</h2>
+<p>A green test proves little until it has been seen to fail for the right reason. Since mid-October several batch records follow one shape. A red run comes before the fix, with the failures checked against their intended causes, then the fix, then a deliberate mutant that disables the new behavior and must turn the test red again. No mutation-testing plugin is involved. The mutants are edits applied to the source for a single run, and the source is restored and checked by hash afterwards.</p>
+<p>Review can also catch the fix, and an invalid run is not counted. On 20 October a batch fixed Windows paths that lost their drive letter in the request contract, so a target named with a drive could point at the wrong place. A temporary characterization test recorded the behavior first and was then removed, with its output kept. The plan allowed a second step that mapped absolute targets inside the workspace to relative ones. Review rejected it, because it broke the preparation of forbidden targets, and it was removed before acceptance. One red run was marked invalid because the restored file did not compile, and it was not counted as evidence. The full check passed 14,225 tests, 13,282 unit and 943 end-to-end, and the Windows CI run on the commit took 111.4 minutes, beyond the earlier 90-minute limit.</p>
+<h2>One record per batch</h2>
+<p>Each coherent outcome gets one short record with five fields, which are the objective, the invariants and boundaries, the evidence, what was assumed or not tested, and the next action. A condensed version of the October CI repair, reconstructed from its plan and analysis files, shows the shape.</p>
+<pre tabindex="0"><code>Objective     Windows CI green again, with no product check weakened.
+Invariants    No alias, link, protected-path or artifact identity check relaxed.
+Boundaries    Fixtures in twelve test classes, one test helper, one test counter.
+Evidence      red001     failures for the intended causes
+              mutation002  refusal disabled in the source, new test fails
+              full001    14,198 tests, 0 failures, same 19 skips
+              CI run     both jobs passed on the fixed commit
+Not tested    Starting Talos at a drive root, likely failing, not run end to end.
+Next          Release staging still has a 90-minute limit. Open.</code></pre>
+<p>Evidence identity is concrete. A run record holds the full command and arguments, the Java home, the commit and a SHA-256 for every source file. A result record is parsed from the JUnit XML rather than from console output and carries a hash of the log. Runs go to fresh labelled output directories with an isolated home directory per test task, and the run scripts refuse an existing directory, so an earlier result is not overwritten. Failed runs and closed reports are preserved, and current status is updated separately.</p>
+<p>By 27 October 2026 the release preparation folder held about 300 dated folders from 5 September onward, a few of them for work after the commit described here. Not every folder is an accepted batch. Some are reviews, designs, investigations or failed attempts kept on purpose.</p>
+<h2>What is automated, and what is not</h2>
+<p>The procedure is more complete than its automation.</p>
+<ul>
+<li>CI runs on pull requests into, and pushes to, the main and beta branches, or by hand for any pushed branch. On Windows it runs the site tests, unit tests, end-to-end tests, coverage and canary checks and a final <code>check</code>. On Linux it runs only the command and path-identity tests.</li>
+<li>Release staging is dispatched by hand with a target commit and version. It refuses a commit that does not match, a dirty tree or a missing CHANGELOG heading, runs <code>clean check</code> and the quality summaries on Windows, builds the artifacts, writes a manifest marked <code>qa-staging-not-a-release</code> and attests the files and the SBOM. The Linux staging job builds artifacts and runs no <code>check</code>.</li>
+<li>No workflow at this commit creates a tag or a release, and none has write access to repository contents. <code>CiWorkflowContractTest</code> fails if either staging workflow gains a known release-publishing action or that write access.</li>
+<li><code>qualityReportGate</code> runs in the local maintainer packet, not in CI. The installed-product smoke test, the terminal evidence, the two-model live audit and the checksum and attestation checks after download are manual.</li>
+</ul>
+<h2>Where the cycle fell short</h2>
+<p>The opening example contains a lapse. CI ran only on pushes to the main and beta branches and on pull requests into them, and the work stayed on a feature branch with no such run. No CI run was made between 9 July and October, so 132 unit-test failures accumulated without a CI run, and the end-to-end suite had not run on a runner since July. Manual dispatch for any pushed branch was added on 18 October. On 20 October the Windows job's timeout was raised from 90 to 180 minutes, with a contract test that fails on the old value. The release staging job still has a 90-minute limit, recorded as open.</p>
+<p>Other limits follow from the repository and the records. Linux coverage in CI is a subset. The batch-record format is a practice, and no tool enforces it. About one folder in sixteen has no analysis file, though most of those hold a plan, a closeout or raw outputs instead. Keeping every run also has a cost. By late October the folder held about 5.7 million files and 104 GB. The current candidate path, including <code>qualityReportGate</code>, which was added on 5 July, has not been run end to end. The last documented release QA packet is the local 0.10.8 packet of 3 July, made under the earlier process. Release readiness is recorded as unestablished.</p>
+<h2>What transfers</h2>
+<p>The cycle is specific to one Java codebase. The following parts do not depend on it.</p>
+<ul>
+<li>Separate the edit loop from the release gate, and write down which checks belong to which.</li>
+<li>Put the required batch gates in one task, and require it before a batch touching shared behavior is accepted.</li>
+<li>Check why an assertion failed before changing what it expects.</li>
+<li>Watch a new test fail for the intended reason, then disable the behavior for one run and watch it fail again.</li>
+<li>Read results from the test reports, not from the exit code of a task built to keep going.</li>
+<li>Report fixture, installed and live evidence separately, and never call a subset a verdict.</li>
+<li>Record the exact commit and file hashes of every run, keep failed runs, and update status somewhere else.</li>
+<li>Run CI where the work actually happens.</li>
+</ul>
+<p class="article-note"><em>Described as of the local development commit de779a78, 27 October 2026, which has not been pushed. Dated examples come from unpublished local batch records of October 2026.</em></p>
+        </article>
+
+        <footer class="article-footer">
+            <a href="../../index.html#blog/codex" class="back-button">Back to Codex</a>
+            <a href="/blog/codex/the-work-test-cycle" class="article-permalink">Permalink</a>
+            <a href="#top" class="go-top-link" aria-label="Scroll to top">Top</a>
+        </footer>
+    </main>
+    <script type="module" src="../../js/article-plates.js"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inside a Trust Harness, in Java 21 | Aris Zounarakis</title>
+    <meta name="description" content="One edit request followed through a local coding assistant written in plain Java 21. Where a model&#x27;s suggestion becomes an action, which part of the runtime owns each step, and where the containment stops.">
+    <meta name="author" content="Aris Zounarakis">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://zounarakis.com/blog/craft/inside-a-trust-harness-java-21">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Aris Zounarakis">
+    <meta property="og:title" content="Inside a Trust Harness, in Java 21">
+    <meta property="og:description" content="One edit request followed through a local coding assistant written in plain Java 21. Where a model&#x27;s suggestion becomes an action, which part of the runtime owns each step, and where the containment stops.">
+    <meta property="og:url" content="https://zounarakis.com/blog/craft/inside-a-trust-harness-java-21">
+    <meta property="og:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta property="og:image:alt" content="Aris Zounarakis portfolio">
+    <meta property="article:published_time" content="2026-10-27">
+    <meta property="article:author" content="https://zounarakis.com/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Inside a Trust Harness, in Java 21">
+    <meta name="twitter:description" content="One edit request followed through a local coding assistant written in plain Java 21. Where a model&#x27;s suggestion becomes an action, which part of the runtime owns each step, and where the containment stops.">
+    <meta name="twitter:image" content="https://zounarakis.com/og/og-1200x630.png">
+    <meta name="twitter:image:alt" content="Aris Zounarakis portfolio">
+    <link rel="icon" type="image/png" href="/icons/favicon-32.png">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "@id": "https://zounarakis.com/blog/craft/inside-a-trust-harness-java-21#article",
+        "headline": "Inside a Trust Harness, in Java 21",
+        "description": "One edit request followed through a local coding assistant written in plain Java 21. Where a model's suggestion becomes an action, which part of the runtime owns each step, and where the containment stops.",
+        "datePublished": "2026-10-27",
+        "inLanguage": "en",
+        "keywords": [
+            "talos",
+            "java",
+            "architecture",
+            "local models"
+        ],
+        "mainEntityOfPage": "https://zounarakis.com/blog/craft/inside-a-trust-harness-java-21",
+        "author": {
+            "@type": "Person",
+            "@id": "https://zounarakis.com/#person",
+            "name": "Aris Zounarakis",
+            "url": "https://zounarakis.com/"
+        }
+    }
+    </script>
+    <link rel="preload" href="../../artifacts/fonts/SpecialElite-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../styles/main.css">
+</head>
+<body>
+    <a class="skip" href="#top">Skip to article</a>
+    <nav class="article-site-nav" aria-label="Site">
+        <a class="article-site-home" href="/">Aris Zounarakis</a>
+        <span class="article-site-links">
+            <a href="/#about">About</a>
+            <a href="/#skills">Skills</a>
+            <a href="/#work">Work</a>
+            <a href="/#blog" aria-current="true">Blog</a>
+            <a href="/#contact">Contact</a>
+        </span>
+    </nav>
+    <main id="top" class="article-container" tabindex="-1">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="../../index.html#blog">Blog</a> /
+            <a href="../../index.html#blog/craft">Craft</a> /
+            <span>Inside a Trust Harness, in Java 21</span>
+        </nav>
+
+        <header class="article-header">
+            <h1 class="article-title">Inside a Trust Harness, in Java 21</h1>
+            <div class="article-meta">
+                <a href="/" rel="author">Aris Zounarakis</a>
+                <time datetime="2026-10-27">October 27, 2026</time>
+                <span>·</span>
+                <span>9 min read</span>
+            </div>
+            <div class="article-tags">
+                <span class="tag">talos</span>
+                <span class="tag">java</span>
+                <span class="tag">architecture</span>
+                <span class="tag">local models</span>
+            </div>
+        </header>
+
+        <article class="article-content">
+<p><strong>In short.</strong> Talos is a command-line assistant for developer workspaces that runs a local model through llama.cpp. The model only proposes. A deterministic runtime decides what a turn may do, a person approves changes where the policy asks, and a record says what happened. The runtime governs what Talos launches and writes. It is not an operating-system sandbox, and the boundary is drawn below.</p>
+<p>The architecture overview states one rule, that "model output is never enough evidence by itself." The runtime's policy, approval, verification and trace code is organized around that sentence. The codebase is plain Java 21 with no application framework, 890 main source files and 193,597 lines, with a test source set of 935 files and a separate end-to-end test source set.</p>
+<figure class="article-plate article-figure">
+<svg class="article-figure-art" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 796" role="img" aria-labelledby="fig-one-turn--two-authorities-t fig-one-turn--two-authorities-d">
+<title id="fig-one-turn--two-authorities-t">One turn, two authorities</title>
+<desc id="fig-one-turn--two-authorities-d">The runtime resolves a contract, applies the mode ceiling and chooses one tool surface. The model proposes a tool call. The runtime checks it against the surface and the permission policy, either of which can deny it, asks a person where the policy requires, and takes a checkpoint before a file change. The action then runs on the host, which is not a sandbox. A file operation stays inside the workspace, while a build command runs with the user permissions and an unisolated network. The runtime verifies the result and records the outcome.</desc>
+<rect width="400" height="796" fill="#0B0B0C"/>
+<text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">ONE TURN, TWO AUTHORITIES</text>
+<text x="20" y="70" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#9a7ee6" text-anchor="start" letter-spacing="2">MODEL</text>
+<text x="150" y="70" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="rgb(122,174,138)" text-anchor="start" letter-spacing="2">RUNTIME</text>
+<line x1="128" y1="56" x2="128" y2="520" stroke="rgba(230,227,216,0.30)" stroke-dasharray="3 5"/>
+<path d="M158 104 C160 204 156 304 158 514" stroke="rgb(122,174,138)" stroke-opacity="0.55" stroke-width="2" fill="none"/>
+<circle cx="158" cy="104" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="106" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">contract</text>
+<text x="174" y="125" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">resolved in code</text>
+<circle cx="158" cy="154" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="156" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">posture</text>
+<text x="174" y="175" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">the mode sets a ceiling</text>
+<circle cx="158" cy="204" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="206" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">tool surface</text>
+<text x="174" y="225" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">one list, two checks</text>
+<circle cx="158" cy="304" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="306" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">surface check</text>
+<text x="174" y="325" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">before approval or IO</text>
+<circle cx="158" cy="354" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="356" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">permission</text>
+<text x="174" y="375" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">deny, ask or allow</text>
+<circle cx="158" cy="404" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="406" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">approval</text>
+<text x="174" y="425" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">a person, where asked</text>
+<circle cx="158" cy="454" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="456" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">checkpoint</text>
+<text x="174" y="475" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">before a file change</text>
+<path d="M150 212 C110 222 84 236 72 252" stroke="#9a7ee6" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+<circle cx="66" cy="258" r="6" fill="none" stroke="#9a7ee6" stroke-width="1.6"/>
+<text x="20" y="286" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">proposes</text>
+<text x="20" y="305" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">a tool call</text>
+<path d="M78 262 C100 276 124 292 150 300" stroke="#9a7ee6" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+<path d="M302 300 l22 0" stroke="#d6603f" stroke-width="1.4"/>
+<text x="330" y="305" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#d6603f" text-anchor="start">deny</text>
+<path d="M302 350 l22 0" stroke="#d6603f" stroke-width="1.4"/>
+<text x="330" y="355" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#d6603f" text-anchor="start">deny</text>
+<rect x="12" y="532" width="376" height="132" fill="none" stroke="#d6603f" stroke-opacity="0.7" stroke-dasharray="6 4"/>
+<text x="376" y="556" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#d6603f" text-anchor="end" letter-spacing="2">HOST, NOT A SANDBOX</text>
+<path d="M158 514 L158 566 C128 574 120 578 92 590" stroke="rgb(122,174,138)" stroke-width="1.6" fill="none"/>
+<path d="M158 514 L158 566 C198 574 250 578 268 590" stroke="rgb(122,174,138)" stroke-width="1.6" fill="none"/>
+<text x="24" y="612" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">file operation</text>
+<text x="24" y="631" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">inside the workspace</text>
+<text x="214" y="612" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">build command</text>
+<text x="214" y="631" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">user permissions,</text>
+<text x="214" y="649" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">network not isolated</text>
+<path d="M200 664 C200 680 158 668 158 750" stroke="rgb(122,174,138)" stroke-opacity="0.55" stroke-width="2" fill="none"/>
+<circle cx="158" cy="700" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="702" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">verify</text>
+<text x="174" y="721" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">readback and checks</text>
+<circle cx="158" cy="750" r="5.5" fill="rgb(122,174,138)"/>
+<text x="174" y="752" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#E6E3D8" text-anchor="start">outcome and trace</text>
+<text x="174" y="771" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">status from the records</text>
+</svg>
+<figcaption>Figure 1. One turn, two authorities and the host boundary. The model lane proposes. The runtime lane decides, executes and records. File operations stay in the workspace, while an approved build runs with the user's own permissions.</figcaption>
+</figure>
+<h2>One request, end to end</h2>
+<p>Take a request such as "In settings.py, change TIMEOUT from 30 to 60."</p>
+<p><strong>A contract before the model.</strong> The runtime first resolves the request into a task contract, here a file edit with a change requested and allowed and <code>settings.py</code> as the expected target. The resolver is deterministic code. The contract's own documentation says it is "not a planner and not an LLM classifier."</p>
+<p><strong>A ceiling from the mode.</strong> The session's mode applies a posture to that contract. In a read-only mode the contract is rewritten so that no change is allowed, whatever the request said.</p>
+<p><strong>A tool surface.</strong> From the contract, the runtime picks the tools this turn may use, here the read tools plus the edit and write tools. The system prompt describes only those tools, and the model call is filtered to the same list.</p>
+<p><strong>The proposal.</strong> The model answers with a tool call, typically native <code>tool_calls</code> from llama.cpp, or a tool call written as text when native calling is unavailable. Either way it is a proposal.</p>
+<p><strong>The checks.</strong> The proposed call passes a fixed sequence of an unknown-tool check, the current-turn surface check, normalization of the payload, phase policy and validation. Then the permission policy decides allow, ask or deny.</p>
+<p><strong>The approval.</strong> For a file edit the default is ask. The terminal shows the call with a unified diff preview, capped at 60 lines and 6,000 characters, and waits. End of input or Ctrl-C denies.</p>
+<p><strong>A checkpoint.</strong> With checkpointing on, the default, a content-addressed checkpoint of the target is taken after approval and before the write. A failed checkpoint blocks the change.</p>
+<p><strong>The write and the check.</strong> The edit runs inside the workspace boundary, the file is read back, and a verifier checks that the approved replacement is present. The turn ends with a completion status, guards compare the model's final answer with the records, and a JSON trace of the turn is written.</p>
+<p>Three of those steps carry most of the design. They are the contract, the tool surface and the way commands run.</p>
+<h2>The contract is code</h2>
+<p>Posture is applied to the contract as a record and an early return.</p>
+<pre tabindex="0"><code class="language-java">public record EffectiveTurn(
+        TaskContract taskContract,
+        ExecutionPhase phase,
+        boolean forceNativeSurfaceRecompute
+) {}
+
+public static EffectiveTurn apply(CapabilityPosture posture, TaskContract contract) {
+    CapabilityPosture safePosture = posture == null ? CapabilityPosture.AGENT : posture;
+    if (!safePosture.readOnly()) {
+        return new EffectiveTurn(contract, CurrentTurnPlan.defaultPhaseFor(contract), false);
+    }
+    return new EffectiveTurn(readOnly(contract), ExecutionPhase.INSPECT, true);
+}</code></pre>
+<p>The turn plan built from that contract is also a record. Its compact constructor recompiles the task expectations from the contract and throws if a caller passed different ones, so the plan's expectations, request obligation and requested results cannot disagree with the contract. Its tool lists are not checked there. They are enforced at the point of use.</p>
+<h2>One surface, enforced twice</h2>
+<p>The tools the model is told about and the tools the runtime accepts come from the same plan. The prompt is the weaker enforcement, because prompt text is advice to a model. The second enforcement runs in the turn processor before approval and before any file is touched.</p>
+<pre tabindex="0"><code class="language-java">List&lt;String&gt; allowed = ctx.nativeToolSpecs().stream()
+        .filter(Objects::nonNull)
+        .map(ToolSpec::name)
+        .filter(name -&gt; name != null &amp;&amp; !name.isBlank())
+        .distinct()
+        .sorted()
+        .toList();
+// ...
+return ToolResult.fail(ToolError.denied(
+        "Current-turn tool surface did not allow " + requested
+                + ". Allowed tools: " + allowedText + "."));</code></pre>
+<p>When no surface has been set, this check passes. Every mode that calls the model sets one during turn preparation. Two tests pin the property for native calls and for calls written as JSON text, each outside the dispatched surface and each rejected before approval or IO. A retry cannot widen the surface. The dispatcher throws when an escalated retry would exceed "the captured current-turn authority".</p>
+<p>Files the user pins into context are framed in the prompt as "untrusted workspace file content" and "reference data only". That framing is prompt wording, and the documentation's general rule applies to it. Prompt wording is not security. The enforcement is the surface check and the permission policy.</p>
+<h2>Commands, and where containment stops</h2>
+<p>Talos has a command tool and no general shell tool. <code>talos.run_command</code> takes a profile id. Raw command shapes are refused by key before planning.</p>
+<pre tabindex="0"><code class="language-java">private static final List&lt;String&gt; RAW_COMMAND_KEYS = List.of(
+        "command", "cmd", "shell", "executable", "argv", "command_line");</code></pre>
+<p>A matching parameter ends with "Raw shell commands are not supported. Use an approved command profile." The built-in profiles that <code>talos.run_command</code> accepts are five Gradle tasks, each run with <code>--no-daemon</code>. Arguments are checked per profile in a switch expression, and the five Gradle profiles share one grammar. Gradle profiles accept only <code>--tests &lt;selector&gt;</code>, <code>--stacktrace</code> and <code>--info</code>, and caller arguments are screened against fixed lists of shell operators, network tokens and destructive tokens. The command reaches <code>ProcessBuilder</code> as an argument list, with standard input closed and the process tree killed on timeout.</p>
+<p>A workspace can declare its own profiles in <code>.talos/profiles.yaml</code>. They register only when the file's raw bytes match a SHA-256 pin stored outside the workspace, in the Talos home directory. A byte change returns them to untrusted, a corrupt pin fails closed, and trust is checked again at planning and before execution. The declaration file is also a protected path. A model that edits the workspace cannot add a profile by editing it.</p>
+<p>Profiles narrow what Talos launches and with which arguments. They do not contain what the launched program does.</p>
+<ul>
+<li>A Gradle task runs the workspace's own wrapper and build scripts, which are executable code and run with the user's permissions.</li>
+<li>Build scripts are ordinary workspace files. A model can propose edits to them. Such a write can ride a remembered write approval or a configured allow rule, and only the command run is always asked again, unless an allow rule covers it too.</li>
+<li>The plan description Talos prints for each command says it directly, "host network is not isolated".</li>
+<li>A trusted workspace profile may name any executable, and the Gradle wrapper itself is a shell script on POSIX and a batch file run by <code>cmd.exe</code> on Windows.</li>
+</ul>
+<p>There is no container, restricted token or network namespace. The approval prompt is the boundary before a command runs, and the operating system's normal permissions are the boundary after.</p>
+<h2>Permission as an ordered ladder</h2>
+<p>The permission policy is read top to bottom. A path that escapes the workspace is denied. A change to a protected path is denied without a prompt. Then come configured deny rules, protected reads that require asking, configured ask rules and configured allow rules. Read-only tools default to allow. Everything else asks.</p>
+<p>Remembered approval is narrow. A session can remember approval for file writes inside the workspace, apart from writes under <code>.github</code>, while destructive calls, typed workspace operations and command execution always ask again. A command never rides on an approval given to a file write. A configured allow rule, however, does skip the prompt, which is the point of configuring one, unless a scope warning or a change to the file's line endings, byte order mark or final newline forces an ask.</p>
+<h2>What Java 21 contributes</h2>
+<p>Records carry the turn's data. The main source tree has 815 record declarations. The task contract has 11 components, the turn plan 19 and the trace record 20, and compact constructors are where some of their invariants are checked.</p>
+<p>Four sealed hierarchies exist. The most used is <code>Result</code>, the output of a turn. Switches over it are exhaustive with no <code>default</code> branch, so a new result kind is a compile error at every switch that forgot it. In this excerpt the comments are trimmed.</p>
+<pre tabindex="0"><code class="language-java">return switch (r) {
+    case Result.Ok ok                -&gt; isAbortMarker(ok.text) ? "aborted" : "ok";
+    case Result.Streamed s           -&gt; statusOfStreamed(s.fullText);
+    case Result.Error ignored        -&gt; "error";
+    case Result.Info ignored         -&gt; "info";
+    case Result.TrustedInfo ignored  -&gt; "info";
+    case Result.Table ignored        -&gt; "info";
+    case Result.StreamStart ignored  -&gt; "stream";
+    case Result.StreamChunk ignored  -&gt; "stream";
+    case Result.StreamEnd ignored    -&gt; "stream";
+    case Result.ToolProgress ignored -&gt; "stream";
+};</code></pre>
+<p>Unnamed patterns are a preview feature in Java 21, so each unused binding carries a name.</p>
+<p>Concurrency is plain. A turn runs synchronously. Virtual threads appear in four auxiliary places, such as indexing. A child process's output is drained by daemon platform threads in a fixed pool, and a comment in the runner explains that pipe reads and <code>close()</code> can ignore interruption, so cleanup runs on those workers and never on the caller. Record patterns, structured concurrency and scoped values are not used.</p>
+<p>The main dependencies are Lucene 10.2.2 for retrieval, JLine 3.30.13 and picocli 4.7.6 for the terminal, Jackson 2.17.1 for JSON and YAML, PDFBox and POI for document text, HtmlUnit for static web checks, sqlite-jdbc, SLF4J with Logback, java-diff-utils for approval diffs and ArchUnit 1.4.2 for architecture tests, built with Gradle 8.14. The release build produces a per-user Windows MSI through jpackage, an app zip, a Linux app-image archive, a CycloneDX SBOM and checksums files.</p>
+<h2>Boundaries the build enforces</h2>
+<p>Package direction is checked twice in <code>gradle check</code>. A source scan applies six dependency rules against a baseline file of accepted violations that is currently empty. An ArchUnit test applies eleven rules to the compiled bytecode. One of them keeps the tool-call loop from depending on the terminal layer. Its reason clause is trimmed here.</p>
+<pre tabindex="0"><code class="language-java">@ArchTest
+static final ArchRule runtime_toolcall_must_not_depend_on_cli_repl =
+        noClasses().that().resideInAPackage(RUNTIME_TOOLCALL)
+                .should().dependOnClassesThat().resideInAPackage(CLI_REPL);</code></pre>
+<p>The runtime does not depend on the terminal packages. The terminal layer implements interfaces the runtime owns instead, among them <code>RuntimeTurnContext</code>, <code>TurnRouter</code> and <code>ApprovalGate</code>.</p>
+<p>The package map presents its diagram as a target shape, and the code has not fully reached it. The turn executor, the model dispatcher and the outcome classifier still live in the terminal modes package, and the turn executor alone is 3,444 lines. A guard against new violations is not a claim that the old structure is finished.</p>
+<h2>The model at arm's length</h2>
+<p>Talos runs one model backend, llama.cpp. By default it launches and owns the server, which binds only to <code>127.0.0.1</code>. Before launch it refuses a port that already has a listener, with "Another server is not restarted by Talos." After launch it checks that the listener belongs to the process it started, by process id and start time, and an observation it cannot make fails closed. The probe's documentation disclaims a hostile kernel and a race between the last check and the request. A <code>connect_only</code> mode attaches to an existing server instead of launching one.</p>
+<p>For GPT-OSS, the Harmony chat format is applied by llama.cpp's embedded template. Talos does not parse Harmony tokens.</p>
+<h2>The trace</h2>
+<p>With session persistence on, the default, each turn writes a local JSON trace, schema version 5. It holds the contract, the tool surfaces, permission decisions, approvals, checkpoints, executions, verification and the rendered outcome. In the trace, prompts, answers and file contents are reduced to hashes and counts, while file paths, tool names and the parts of the request that name a target are kept. The turn log written beside it stores the request and the committed answer as plain text.</p>
+<p>The trace is evidence for review, not an integrity guarantee. The documentation states that traces and logs are not tamper-evident. There is no hash chain, no signature and no append-only enforcement. A documentation test fails the build if the maintained docs drop that statement or use the word "tamper-proof".</p>
+<h2>Where to look in the code</h2>
+<div class="article-table" role="region" aria-label="Where to look in the code" tabindex="0">
+<table>
+<thead><tr><th scope="col">Step</th><th scope="col">Owner</th></tr></thead>
+<tbody>
+<tr><td>Contract</td><td><code>TaskContractResolver</code>, <code>TaskContract</code></td></tr>
+<tr><td>Posture</td><td><code>CapabilityPosturePolicy</code></td></tr>
+<tr><td>Tool surface</td><td><code>ToolSurfacePlanner</code>, <code>CurrentTurnPlan</code></td></tr>
+<tr><td>Model call</td><td><code>TurnModelDispatcher</code></td></tr>
+<tr><td>Tool loop</td><td><code>ToolCallLoop</code>, capped at 10 iterations</td></tr>
+<tr><td>Checks and execution</td><td><code>TurnProcessor</code></td></tr>
+<tr><td>Permission</td><td><code>DeclarativePermissionPolicy</code></td></tr>
+<tr><td>Commands</td><td><code>CommandToolPlanner</code>, <code>CommandArgumentPolicy</code>, <code>ProcessCommandRunner</code></td></tr>
+<tr><td>Verification</td><td><code>StaticTaskVerifier</code></td></tr>
+<tr><td>Trace</td><td><code>LocalTurnTrace</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2>What transfers</h2>
+<ul>
+<li>Resolve what a turn may do before asking the model anything, in code a test can pin.</li>
+<li>Derive the prompt's tool list and the runtime's accepted list from one plan, and enforce the runtime list where it matters, before approval and before IO.</li>
+<li>Replace a shell with named profiles and arguments checked per profile, and say plainly that a profile is not a sandbox.</li>
+<li>Let records and sealed types carry decisions, so a missing case is a compile error.</li>
+<li>Check package direction in the build, against an empty baseline.</li>
+</ul>
+<p class="article-note"><em>Described as of the local development commit de779a78, 27 October 2026, which has not been pushed. The published 0.10.8 developer beta predates several of the changes described here, including the removal of the Ollama backend.</em></p>
+        </article>
+
+        <footer class="article-footer">
+            <a href="../../index.html#blog/craft" class="back-button">Back to Craft</a>
+            <a href="/blog/craft/inside-a-trust-harness-java-21" class="article-permalink">Permalink</a>
+            <a href="#top" class="go-top-link" aria-label="Scroll to top">Top</a>
+        </footer>
+    </main>
+    <script type="module" src="../../js/article-plates.js"></script>
+</body>
+</html>

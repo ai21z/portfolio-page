@@ -1,7 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Craft and Convergence have no posts yet. They show as dormant cultures: dimmed, captioned, with no
-// count and nothing that opens an empty view. A link to #blog/craft still routes.
+// A culture with no posts shows as dormant: dimmed, captioned, with no count and nothing that opens an
+// empty view. A link to #blog/craft still routes. Every culture has posts now, so these tests serve a
+// post list in which Craft and Convergence are empty.
+
+async function holdCraftAndConvergenceDormant(page: Page) {
+  await page.route('**/blog/articles.json', async (route) => {
+    const registry = await (await route.fetch()).json();
+    registry.craft = [];
+    registry.convergence = [];
+    registry.cosmos = registry.cosmos.filter((post: { id: string }) => post.id === 'first-year-software-engineer');
+    await route.fulfill({ json: registry });
+  });
+}
 
 async function drawTheDish(page: Page) {
   // Headless browsers draw on a software renderer, which keeps the reduced fallback and no rim labels.
@@ -15,6 +26,7 @@ async function drawTheDish(page: Page) {
 }
 
 test('the Field Notes show a dormant culture as a note, and a live one as a way in', async ({ page }) => {
+  await holdCraftAndConvergenceDormant(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#blog');
   const craft = page.locator('.blog-memo-item[data-hub="craft"]');
@@ -45,6 +57,7 @@ test('the Field Notes show a dormant culture as a note, and a live one as a way 
 });
 
 test('a dormant rim label dims, carries its caption, and leaves the Tab order', async ({ page }) => {
+  await holdCraftAndConvergenceDormant(page);
   await drawTheDish(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#blog');
@@ -71,6 +84,7 @@ test('a dormant rim label dims, carries its caption, and leaves the Tab order', 
 });
 
 test('a link to a dormant culture still routes, to its dormant note', async ({ page }) => {
+  await holdCraftAndConvergenceDormant(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/index.html#blog/craft');
   await expect(page.locator('#blog-category-view')).toBeVisible();
@@ -79,6 +93,7 @@ test('a link to a dormant culture still routes, to its dormant note', async ({ p
 });
 
 test('on a phone a dormant culture card is a note, not a link', async ({ page }) => {
+  await holdCraftAndConvergenceDormant(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/index.html#blog');
   const craft = page.locator('.specimen-slide.slide-craft');

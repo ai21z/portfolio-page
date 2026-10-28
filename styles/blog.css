@@ -1787,8 +1787,8 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
   color: rgba(201, 194, 179, 0.95);
 }
 
-/* Both lists hang their text on the same 32 px indent: a hairline for each item, a numbered step in
-   the weight of its bold lead-in, on the same baseline. */
+/* Both lists hang their text on the same 32 px indent: a small dot for each item, never a dash, and a
+   numbered step in the weight of its bold lead-in, on the same baseline. */
 :is(.article-container, .blog-article-content) .article-content :is(ul, ol) {
   margin-bottom: 24px;
   padding-left: 32px;
@@ -1803,11 +1803,12 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
 :is(.article-container, .blog-article-content) .article-content ul > li::before {
   content: '';
   position: absolute;
-  left: -30px;
-  top: 0.82em;
-  width: 14px;
-  height: 1px;
-  background: var(--chrome-rule-hi);
+  left: -22px;
+  top: calc(0.82em - 2.5px);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(201, 194, 179, 0.55);
 }
 
 :is(.article-container, .blog-article-content) .article-content ol {

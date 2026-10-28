@@ -6,6 +6,7 @@ import { build, transform } from 'esbuild';
 import { parse } from 'parse5';
 import { renderProjectLinks, renderWorkIndex } from '../js/work-globe/work-index-content.js';
 import { appendContentSecurity } from './content-security.mjs';
+import { searchIndex } from './build-search-index.mjs';
 
 const repoRoot = fileURLToPath(new URL('../', import.meta.url));
 const manifestPath = new URL('./public-files.json', import.meta.url);
@@ -272,5 +273,7 @@ export async function buildSite(root = repoRoot, { cspMode = 'enforce' } = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // The search index is remade from the posts first, so a build never ships one behind them.
+  await writeFile(path.join(repoRoot, 'blog/search-index.json'), await searchIndex(repoRoot));
   await buildSite();
 }

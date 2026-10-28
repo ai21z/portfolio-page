@@ -160,8 +160,8 @@ test('portfolio content presents Talos instead of legacy project or retrieval ac
   const combined = contentFiles.map((file) => readText(file)).join('\n');
   const legacyTerms = ['LOQ' + '-J', 'LOQ' + 'J', 'lo' + 'qj', 'R' + 'AG'];
   const legacyPattern = new RegExp(`\\b(?:${legacyTerms.join('|')})\\b`, 'g');
-  // The post title lists name the posts as written, and one tells the history of the old retrieval CLI.
-  const postTitles = /<nav class="(?:blog-reading-links|published-writing)"[\s\S]*?<\/nav>/g;
+  // The post title list names the posts as written, and one tells the history of the old retrieval CLI.
+  const postTitles = /<nav class="published-writing"[\s\S]*?<\/nav>/g;
   const legacyMatches = contentFiles.flatMap((file) => {
     return Array.from(readText(file).replace(postTitles, '').matchAll(legacyPattern))
       .map((match) => `${file}:${match[0]}`);

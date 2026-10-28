@@ -123,28 +123,237 @@
   margin-bottom: 10px;
 }
 
-.blog-reading-links {
-  display: grid;
-  gap: 8px;
-  margin: 0 8px 14px;
-  font-family: var(--font-read);
-  font-size: 13px;
-  line-height: 1.4;
-  letter-spacing: 0;
+/* The search (js/blog-search.js): one ruled line, like the entry line of an index card, with a lens
+   and the slash that reaches it. Its results open on a plate over the legend, never pushing it down. */
+.blog-search {
+  position: relative;
+  margin: 2px 8px 18px;
   pointer-events: auto;
 }
 
-.blog-reading-links a {
-  color: var(--bone);
-  text-underline-offset: 3px;
+.blog-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px 7px;
+  border-bottom: 1px solid rgba(230, 227, 216, 0.34);
+  transition: border-color 200ms var(--ease-house);
 }
 
-/* The legend holds every post title only in a tall window. In a shorter one it names the first two,
-   so its last line stays on screen, and every post is still in its culture's list. */
-@media (max-height: 860px) {
-  .blog-reading-links a:nth-child(n + 3) {
-    display: none;
-  }
+.blog-search-field:hover {
+  border-bottom-color: rgba(230, 227, 216, 0.5);
+}
+
+.blog-search-field:focus-within {
+  border-bottom-color: var(--chrome-rule-hi);
+  outline: 1px dotted var(--chrome-rule-hi);
+  outline-offset: 4px;
+}
+
+.blog-search-lens {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--chrome-ink);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.blog-search-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--chrome-ink-hi);
+  font-family: var(--font-read);
+  font-size: 14px;
+  line-height: 1.4;
+  appearance: none;
+  outline: none;
+}
+
+.blog-search-input::placeholder {
+  color: var(--chrome-ink-dim);
+  opacity: 1;
+}
+
+.blog-search-input::-webkit-search-cancel-button,
+.blog-search-input::-webkit-search-decoration {
+  appearance: none;
+  display: none;
+}
+
+.blog-search-key {
+  padding: 2px 6px 3px;
+  border: 1px solid rgba(230, 227, 216, 0.3);
+  border-radius: 3px;
+  color: var(--chrome-ink-dim);
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  line-height: 1;
+  transition: opacity 150ms ease;
+}
+
+.blog-search:focus-within .blog-search-key,
+.blog-search.has-query .blog-search-key {
+  opacity: 0;
+}
+
+/* The plate: a specimen sheet in the chrome's rule, its edge doubled by an inner hairline. */
+.blog-search-results {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: -8px;
+  z-index: 2;
+  width: 348px;
+  max-height: min(540px, calc(100vh - 210px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 2px;
+  background: rgba(9, 10, 12, 0.97);
+  box-shadow:
+    inset 0 0 0 3px rgba(9, 10, 12, 0.97),
+    inset 0 0 0 4px rgba(230, 227, 216, 0.1),
+    0 18px 40px rgba(0, 0, 0, 0.65);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(230, 227, 216, 0.3) transparent;
+}
+
+.blog-search-summary {
+  margin: 2px 10px 8px;
+  color: var(--chrome-ink-dim);
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.04em;
+}
+
+.blog-search-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A result: its culture's spore, the title, a ledger line, and the passage the words were found in. */
+.blog-search-hit {
+  --hit: var(--bone);
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  gap: 3px 12px;
+  padding: 8px 10px 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.blog-search-hit[data-hub="craft"] { --hit: var(--hub-craft); }
+.blog-search-hit[data-hub="cosmos"] { --hit: var(--hub-cosmos); }
+.blog-search-hit[data-hub="codex"] { --hit: var(--hub-codex); }
+.blog-search-hit[data-hub="convergence"] { --hit: var(--hub-convergence); }
+
+.blog-search-hit::before {
+  content: '';
+  grid-row: 1;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--hit), black 20%);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--hit), transparent 50%);
+}
+
+.blog-search-hit:hover {
+  border-color: rgba(201, 194, 179, 0.3);
+  border-style: dotted;
+  background: rgba(201, 194, 179, 0.04);
+}
+
+.blog-search-hit:focus-visible {
+  border-color: var(--chrome-rule-hi);
+  border-style: dotted;
+  background: rgba(201, 194, 179, 0.06);
+}
+
+.blog-search-title,
+.blog-search-meta,
+.blog-search-snippet {
+  grid-column: 2;
+}
+
+.blog-search-title {
+  color: var(--chrome-ink-hi);
+  font-family: var(--font-read);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.blog-search-meta {
+  color: var(--chrome-ink-dim);
+  font-family: var(--font-data);
+  font-size: var(--text-floor);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.blog-search-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--chrome-ink);
+  font-family: var(--font-read);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* On a phone the search heads the culture cards (js/blog-search.js moves it there). Its results run in
+   the page, full width, the field reads at 16 px so the phone does not zoom on it, and the plain post
+   list gives way to it while the app runs. Without the app that list is the way to the posts. */
+html.js-ready .blog-mobile .published-writing {
+  display: none;
+}
+
+.blog-mobile .blog-search {
+  margin: 0 4px 22px;
+}
+
+.blog-mobile .blog-search-input {
+  font-size: 16px;
+}
+
+.blog-mobile .blog-search-field {
+  min-height: 44px;
+  padding-block: 0;
+}
+
+.blog-mobile .blog-search-key {
+  display: none;
+}
+
+.blog-mobile .blog-search-results {
+  position: static;
+  width: auto;
+  max-height: none;
+  margin-top: 12px;
+  overflow: visible;
+}
+
+.blog-search-hit mark {
+  background: none;
+  color: var(--chrome-ink-hi);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--hit), var(--bone) 30%);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 /* A heading, so it keeps the typewriter of the titles and outranks the hub names under it. */
@@ -472,8 +681,41 @@
 }
 
 .dish-nucleus:hover .dish-nucleus-title,
-.dish-nucleus:focus-visible .dish-nucleus-title {
+.dish-nucleus:focus-visible .dish-nucleus-title,
+.dish-nucleus.is-named .dish-nucleus-title {
   opacity: 1;
+}
+
+/* While a search is open the dish sifts with it: the nuclei of matching posts stay lit and breathe,
+   the rest fade back, and the result in focus names its own (js/blog-search.js). */
+.dish-nucleus {
+  transition: opacity 240ms var(--ease-house);
+}
+
+.dish-nuclei.is-sifting .dish-nucleus:not(.is-match) {
+  opacity: 0.2;
+}
+
+.dish-nucleus.is-match .dish-nucleus-halo {
+  fill: color-mix(in oklab, var(--nucleus), transparent 50%);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.dish-nucleus.is-named .dish-nucleus-ring {
+  stroke: var(--bone);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dish-nuclei.is-sifting .dish-nucleus.is-match .dish-nucleus-halo {
+    animation: nucleus-breathe 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes nucleus-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.45); }
 }
 
 /* z:40 */

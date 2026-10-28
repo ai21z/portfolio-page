@@ -878,15 +878,22 @@
       <div class="blog-memo-header">
         <span class="blog-memo-title">Field Notes</span>
       </div>
-      <nav class="blog-reading-links" aria-label="Published articles">
-        <a href="/blog/craft/checked-against-the-record">Checked Against the Record</a>
-        <a href="/blog/craft/inside-a-trust-harness-java-21">Inside a Trust Harness, in Java 21</a>
-        <a href="/blog/codex/the-work-test-cycle">The Work-Test Cycle</a>
-        <a href="/blog/cosmos/twelve-local-models">Twelve Local Models, One Harness That Checks Them</a>
-        <a href="/blog/convergence/from-a-rag-cli-to-an-execution-harness">From a RAG CLI to an Execution Harness</a>
-        <a href="/blog/codex/fail-fast-learn-faster">Fail Fast, Learn Faster - Instinct, on Purpose</a>
-        <a href="/blog/cosmos/first-year-software-engineer">My 1st Year as a Software Engineer: Lessons Learned</a>
-      </nav>
+      <!-- The notes are searched here, and a match lights its nucleus in the dish (js/blog-search.js).
+           Without scripts it stays hidden, and every post is in its culture's list and the plain nav. -->
+      <div class="blog-search" role="search" aria-label="Notes" hidden>
+        <label class="sr-only" for="blog-search-input">Search the notes</label>
+        <div class="blog-search-field">
+          <svg class="blog-search-lens" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M9.9 9.9 14 14"/></svg>
+          <input id="blog-search-input" class="blog-search-input" type="search" placeholder="Search the notes" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-controls="blog-search-results" aria-describedby="blog-search-hint">
+          <kbd class="blog-search-key" aria-hidden="true">/</kbd>
+        </div>
+        <p id="blog-search-hint" class="sr-only">Every note shows while the field is empty. Arrow down moves into the results, Escape closes them.</p>
+        <div id="blog-search-results" class="blog-search-results" hidden>
+          <p class="blog-search-summary" aria-hidden="true"></p>
+          <ol class="blog-search-list" aria-label="Matching notes"></ol>
+        </div>
+        <p id="blog-search-status" class="sr-only" role="status"></p>
+      </div>
       <ul class="blog-memo-list">
         <li><a class="blog-memo-item" data-hub="craft" href="#blog/craft">
           <span class="blog-memo-hub">Craft <span class="blog-memo-count" data-hub="craft"></span></span>

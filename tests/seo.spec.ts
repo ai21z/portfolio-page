@@ -23,11 +23,13 @@ test('blog fallback keeps article discovery readable', async ({ page }) => {
   const fallback = page.locator('#blog-map .webgl-fallback-visible');
   await expect(fallback).toBeVisible();
   await expect(page.locator('.blog-intro-caption')).toBeHidden();
-  await expect(page.locator('.blog-reading-links')).toBeVisible();
   const notice = await fallback.boundingBox();
   const memo = await page.locator('.blog-memorandum').boundingBox();
   expect(notice!.x).toBeGreaterThanOrEqual(memo!.x + memo!.width);
   expect(memo!.y + memo!.height).toBeLessThan(768);
+  // Without the dish, the search still reaches every post.
+  await page.getByRole('searchbox', { name: 'Search the notes' }).focus();
+  await expect(page.locator('.blog-search-hit')).toHaveCount(articles.length);
 });
 
 test('published articles agree across metadata, discovery links, and the sitemap', async ({ page, request }) => {

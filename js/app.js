@@ -77,6 +77,7 @@ import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
 import { postTitle, refreshViewTitle } from './view-title.js';
+import { initBlogSearch } from './blog-search.js';
 import './calm-field.js';
 import {
   frameDue,
@@ -716,6 +717,7 @@ async function initNetworkAndNav() {
 
 function initBlogControls() {
   populateBlogCounts();
+  initBlogSearch({ openPost: (hubId, articleId) => enterBlogArticle(hubId, articleId) });
 
   document.querySelectorAll('.blog-memo-item[data-hub]').forEach(item => {
     if (item.__blogMemoBound) return;
@@ -843,10 +845,11 @@ function initBlogControls() {
   const tooltipTitle = tooltip.querySelector('.blog-hub-tooltip-title');
   const tooltipDesc = tooltip.querySelector('.blog-hub-tooltip-description');
 
+  // A search result names its culture itself, so its preview shows no tooltip and says nothing more.
   window.addEventListener('blog:hover', (e) => {
-    const { hubId } = e.detail;
+    const { hubId, source } = e.detail;
     const category = blogCategory(hubId);
-    if (hubStatus && category) {
+    if (hubStatus && category && source !== 'search') {
       const dormant = dormantCategories.has(hubId);
       hubStatus.textContent = `Preview: ${category.name}. ${category.line}${dormant ? ' Dormant, no posts yet.' : ''}`;
 

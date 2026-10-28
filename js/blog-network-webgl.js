@@ -1465,10 +1465,10 @@ async function initBlogNetwork(){
     }
   });
 
-  // Listen for external hover events (from rim labels and memo)
+  // Listen for external hover events (from rim labels, the memo and a search result)
   window.addEventListener('blog:hover', (e) => {
     const { hubId, source } = e.detail;
-    if ((source === 'rim-label' || source === 'memo' || source === 'nucleus') && hubId && hubId !== 'source') {
+    if ((source === 'rim-label' || source === 'memo' || source === 'nucleus' || source === 'search') && hubId && hubId !== 'source') {
       hoveredHubId = hubId;
       canvas.style.cursor = 'pointer';
     }
@@ -1476,8 +1476,8 @@ async function initBlogNetwork(){
 
   window.addEventListener('blog:hover-off', (e) => {
     const { hubId, source } = e.detail;
-    // Clear if from memo (no hubId check) or if matching hub
-    if (source === 'memo' || hoveredHubId === hubId) {
+    // Clear if from the memo or a search result (no hubId check) or if matching hub
+    if (source === 'memo' || source === 'search' || hoveredHubId === hubId) {
       hoveredHubId = null;
       canvas.style.cursor = 'default';
     }

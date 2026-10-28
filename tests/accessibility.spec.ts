@@ -74,8 +74,8 @@ test('each view names the browser tab, and Back puts the name back', async ({ pa
   await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
   await expect(page).toHaveTitle('Codex | Blog | Aris Zounarakis');
   await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
-  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
-  await expect(page).toHaveTitle('Fail Fast, Learn Faster - Instinct, on Purpose | Aris Zounarakis');
+  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster. Instinct, on Purpose');
+  await expect(page).toHaveTitle('Fail Fast, Learn Faster. Instinct, on Purpose | Aris Zounarakis');
   await page.goBack();
   await expect(page).toHaveTitle('Codex | Blog | Aris Zounarakis');
   await page.goto('/index.html#about');
@@ -90,9 +90,9 @@ test('an open post is the only h1 in the Blog view', async ({ page, browserName 
   test.skip(browserName === 'webkit', 'Playwright role lookup in WebKit keeps inert views');
   await stubVerification(page);
   await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
-  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await expect(page.locator('#blog-article-content h1')).toHaveText('Fail Fast, Learn Faster. Instinct, on Purpose');
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Fail Fast, Learn Faster. Instinct, on Purpose');
   await page.goto('/index.html#blog/codex');
   await expect(page.locator('#blog')).toHaveAttribute('data-mode', 'category');
   await expect(page.getByRole('heading', { level: 1, name: 'Blog', exact: true })).toHaveCount(1);

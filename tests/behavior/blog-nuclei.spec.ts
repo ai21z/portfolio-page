@@ -30,8 +30,8 @@ test('each post is a named link in its culture', async ({ page }) => {
   })));
   expect(items).toEqual(expect.arrayContaining(posts));
   expect(items).toEqual(expect.arrayContaining([
-    { hub: 'cosmos', href: '/blog/cosmos/first-year-software-engineer', label: 'Read My 1st Year as a Software Engineer: Lessons Learned' },
-    { hub: 'codex', href: '/blog/codex/fail-fast-learn-faster', label: 'Read Fail Fast, Learn Faster - Instinct, on Purpose' }
+    { hub: 'cosmos', href: '/blog/cosmos/first-year-software-engineer', label: 'Read My 1st Year as a Software Engineer, Lessons Learned' },
+    { hub: 'codex', href: '/blog/codex/fail-fast-learn-faster', label: 'Read Fail Fast, Learn Faster. Instinct, on Purpose' }
   ]));
 });
 
@@ -64,7 +64,7 @@ test('a nucleus names its post on hover, and Enter opens it with focus in the ar
   await codex.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#blog-article-view')).toBeVisible();
-  await expect(page.locator('#blog-article-content .article-title')).toHaveText('Fail Fast, Learn Faster - Instinct, on Purpose');
+  await expect(page.locator('#blog-article-content .article-title')).toHaveText('Fail Fast, Learn Faster. Instinct, on Purpose');
   await expect(page.locator('#blog-article-content')).toBeFocused();
   await expect(page.locator('#dish-nuclei')).toBeHidden();
 });

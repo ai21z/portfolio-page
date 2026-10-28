@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const articles = [
-  { hub: 'cosmos', id: 'first-year-software-engineer', title: 'My 1st Year as a Software Engineer: Lessons Learned', date: '2023-03-21' },
-  { hub: 'codex', id: 'fail-fast-learn-faster', title: 'Fail Fast, Learn Faster - Instinct, on Purpose', date: '2025-10-22' },
+  { hub: 'cosmos', id: 'first-year-software-engineer', title: 'My 1st Year as a Software Engineer, Lessons Learned', date: '2023-03-21' },
+  { hub: 'codex', id: 'fail-fast-learn-faster', title: 'Fail Fast, Learn Faster. Instinct, on Purpose', date: '2025-10-22' },
   { hub: 'craft', id: 'checked-against-the-record', title: 'Checked Against the Record', date: '2026-10-27' },
   { hub: 'craft', id: 'inside-a-trust-harness-java-21', title: 'Inside a Trust Harness, in Java 21', date: '2026-10-27' },
   { hub: 'codex', id: 'the-work-test-cycle', title: 'The Work-Test Cycle', date: '2026-10-27' },

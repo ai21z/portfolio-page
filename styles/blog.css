@@ -2271,15 +2271,6 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
   white-space: nowrap;
 }
 
-/* The closing note on what the post describes, set apart from the text above it. */
-:is(.article-container, .blog-article-content) .article-content .article-note {
-  margin-top: 44px;
-  padding-top: 20px;
-  border-top: 1px solid var(--chrome-rule);
-  font-size: 0.92rem;
-  color: var(--chrome-ink);
-}
-
 /* A break between parts: the rule with a gap where the ring would be. */
 :is(.article-container, .blog-article-content) .article-content hr {
   height: 1px;

@@ -92,7 +92,7 @@
 <figure class="article-plate article-figure">
 <svg class="article-figure-art" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 646" role="img" aria-labelledby="fig-a-claim-about-two-files-against-a-record-t fig-a-claim-about-two-files-against-a-record-d">
 <title id="fig-a-claim-about-two-files-against-a-record-t">A claim about two files against a record of one edit</title>
-<desc id="fig-a-claim-about-two-files-against-a-record-d">The model answer says it updated README.md and settings.json. The turn record shows one successful edit, to README.md. README.md matches. settings.json has no record, so the report is prefixed with a truth check label and lists settings.json as a target without matching execution. The answer is kept below the label. With no higher-priority outcome, the unsupported claim makes the status advisory instead of complete. Before 16 October 2026 one successful edit anywhere in the turn suppressed the label.</desc>
+<desc id="fig-a-claim-about-two-files-against-a-record-d">The model answer says it updated README.md and settings.json. The turn record shows one successful edit, to README.md. README.md matches. settings.json has no record, so the report is prefixed with a truth check label and lists settings.json as a target without matching execution. The answer is kept below the label. With no higher-priority outcome, the unsupported claim makes the status advisory instead of complete. Under the old check one successful edit anywhere in the turn suppressed the label.</desc>
 <rect width="400" height="646" fill="#0B0B0C"/>
 <text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">ONE ANSWER, ONE TURN</text>
 <text x="20" y="74" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#9a7ee6" text-anchor="start" letter-spacing="2">MODEL ANSWER</text>
@@ -124,7 +124,7 @@
 <text x="178" y="528" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="15" fill="#d6603f" text-anchor="start">advisory</text>
 <text x="20" y="551" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">when no higher-priority outcome applies</text>
 <line x1="20" y1="576" x2="380" y2="576" stroke="rgba(230,227,216,0.30)"/>
-<text x="20" y="602" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">Before 16 October 2026 one successful edit</text>
+<text x="20" y="602" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">Under the old check one successful edit</text>
 <text x="20" y="621" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start">anywhere in the turn suppressed the label.</text>
 </svg>
 <figcaption>Figure 1. The answer's claimed targets on one side, the turn's execution records on the other. README.md matches a recorded edit. settings.json has no record, so the answer is labeled. With no higher-priority outcome, the unsupported claim makes the status advisory.</figcaption>
@@ -136,10 +136,10 @@ and unrecorded filesystem changes are not assessed.]
 
 Targets without matching execution: settings.json.</code></pre>
 <p>The model's text follows unchanged below the label. Unless a stronger fact decides the status first, such as a partial change, the turn is classified as advisory instead of complete.</p>
-<p>Until 16 October 2026 the same answer passed without a label. The old check was existential. Any successful edit anywhere in the turn suppressed it, so one real edit covered a claim about two files. The old label also ended with a sentence the runtime could not support, "No file on disk was actually modified." Talos records its own tool executions. It does not track an editor, a build script or another process writing to the same disk. The October change made the check per target and narrowed the label to what the records show. The published 0.10.8 beta still carries the old check and the old wording, so in that release the answer above passes without a label.</p>
+<p>Under the old check the same answer passed without a label. The old check was existential. Any successful edit anywhere in the turn suppressed it, so one real edit covered a claim about two files. The old label also ended with a sentence the runtime could not support, "No file on disk was actually modified." Talos records its own tool executions. It does not track an editor, a build script or another process writing to the same disk. The change made the check per target and narrowed the label to what the records show. The published 0.10.8 beta still carries the old check and the old wording, so in that release the answer above passes without a label.</p>
 <h2>What the harness changes, and what it does not</h2>
 <p>A harness does not change the model's weights. It does change the conditions the model works under, and with them what the complete system accomplishes in some cases. A file-change request that produces no tool call gets one bounded retry with a nudge toward the write tools. A workspace question answered without reading anything is retried with read tools, and the runtime can read a file and hand its content to the model.</p>
-<p>Those interventions can also go wrong. In a recorded run on 18 October 2026, on a development build from that day, the retry that followed a model's first reply dropped the conversation history, the file content and the textual tool schemas, and the model's second attempt produced an invalid edit. The code that builds that retry request is unchanged at the commit described here. The same compaction drops a note the runtime prepares when a model denies it can access files, so that note never reaches the model.</p>
+<p>Those interventions can also go wrong. In a recorded run on a development build, the retry that followed a model's first reply dropped the conversation history, the file content and the textual tool schemas, and the model's second attempt produced an invalid edit. The code that builds that retry request has not changed since. The same compaction drops a note the runtime prepares when a model denies it can access files, so that note never reaches the model.</p>
 <p>So the subject of this piece is narrower than model quality. It is what the runtime can establish about a turn, and how it reports what it cannot.</p>
 <h2>Status comes from records</h2>
 <p>A completed Talos turn ends with one of eight classifications. They are verified, unverified, read-only answered, partial, blocked by approval, blocked by policy, advisory and failed. No success classification is taken from the model's prose. The prose can only lower a status, through the claim check above and a few other lexical checks, such as withheld command output or a recognized denial of file access.</p>
@@ -175,7 +175,7 @@ Targets without matching execution: settings.json.</code></pre>
 <li>The check does not run when a change in the turn was denied, when a failed change left applied or uncertain effects, or when the only changes were invalid calls. Those turns get their own deterministic summaries.</li>
 <li>Target names are compared exactly, including letter case. On a case-insensitive file system that can label a true claim about <code>Readme.md</code> as unsupported, which is the safer error.</li>
 </ul>
-<p>Some runtime messages still use the broad wording the October change removed from the label, for example <code>[Action obligation failed: no file was changed in this turn.]</code>. That message is accurate only for Talos's own tools.</p>
+<p>Some runtime messages still use the broad wording the change removed from the label, for example <code>[Action obligation failed: no file was changed in this turn.]</code>. That message is accurate only for Talos's own tools.</p>
 <h2>The approved payload is the written payload</h2>
 <p>Approval only means something if the approved change is the change that lands. Before anything is shown to the user, Talos may transform a proposed write in several ways. Among them are removal of markdown commentary the model wrapped around the content, an exact-literal correction that restores a payload the user dictated word for word, path canonicalization, and preservation of the file's existing line endings, byte order mark and final newline.</p>
 <p>All of these run before the approval preview is built. The preview, the approval prompt, the checkpoint and the write are then built from the same call content, and nothing changes it between approval and execution. The commentary sanitizer is documented as non-idempotent, so a second pass could strip legitimate content. It has one production caller, and the write tools are documented not to sanitize again.</p>
@@ -189,7 +189,7 @@ Targets without matching execution: settings.json.</code></pre>
 <li>A no-tool turn that was not a change request is not checked for change claims.</li>
 <li>Claim detection is lexical, so paraphrases outside the grammar pass.</li>
 <li>Traces and logs are not tamper-evident. There is no hash chain, signature or append-only enforcement.</li>
-<li>In the 18 October run the harness itself produced misleading text. A correct answer was replaced by "did not complete" text, which the code now prevents but no live run has rechecked. A question about a bug got a "[Path existence verified]" banner, and that trigger is still present.</li>
+<li>In that recorded run the harness itself produced misleading text. A correct answer was replaced by "did not complete" text, which the code now prevents but no live run has rechecked. A question about a bug got a "[Path existence verified]" banner, and that trigger is still present.</li>
 </ul>
 <p>The README draws the boundary in two sentences. "Talos is a governance shell around local model execution, not proof that the model is capable or honest without runtime evidence. A documented limitation is not an overclaim."</p>
 <h2>What transfers</h2>
@@ -201,7 +201,6 @@ Targets without matching execution: settings.json.</code></pre>
 <li>Print what was not assessed, every time, instead of leaving it implied.</li>
 </ul>
 <p>The model's prose is kept, kept under a label, or replaced by runtime text, and pass markers the model wrote for itself are removed. What can be held to account is the turn's report about the model.</p>
-<p class="article-note"><em>Described as of the local development commit de779a78, 27 October 2026, which has not been pushed. The published 0.10.8 developer beta predates the claim attribution grammar and its per-target check, the whole-request status line, write-format preservation and the fix that keeps an admitted answer when a read-only completeness retry is exhausted, all described here. That fix exists only in this commit.</em></p>
         </article>
 
         <footer class="article-footer">

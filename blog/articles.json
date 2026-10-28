@@ -18,7 +18,7 @@
       "id": "twelve-local-models",
       "title": "Twelve Local Models, One Harness That Checks Them",
       "date": "October 27, 2026",
-      "excerpt": "Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality."
+      "excerpt": "Twelve open-weight models went through a qualification protocol. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality."
     },
     {
       "id": "first-year-software-engineer",

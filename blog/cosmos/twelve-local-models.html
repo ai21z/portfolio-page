@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twelve Local Models, One Harness That Checks Them | Aris Zounarakis</title>
-    <meta name="description" content="Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
+    <meta name="description" content="Twelve open-weight models went through a qualification protocol. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
     <meta name="author" content="Aris Zounarakis">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://zounarakis.com/blog/cosmos/twelve-local-models">
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Aris Zounarakis">
     <meta property="og:title" content="Twelve Local Models, One Harness That Checks Them">
-    <meta property="og:description" content="Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
+    <meta property="og:description" content="Twelve open-weight models went through a qualification protocol. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
     <meta property="og:url" content="https://zounarakis.com/blog/cosmos/twelve-local-models">
     <meta property="og:image" content="https://zounarakis.com/og/og-1200x630.png">
     <meta property="og:image:alt" content="Aris Zounarakis portfolio">
@@ -19,7 +19,7 @@
     <meta property="article:author" content="https://zounarakis.com/">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Twelve Local Models, One Harness That Checks Them">
-    <meta name="twitter:description" content="Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
+    <meta name="twitter:description" content="Twelve open-weight models went through a qualification protocol. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.">
     <meta name="twitter:image" content="https://zounarakis.com/og/og-1200x630.png">
     <meta name="twitter:image:alt" content="Aris Zounarakis portfolio">
     <link rel="icon" type="image/png" href="/icons/favicon-32.png">
@@ -29,7 +29,7 @@
         "@type": "BlogPosting",
         "@id": "https://zounarakis.com/blog/cosmos/twelve-local-models#article",
         "headline": "Twelve Local Models, One Harness That Checks Them",
-        "description": "Twelve open-weight models went through a qualification protocol in July 2026. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.",
+        "description": "Twelve open-weight models went through a qualification protocol. Six finished a 72-trial run and passed every trust gate in every trial. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior, so those results cannot be treated as clean measurements of model quality.",
         "datePublished": "2026-10-27",
         "inLanguage": "en",
         "keywords": [
@@ -86,14 +86,14 @@
         </header>
 
         <article class="article-content">
-<p><strong>In short.</strong> Twelve open-weight models, from 3B to 24B parameters, went through the qualification protocol of Talos, a local coding assistant, on one desktop in July 2026. The six that completed a 72-trial run passed every trust gate in every trial, a joint result of the model and the runtime checks around it, and did the work unevenly. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior. Those results cannot be treated as clean measurements of model quality, so the protocol measured Talos alongside the models. These are descriptive results from one machine and one engine build, not a ranking.</p>
+<p><strong>In short.</strong> Twelve open-weight models, from 3B to 24B parameters, went through the qualification protocol of Talos, a local coding assistant, on one desktop. The six that completed a 72-trial run passed every trust gate in every trial, a joint result of the model and the runtime checks around it, and did the work unevenly. Forty-three of the 102 failed trials were results affected by runtime or scoring behavior. Those results cannot be treated as clean measurements of model quality, so the protocol measured Talos alongside the models. These are descriptive results from one machine and one engine build, not a ranking.</p>
 <p>Talos runs a local model through llama.cpp, and every tool call the model makes is a proposal the runtime checks before it takes effect. Knowing whether a model calls tools when it should, abstains when it should and finishes the work it starts takes a protocol. The results below come from the packets it left behind, scorecards, per-trial results, final files and traces, and from the reports written beside them.</p>
 <figure class="article-plate article-figure">
 <svg class="article-figure-art" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 712" role="img" aria-labelledby="fig-where-the-twelve-candidates-stopped-t fig-where-the-twelve-candidates-stopped-d">
 <title id="fig-where-the-twelve-candidates-stopped-t">Where the twelve candidates stopped</title>
 <desc id="fig-where-the-twelve-candidates-stopped-d">Twelve candidates. Five stopped at engine preflight or the first trial, three because the chat template rejected the request and two because they gave no native tool call. One passed admission with no 72-trial run. Six completed the full protocol, giving 432 trials with no trust-gate failure. All six scored experimental and none scored accepted beta.</desc>
 <rect width="400" height="712" fill="#0B0B0C"/>
-<text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">QUALIFICATION, JULY 2026</text>
+<text x="20" y="36" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="14" fill="#A9A69D" text-anchor="start" letter-spacing="2">THE QUALIFICATION PROTOCOL</text>
 <path d="M44 96 C44 200 46 330 44 560" stroke="rgb(122,174,138)" stroke-opacity="0.55" stroke-width="2" fill="none"/>
 <circle cx="44" cy="80" r="7" fill="rgb(122,174,138)"/>
 <text x="64" y="92" font-family="'Special Elite', 'JetBrains Mono', monospace" font-size="40" fill="#E6E3D8" text-anchor="start">12</text>
@@ -150,7 +150,7 @@
 <h2>Where the twelve stopped</h2>
 <div class="article-table" role="region" aria-label="Where the twelve stopped" tabindex="0">
 <table>
-<thead><tr><th scope="col">Model</th><th scope="col">Furthest stage</th><th scope="col">Scorecard result</th><th scope="col">Catalog status at the pin</th></tr></thead>
+<thead><tr><th scope="col">Model</th><th scope="col">Furthest stage</th><th scope="col">Scorecard result</th><th scope="col">Current catalog status</th></tr></thead>
 <tbody>
 <tr><td>Ministral 3 3B</td><td>admission, first trial</td><td>stopped, template rejected the request</td><td>not listed</td></tr>
 <tr><td>Ministral 3 8B</td><td>engine preflight</td><td>stopped, template rejected the request</td><td>not listed</td></tr>
@@ -167,7 +167,7 @@
 </tbody>
 </table>
 </div>
-<p>All six complete runs scored in the experimental tier. The two models the catalog lists as accepted beta hold that status through an evidence record dated 3 July 2026, made before this protocol.</p>
+<p>All six complete runs scored in the experimental tier. The two models the catalog lists as accepted beta hold that status through an earlier evidence record, made before this protocol.</p>
 <h2>Most early stops were about the request format</h2>
 <p>Counting Qwen3.5 9B's first configuration with the five candidates above, four of the six early stops ended on a request the chat template rejected before any token was generated. For the three Ministral models the server returned <code>Jinja Exception: Only user, assistant and tool roles are supported, got system</code>. Talos normally sends its instructions as two system messages, and their templates rejected that shape. For Qwen3.5 9B it returned "System message must be at the beginning." For Qwen3.5 an explicit layout was added that merges only Talos's own system frames into one leading message, and with it Qwen3.5 passed admission 12 of 12. The Ministral models were not retried under the adapter, so their result describes their templates and Talos's request shape, not what the models can do with tools.</p>
 <p>The other two models answered, but not with a native tool call. In a one-message probe with server-default sampling and a 256-token cap, Qwen2.5 Coder 7B described a JSON call in prose, added an XML example and hit the cap. The probe did not use the near-greedy settings Talos applies to tool turns, so the rejection covers that configuration only. Its preflight report draws the lesson. "<code>/props</code> proves that the template can represent tools. It does not prove that the model reliably uses the representation." Devstral's template did not advertise tool support at all, and the model wrote <code>read_local_file_tool(input: {"file_path": "README.md"})</code> as plain text.</p>
@@ -565,7 +565,7 @@
 </ul>
 <p>The six also differed in ways one score hides. Qwen3 4B covered the most scenarios, 20 of 24, and chose the required tool least often, 47 of 54. Granite 4.1 3B was the fastest and lightest, with a median turn of 2.41 seconds and a working set of about 3.2 GiB.</p>
 <h2>When the harness is part of the result</h2>
-<p>A reading of the raw packets on 27 October 2026 found four scenarios whose results are not clean model measurements, two for all six models and two for one or two models each. Those results hold 43 of the 102 failed trials. That does not make all 43 harness failures, since some include model-side misses as well. It means those trials cannot be read as measurements of the model alone. The historical scorecards are unchanged, and no corrected model score follows from these observations.</p>
+<p>A later reading of the raw packets found four scenarios whose results are not clean model measurements, two for all six models and two for one or two models each. Those results hold 43 of the 102 failed trials. That does not make all 43 harness failures, since some include model-side misses as well. It means those trials cannot be read as measurements of the model alone. The historical scorecards are unchanged, and no corrected model score follows from these observations.</p>
 <ul>
 <li><strong>The two-part edit, all six models.</strong> The scenario asks for a page's heading to become "Atlas Control" and its status paragraph to start with "Offline". Every trial had exactly two model generations, a read and an edit. Both parts were in one file, and Talos ends the tool loop once every expected target has been changed, so after the first successful edit no model was asked for anything more. Five models had sent only the heading edit. Qwen3.5 9B sent both edits in one response, and the scenario's approve-once policy denied the second. Whether the other five would have completed the second part was never observed.</li>
 <li><strong>The static-page explanation, all six models.</strong> 15 of the 18 final answers are byte-identical to a template Talos itself renders. The other three are a Talos evidence notice, issued because Granite 4.1 3B did not read the script file. The scenario requires the word "Ready", which the template never contains. Granite's three trials therefore mix a model-side miss with a runtime-rendered answer.</li>
@@ -575,15 +575,15 @@
 <p>The harness was also tested first. For Qwen2.5 Coder 14B and Qwen3 8B, the halted campaigns stopped because of Talos or its evidence capture, not the model, among them a prompt that asked for an answer "without opening any workspace file" and still produced read calls and a Ctrl-C turned into a second model request. Five of the nine incomplete Granite 4.1 3B full runs also ended on a trial recorded as a Talos runtime defect. Each Talos defect was fixed on the development branch and the campaign restarted under a new identity. The fixes are not yet released, and whether released 0.10.8 has the same defects was not tested, since every campaign ran a later development commit.</p>
 <h2>Setup</h2>
 <p>Every packet ran on one desktop, with an NVIDIA RTX 5070 Ti with 16 GB of VRAM, an AMD Ryzen 9 9900X, 128 GB of RAM, Windows 11 and llama.cpp b9918 on CUDA 13.3, with one quantization per model. The usual context was 8,192 tokens. GPT-OSS 20B and the Qwen2.5 Coder 14B admission ran at 16,384, and GPT-OSS 20B's full run placed part of its expert weights on the CPU under a 5,120 MiB allocation limit, which its calibration guide calls "capacity simulation on a 16 GiB host." An older measurement on the same machine shows what the GPU does. A Qwen2.5 Coder 14B code-writing turn took 29.4 seconds on CUDA and hit the 300-second budget on the CPU build.</p>
-<p>Turns that must call a tool run near-greedy, with temperature 0.2, top_p 0.8 and top_k 20, after earlier byte-identical requests produced both valid calls and protocol debris under default sampling. They start with an output cap of 512 tokens for reads and 1,024 for changes, and a call cut short is retried once without the cap. The Qwen3 models run with reasoning off. All runs used one backend. Released 0.10.8 already defaults to llama.cpp, and on 18 October 2026 the development branch removed Ollama entirely.</p>
-<p>No profile carries a Low, Medium or High hardware label. The five profiles qualified in July each disclaim a weak-hardware, low-resource or minimum-hardware claim, and the two accepted profiles state RAM minimums no physical hardware packet has measured.</p>
+<p>Turns that must call a tool run near-greedy, with temperature 0.2, top_p 0.8 and top_k 20, after earlier byte-identical requests produced both valid calls and protocol debris under default sampling. They start with an output cap of 512 tokens for reads and 1,024 for changes, and a call cut short is retried once without the cap. The Qwen3 models run with reasoning off. All runs used one backend. Released 0.10.8 already defaults to llama.cpp, and the development branch has since removed Ollama entirely.</p>
+<p>No profile carries a Low, Medium or High hardware label. The five profiles this protocol qualified each disclaim a weak-hardware, low-resource or minimum-hardware claim, and the two accepted profiles state RAM minimums no physical hardware packet has measured.</p>
 <h2>What the evidence supports</h2>
 <p>On this machine, with this build and these protocols, open-weight models from 3B to 20B passed every trust gate together with Talos and did the work unevenly. Two searched too narrowly, four padded exact answers and one added detail no file supported. GPT-OSS 20B reached the tool-call limit in ten read trials, and outside the two-part edit, twelve change requests across three models ended partial or failed. A large share of the failed trials sat in scenarios shaped by Talos itself, a stop rule, a rendered template and two answer keys, and those trials cannot be read as measurements of the models alone.</p>
 <ul>
 <li>Each scenario ran three times, so the confidence intervals are broad.</li>
 <li>The campaigns ran on different Talos commits, GPT-OSS under protocol v4 and the others under v5. Their own reports call the cross-model tables descriptive, not a controlled benchmark.</li>
-<li>The protocol in code at the pin is v6, and no model has run it. Qualification has been frozen since 16 July while Talos kept changing.</li>
-<li>The two accepted profiles rest on the 3 July record. Qwen2.5 Coder 14B has no 72-trial run, and GPT-OSS 20B's request layout has changed since that record.</li>
+<li>The protocol in the current code is v6, and no model has run it. No qualification has run since these campaigns, while Talos kept changing.</li>
+<li>The two accepted profiles rest on the earlier record. Qwen2.5 Coder 14B has no 72-trial run, and GPT-OSS 20B's request layout has changed since that record.</li>
 </ul>
 <h2>What transfers</h2>
 <ul>
@@ -593,7 +593,6 @@
 <li>Separate harness effects from model behavior before scoring. Here 43 of the 102 failed trials were results the runtime or the scorer shaped.</li>
 <li>Score only what the prompt asked for. A key that requires an unstated capital letter measures the key.</li>
 </ul>
-<p class="article-note"><em>Evidence. Unpublished local qualification packets and reports dated 10 to 15 July 2026 and a performance review dated 8 July 2026, read on 27 October 2026. Talos code and documentation as of the local development commit de779a78, 27 October 2026, which has not been pushed.</em></p>
         </article>
 
         <footer class="article-footer">

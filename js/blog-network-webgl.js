@@ -922,9 +922,13 @@ async function initBlogNetwork(){
       const hx0 = cx + hitR*Math.cos(a0), hy0 = cy + hitR*Math.sin(a0);
       const hx1 = cx + hitR*Math.cos(a1), hy1 = cy + hitR*Math.sin(a1);
 
-      // Label text path at outer radius
-      const x0 = cx + outerR*Math.cos(a0), y0 = cy + outerR*Math.sin(a0);
-      const x1 = cx + outerR*Math.cos(a1), y1 = cy + outerR*Math.sin(a1);
+      // Label text path at outer radius. The bottom word runs the other way round, left to right with its
+      // letters standing on the arc's inner side, so CODEX reads upright. Its path sits a letter further
+      // out so the word keeps clear of the rim.
+      const upright = c.midDeg === 90;
+      const textR = upright ? outerR + 18 : outerR;
+      const x0 = cx + textR*Math.cos(a0), y0 = cy + textR*Math.sin(a0);
+      const x1 = cx + textR*Math.cos(a1), y1 = cy + textR*Math.sin(a1);
 
       // A link to the category, with its hit zone and text. decorateRimLabel sets its href and name.
       const grp = document.createElementNS(svg.namespaceURI,'a');
@@ -942,7 +946,9 @@ async function initBlogNetwork(){
       // Text path for label positioning
       const textArc = document.createElementNS(svg.namespaceURI,'path');
       textArc.setAttribute('id', arcId);
-      textArc.setAttribute('d', `M ${x0} ${y0} A ${outerR} ${outerR} 0 0 1 ${x1} ${y1}`);
+      textArc.setAttribute('d', upright
+        ? `M ${x1} ${y1} A ${textR} ${textR} 0 0 0 ${x0} ${y0}`
+        : `M ${x0} ${y0} A ${textR} ${textR} 0 0 1 ${x1} ${y1}`);
       textArc.setAttribute('fill','none');
       textArc.setAttribute('stroke','none');
       grp.appendChild(textArc);

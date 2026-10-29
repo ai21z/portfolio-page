@@ -197,9 +197,13 @@
   transition: opacity 150ms ease;
 }
 
+/* Gone at once when the field is in use, so a half faded Ctrl K never reads as text too faint to see. It
+   fades back in when the field is left. */
 .blog-search:focus-within .blog-search-key,
 .blog-search.has-query .blog-search-key {
   opacity: 0;
+  visibility: hidden;
+  transition: none;
 }
 
 /* The plate: a specimen sheet in the chrome's rule, its edge doubled by an inner hairline. */

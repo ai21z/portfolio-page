@@ -184,7 +184,9 @@
       function frame() { requestAnimationFrame(function () { setTimeout(lift, Math.max(0, MIN - (performance.now() - start))); }); }
       function schedule() {
         var bg = document.getElementById('bg-front-img');
-        if (!bg || bg.complete) { frame(); return; }
+        // On a visit's first landing the network grows in after the veil (js/grow-transition.js) and keeps
+        // the backdrop closed until it has loaded, so the veil need not wait for it.
+        if (!bg || bg.complete || window.__inoculating) { frame(); return; }
         bg.addEventListener('load', frame, { once: true });
         bg.addEventListener('error', frame, { once: true });
         setTimeout(frame, BG);
@@ -885,7 +887,7 @@
         <div class="blog-search-field">
           <svg class="blog-search-lens" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M9.9 9.9 14 14"/></svg>
           <input id="blog-search-input" class="blog-search-input" type="search" placeholder="Search the notes" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-controls="blog-search-results" aria-describedby="blog-search-hint">
-          <kbd class="blog-search-key" aria-hidden="true">/</kbd>
+          <kbd class="blog-search-key" aria-hidden="true">Ctrl K</kbd>
         </div>
         <p id="blog-search-hint" class="sr-only">Every note shows while the field is empty. Arrow down moves into the results, Escape closes them.</p>
         <div id="blog-search-results" class="blog-search-results" hidden>

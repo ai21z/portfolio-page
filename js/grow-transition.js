@@ -462,10 +462,12 @@ export function spreadInto(stage) {
   run.raf = requestAnimationFrame(frame);
 }
 
-// The first landing of a visit. The network's layers stay closed behind the loading veil, then open from
-// the hub as the veil lifts: the backdrop, the pulses and spores, and the labels as the front reaches them.
-// Any input, a route change, a resize or a hidden tab opens them at once.
-const INOCULATE_MS = 1500;
+// The first landing of a visit. The network's layers stay closed behind the loading veil, which then lifts
+// without waiting for the backdrop. Once the veil is gone and the backdrop has loaded, a short dark beat,
+// then the network opens from the hub: the backdrop, the pulses and spores, and the labels as the front
+// reaches them. Any input, a route change, a resize or a hidden tab opens them at once.
+const INOCULATE_MS = 2400;
+const INOCULATE_BEAT_MS = 150;
 const INOCULATED_KEY = 'az-inoculated';
 let inoculating = null;
 
@@ -489,6 +491,8 @@ export function inoculate() {
     if (sessionStorage.getItem(INOCULATED_KEY)) return;
     sessionStorage.setItem(INOCULATED_KEY, '1');
   } catch { /* storage blocked, so it grows on every landing */ }
+  // Read by the veil's script in index.html at DOMContentLoaded, after this module has run.
+  window.__inoculating = true;
   const layers = ['bg', 'pulse-canvas', 'spore-canvas', 'reveal-canvas', 'network-nav']
     .map((id) => document.getElementById(id)).filter(Boolean);
   for (const el of layers) el.style.clipPath = CLOSED;
@@ -500,13 +504,17 @@ export function inoculate() {
     addEventListener(type, skip, true);
   }
   const seeds = lobes();
-  let started = 0, origin = null, radius = 0;
+  let started = 0, origin = null, radius = 0, readyAt = 0;
+  const backdrop = document.getElementById('bg-front-img');
   const frame = (now) => {
     if (inoculating !== run) return;
     if (!started) {
-      // Wait for the veil to lift and the hub to be placed (the labels are laid out once the cover is known).
+      // Wait for the veil to be gone, the backdrop to have loaded and the hub to be placed (the labels are
+      // laid out once the cover is known), then hold the dark for a beat.
       const hub = document.querySelector('.network-sigil-node');
-      if (!veil.classList.contains('threshold--lifted') || !hub?.getBoundingClientRect().width) {
+      const ready = veil.classList.contains('threshold--done') && (!backdrop || backdrop.complete) && hub?.getBoundingClientRect().width;
+      if (ready && !readyAt) readyAt = now;
+      if (!ready || now - readyAt < INOCULATE_BEAT_MS) {
         run.raf = requestAnimationFrame(frame);
         return;
       }
@@ -538,6 +546,7 @@ export function inoculate() {
     run.raf = requestAnimationFrame(frame);
   };
   run.raf = requestAnimationFrame(frame);
-  // The veil lifts within its own cap whatever is loading, so this never holds the network shut.
-  run.cap = setTimeout(() => { if (inoculating === run && !started) finishInoculation(); }, 3000);
+  // The veil lifts within its own cap, and a backdrop slower than this is not waited for, so this never
+  // holds the network shut.
+  run.cap = setTimeout(() => { if (inoculating === run && !started) finishInoculation(); }, 5000);
 }

@@ -77,7 +77,7 @@ test.describe('the landing transition', () => {
     const layers = () => page.evaluate(() => ['bg', 'network-nav'].map((id) => document.getElementById(id)!.style.clipPath));
     await landing(page);
     await expect.poll(async () => (await layers()).every((clip) => /polygon/.test(clip))).toBe(true);
-    await expect.poll(layers, { timeout: 3000 }).toEqual(['', '']);
+    await expect.poll(layers, { timeout: 6000 }).toEqual(['', '']);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
     await page.reload();
     await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);

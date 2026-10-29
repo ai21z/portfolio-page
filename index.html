@@ -966,10 +966,8 @@
     <!-- Dish-first map container (desktop only) -->
     <div id="blog-map" class="blog-map">
       <!-- WebGL Canvas (base layer, z:20) -->
-      <canvas id="blog-network-canvas" class="blog-network-canvas">
-        <!-- Fallback for browsers without WebGL2 -->
-        <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the blog network visualization.</p>
-      </canvas>
+      <!-- Decorative: the view's list carries its content, and js/webgl-health.js shows a note beside it where WebGL2 fails. -->
+      <canvas id="blog-network-canvas" class="blog-network-canvas" aria-hidden="true"></canvas>
 
       <!-- Petri dish overlay (visual only, z:30) -->
       <svg id="dish" class="dish" aria-hidden="true"></svg>
@@ -1042,10 +1040,8 @@
     </nav>
 
     <div class="work-globe-container">
-      <canvas id="work-globe-canvas">
-        <!-- Fallback for browsers without WebGL2 -->
-        <p class="webgl-fallback">Your browser does not support WebGL2. Please use a modern browser to view the globe visualization.</p>
-      </canvas>
+      <!-- Decorative: the view's list carries its content, and js/webgl-health.js shows a note beside it where WebGL2 fails. -->
+      <canvas id="work-globe-canvas" aria-hidden="true"></canvas>
 
       <aside class="work-rail" aria-label="Career timeline"></aside>
 

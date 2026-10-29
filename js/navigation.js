@@ -387,7 +387,8 @@ export function showSection(sectionName, options = {}) {
     {
       const isActive = label.dataset.section === sectionName;
       label.classList.toggle('active', isActive);
-      if (isActive) {
+      // The hub sigil is the labels' toggle, not a link to the landing, so only the links are current.
+      if (isActive && label.tagName === 'A') {
         label.setAttribute('aria-current', 'page');
       } else {
         label.removeAttribute('aria-current');

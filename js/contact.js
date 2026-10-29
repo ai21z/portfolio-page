@@ -8,10 +8,10 @@ const DIRECT_EMAIL = 'aris@zounarakis.com';
 // How long a press of Send waits for the spam check before offering email instead. Turnstile
 // retries a failed check about every 10 s on its own.
 const VERIFY_WAIT_MS = 12000;
-// Contact opens with a 450 ms fade, and mounting the check's cross-origin frame during it held
-// 70 to 130 ms frames. So the check starts once the sheet has settled. A press of Send before then
-// starts it at once.
-const VERIFY_START_DELAY_MS = 550;
+// Contact opens with a 640 ms growth front (js/grow-transition.js) over a 450 ms fade, and mounting
+// the check's cross-origin frame during it held 70 to 130 ms frames. So the check starts once the
+// sheet has settled. A press of Send before then starts it at once.
+const VERIFY_START_DELAY_MS = 750;
 
 // The spam check (Cloudflare Turnstile) runs out of sight once Contact has opened, and how
 // it fares stays quiet until the visitor presses Send. Send is never held back for it: the server

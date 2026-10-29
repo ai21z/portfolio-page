@@ -8,7 +8,12 @@
 //
 // Any other route change while it runs (Back or Forward, a wheel step, a link, a resize, a hidden tab)
 // finishes it at once, so the page always ends where the router says. Reduced motion and Quiet keep the
-// plain switch, and section-to-section moves keep the crossfade.
+// plain switch.
+//
+// The same front carries the other moves. Between two sections the incoming one spreads in from where the
+// move began, over the outgoing one as it fades below (spreadInto). On the first landing of a visit the
+// network grows out of the hub across the backdrop while the name, portrait and words stand as they load
+// (inoculate).
 import { LOCKED_ROUTES } from './state.js';
 import { getGraphicsBudget } from './graphics-governor.js';
 import { reducedMotion } from './motion.js';
@@ -60,6 +65,9 @@ function prepareBackdropCopy() {
 window.addEventListener('load', () => setTimeout(prepareBackdropCopy, 1500), { once: true });
 
 let current = null;
+
+// Whether the landing's transition is under way, so a route that cuts into it can end it plainly.
+export const growTransitionRunning = () => Boolean(current);
 
 export function growTransitionAllowed() {
   return !reducedMotion && !getGraphicsBudget('section-transition').quiet &&
@@ -222,6 +230,7 @@ function restore(run, settle) {
 
 // Ends a running transition at once: the section as the router left it, the landing as CSS has it.
 export function finishGrowTransition() {
+  finishSpread();
   const run = current;
   if (!run) return;
   current = null;
@@ -367,5 +376,168 @@ export function growInto(label, id, show) {
   run.raf = requestAnimationFrame(frame);
 }
 
-window.addEventListener('resize', finishGrowTransition, { passive: true });
-document.addEventListener('visibilitychange', () => { if (document.hidden) finishGrowTransition(); });
+window.addEventListener('resize', () => { finishGrowTransition(); finishInoculation(); }, { passive: true });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { finishGrowTransition(); finishInoculation(); } });
+
+// A lens: an overlay for the front, sized to the window at the transition's resolution.
+function frontLayer() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'grow-transition-layer';
+  canvas.setAttribute('aria-hidden', 'true');
+  const dpr = Math.min(getGraphicsBudget('section-transition').dprCap || 1, window.devicePixelRatio || 1);
+  canvas.width = Math.round(innerWidth * dpr);
+  canvas.height = Math.round(innerHeight * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  return { canvas, ctx };
+}
+const reach = (x, y) => Math.max(...[[0, 0], [innerWidth, 0], [0, innerHeight], [innerWidth, innerHeight]]
+  .map(([cx, cy]) => Math.hypot(cx - x, cy - y))) * 1.12 + 30;
+const lobes = () => Array.from({ length: 6 }, (_, i) => [3 + i * 2 + Math.round(Math.random() * 2), Math.random() * Math.PI * 2, 0.6 / (i + 1)]);
+const polygon = (edge) => `polygon(${edge.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',')})`;
+const CLOSED = 'polygon(0 0, 0 0, 0 0)';
+
+// Clears the inline styles a lens set, with the transitions held off for a frame so nothing fades back.
+function release(els) {
+  for (const el of els) {
+    el.style.transition = 'none';
+    el.style.clipPath = '';
+    el.style.opacity = '';
+  }
+  requestAnimationFrame(() => { for (const el of els) el.style.transition = ''; });
+}
+
+// Section to section. The front starts where the pointer last pressed, if that was the move, else in the
+// middle of the window (a wheel step, a key, Back or Forward).
+const SPREAD_MS = 640;
+let lastPress = null;
+addEventListener('pointerdown', (event) => { lastPress = [event.clientX, event.clientY, performance.now()]; }, { capture: true, passive: true });
+let spreading = null;
+
+export function spreadAllowed(from, to) {
+  return !reducedMotion && !getGraphicsBudget('section-transition').quiet &&
+    Boolean(from && to) && from !== to && from !== 'intro' && to !== 'intro';
+}
+
+function finishSpread() {
+  const run = spreading;
+  if (!run) return;
+  spreading = null;
+  cancelAnimationFrame(run.raf);
+  run.canvas.remove();
+  release([run.stage]);
+}
+
+export function spreadInto(stage) {
+  finishSpread();
+  if (!stage) return;
+  const press = lastPress && performance.now() - lastPress[2] < 800 ? lastPress : null;
+  const [ox, oy] = press || [innerWidth / 2, innerHeight / 2];
+  const radius = reach(ox, oy);
+  const seeds = lobes();
+  const { canvas, ctx } = frontLayer();
+  document.body.append(canvas);
+  stage.style.transition = 'none';
+  stage.style.opacity = '1';
+  stage.style.clipPath = CLOSED;
+  const started = performance.now();
+  const run = { stage, canvas, raf: 0 };
+  spreading = run;
+  const frame = (now) => {
+    if (spreading !== run) return;
+    const t = now - started;
+    const p = Math.min(1, t / SPREAD_MS);
+    const edge = frontPoints(seeds, ox, oy, radius * easeOut2(easeOut3(p) * 0.5 + p * 0.5), t);
+    stage.style.clipPath = polygon(edge);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalCompositeOperation = 'lighter';
+    const alpha = 1 - Math.min(1, p / 0.7);
+    if (alpha > 0.01) drawFront(ctx, edge, alpha);
+    ctx.globalCompositeOperation = 'source-over';
+    if (p >= 1) { finishSpread(); return; }
+    run.raf = requestAnimationFrame(frame);
+  };
+  run.raf = requestAnimationFrame(frame);
+}
+
+// The first landing of a visit. The network's layers stay closed behind the loading veil, then open from
+// the hub as the veil lifts: the backdrop, the pulses and spores, and the labels as the front reaches them.
+// Any input, a route change, a resize or a hidden tab opens them at once.
+const INOCULATE_MS = 1500;
+const INOCULATED_KEY = 'az-inoculated';
+let inoculating = null;
+
+export function finishInoculation() {
+  const run = inoculating;
+  if (!run) return;
+  inoculating = null;
+  cancelAnimationFrame(run.raf);
+  clearTimeout(run.cap);
+  run.canvas?.remove();
+  for (const [type, fn] of run.listeners) removeEventListener(type, fn, true);
+  release(run.layers);
+}
+
+export function inoculate() {
+  if (reducedMotion || getGraphicsBudget('section-transition').quiet) return;
+  if (!document.querySelector('#main.active-section') || (location.hash && location.hash !== '#main')) return;
+  const veil = document.getElementById('threshold');
+  if (!veil || veil.classList.contains('threshold--lifted')) return;
+  try {
+    if (sessionStorage.getItem(INOCULATED_KEY)) return;
+    sessionStorage.setItem(INOCULATED_KEY, '1');
+  } catch { /* storage blocked, so it grows on every landing */ }
+  const layers = ['bg', 'pulse-canvas', 'spore-canvas', 'reveal-canvas', 'network-nav']
+    .map((id) => document.getElementById(id)).filter(Boolean);
+  for (const el of layers) el.style.clipPath = CLOSED;
+  const run = { layers, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };
+  inoculating = run;
+  const skip = () => finishInoculation();
+  for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart']) {
+    run.listeners.push([type, skip]);
+    addEventListener(type, skip, true);
+  }
+  const seeds = lobes();
+  let started = 0, origin = null, radius = 0;
+  const frame = (now) => {
+    if (inoculating !== run) return;
+    if (!started) {
+      // Wait for the veil to lift and the hub to be placed (the labels are laid out once the cover is known).
+      const hub = document.querySelector('.network-sigil-node');
+      if (!veil.classList.contains('threshold--lifted') || !hub?.getBoundingClientRect().width) {
+        run.raf = requestAnimationFrame(frame);
+        return;
+      }
+      origin = center(hub);
+      radius = reach(origin[0], origin[1]);
+      ({ canvas: run.canvas, ctx: run.ctx } = frontLayer());
+      document.body.append(run.canvas);
+      started = now;
+    }
+    const t = now - started;
+    const p = Math.min(1, t / INOCULATE_MS);
+    const edge = frontPoints(seeds, origin[0], origin[1], radius * easeInOut(p), t);
+    const clip = polygon(edge);
+    for (const el of layers) el.style.clipPath = clip;
+    const { ctx } = run;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalCompositeOperation = 'lighter';
+    // The hub wakes first, a breath of light where the culture was set.
+    const wake = Math.max(0, 1 - t / 600);
+    if (wake > 0) {
+      ctx.globalAlpha = wake;
+      ctx.drawImage(glow, origin[0] - 40, origin[1] - 40, 80, 80);
+      ctx.globalAlpha = 1;
+    }
+    const alpha = 1 - Math.max(0, (p - 0.55) / 0.45);
+    if (alpha > 0.01) drawFront(ctx, edge, alpha);
+    ctx.globalCompositeOperation = 'source-over';
+    if (p >= 1) { finishInoculation(); return; }
+    run.raf = requestAnimationFrame(frame);
+  };
+  run.raf = requestAnimationFrame(frame);
+  // The veil lifts within its own cap whatever is loading, so this never holds the network shut.
+  run.cap = setTimeout(() => { if (inoculating === run && !started) finishInoculation(); }, 3000);
+}

@@ -72,7 +72,7 @@ import { portraitParticles } from './portrait-particles.js';
 import { initPlates } from './article-plates.js';
 import { warmNotebookPaint, warmPaperPaint } from './paint-warmup.js';
 import { startLandingPulses } from './landing-pulses.js';
-import { finishGrowTransition } from './grow-transition.js';
+import { finishGrowTransition, finishInoculation, growTransitionRunning, inoculate, spreadAllowed, spreadInto } from './grow-transition.js';
 import profileHalo from './profile-halo.js';
 import { PAPER_CLEANUP_MS, PAPER_SETTLE_MS, SECTION_SWITCH_ACTIVITY_MS } from './motion.js';
 import { BLOG_CATEGORIES, BLOG_CATEGORY_IDS, blogCategory, blogCategoryShortLine, decorateRimLabel, dormantCategories, setBlogPosts } from './blog-categories.js';
@@ -88,6 +88,8 @@ import {
 } from './graphics-governor.js';
 
 initGraphicsGovernor();
+// The first landing of a visit grows the network out of the hub (js/grow-transition.js).
+inoculate();
 
 function initImageErrorFallbacks() {
   document.querySelectorAll('img[data-hide-on-error]').forEach((image) => {
@@ -1347,11 +1349,19 @@ function closeTransientUi() {
 
 function showSectionWithEffects(sectionName, options = {}) {
   // Any other route change ends a landing transition at once, so the page lands where it is sent.
+  const cutIn = !options.grow && growTransitionRunning();
   if (!options.grow) finishGrowTransition();
+  // The first landing's growth holds while the router settles on the landing, and ends on a move away.
+  if (sectionName !== 'intro') finishInoculation();
   closeTransientUi();
+  const from = document.querySelector('.stage.active-section')?.dataset.section;
   // Switch the classes before the governor announces the new section, so canvases of the section
   // fading out see it as inactive and keep their last frame instead of resizing (which clears them).
   showSection(sectionName, options);
+  // Between two sections the incoming one spreads in behind a growth front (js/grow-transition.js).
+  if (!options.grow && !options.instant && !cutIn && spreadAllowed(from, sectionName)) {
+    spreadInto(document.querySelector(`.stage[data-section="${sectionName}"]`));
+  }
   releaseInactiveFeatureCanvasBuffers();
   setGraphicsSection(sectionName);
   markGraphicsActivity('section-transition', SECTION_SWITCH_ACTIVITY_MS);

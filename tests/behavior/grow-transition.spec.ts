@@ -61,6 +61,29 @@ test.describe('the landing transition', () => {
     await expect.poll(() => page.locator('#about').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   });
 
+  test('a move between two sections spreads in from the press and leaves nothing behind', async ({ page }) => {
+    await landing(page);
+    await page.locator('.network-node-label[data-node="about"]').click();
+    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
+    await page.locator('#about .section-nav-link[data-section="skills"]').click();
+    await expect(page.locator('#skills')).toHaveClass(/active-section/);
+    await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
+    expect(await page.locator('#skills').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
+    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
+    await expect(page).toHaveURL(/#skills$/);
+  });
+
+  test('the first landing grows the network out of the hub, once a visit', async ({ page }) => {
+    const layers = () => page.evaluate(() => ['bg', 'network-nav'].map((id) => document.getElementById(id)!.style.clipPath));
+    await landing(page);
+    await expect.poll(async () => (await layers()).every((clip) => /polygon/.test(clip))).toBe(true);
+    await expect.poll(layers, { timeout: 3000 }).toEqual(['', '']);
+    await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
+    expect(await layers()).toEqual(['', '']);
+  });
+
   for (const [name, setup] of [
     ['reduced motion', async (page: Page) => { await page.emulateMedia({ reducedMotion: 'reduce' }); await landing(page); }],
     ['Quiet', async (page: Page) => landing(page, 'quiet')]

@@ -227,3 +227,19 @@ html[data-graphics-effective-profile="quiet"] .spore-hub,
     display: none;
   }
 }
+
+/* At rest the stamp drops its box and keeps only its capitals, so it reads as a margin note rather than
+   a panel over the scene. The box comes back while it is pointed at, focused or open. */
+@media (pointer: fine) {
+  .graphics-control__bar,
+  .graphics-control__info {
+    transition: border-color 220ms ease, background-color 220ms ease;
+  }
+  .graphics-control:not(:hover, :focus-within) .graphics-control__bar {
+    border-color: transparent;
+    background: transparent;
+  }
+  .graphics-control:not(:hover, :focus-within) .graphics-control__info {
+    border-right-color: transparent;
+  }
+}

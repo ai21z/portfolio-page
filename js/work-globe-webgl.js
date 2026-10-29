@@ -370,6 +370,9 @@ function initWorkGlobe() {
 
   const pinGeometry = createPinGeometry(0.02, 1.0, quality.pinSegments);
   workPinSystem = new WorkPinSystem(gl, WORK_LOCATIONS, pinGeometry);
+  // The globe opens on home, Barcelona toward the viewer and Greece beside it, then drifts on its idle spin.
+  const home = workPinSystem.pins.find((pin) => pin.key === 'spain');
+  if (home) rotation = faceRotationFor(home.basePos, 0);
 
   dataStreamSystem = new DataStreamSystem(gl, quality.dataParticles);
 

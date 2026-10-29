@@ -682,8 +682,9 @@ function render(deltaTime) {
     gl.bindTexture(gl.TEXTURE_2D, fogTexture);
     gl.uniform1i(fogUniforms.uFogTex, 1);
 
-    gl.uniform3f(fogUniforms.uFogTint, 0.15, 0.22, 0.20); // Lighter, more subtle green
-    gl.uniform1f(fogUniforms.uFogStrength, 0.20); // Reduced from 0.35 - much more transparent
+    // A breath of fog, not a veil: at 0.20 it washed the abyss ocean to a mid green.
+    gl.uniform3f(fogUniforms.uFogTint, 0.12, 0.18, 0.16);
+    gl.uniform1f(fogUniforms.uFogStrength, 0.08);
     gl.uniform2f(fogUniforms.uFogScroll, 0.002, 0.0007);
     gl.uniform1f(fogUniforms.uTime, time);
 
@@ -712,7 +713,7 @@ function render(deltaTime) {
     gl.uniform1i(lightningUniforms.uLightningTex, 2);
 
     gl.uniform3f(lightningUniforms.uLightningColor, 0.35, 0.70, 0.60); // Softer teal
-    gl.uniform1f(lightningUniforms.uLightningGain, 0.50); // Reduced from 0.9 - much more subtle
+    gl.uniform1f(lightningUniforms.uLightningGain, 0.32); // a pulse in the veins, kept under the coastline
     gl.uniform2f(lightningUniforms.uLightningScroll, 0.005, -0.001);
     gl.uniform1f(lightningUniforms.uTime, time);
     gl.uniform1f(lightningUniforms.uFlickerFreq, 0.5);

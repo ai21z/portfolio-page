@@ -60,8 +60,9 @@ export class SporeSystem {
   emitBurst(originPositions, intensity = 1.0) {
     if (this.emissionCooldown > 0) return;
     
-    const tinyParticles = Math.floor(250 + intensity * 350);
-    const regularParticles = Math.floor(50 + intensity * 100);
+    // A few spores a tip, so a burst reads as the network breathing and not as a spray over the pole.
+    const tinyParticles = Math.floor(24 + intensity * 36);
+    const regularParticles = Math.floor(5 + intensity * 10);
     const emitted = [];
     
     for (const origin of originPositions) {

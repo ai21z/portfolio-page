@@ -1589,7 +1589,8 @@ async function initBlogNetwork(){
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE); // Additive
 
-        gl.uniform1f(_uCache.seg['uHighlight'], 1.15);
+        // Added over the drawn network, so a fraction of its colour lifts the culture without burning it white.
+        gl.uniform1f(_uCache.seg['uHighlight'], 0.45);
         gl.bindVertexArray(vaoByHub[hoveredHubId].vao);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, vaoByHub[hoveredHubId].count);
         gl.bindVertexArray(null);

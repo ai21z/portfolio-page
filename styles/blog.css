@@ -215,9 +215,9 @@
   padding: 10px 6px 8px;
   border: 1px solid var(--chrome-rule);
   border-radius: 2px;
-  background: rgba(9, 10, 12, 0.97);
+  background: #090a0c;
   box-shadow:
-    inset 0 0 0 3px rgba(9, 10, 12, 0.97),
+    inset 0 0 0 3px #090a0c,
     inset 0 0 0 4px rgba(230, 227, 216, 0.1),
     0 18px 40px rgba(0, 0, 0, 0.65);
   scrollbar-width: thin;
@@ -1793,8 +1793,9 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
   padding: 80px 24px;
   color: var(--bone);
   background-color: var(--abyss);
-  /* Post pages load no mono, so their chrome capitals are set in the reading face. */
-  --post-label: var(--font-read);
+  /* The chrome capitals are the mono, as in the in-app reader, so a post opened from a link and one
+     opened in the Blog view read as one page. */
+  --post-label: var(--font-data);
 }
 
 .article-container:focus {
@@ -1883,6 +1884,77 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
 
 .article-site-nav + .article-container {
   padding-top: 36px;
+}
+
+/* Where the views keep their rail, the post page wears the reader's chrome: the name in the stamp box
+   at the top left where the reader has MAP and the cultures, and the five views on the right-hand rail
+   in the mono, the open one marked by its bead in a ring. */
+@media not ((max-width: 900px) or ((max-width: 1199px) and (max-aspect-ratio: 1/1)) or ((max-width: 1366px) and (pointer: coarse))) {
+  .article-site-nav {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: block;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: none;
+    pointer-events: none;
+  }
+
+  .article-site-nav .article-site-home {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    padding: 14px 18px;
+    background: var(--chrome-back);
+    border: 1px solid var(--chrome-rule);
+    border-radius: 2px;
+    font-family: var(--font-data);
+    font-size: var(--text-floor);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--chrome-ink);
+    pointer-events: auto;
+  }
+
+  .article-site-nav .article-site-home:hover {
+    color: var(--chrome-ink-hi);
+  }
+
+  .article-site-links {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 24px;
+    pointer-events: auto;
+  }
+
+  .article-site-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding-right: 22px;
+    margin-right: 0;
+    font-family: var(--font-data);
+  }
+
+  .article-site-links a::after {
+    left: auto;
+    right: 4px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0;
+    outline-offset: 3px;
+  }
+
+  .article-site-nav + .article-container {
+    padding-top: 120px;
+  }
 }
 
 /* The reader shares everything below with the post page. It has the mono loaded, so its capitals
@@ -2077,7 +2149,10 @@ body:has(#blog.active-section) :is(#network-nav, #bg, #pulse-canvas, #spore-canv
   border: 1px solid rgba(201, 194, 179, 0.15);
   border-radius: 4px;
   padding: 16px;
-  overflow-x: auto;
+  /* The blocks are records and transcripts, so long lines wrap instead of running out under the edge
+     with nothing to say there is more. A word too long for the line still breaks. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   margin-bottom: 24px;
 }
 

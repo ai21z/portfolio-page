@@ -782,7 +782,8 @@ body:has(#contact.stage.active-section) .dish-labels {
   /* The label line above each field focuses it too, so a field is two ruled lines to tap. */
   .notebook-input,
   .notebook-textarea {
-    font-size: clamp(0.95rem, 4vw, 1.05rem);
+    /* 16 px at least, or iOS Safari zooms the page when a field takes focus. */
+    font-size: clamp(1rem, 4vw, 1.05rem);
   }
 
   .notebook-textarea {

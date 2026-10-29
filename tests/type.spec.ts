@@ -32,17 +32,18 @@ test('the fonts ship with their licences, and both article pages preload Special
   }
 });
 
-test('posts read in Literata under Special Elite headings, in the page and in the reader, and load no mono', async ({ page }) => {
+test('posts read in Literata under Special Elite headings, in the page and in the reader, with mono labels as in the reader', async ({ page }) => {
   const mono: string[] = [];
   page.on('request', (request) => { if (request.url().includes('jetbrains-mono')) mono.push(request.url()); });
   await page.goto('/blog/codex/fail-fast-learn-faster');
   const paragraph = page.locator('.article-content p').first();
   expect(await family(paragraph)).toMatch(/^Literata,/);
   expect(await family(page.locator('.article-title'))).toMatch(/^Special Elite/);
-  // The post's labels stay in the reading face: the mono would be one more file before the first paint.
-  expect(await family(page.locator('.article-meta'))).toMatch(/^Literata,/);
+  // The post's labels are the reader's mono, so a post opened from a link matches one opened in Blog. That
+  // is the one regular cut, 19 KB, and never the semibold the dish's rim labels use.
+  expect(await family(page.locator('.article-meta'))).toMatch(/^JetBrains Mono,/);
   expect(await loaded(page, 'Literata')).toBe(true);
-  expect(mono).toEqual([]);
+  expect(mono.every((url) => url.includes('jetbrains-mono-400'))).toBe(true);
 
   await page.goto('/index.html#blog/codex/fail-fast-learn-faster');
   await expect(page.locator('#blog-article-content h1')).toBeVisible();

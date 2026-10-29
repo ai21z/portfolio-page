@@ -146,7 +146,9 @@ void main(){
   vec2 dir = normalize(p1-p0 + vec2(1e-6,0.0));
   vec2 perp = vec2(-dir.y, dir.x);
   float hw = aW*0.5;
-  vec2 world = mix(p0,p1,aUS.x) + perp * (aUS.y*hw);
+  // Pad the quad past the capsule so its round caps, wrinkled edge and soft falloff are not cut square.
+  float pad = hw + 1.5;
+  vec2 world = mix(p0 - dir*pad, p1 + dir*pad, aUS.x) + perp * (aUS.y*pad);
   vec2 screen = world*uScale + uOffset;
   vec2 clip = (screen/uRes)*2.0 - 1.0;
   clip.y = -clip.y; // Flip Y: JSON has Y-down (top-left origin), NDC has Y-up
@@ -192,7 +194,9 @@ void main(){
   // Early discard for Petri dish clipping
   petriClip();
 
-  vec2 pix = gl_FragCoord.xy;
+  // gl_FragCoord is in buffer pixels, the fit (uOffset, uScale, uRes) in CSS pixels. Without the divide
+  // a 2x screen samples the capsule at twice its position and draws almost none of the network.
+  vec2 pix = gl_FragCoord.xy / uDpr;
   pix.y = uRes.y - pix.y; // Flip Y back: gl_FragCoord has Y-up, but we need Y-down to match network space
   vec2 worldShifted = (pix - uOffset)/uScale;      // world coords with artistic shift applied
   vec2 world = worldShifted - uShift;              // underlying network space (no shift)
@@ -258,7 +262,7 @@ void main(){
   // Apply highlight (clamped to 1.25x max)
   col *= min(uHighlight, 1.25);
 
-  col *= 0.5;
+  col *= 0.72;
 
   // grade opacity by thickness: fine mesh recedes, trunks read solid (the 9b look)
   o = vec4(clamp(col, 0.0, 1.0), alpha * (0.20 + 0.72 * clamp(vThick, 0.0, 1.0)));
@@ -560,7 +564,7 @@ async function initBlogNetwork(){
     for(const pt of p){ const w = pt[2]||1; if(w>maxW) maxW = w; }
   });
 
-  const VEIN_WIDTH_K = 0.5;   // overall vein thinness (0.5 = half the generated diameter)
+  const VEIN_WIDTH_K = 0.75;  // overall vein thinness (0.75 of the generated diameter, the 9b weight)
   (data.paths||[]).forEach((p, i)=>{
     if(p.length<2) return;
     const meta = (data.paths_meta&&data.paths_meta[i])||{};
@@ -843,52 +847,6 @@ async function initBlogNetwork(){
     const ea = 112 * Math.PI / 180, eR = r + 20;
     frag.appendChild(el('circle', { class: 'dish-ember', cx: cx + eR * Math.cos(ea), cy: cy + eR * Math.sin(ea), r: 3.4 }));
 
-    const dropGrad = el('radialGradient', { id: 'dishDrop', cx: '0.42', cy: '0.40', r: '0.62' });
-    dropGrad.innerHTML =
-      '<stop offset="0%"  stop-color="rgba(210,228,222,0.03)"/>' +
-      '<stop offset="55%" stop-color="rgba(200,220,214,0.06)"/>' +
-      '<stop offset="82%" stop-color="rgba(228,242,236,0.18)"/>' +   // bright meniscus edge
-      '<stop offset="100%" stop-color="rgba(150,175,168,0.06)"/>';
-    const dropSym = el('symbol', { id: 'dishDropBead', viewBox: '-1.4 -1.4 2.8 2.8', overflow: 'visible' });
-    dropSym.innerHTML =
-      '<circle cx="0.18" cy="0.24" r="1.02" fill="rgba(0,0,0,0.16)"/>' +                                   // cast shadow
-      '<circle cx="0" cy="0" r="1" fill="url(#dishDrop)"/>' +                                              // clear lens
-      '<circle cx="0" cy="0" r="1" fill="none" stroke="rgba(228,242,236,0.22)" stroke-width="0.05"/>' +   // rim
-      '<ellipse cx="-0.34" cy="-0.36" rx="0.30" ry="0.20" fill="rgba(255,255,255,0.70)"/>' +              // specular
-      '<circle cx="0.22" cy="0.32" r="0.08" fill="rgba(255,255,255,0.26)"/>';                              // counter-glint
-    defs.append(dropGrad, dropSym);
-
-    const lid = el('g', { class: 'dish-lid' });
-    let dseed = 0x9e3779b9 ^ Math.round(r);                  // stable per dish size
-    const drnd = () => { dseed |= 0; dseed = (dseed + 0x6D2B79F5) | 0;
-      let t = Math.imul(dseed ^ (dseed >>> 15), 1 | dseed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const placeDrop = (dx, dy, dr, cls) => {
-      const u = el('use', { x: dx - 1.4 * dr, y: dy - 1.4 * dr, width: 2.8 * dr, height: 2.8 * dr });
-      if (cls) u.setAttribute('class', cls);
-      u.setAttribute('href', '#dishDropBead');
-      u.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#dishDropBead');
-      lid.appendChild(u);
-    };
-    const NBEADS = Math.round(r * 0.20);
-    for (let i = 0; i < NBEADS; i++) {
-      const dr = 1.2 + Math.pow(drnd(), 3) * 16;
-      const ang = drnd() * Math.PI * 2;
-      const rad = (r - dr - 4) * Math.sqrt(0.12 + 0.88 * drnd());
-      placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
-    }
-    const NMICRO = Math.round(r * 0.9);
-    for (let i = 0; i < NMICRO; i++) {
-      const dr = 0.5 + Math.pow(drnd(), 2) * 2.6;
-      const ang = drnd() * Math.PI * 2;
-      const rad = (r - dr - 2) * Math.sqrt(drnd());          // uniform across the disc
-      placeDrop(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, dr);
-    }
-    // (c) a couple of beads that drift slowly (reduced-motion gated in CSS)
-    placeDrop(cx + r * 0.34, cy - r * 0.42, 8.5, 'dish-drop-drift');
-    placeDrop(cx - r * 0.46, cy + r * 0.28, 7.0, 'dish-drop-drift2');
-    frag.appendChild(lid);
 
     // Bind to the dish once. Resize replaces its children.
     if (!buildDish.__wired) {

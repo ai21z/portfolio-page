@@ -211,6 +211,9 @@ export class WorkPinSystem {
   
   update(dt, time) {
     const isMobile = isCompact();
+    // Under reduced motion the scene's clock is held (dt 0), so a pin takes its hover state at once
+    // instead of easing toward it over the frames that input happens to draw.
+    const ease = dt > 0 ? 0.12 : 1;
 
     this.pins.forEach((pin, i) => {
       let targetHeight = pin.hovered ? pin.targetHeight * 1.2 : pin.targetHeight;
@@ -225,7 +228,7 @@ export class WorkPinSystem {
       if (Math.abs(heightDiff) < 0.001) {
         pin.currentHeight = targetHeight;
       } else {
-        pin.currentHeight += heightDiff * 0.12;
+        pin.currentHeight += heightDiff * ease;
       }
       this.instanceHeightData[i] = pin.currentHeight;
       
@@ -241,7 +244,7 @@ export class WorkPinSystem {
       if (Math.abs(scaleDiff) < 0.001) {
         pin.currentScale = targetScale;
       } else {
-        pin.currentScale += scaleDiff * 0.12;
+        pin.currentScale += scaleDiff * ease;
       }
       this.instanceScaleData[i] = pin.currentScale;
       

@@ -74,10 +74,11 @@ export class MoonOrbitSystem {
     gl.bindVertexArray(null);
   }
   
-  // Held still (reduced motion), the moons keep their hover response but drop the compact pulse and
-  // the shimmer, which run on the wall clock.
+  // Held still (reduced motion), the moons keep their hover response, taken at once instead of eased,
+  // and drop the compact pulse and the shimmer, which run on the wall clock.
   update(dt, still = false) {
     const isMobile = isCompact();
+    const ease = (k) => (still ? 1 : k);
 
     this.moons.forEach(moon => {
       if (!moon.paused) {
@@ -96,28 +97,28 @@ export class MoonOrbitSystem {
       if (Math.abs(scaleDiff) < 0.001) {
         moon.scale = targetScale;
       } else {
-        moon.scale += scaleDiff * 0.12;
+        moon.scale += scaleDiff * ease(0.12);
       }
       
       const breathDiff = moon.targetBreathIntensity - moon.breathIntensity;
       if (Math.abs(breathDiff) < 0.001) {
         moon.breathIntensity = moon.targetBreathIntensity;
       } else {
-        moon.breathIntensity += breathDiff * 0.08;
+        moon.breathIntensity += breathDiff * ease(0.08);
       }
       
       const hoverDiff = moon.targetHoverAmount - moon.hoverAmount;
       if (Math.abs(hoverDiff) < 0.001) {
         moon.hoverAmount = moon.targetHoverAmount;
       } else {
-        moon.hoverAmount += hoverDiff * 0.15;
+        moon.hoverAmount += hoverDiff * ease(0.15);
       }
       
       const eyeDiff = moon.targetEyeDilation - moon.eyeDilation;
       if (Math.abs(eyeDiff) < 0.001) {
         moon.eyeDilation = moon.targetEyeDilation;
       } else {
-        moon.eyeDilation += eyeDiff * 0.12;
+        moon.eyeDilation += eyeDiff * ease(0.12);
       }
       
       if (moon.shimmerActive && still) {

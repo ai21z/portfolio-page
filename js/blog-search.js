@@ -304,9 +304,13 @@ export function initBlogSearch({ openPost }) {
   // The dish rebuilds its nuclei on the same event, so this waits a turn for the new ones.
   window.addEventListener('blog:posts', () => setTimeout(() => { if (!results.hidden) render(); }));
 
-  // Slash reaches the field from anywhere on the dish, as on most sites with a search.
+  // Ctrl K, or Command K on a Mac, reaches the field from anywhere on the dish. A modifier, so speech input
+  // or a stray key cannot set it off (a single character shortcut fails WCAG 2.1.4).
+  const mac = /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform || navigator.platform || '');
+  const key = root.querySelector('.blog-search-key');
+  if (key && mac) key.textContent = '⌘K';
   document.addEventListener('keydown', event => {
-    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.toLowerCase() !== 'k' || !(mac ? event.metaKey : event.ctrlKey) || event.altKey || event.shiftKey) return;
     const blog = document.getElementById('blog');
     if (!blog?.classList.contains('active-section') || blog.dataset.mode !== 'map' || !input.getClientRects().length) return;
     if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;

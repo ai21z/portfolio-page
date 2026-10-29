@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// The Field Notes search: slash reaches it, an empty field lists every note, words narrow the list and
+// The Field Notes search: Ctrl K or Command K reaches it, an empty field lists every note, words narrow the list and
 // show where they were found, the dish sifts with the results, and Enter or a click reads the post.
 
 async function openDish(page: Page) {
@@ -18,11 +18,11 @@ async function openDish(page: Page) {
   await expect(page.locator('#blog-network-canvas')).toHaveClass(/is-drawn/);
 }
 
-test('slash opens the search, and an empty field lists every note, newest first', async ({ page }) => {
+test('Ctrl K or Command K opens the search, and an empty field lists every note, newest first', async ({ page }) => {
   await openDish(page);
   const search = page.getByRole('searchbox', { name: 'Search the notes' });
   await expect(search).toBeVisible();
-  await page.keyboard.press('/');
+  await page.keyboard.press('ControlOrMeta+k');
   await expect(search).toBeFocused();
   await expect(search).toHaveValue('');
   const registry = await (await page.request.get('/blog/articles.json')).json();
@@ -42,7 +42,7 @@ test('slash opens the search, and an empty field lists every note, newest first'
 
 test('words narrow the notes, mark where they were found, and sift the dish', async ({ page }) => {
   await openDish(page);
-  await page.keyboard.press('/');
+  await page.keyboard.press('ControlOrMeta+k');
   await page.keyboard.type('repetition guard');
   const hits = page.locator('.blog-search-hit');
   await expect(hits).toHaveCount(1);
@@ -100,7 +100,7 @@ test('a result is a real link to its page, and a click reads it in place', async
 
 test('the open search passes the automated accessibility audit', async ({ page }) => {
   await openDish(page);
-  await page.keyboard.press('/');
+  await page.keyboard.press('ControlOrMeta+k');
   await page.keyboard.type('java');
   await expect(page.locator('.blog-search-hit').first()).toBeVisible();
   const result = await new AxeBuilder({ page }).include('.blog-search')

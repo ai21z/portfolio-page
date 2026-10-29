@@ -124,7 +124,7 @@
 }
 
 /* The search (js/blog-search.js): one ruled line, like the entry line of an index card, with a lens
-   and the slash that reaches it. Its results open on a plate over the legend, never pushing it down. */
+   and the Ctrl K (Command K on a Mac) that reaches it. Its results open on a plate over the legend, never pushing it down. */
 .blog-search {
   position: relative;
   margin: 2px 8px 18px;

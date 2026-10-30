@@ -162,6 +162,10 @@ let earthTexture = null;
 let fogTexture = null;
 let lightningTexture = null;
 let texturesReady = false;
+// The land as a signed distance field (scripts/build-globe-land-sdf.mjs). Until it has loaded the
+// shader finds the land from the earth map, as it did before the field.
+let landTexture = null;
+let landReady = false;
 
 /**
  * Cache uniform locations for a program to avoid getUniformLocation calls every frame.
@@ -261,7 +265,7 @@ function initWorkGlobe() {
   }
 
   // Cache uniform locations for all programs (avoids getUniformLocation every frame)
-  cacheUniforms(globeProgram, 'globe', ['uProjection', 'uView', 'uModel', 'uTime', 'uDaymap', 'uUseDaymap']);
+  cacheUniforms(globeProgram, 'globe', ['uProjection', 'uView', 'uModel', 'uTime', 'uDaymap', 'uUseDaymap', 'uLand', 'uUseLand']);
   cacheUniforms(atmosphereProgram, 'atmosphere', ['uProjection', 'uView', 'uModel']);
   cacheUniforms(fogProgram, 'fog', ['uProjection', 'uView', 'uModel', 'uFogTex', 'uFogTint', 'uFogStrength', 'uFogScroll', 'uTime']);
   cacheUniforms(lightningProgram, 'lightning', ['uProjection', 'uView', 'uModel', 'uLightningTex', 'uLightningColor', 'uLightningGain', 'uLightningScroll', 'uTime', 'uFlickerFreq', 'uFlickerDuty']);
@@ -412,6 +416,14 @@ function initWorkGlobe() {
   earthTexture = loadTexture(gl, './artifacts/work-page/ominus-earth.webp', {
     ...textureOptions,
     fallbackUrl: './artifacts/work-page/ominus-earth.png'
+  });
+
+  landTexture = loadTexture(gl, './artifacts/work-page/ominus-earth-land.webp', {
+    mipmap: true,
+    data: true,
+    anisotropy: textureOptions.anisotropy,
+    fallbackUrl: './artifacts/work-page/ominus-earth-land.png',
+    onLoad: () => { landReady = true; }
   });
 
   fogTexture = loadTexture(gl, './artifacts/work-page/ominus-fog-cloud.webp', {
@@ -588,6 +600,15 @@ function render(deltaTime) {
     gl.uniform1i(globeUniforms.uUseDaymap, 1);
   } else {
     gl.uniform1i(globeUniforms.uUseDaymap, 0);
+  }
+  if (landReady && landTexture) {
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, landTexture);
+    gl.uniform1i(globeUniforms.uLand, 1);
+    gl.uniform1i(globeUniforms.uUseLand, 1);
+    gl.activeTexture(gl.TEXTURE0);
+  } else {
+    gl.uniform1i(globeUniforms.uUseLand, 0);
   }
 
   gl.drawElements(gl.TRIANGLES, sphereVertexCount, gl.UNSIGNED_SHORT, 0);
@@ -1575,6 +1596,10 @@ function cleanupWorkGlobe() {
       cancelTextureLoad(earthTexture);
       gl.deleteTexture(earthTexture);
     }
+    if (landTexture) {
+      cancelTextureLoad(landTexture);
+      gl.deleteTexture(landTexture);
+    }
     if (fogTexture) {
       cancelTextureLoad(fogTexture);
       gl.deleteTexture(fogTexture);
@@ -1655,6 +1680,8 @@ function cleanupWorkGlobe() {
   dataStreamSystem = null;
   moonOrbitSystem = null;
   earthTexture = null;
+  landTexture = null;
+  landReady = false;
   fogTexture = null;
   lightningTexture = null;
   texturesReady = false;

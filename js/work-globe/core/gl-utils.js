@@ -102,10 +102,12 @@ export function loadTexture(gl, url, options = {}) {
   const bitmapSource = async () => {
     if (typeof createImageBitmap !== 'function') return null;
     const largest = Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height);
-    if (options.maxSize && largest > options.maxSize) return null;
+    if (options.maxSize && !options.data && largest > options.maxSize) return null;
     try {
       const blob = await (await fetch(image.currentSrc || image.src)).blob();
-      return await createImageBitmap(blob, { premultiplyAlpha: 'none' });
+      return await createImageBitmap(blob, options.data
+        ? { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }
+        : { premultiplyAlpha: 'none' });
     } catch {
       return null;
     }
@@ -128,7 +130,15 @@ export function loadTexture(gl, url, options = {}) {
     // Don't flip Y - we handle orientation in UV generation
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap || textureSource());
+    if (options.data) {
+      // A data texture (a distance field) keeps its values exactly: no colour management, no
+      // resizing through a canvas, and one channel, which is all it holds.
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, bitmap || image);
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap || textureSource());
+    }
     bitmap?.close();
     
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 

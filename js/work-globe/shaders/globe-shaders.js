@@ -33,6 +33,12 @@ out vec4 fragColor;
 uniform float uTime;
 uniform sampler2D uDaymap;
 uniform bool uUseDaymap;
+// The land as a signed distance field in map texels, 0.5 at the coast, land above
+// (scripts/build-globe-land-sdf.mjs). A field filters smoothly, so the coast is cut by its screen
+// derivative and stays one clean edge at any size the globe is drawn at.
+uniform sampler2D uLand;
+uniform bool uUseLand;
+const float LAND_RANGE = 16.0;  // texels from the coast to either end of the stored values
 
 // The dish's language on a globe: abyss ocean, moss land, a bone coastline drawn as a line, engraved
 // hatching where the land turns from the light, a faint graticule like the dish's rim marks, and a teal
@@ -59,12 +65,19 @@ float lines(float f, float w) {
 void main() {
   vec3 baseColor;
   float landness;
+  // Distance from the coast in map texels, and how many of them one screen pixel spans.
+  float coastDist = (texture(uLand, vUv).r * 255.0 - 128.0) / 127.0 * LAND_RANGE;
+  float texelsPerPixel = max(fwidth(coastDist), 1e-4);
 
   if (uUseDaymap) {
     vec3 sampledColor = texture(uDaymap, vUv).rgb;
-    // The land mask reads a softer mip, so the coast is one clean line and not the map's speckle.
-    float luminance = dot(texture(uDaymap, vUv, 1.5).rgb, vec3(0.299, 0.587, 0.114));
-    landness = smoothstep(LAND_LUMA_LO, LAND_LUMA_HI, luminance);
+    if (uUseLand) {
+      landness = smoothstep(-0.5, 0.5, coastDist / texelsPerPixel);
+    } else {
+      // Before the field has loaded, the land is read from a softer mip of the map.
+      float luminance = dot(texture(uDaymap, vUv, 1.5).rgb, vec3(0.299, 0.587, 0.114));
+      landness = smoothstep(LAND_LUMA_LO, LAND_LUMA_HI, luminance);
+    }
     vec3 targetColor = mix(OCEAN_COLOR, LAND_COLOR, landness);
     baseColor = mix(sampledColor, targetColor, PALETTE_STRENGTH);
   } else {
@@ -89,9 +102,26 @@ void main() {
   float hatch = 1.0 - lines(vUv.y * 220.0 + vUv.x * 18.0, 0.36);
   color *= 1.0 - 0.45 * hatch * shade;
 
-  // The coastline, the iso-line where land meets sea, drawn as a bone line, brighter in the light.
-  float coast = 1.0 - smoothstep(0.0, fwidth(landness) * 1.4 + 1e-4, abs(landness - 0.5));
+  // The coastline, drawn as a bone line, brighter in the light. From the field it keeps one width on
+  // screen, about a pixel and a half, wherever the coast faces.
+  float coast = uUseLand
+    ? 1.0 - smoothstep(0.55, 1.25, abs(coastDist) / texelsPerPixel)
+    : 1.0 - smoothstep(0.0, fwidth(landness) * 1.4 + 1e-4, abs(landness - 0.5));
   color = mix(color, COAST_COLOR * (0.35 + 0.65 * lighting), coast * 0.85);
+
+  // Water-lines, as an engraved chart draws them: fine lines following the coast out to sea every
+  // WATERLINE_STEP texels, a pixel wide on screen, fading with distance and dropped where they would
+  // run closer than about three pixels apart.
+  if (uUseLand) {
+    const float WATERLINE_STEP = 3.0;
+    float sea = 1.0 - smoothstep(-0.5, 0.0, coastDist);
+    float fade = 1.0 - smoothstep(2.0, 11.0, -coastDist);
+    float room = smoothstep(2.5, 4.0, WATERLINE_STEP / texelsPerPixel);
+    float step = -coastDist / WATERLINE_STEP;
+    float offLine = abs(step - floor(step + 0.5)) * WATERLINE_STEP / texelsPerPixel;
+    float wl = 1.0 - smoothstep(0.35, 0.9, offLine);
+    color += COAST_COLOR * wl * sea * fade * room * 0.22 * (0.35 + 0.65 * lighting);
+  }
 
   // A faint graticule every 15 degrees, an instrument's marks.
   float grid = max(1.0 - lines(vUv.x * 24.0, 0.48), 1.0 - lines(vUv.y * 12.0, 0.48));

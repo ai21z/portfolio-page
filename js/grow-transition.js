@@ -464,9 +464,9 @@ export function spreadInto(stage) {
 
 // The first landing of a visit. The network's layers stay closed behind the loading veil, which then lifts
 // without waiting for the backdrop. Once the veil is gone and the backdrop has loaded, a short dark beat,
-// then the network opens from the hub: the backdrop, the pulses and the labels as the front reaches them,
-// and the spores settle once it has grown. Any input, a route change, a resize or a hidden tab opens them
-// at once.
+// then the network opens from the hub: the backdrop and the pulses as the front reaches them, and the
+// spores settle once it has grown. The section labels stand from the start, so the way on is never held
+// back. Any input, a route change, a resize or a hidden tab opens it all at once.
 const INOCULATE_MS = 2400;
 const INOCULATE_BEAT_MS = 150;
 const SPORES_IN_MS = 600;
@@ -506,12 +506,10 @@ export function inoculate() {
   } catch { /* storage blocked, so it grows on every landing */ }
   // Read by the veil's script in index.html at DOMContentLoaded, after this module has run.
   window.__inoculating = true;
-  const layers = ['bg', 'pulse-canvas', 'reveal-canvas', 'network-nav']
+  const layers = ['bg', 'pulse-canvas', 'reveal-canvas']
     .map((id) => document.getElementById(id)).filter(Boolean);
   for (const el of layers) el.style.clipPath = CLOSED;
-  // The spores wait out of sight instead of growing in the front. A fifth full-window layer redrawn under
-  // a clip that changes every frame was past what the GPU keeps at 2x, and the portrait's image dropped
-  // out for a frame or for half a second.
+  // The spores wait out of sight and fade in once it has grown, which keeps the clipped layers to three.
   const spores = document.getElementById('spore-canvas');
   if (spores) spores.style.visibility = 'hidden';
   const run = { layers, spores, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };

@@ -75,12 +75,15 @@ test.describe('the landing transition', () => {
   });
 
   test('the first landing grows the network out of the hub, once a visit', async ({ page }) => {
-    const layers = () => page.evaluate(() => ['bg', 'network-nav'].map((id) => document.getElementById(id)!.style.clipPath));
+    const layers = () => page.evaluate(() => ['bg', 'reveal-canvas'].map((id) => document.getElementById(id)!.style.clipPath));
+    // The section labels are never clipped, so the way on stands from the first frame.
+    const nav = () => page.evaluate(() => document.getElementById('network-nav')!.style.clipPath);
     await landing(page);
     const spores = () => page.evaluate(() => { const s = document.getElementById('spore-canvas')!.style; return [s.visibility, s.opacity, s.transition]; });
     await expect.poll(async () => (await layers()).every((clip) => /polygon/.test(clip))).toBe(true);
     // The spores wait out of sight while it grows, then fade in and leave no inline style behind.
     expect((await spores())[0]).toBe('hidden');
+    expect(await nav()).toBe('');
     await expect.poll(layers, { timeout: 6000 }).toEqual(['', '']);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
     await expect.poll(spores, { timeout: 2000 }).toEqual(['', '', '']);

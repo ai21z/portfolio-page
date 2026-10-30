@@ -80,7 +80,9 @@ void main() {
   vec3 lightDir = normalize(vec3(0.5, 0.3, 0.5));
   float diffuse = max(dot(n, lightDir), 0.0);
   float lighting = 0.16 + diffuse * 0.84;
-  vec3 color = baseColor * lighting;
+  // Land keeps a higher floor than the sea, so on the dark side it still reads as land and not as water.
+  float landLighting = 0.40 + diffuse * 0.60;
+  vec3 color = baseColor * mix(lighting, landLighting, landness);
 
   // Engraved hatching on the land, denser as it turns from the light.
   float shade = landness * (1.0 - smoothstep(0.1, 0.75, diffuse));

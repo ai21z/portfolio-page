@@ -4,16 +4,17 @@
 // drawn, or two frames for the paper views) the lens opens where the flight arrives. Its edge is a growth
 // front: lobed, thick and bright at the tips, glowing inward, with strands reaching past it. The flown
 // network runs through the lens too, so it is never seen at two scales, and gives way to the backdrop at
-// its own scale behind the section. Readable by about 0.5 s, done by 0.9 s.
+// its own scale behind the section. Readable by about 0.5 s, done by 0.9 s. The section's own pieces build
+// in as the front reaches each (arrive), so it is never met finished, settled by about 1.1 s.
 //
 // Any other route change while it runs (Back or Forward, a wheel step, a link, a resize, a hidden tab)
 // finishes it at once, so the page always ends where the router says. Reduced motion and Quiet keep the
 // plain switch.
 //
 // The same front carries the other moves. Between two sections the incoming one spreads in from where the
-// move began, over the outgoing one as it fades below (spreadInto). On the first landing of a visit the
-// network grows out of the hub across the backdrop while the name, portrait and words stand as they load
-// (inoculate).
+// move began, over the outgoing one as it fades below (spreadInto), its pieces building in the same way.
+// On the first landing of a visit the network grows out of the hub across the backdrop while the name,
+// portrait and words stand as they load (inoculate).
 import { LOCKED_ROUTES } from './state.js';
 import { getGraphicsBudget } from './graphics-governor.js';
 import { reducedMotion } from './motion.js';
@@ -32,6 +33,8 @@ const FRONT_POINTS = 120;
 
 const easeOut2 = (t) => 1 - (1 - t) * (1 - t);
 const easeOut3 = (t) => 1 - Math.pow(1 - t, 3);
+// How far a lens has opened, from 0 to 1, at progress t.
+const lensOpen = (t) => { const p = Math.min(1, t); return easeOut2(easeOut3(p) * 0.5 + p * 0.5); };
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const frames = (n) => new Promise((resolve) => { const step = (k) => (k ? requestAnimationFrame(() => step(k - 1)) : resolve()); step(n); });
 const center = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
@@ -63,6 +66,68 @@ function prepareBackdropCopy() {
   backdropCopy.decode?.().catch(() => {});
 }
 window.addEventListener('load', () => setTimeout(prepareBackdropCopy, 1500), { once: true });
+
+// What builds in as the front reaches it, so a section is not met finished. Each keyframe list starts from
+// its own state and ends on whatever the page has, so an element at rest keeps its own opacity and place.
+// The cards drop onto the ring and settle, the seal presses in once the sheet has risen.
+const RISE = [{ opacity: 0, translate: '0 12px', offset: 0 }];
+const SETTLE = [{ opacity: 0, translate: '0 -26px', scale: '1.05', offset: 0 }, { translate: '0 3px', scale: '0.995', offset: 0.7 }];
+const LENS = [{ opacity: 0, scale: '0.82', offset: 0 }];
+const SHEET = [{ opacity: 0, translate: '0 48px', offset: 0 }];
+const PRESS = [{ opacity: 0, scale: '1.7', offset: 0 }, { scale: '0.93', offset: 0.6 }];
+const ALTAR = [['.altar .ring', LENS, 640], ['.altar .core', LENS, 560], ['.slab', SETTLE, 600]];
+const ARRIVALS = {
+  about: ALTAR,
+  skills: ALTAR,
+  work: [['.work-rail-head', RISE, 420], ['.rail-node, .rail-group', RISE, 380], ['.work-view-toggle', RISE, 420]],
+  blog: [['.blog-memo-header', RISE, 420], ['.blog-memo-list > li', RISE, 420], ['.blog-intro-caption', RISE, 420]],
+  contact: [['.notebook-page', SHEET, 620], ['.wax-seal', PRESS, 380, 420]]
+};
+const ARRIVAL_STAGGER = 45;   // ms between neighbours the front reaches together
+let arriving = [];
+let arrival = null;
+
+function settleArrivals() {
+  for (const animation of arriving) animation.finish();
+  arriving = [];
+  arrival = null;
+}
+
+// Times each piece of the section to the front: radiusAt(ms) is the front's radius that long after it
+// opens from (ox, oy). A piece starts as the front touches its nearest edge, after the ones before it.
+function arrive(stage, ox, oy, radiusAt, span) {
+  settleArrivals();
+  if (!ARRIVALS[stage?.dataset.section]) return;
+  arrival = { stage, ox, oy, radiusAt, span, started: performance.now(), seen: new Set() };
+  buildIn(arrival);
+}
+
+function buildIn(run) {
+  const { stage, ox, oy, radiusAt, span, seen } = run;
+  const elapsed = performance.now() - run.started;
+  for (const [selector, keyframes, duration, after = 0] of ARRIVALS[stage.dataset.section]) {
+    let last = -Infinity;
+    for (const el of stage.querySelectorAll(selector)) {
+      if (seen.has(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
+      seen.add(el);
+      const d = Math.hypot(Math.max(r.left - ox, 0, ox - r.right), Math.max(r.top - oy, 0, oy - r.bottom));
+      let at = 0;
+      while (at < span && radiusAt(at) < d) at += 8;
+      at = Math.max(at, last + ARRIVAL_STAGGER);
+      last = at;
+      const delay = Math.max(0, at + after - elapsed);
+      arriving.push(el.animate(keyframes, { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }));
+    }
+  }
+}
+
+// A piece built after its section began to open (the Work timeline on a first visit) joins the arrival.
+document.addEventListener('section:built', (event) => {
+  const run = arrival;
+  if (run && run.stage === event.detail?.stage && performance.now() - run.started < run.span + 1000) buildIn(run);
+});
 
 let current = null;
 
@@ -231,6 +296,7 @@ function restore(run, settle) {
 // Ends a running transition at once: the section as the router left it, the landing as CSS has it.
 export function finishGrowTransition() {
   finishSpread();
+  settleArrivals();
   const run = current;
   if (!run) return;
   current = null;
@@ -299,9 +365,12 @@ export function growInto(label, id, show) {
   const frame = (now) => {
     if (current !== run) return;
     const t = now - started;
-    if (openAt == null && t >= OPEN_EARLIEST && (t >= readyAt || t >= OPEN_LATEST)) openAt = t;
+    if (openAt == null && t >= OPEN_EARLIEST && (t >= readyAt || t >= OPEN_LATEST)) {
+      openAt = t;
+      arrive(stage, nx, ny, (ms) => radius * lensOpen(ms / OPEN_MS), OPEN_MS);
+    }
     const p = openAt == null ? 0 : Math.min(1, (t - openAt) / OPEN_MS);
-    const r = radius * easeOut2(easeOut3(p) * 0.5 + p * 0.5);
+    const r = radius * lensOpen(p);
     const z = 1 + (PUSH - 1) * easeInOut(Math.min(1, t / PUSH_MS));
     flight.style.transform = `scale(${z.toFixed(4)})`;
     const words = (1 - Math.min(1, t / WORDS_OUT_MS)).toFixed(3);
@@ -376,8 +445,8 @@ export function growInto(label, id, show) {
   run.raf = requestAnimationFrame(frame);
 }
 
-window.addEventListener('resize', () => { finishGrowTransition(); finishInoculation(); }, { passive: true });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { finishGrowTransition(); finishInoculation(); } });
+window.addEventListener('resize', () => { finishGrowTransition(); settleArrivals(); finishInoculation(); }, { passive: true });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { finishGrowTransition(); settleArrivals(); finishInoculation(); } });
 
 // A lens: an overlay for the front, sized to the window at the transition's resolution.
 function frontLayer() {
@@ -445,11 +514,12 @@ export function spreadInto(stage) {
   const started = performance.now();
   const run = { stage, canvas, raf: 0 };
   spreading = run;
+  arrive(stage, ox, oy, (ms) => radius * lensOpen(ms / SPREAD_MS), SPREAD_MS);
   const frame = (now) => {
     if (spreading !== run) return;
     const t = now - started;
     const p = Math.min(1, t / SPREAD_MS);
-    const edge = frontPoints(seeds, ox, oy, radius * easeOut2(easeOut3(p) * 0.5 + p * 0.5), t);
+    const edge = frontPoints(seeds, ox, oy, radius * lensOpen(p), t);
     stage.style.clipPath = polygon(edge);
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     ctx.globalCompositeOperation = 'lighter';
@@ -465,11 +535,13 @@ export function spreadInto(stage) {
 // The first landing of a visit. The network's layers stay closed behind the loading veil, which then lifts
 // without waiting for the backdrop. Once the veil is gone and the backdrop has loaded, a short dark beat,
 // then the network opens from the hub: the backdrop and the pulses as the front reaches them, and the
-// spores settle once it has grown. The section labels stand from the start, so the way on is never held
-// back. Any input, a route change, a resize or a hidden tab opens it all at once.
+// spores settle once it has grown. The section labels stand dim from the start, so the way on is never
+// held back, and each lights as the front reaches its node. Any input, a route change, a resize or a
+// hidden tab opens it all at once.
 const INOCULATE_MS = 2400;
 const INOCULATE_BEAT_MS = 150;
 const SPORES_IN_MS = 600;
+const LABEL_WAKE_MS = 520;
 const INOCULATED_KEY = 'az-inoculated';
 let inoculating = null;
 
@@ -482,6 +554,8 @@ export function finishInoculation() {
   run.canvas?.remove();
   for (const [type, fn] of run.listeners) removeEventListener(type, fn, true);
   release(run.layers);
+  document.body.classList.remove('is-inoculating');
+  for (const el of document.querySelectorAll('#network-nav .is-awake')) el.classList.remove('is-awake');
   // The spores fade in where they already drift.
   const spores = run.spores;
   if (spores) {
@@ -512,6 +586,8 @@ export function inoculate() {
   // The spores wait out of sight and fade in once it has grown, which keeps the clipped layers to three.
   const spores = document.getElementById('spore-canvas');
   if (spores) spores.style.visibility = 'hidden';
+  // The labels stand dim until the front reaches them (styles/navigation.css).
+  document.body.classList.add('is-inoculating');
   const run = { layers, spores, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };
   inoculating = run;
   const skip = () => finishInoculation();
@@ -520,7 +596,8 @@ export function inoculate() {
     addEventListener(type, skip, true);
   }
   const seeds = lobes();
-  let started = 0, origin = null, radius = 0, readyAt = 0;
+  let started = 0, origin = null, radius = 0, readyAt = 0, dormant = [];
+  const woken = [];
   const backdrop = document.getElementById('bg-front-img');
   const frame = (now) => {
     if (inoculating !== run) return;
@@ -536,6 +613,13 @@ export function inoculate() {
       }
       origin = center(hub);
       radius = reach(origin[0], origin[1]);
+      // Each label's node as the front sees it, its distance and the front point on its bearing.
+      dormant = [...document.querySelectorAll('#network-nav .network-node-label')].map((el) => {
+        const [x, y] = center(el);
+        const a = Math.atan2(y - origin[1], x - origin[0]);
+        const i = Math.round(((a + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * FRONT_POINTS) % FRONT_POINTS;
+        return { el, x, y, i, d: Math.hypot(x - origin[0], y - origin[1]) };
+      });
       ({ canvas: run.canvas, ctx: run.ctx } = frontLayer());
       document.body.append(run.canvas);
       started = now;
@@ -545,6 +629,12 @@ export function inoculate() {
     const edge = frontPoints(seeds, origin[0], origin[1], radius * easeInOut(p), t);
     const clip = polygon(edge);
     for (const el of layers) el.style.clipPath = clip;
+    dormant = dormant.filter((label) => {
+      if (edge[label.i][3] < label.d) return true;
+      label.el.classList.add('is-awake');
+      woken.push([label.x, label.y, t]);
+      return false;
+    });
     const { ctx } = run;
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     ctx.globalCompositeOperation = 'lighter';
@@ -555,6 +645,14 @@ export function inoculate() {
       ctx.drawImage(glow, origin[0] - 40, origin[1] - 40, 80, 80);
       ctx.globalAlpha = 1;
     }
+    // A node flares as its label lights.
+    for (const [x, y, at] of woken) {
+      const flare = 1 - (t - at) / LABEL_WAKE_MS;
+      if (flare <= 0) continue;
+      ctx.globalAlpha = flare;
+      ctx.drawImage(glow, x - 26, y - 26, 52, 52);
+    }
+    ctx.globalAlpha = 1;
     const alpha = 1 - Math.max(0, (p - 0.55) / 0.45);
     if (alpha > 0.01) drawFront(ctx, edge, alpha);
     ctx.globalCompositeOperation = 'source-over';

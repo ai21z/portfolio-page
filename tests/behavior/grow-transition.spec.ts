@@ -11,6 +11,10 @@ const leftovers = (page: Page) => page.evaluate(() => ({
     .filter((s) => s.style.clipPath || s.style.opacity || s.style.contentVisibility).map((s) => s.id)
 }));
 
+// The pieces of a section building in as the front reaches them, started through Element.animate.
+const arrivals = (page: Page, section: string) => page.evaluate((id) => document.getAnimations()
+  .filter((a) => a.constructor === Animation && document.getElementById(id)!.contains((a.effect as KeyframeEffect).target)).length, section);
+
 async function landing(page: Page, profile = 'balanced') {
   await page.addInitScript((p) => localStorage.setItem('aris.graphicsProfile', p), profile);
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -32,8 +36,11 @@ test.describe('the landing transition', () => {
     await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
     await expect(page.locator('#about')).toHaveClass(/active-section/);
     expect(await page.locator('#about').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
+    // The cards and the ring build in as the front reaches them, and settle.
+    await expect.poll(() => arrivals(page, 'about')).toBeGreaterThanOrEqual(5);
     // Done well inside 0.9 s of motion, with nothing left over.
     await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
+    await expect.poll(() => arrivals(page, 'about'), { timeout: 3000 }).toBe(0);
     await expect(page).toHaveURL(/#about$/);
     expect(await page.evaluate(() => history.length)).toBe(before + 1);
     expect(await page.evaluate(() => document.getElementById('about')!.contains(document.activeElement))).toBe(true);
@@ -69,6 +76,7 @@ test.describe('the landing transition', () => {
     await expect(page.locator('#skills')).toHaveClass(/active-section/);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
     expect(await page.locator('#skills').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
+    expect(await arrivals(page, 'skills')).toBeGreaterThanOrEqual(5);
     // Software rendering with four workers can hold either move past 2 s. What is checked here is that it ends.
     await expect.poll(() => leftovers(page), { timeout: 4000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await expect(page).toHaveURL(/#skills$/);
@@ -84,9 +92,16 @@ test.describe('the landing transition', () => {
     // The spores wait out of sight while it grows, then fade in and leave no inline style behind.
     expect((await spores())[0]).toBe('hidden');
     expect(await nav()).toBe('');
+    // The labels stand dim and light one by one as the front reaches them, then the marks are cleared.
+    const label = page.locator('.network-node-label[data-node="contact"]');
+    expect(Number(await label.evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.5);
+    await expect(page.locator('#network-nav .is-awake').first()).toBeAttached({ timeout: 4000 });
     await expect.poll(layers, { timeout: 6000 }).toEqual(['', '']);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
     await expect.poll(spores, { timeout: 2000 }).toEqual(['', '', '']);
+    await expect(page.locator('#network-nav .is-awake')).toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/is-inoculating/);
+    await expect.poll(() => label.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
     await page.reload();
     await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
     expect(await layers()).toEqual(['', '']);

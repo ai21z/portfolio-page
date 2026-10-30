@@ -1530,6 +1530,31 @@ test.describe('browser audit', () => {
     expect(largeViewportBudgets.work.heavyConstrained).toBe(true);
   });
 
+  test('a capable GPU gives the globe its tier budget in Firefox and Safari too', async ({ page, baseURL, browserName }) => {
+    test.setTimeout(60_000);
+    test.skip(browserName === 'chromium', 'Chromium keeps the standard balanced budget.');
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem('aris.graphicsProfile', 'balanced');
+      // Safari names Apple silicon "Apple GPU". 0x9246 is UNMASKED_RENDERER_WEBGL.
+      const getParameter = WebGL2RenderingContext.prototype.getParameter;
+      WebGL2RenderingContext.prototype.getParameter = function (name: number) {
+        return name === 0x9246 ? 'Apple GPU' : getParameter.call(this, name);
+      };
+    });
+    await page.goto(urlFor(baseURL, sections.find((s) => s.name === 'work')!), { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#work')).toHaveClass(/active-section/);
+
+    const work = await page.evaluate(async () => (await import('/js/graphics-governor.js')).getGraphicsBudget('work-globe'));
+    expect(work.dprCap).toBe(1.25);
+    expect(work.maxCanvasPixels).toBe(2_400_000);
+    expect(work.textureMaxSize).toBe(1536);
+    expect(work.geometryScale).toBe(0.72);
+    expect(work.particleScale).toBeLessThanOrEqual(0.25);
+    expect(work.effectsScale).toBeLessThanOrEqual(0.35);
+  });
+
   for (const viewport of viewports) {
     test(`performance and compatibility evidence at ${viewport.width}x${viewport.height}`, async ({ page, baseURL, browserName }) => {
       test.setTimeout(Math.max(150_000, sampleDurationMs * 8));

@@ -128,10 +128,11 @@ function classifyRenderer(renderer) {
   }
   // "Radeon(TM) RX Vega 11 Graphics" is a Raven Ridge APU. "RX Vega 56", "RX Vega M" and "RX 480" are cards.
   if (/(geforce|nvidia|rtx|gtx|radeon\s*(\(tm\))?\s*(rx\b(?!\s+vega\s+\d{1,2}\s+graphics)|pro\b)|quadro|discrete)/i.test(value)) return 'discrete';
-  // Apple silicon handles these scenes like a discrete card. Intel Macs still read as integrated.
-  if (/apple m\d/i.test(value)) return 'apple';
+  // Apple silicon handles these scenes like a discrete card. Safari reports it as "Apple GPU", where
+  // Chromium names the chip. Intel Macs read as integrated in Chromium.
+  if (/apple m\d|apple gpu/i.test(value)) return 'apple';
   // AMD APUs read "Radeon(TM) Graphics", "Radeon Vega 8 Graphics" or "Radeon 780M Graphics".
-  if (/(intel|uhd|iris|apple m|apple gpu|radeon.{0,24}graphics|adreno|mali|integrated)/i.test(value)) return 'integrated';
+  if (/(intel|uhd|iris|apple m|radeon.{0,24}graphics|adreno|mali|integrated)/i.test(value)) return 'integrated';
   return 'unknown';
 }
 
@@ -726,9 +727,15 @@ export function getGraphicsBudget(systemName = 'default') {
 
   const budget = mergeBudget(profile, extras);
   budget.allowPortraitStreaming = false;
+  // Firefox and Safari drew the globe on a quarter of the screen's pixels with a third of its map,
+  // though a capable GPU holds it at full frame rate there too. On a discrete card or Apple silicon
+  // it now gets its tier's resolution, map and geometry, as in Chromium. Its particles and effects
+  // stay trimmed, and long frames still step the tier down.
+  const capableGlobe = constrainedEngine && systemName === 'work-globe'
+    && ['discrete', 'apple'].includes(getGraphicsCapability().rendererCategory);
 
   if (constrainedEngine) {
-    budget.dprCap = Math.min(budget.dprCap, profile === 'quiet' ? 1 : 1.25);
+    if (!capableGlobe) budget.dprCap = Math.min(budget.dprCap, profile === 'quiet' ? 1 : 1.25);
     budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 30);
     budget.antialias = false;
   }
@@ -767,7 +774,10 @@ export function getGraphicsBudget(systemName = 'default') {
     budget.frameIntervalMs = Math.max(budget.frameIntervalMs, 1000 / 20);
   }
 
-  if (constrainedEngine && systemName === 'work-globe') {
+  if (capableGlobe) {
+    budget.particleScale = Math.min(budget.particleScale, largeViewport ? 0.25 : 0.35);
+    budget.effectsScale = Math.min(budget.effectsScale, largeViewport ? 0.35 : 0.45);
+  } else if (constrainedEngine && systemName === 'work-globe') {
     const particleCap = largeViewport ? 0.25 : 0.35;
     budget.heavyConstrained = largeViewport;
     budget.dprCap = Math.min(budget.dprCap, 1);
@@ -805,6 +815,8 @@ export function getGraphicsBudget(systemName = 'default') {
   }
 
   if (systemName === 'work-globe') {
+    // The earth map is the globe's finest detail, so above Quiet it loads at its full 1536 px.
+    if (!budget.quiet && budget.textureMaxSize < 1536 && (!constrainedEngine || capableGlobe)) budget.textureMaxSize = 1536;
     budget.frameIntervalMs = budget.quiet
       ? Math.max(budget.frameIntervalMs, 1000 / 24)
       : budget.frameIntervalMs;

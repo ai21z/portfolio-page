@@ -39,15 +39,15 @@
   }
 }
 
-/* On the first landing the labels stand dim, without their glow, until the growth front reaches their
-   node (js/grow-transition.js). A pointer or focus on one lights it at once. */
-.is-inoculating .network-node-label:not(.is-awake, :hover, :focus-visible) {
-  opacity: 0.34;
-}
-
+/* On the first landing the words stand at full contrast from the start, and only their glow and their dot
+   wait for the growth front to reach the node (js/grow-transition.js). A pointer or focus lights one at once. */
 .is-inoculating .network-node-label:not(.is-awake, :hover, :focus-visible) .node-label {
   text-shadow: none;
   filter: none;
+}
+
+.is-inoculating .network-node-label:not(.is-awake, :hover, :focus-visible)::after {
+  opacity: 0.3;
 }
 
 /* Enlarged hitbox for easier clicking while moving */

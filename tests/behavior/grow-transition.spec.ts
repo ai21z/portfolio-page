@@ -92,16 +92,20 @@ test.describe('the landing transition', () => {
     // The spores wait out of sight while it grows, then fade in and leave no inline style behind.
     expect((await spores())[0]).toBe('hidden');
     expect(await nav()).toBe('');
-    // The labels stand dim and light one by one as the front reaches them, then the marks are cleared.
+    // The words stand at full contrast and take their glow one by one as the front reaches them, then the
+    // marks are cleared.
     const label = page.locator('.network-node-label[data-node="contact"]');
-    expect(Number(await label.evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.5);
+    const glow = () => label.locator('.node-label').evaluate((el) => getComputedStyle(el).textShadow);
+    expect(await glow()).toBe('none');
+    // Past their own fade in on load, not held back for the growth.
+    await expect.poll(() => label.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
     await expect(page.locator('#network-nav .is-awake').first()).toBeAttached({ timeout: 4000 });
     await expect.poll(layers, { timeout: 6000 }).toEqual(['', '']);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
     await expect.poll(spores, { timeout: 2000 }).toEqual(['', '', '']);
     await expect(page.locator('#network-nav .is-awake')).toHaveCount(0);
     await expect(page.locator('body')).not.toHaveClass(/is-inoculating/);
-    await expect.poll(() => label.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await expect.poll(glow).not.toBe('none');
     await page.reload();
     await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
     expect(await layers()).toEqual(['', '']);

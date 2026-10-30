@@ -69,11 +69,12 @@ window.addEventListener('load', () => setTimeout(prepareBackdropCopy, 1500), { o
 
 // What builds in as the front reaches it, so a section is not met finished. Each keyframe list starts from
 // its own state and ends on whatever the page has, so an element at rest keeps its own opacity and place.
-// The cards drop onto the ring and settle, the seal presses in once the sheet has risen.
+// The cards drop onto the ring and settle, and the sheet rises, both opaque before they are seen moving,
+// and the seal presses in as the sheet lands.
 const RISE = [{ opacity: 0, translate: '0 12px', offset: 0 }];
-const SETTLE = [{ opacity: 0, translate: '0 -26px', scale: '1.05', offset: 0 }, { translate: '0 3px', scale: '0.995', offset: 0.7 }];
+const SETTLE = [{ opacity: 0, translate: '0 -26px', scale: '1.05', offset: 0 }, { opacity: 1, offset: 0.2 }, { translate: '0 3px', scale: '0.995', offset: 0.7 }];
 const LENS = [{ opacity: 0, scale: '0.82', offset: 0 }];
-const SHEET = [{ opacity: 0, translate: '0 48px', offset: 0 }];
+const SHEET = [{ opacity: 0, translate: '0 48px', offset: 0 }, { opacity: 1, offset: 0.2 }];
 const PRESS = [{ opacity: 0, scale: '1.7', offset: 0 }, { scale: '0.93', offset: 0.6 }];
 const ALTAR = [['.altar .ring', LENS, 640], ['.altar .core', LENS, 560], ['.slab', SETTLE, 600]];
 const ARRIVALS = {
@@ -81,7 +82,7 @@ const ARRIVALS = {
   skills: ALTAR,
   work: [['.work-rail-head', RISE, 420], ['.rail-node, .rail-group', RISE, 380], ['.work-view-toggle', RISE, 420]],
   blog: [['.blog-memo-header', RISE, 420], ['.blog-memo-list > li', RISE, 420], ['.blog-intro-caption', RISE, 420]],
-  contact: [['.notebook-page', SHEET, 620], ['.wax-seal', PRESS, 380, 420]]
+  contact: [['.notebook-page', SHEET, 620], ['.wax-seal', PRESS, 420, 160]]
 };
 const ARRIVAL_STAGGER = 45;   // ms between neighbours the front reaches together
 let arriving = [];
@@ -535,8 +536,8 @@ export function spreadInto(stage) {
 // The first landing of a visit. The network's layers stay closed behind the loading veil, which then lifts
 // without waiting for the backdrop. Once the veil is gone and the backdrop has loaded, a short dark beat,
 // then the network opens from the hub: the backdrop and the pulses as the front reaches them, and the
-// spores settle once it has grown. The section labels stand dim from the start, so the way on is never
-// held back, and each lights as the front reaches its node. Any input, a route change, a resize or a
+// spores settle once it has grown. The section labels stand at full contrast from the start, so the way on
+// is never held back, and each takes its glow as the front reaches its node. Any input, a route change, a resize or a
 // hidden tab opens it all at once.
 const INOCULATE_MS = 2400;
 const INOCULATE_BEAT_MS = 150;
@@ -586,7 +587,7 @@ export function inoculate() {
   // The spores wait out of sight and fade in once it has grown, which keeps the clipped layers to three.
   const spores = document.getElementById('spore-canvas');
   if (spores) spores.style.visibility = 'hidden';
-  // The labels stand dim until the front reaches them (styles/navigation.css).
+  // The labels stand without their glow until the front reaches them (styles/navigation.css).
   document.body.classList.add('is-inoculating');
   const run = { layers, spores, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };
   inoculating = run;

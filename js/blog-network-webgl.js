@@ -1469,14 +1469,26 @@ async function initBlogNetwork(){
   }
   updateZoomIndicator(); // Set initial indicator to match default zoom
 
-  canvas.addEventListener('wheel', (e) => {
+  // The dish with its rim labels, which sit just outside the glass.
+  const overDish = (e) => {
+    if (!currentDish) return false;
+    const box = canvas.getBoundingClientRect();
+    return Math.hypot(e.clientX - box.left - currentDish.cx, e.clientY - box.top - currentDish.cy) <= currentDish.r * 1.1;
+  };
+
+  // Heard on the section, so a wheel over a rim label or a nucleus, which sit in layers above the
+  // canvas, zooms the dish as well. The Field Notes and a post being read keep their own wheel.
+  const dishStage = canvas.closest('.stage') || canvas;
+  dishStage.addEventListener('wheel', (e) => {
+    // Over the dish the wheel only zooms, off it a plain wheel only moves the page on. A pinch
+    // (ctrl+wheel) zooms the dish from anywhere on the canvas, or the browser would zoom the page.
+    if (!overDish(e) && !(e.ctrlKey && e.target === canvas)) return;
+    if (e.target.closest?.('.blog-memorandum') || dishStage.dataset.mode !== 'map' || dishStage.classList.contains('in-category')) return;
     // The rest of a wheel gesture that just stepped into Blog (js/navigation.js) is not a zoom.
     if (!e.ctrlKey && document.documentElement.hasAttribute('data-wheel-step-tail')) return;
     const delta = e.deltaY > 0 ? 0.95 : 1.05;
     const nextZoom = Math.max(0.75, Math.min(1.0, userZoom * delta));
-    // At the zoom limit a plain wheel is left to the page, so a fresh gesture can step to the next
-    // section. Pinch and ctrl+wheel stay with the dish, or the browser would zoom the whole page.
-    if (nextZoom === userZoom && !e.ctrlKey) return;
+    // At the zoom limits too, so zooming never carries on into the next section.
     e.preventDefault();
     if (nextZoom === userZoom) return;
     userZoom = nextZoom;

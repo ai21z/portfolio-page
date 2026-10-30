@@ -442,19 +442,25 @@ test('on Work the wheel scrolls the timeline from anywhere, and moves on only pa
   expect(await active(page)).toBe('blog');
 });
 
-test('on Blog the dish zoom keeps its gesture, and wheel down at full view moves on to Contact', async ({ page }) => {
+test('on Blog the wheel over the dish only zooms, at its limits too, and off the dish moves on', async ({ page }) => {
   test.setTimeout(60_000);
   test.skip(!(await openDish(page)), 'The dish fell back to reduced graphics in this browser.');
 
-  // Zooming in consumes the whole gesture, even past the zoom limit.
-  await gesture(page, -120, 10);
+  // At the full view a fresh gesture over the dish stays on Blog, where it once stepped to Contact.
+  await gesture(page, 120);
   expect(await active(page)).toBe('blog');
 
-  // Zooming back out to the full view also stays on Blog, then a fresh gesture moves on.
-  await gesture(page, 120, 10);
+  // Zooming in consumes the whole gesture, and a fresh one past the zoom limit stays too.
+  await gesture(page, -120, 10);
   expect(await active(page)).toBe('blog');
   await page.waitForTimeout(COOLDOWN_MS);
-  await gesture(page, 120);
+  await gesture(page, -120);
+  expect(await active(page)).toBe('blog');
+  await expect(page.locator('#zoom-text-content')).toContainText('100%');
+
+  // In the corner, clear of the dish, the wheel still moves on.
+  await page.waitForTimeout(COOLDOWN_MS);
+  await gesture(page, 120, 4, { x: 24, y: 880 });
   expect(await active(page)).toBe('contact');
 });
 

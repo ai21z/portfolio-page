@@ -464,10 +464,12 @@ export function spreadInto(stage) {
 
 // The first landing of a visit. The network's layers stay closed behind the loading veil, which then lifts
 // without waiting for the backdrop. Once the veil is gone and the backdrop has loaded, a short dark beat,
-// then the network opens from the hub: the backdrop, the pulses and spores, and the labels as the front
-// reaches them. Any input, a route change, a resize or a hidden tab opens them at once.
+// then the network opens from the hub: the backdrop, the pulses and the labels as the front reaches them,
+// and the spores settle once it has grown. Any input, a route change, a resize or a hidden tab opens them
+// at once.
 const INOCULATE_MS = 2400;
 const INOCULATE_BEAT_MS = 150;
+const SPORES_IN_MS = 600;
 const INOCULATED_KEY = 'az-inoculated';
 let inoculating = null;
 
@@ -480,6 +482,17 @@ export function finishInoculation() {
   run.canvas?.remove();
   for (const [type, fn] of run.listeners) removeEventListener(type, fn, true);
   release(run.layers);
+  // The spores fade in where they already drift.
+  const spores = run.spores;
+  if (spores) {
+    spores.style.opacity = '0';
+    spores.style.visibility = '';
+    requestAnimationFrame(() => {
+      spores.style.transition = `opacity ${SPORES_IN_MS}ms ease-out`;
+      spores.style.opacity = '';
+      setTimeout(() => { spores.style.transition = ''; }, SPORES_IN_MS);
+    });
+  }
 }
 
 export function inoculate() {
@@ -493,10 +506,15 @@ export function inoculate() {
   } catch { /* storage blocked, so it grows on every landing */ }
   // Read by the veil's script in index.html at DOMContentLoaded, after this module has run.
   window.__inoculating = true;
-  const layers = ['bg', 'pulse-canvas', 'spore-canvas', 'reveal-canvas', 'network-nav']
+  const layers = ['bg', 'pulse-canvas', 'reveal-canvas', 'network-nav']
     .map((id) => document.getElementById(id)).filter(Boolean);
   for (const el of layers) el.style.clipPath = CLOSED;
-  const run = { layers, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };
+  // The spores wait out of sight instead of growing in the front. A fifth full-window layer redrawn under
+  // a clip that changes every frame was past what the GPU keeps at 2x, and the portrait's image dropped
+  // out for a frame or for half a second.
+  const spores = document.getElementById('spore-canvas');
+  if (spores) spores.style.visibility = 'hidden';
+  const run = { layers, spores, canvas: null, ctx: null, raf: 0, cap: 0, listeners: [] };
   inoculating = run;
   const skip = () => finishInoculation();
   for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart']) {

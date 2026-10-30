@@ -64,21 +64,26 @@ test.describe('the landing transition', () => {
   test('a move between two sections spreads in from the press and leaves nothing behind', async ({ page }) => {
     await landing(page);
     await page.locator('.network-node-label[data-node="about"]').click();
-    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
+    await expect.poll(() => leftovers(page), { timeout: 4000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await page.locator('#about .section-nav-link[data-section="skills"]').click();
     await expect(page.locator('#skills')).toHaveClass(/active-section/);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(1);
     expect(await page.locator('#skills').evaluate((el) => el.style.clipPath)).toMatch(/polygon/);
-    await expect.poll(() => leftovers(page), { timeout: 2000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
+    // Software rendering with four workers can hold either move past 2 s. What is checked here is that it ends.
+    await expect.poll(() => leftovers(page), { timeout: 4000 }).toEqual({ layer: 0, backdrop: '', growing: false, inline: [] });
     await expect(page).toHaveURL(/#skills$/);
   });
 
   test('the first landing grows the network out of the hub, once a visit', async ({ page }) => {
     const layers = () => page.evaluate(() => ['bg', 'network-nav'].map((id) => document.getElementById(id)!.style.clipPath));
     await landing(page);
+    const spores = () => page.evaluate(() => { const s = document.getElementById('spore-canvas')!.style; return [s.visibility, s.opacity, s.transition]; });
     await expect.poll(async () => (await layers()).every((clip) => /polygon/.test(clip))).toBe(true);
+    // The spores wait out of sight while it grows, then fade in and leave no inline style behind.
+    expect((await spores())[0]).toBe('hidden');
     await expect.poll(layers, { timeout: 6000 }).toEqual(['', '']);
     await expect(page.locator('.grow-transition-layer')).toHaveCount(0);
+    await expect.poll(spores, { timeout: 2000 }).toEqual(['', '', '']);
     await page.reload();
     await expect(page.locator('#threshold')).toHaveClass(/threshold--lifted/);
     expect(await layers()).toEqual(['', '']);

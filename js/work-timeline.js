@@ -354,6 +354,8 @@ export function initWorkTimeline() {
 
   layout('year', false);
   setView('timeline');
+  // A first visit builds the rail after its section has begun to open, so it joins the arrival under way.
+  document.dispatchEvent(new CustomEvent('section:built', { detail: { stage: workSection } }));
 
   // Re-evaluate the globe's run/pause state when crossing the compact breakpoint.
   let viewResizeTimer = 0;

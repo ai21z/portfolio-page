@@ -21,7 +21,7 @@ async function openBlog(page: Page, viewport: { width: number, height: number })
   await expect(page.locator('#dish-labels text.arc-label')).toHaveCount(4);
   await expect(page.locator('.blog-memorandum')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  // The Field Notes fade in from 10px above: measure where they rest. The orb pulses never end.
+  // Anything building the Field Notes in is let finish, so they are measured where they rest. The orb pulses never end.
   await page.evaluate(() => Promise.all(document.querySelector('.blog-memorandum')!.getAnimations({ subtree: true })
     .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
     .map((animation) => animation.finished.catch(() => undefined))));

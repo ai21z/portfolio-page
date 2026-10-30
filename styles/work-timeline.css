@@ -9,8 +9,6 @@
   z-index: 10;
   font-family: 'Special Elite', monospace;
   pointer-events: none;
-  opacity: 0;
-  animation: hudFadeIn 1s ease-out 0.5s forwards;
 }
 
 /* ---- header: the title, then a light key under it, then the sort ---- */
@@ -477,10 +475,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .work-rail {
-    animation: none;
-    opacity: 1;
-  }
   .work-note {
     transition: none;
   }
@@ -711,8 +705,6 @@
     padding: calc(var(--work-bar-top) + var(--work-bar-h) + var(--work-bar-gap)) 16px 10px;
     background: #07090a;
     z-index: 20;
-    animation: none;
-    opacity: 1;
   }
 
   /* full-width on phones, a tidy reading column on tablets */

@@ -3,7 +3,7 @@
 import { mat4 } from './work-globe/core/math-utils.js';
 import { bindAttribs, cancelTextureLoad, createProgram, loadTexture } from './work-globe/core/gl-utils.js';
 import { warmPrograms } from './gpu-warm.js';
-import { createSphereGeometry, createPinGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
+import { createSphereGeometry, createMarkerGeometry, createMyceliumHyphae } from './work-globe/core/geometry.js';
 import { NECRO_GREEN } from './work-globe/core/palette.js';
 
 import { WORK_LOCATIONS } from './work-globe/data/work-locations.js';
@@ -115,7 +115,6 @@ function getWorkGlobeQuality() {
       myceliumTubeSegments: 4,
       sporeParticles: mobile ? 900 : 1400,
       dataParticles: mobile ? 120 : 180,
-      pinSegments: 5,
       moonDetail: mobile ? 14 : 18
     }
     : mobile
@@ -128,7 +127,6 @@ function getWorkGlobeQuality() {
       myceliumTubeSegments: 5,
       sporeParticles: 1800,
       dataParticles: 260,
-      pinSegments: 5,
       moonDetail: 20
     }
       : {
@@ -140,7 +138,6 @@ function getWorkGlobeQuality() {
     myceliumTubeSegments: 6,
     sporeParticles: 4000,
     dataParticles: 500,
-    pinSegments: 6,
     moonDetail: 24
   };
 
@@ -153,7 +150,6 @@ function getWorkGlobeQuality() {
     myceliumTubeSegments: scaleInt(base.myceliumTubeSegments, geometryScale, lowCost ? 2 : 4),
     sporeParticles: scaleInt(base.sporeParticles, particleScale, lowCost ? 240 : 700),
     dataParticles: scaleInt(base.dataParticles, particleScale, lowCost ? 45 : 110),
-    pinSegments: scaleInt(base.pinSegments, geometryScale, 4),
     moonDetail: scaleInt(base.moonDetail, geometryScale, lowCost ? 8 : 14)
   };
 }
@@ -372,8 +368,7 @@ function initWorkGlobe() {
 
   sporeSystem = new SporeSystem(gl, quality.sporeParticles);
 
-  const pinGeometry = createPinGeometry(0.02, 1.0, quality.pinSegments);
-  workPinSystem = new WorkPinSystem(gl, WORK_LOCATIONS, pinGeometry);
+  workPinSystem = new WorkPinSystem(gl, WORK_LOCATIONS, createMarkerGeometry());
   // The globe opens on home, Barcelona toward the viewer and Greece beside it, then drifts on its idle spin.
   const home = workPinSystem.pins.find((pin) => pin.key === 'spain');
   if (home) rotation = faceRotationFor(home.basePos, 0);

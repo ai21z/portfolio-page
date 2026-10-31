@@ -39,6 +39,8 @@ uniform bool uUseDaymap;
 uniform sampler2D uLand;
 uniform bool uUseLand;
 const float LAND_RANGE = 16.0;  // texels from the coast to either end of the stored values
+const float WATERLINE = 2.5;        // texels from the coast to the water-line
+const float WATERLINE_REACH = 4.0;  // texels further out the sea must reach for the line to show
 
 // The dish's language on a globe: abyss ocean, moss land, a bone coastline drawn as a line, engraved
 // hatching where the land turns from the light, a faint graticule like the dish's rim marks, and a teal
@@ -109,18 +111,22 @@ void main() {
     : 1.0 - smoothstep(0.0, fwidth(landness) * 1.4 + 1e-4, abs(landness - 0.5));
   color = mix(color, COAST_COLOR * (0.35 + 0.65 * lighting), coast * 0.85);
 
-  // Water-lines, as an engraved chart draws them: fine lines following the coast out to sea every
-  // WATERLINE_STEP texels, a pixel wide on screen, fading with distance and dropped where they would
-  // run closer than about three pixels apart.
-  if (uUseLand) {
-    const float WATERLINE_STEP = 3.0;
-    float sea = 1.0 - smoothstep(-0.5, 0.0, coastDist);
-    float fade = 1.0 - smoothstep(2.0, 11.0, -coastDist);
-    float room = smoothstep(2.5, 4.0, WATERLINE_STEP / texelsPerPixel);
-    float step = -coastDist / WATERLINE_STEP;
-    float offLine = abs(step - floor(step + 0.5)) * WATERLINE_STEP / texelsPerPixel;
+  // One water-line, as an engraved chart draws it: a fine line following the coast WATERLINE texels out
+  // to sea, a pixel wide on screen. It is kept out of seas too narrow to hold it apart from the other
+  // shore, found by looking a few texels further out, and dropped where it would crowd the coast.
+  float offLine = abs(-coastDist - WATERLINE) / texelsPerPixel;
+  if (uUseLand && offLine < 1.0) {
+    // Sampled at the field's own level, since this branch differs from pixel to pixel.
+    vec2 texel = 1.0 / vec2(textureSize(uLand, 0));
+    vec2 slope = vec2(
+      textureLod(uLand, vUv + vec2(texel.x, 0.0), 0.0).r - textureLod(uLand, vUv - vec2(texel.x, 0.0), 0.0).r,
+      textureLod(uLand, vUv + vec2(0.0, texel.y), 0.0).r - textureLod(uLand, vUv - vec2(0.0, texel.y), 0.0).r);
+    vec2 seaward = -slope / max(length(slope), 1e-6);
+    float beyond = (textureLod(uLand, vUv + seaward * WATERLINE_REACH * texel, 0.0).r * 255.0 - 128.0) / 127.0 * LAND_RANGE;
+    float open = smoothstep(WATERLINE + WATERLINE_REACH * 0.6, WATERLINE + WATERLINE_REACH * 0.9, -beyond);
+    float room = smoothstep(2.0, 3.0, WATERLINE / texelsPerPixel);
     float wl = 1.0 - smoothstep(0.35, 0.9, offLine);
-    color += COAST_COLOR * wl * sea * fade * room * 0.22 * (0.35 + 0.65 * lighting);
+    color += COAST_COLOR * wl * open * room * 0.2 * (0.35 + 0.65 * lighting);
   }
 
   // A faint graticule every 15 degrees, an instrument's marks.

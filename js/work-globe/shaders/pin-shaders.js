@@ -1,19 +1,16 @@
 export const PIN_VERTEX_SHADER = `#version 300 es
 precision highp float;
 
-layout(location = 0) in vec3 position;
+layout(location = 0) in vec3 position;       // the marker's corner, x east and z south, -1 to 1
 layout(location = 1) in vec3 normal;
-layout(location = 2) in vec3 instancePos;    // Pin base position
-layout(location = 3) in vec3 instanceColor;  // Pin color
-layout(location = 4) in float instanceHeight; // Animated height
-layout(location = 5) in float instancePhase;  // Pulse phase
-layout(location = 6) in float instanceScale;  // Hover scale
+layout(location = 2) in vec3 instancePos;    // the place on the globe
+layout(location = 3) in vec3 instanceColor;  // the legend's place colour
+layout(location = 4) in float instanceHeight;
+layout(location = 5) in float instancePhase;
+layout(location = 6) in float instanceScale;  // hover scale
 
-out vec3 vNormal;
-out vec3 vWorldPos;
+out vec2 vCorner;
 out vec3 vColor;
-out float vHeight;
-out float vPhase;
 out float vScale;
 
 uniform mat4 uProjection;
@@ -21,43 +18,36 @@ uniform mat4 uView;
 uniform mat4 uModel;
 uniform float uTime;
 
+// Half the marker's side and its lift off the surface, in globe radii.
+const float MARKER_SIZE = 0.05;
+const float MARKER_LIFT = 0.006;
+
 void main() {
   vColor = instanceColor;
-  vHeight = instanceHeight;
-  vPhase = instancePhase;
   vScale = instanceScale;
-  
-  // Calculate orientation vector (pin points outward from globe center)
+  vCorner = vec2(position.x, -position.z);
+
+  // The marker lies flat on the globe at its place, its triangle pointing north.
   vec3 upVector = normalize(instancePos);
   vec3 tangent = normalize(cross(upVector, vec3(0.0, 1.0, 0.0)));
   vec3 bitangent = cross(upVector, tangent);
-  
-  // Build rotation matrix to orient pin
   mat3 orientation = mat3(tangent, upVector, bitangent);
-  
-  // Scale and orient geometry
-  vec3 localPos = position * instanceScale; // Apply scale
-  localPos.y *= instanceHeight; // Stretch along pin axis
-  vec3 rotatedPos = orientation * localPos;
-  
-  // Position at base
-  vec3 worldPos = instancePos + rotatedPos;
-  
-  vNormal = mat3(uModel) * (orientation * normal);
-  vWorldPos = (uModel * vec4(worldPos, 1.0)).xyz;
-  
+
+  vec3 localPos = vec3(position.x, 0.0, position.z) * MARKER_SIZE * instanceScale;
+  localPos.y = MARKER_LIFT;
+  vec3 worldPos = instancePos + orientation * localPos;
+
   gl_Position = uProjection * uView * uModel * vec4(worldPos, 1.0);
 }
 `;
 
+// The legend's place mark stamped on the map: a filled triangle with a dark ink edge, cut by its
+// screen derivative so it stays one crisp shape at any size, and a fine bone ring round the chosen place.
 export const PIN_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 
-in vec3 vNormal;
-in vec3 vWorldPos;
+in vec2 vCorner;
 in vec3 vColor;
-in float vHeight;
-in float vPhase;
 in float vScale;
 
 out vec4 fragColor;
@@ -65,36 +55,36 @@ out vec4 fragColor;
 uniform float uTime;
 uniform vec3 uCameraPos;
 
+const vec3 INK_COLOR = vec3(0.030, 0.042, 0.042);   // the globe's abyss
+const vec3 LIT_COLOR = vec3(0.247, 1.0, 0.624);     // the timeline's chosen place, #3fff9f
+const vec3 RING_COLOR = vec3(0.79, 0.76, 0.70);     // bone
+const float TRIANGLE = 0.40;  // half the triangle's side, in marker units
+const float RING = 0.80;      // the chosen place's ring radius, in marker units
+
+// Signed distance to an equilateral triangle of half side r, centred, pointing up (Inigo Quilez).
+float sdTriangle(vec2 p, float r) {
+  const float k = sqrt(3.0);
+  p.x = abs(p.x) - r;
+  p.y = p.y + r / k;
+  if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+  return -length(p) * sign(p.y);
+}
+
 void main() {
-  vec3 normal = normalize(vNormal);
-  vec3 viewDir = normalize(uCameraPos - vWorldPos);
-  
-  // IDLE PULSING GLOW - slow, subtle breathing effect
-  float idlePulse = sin(uTime * 1.5 + vPhase) * 0.15 + 0.85; // Range: 0.7 - 1.0
-  
-  // HOVER BOOST - when scaled up, pulse faster and brighter
-  float hoverBoost = smoothstep(1.0, 1.4, vScale); // 0 when idle, 1 when fully hovered
-  float hoverPulse = sin(uTime * 3.0 + vPhase) * 0.2 + 0.8;
-  float finalPulse = mix(idlePulse, hoverPulse, hoverBoost);
-  
-  // Rim lighting (edges glow more)
-  float rim = 1.0 - max(0.0, dot(normal, viewDir));
-  rim = pow(rim, 3.0);
-  
-  // Height-based gradient (brighter at tip)
-  float heightGradient = length(vWorldPos) - 1.0; // Distance from globe center
-  heightGradient = smoothstep(0.0, vHeight, heightGradient);
-  
-  // Combine effects
-  vec3 baseColor = vColor * 0.4;
-  vec3 glowColor = vColor * 2.2;
-  vec3 finalColor = mix(baseColor, glowColor, rim * 0.5 + heightGradient * 0.5);
-  finalColor *= finalPulse;
-  
-  // Add core glow (boosted on hover)
-  float coreBrightness = heightGradient * rim * (1.0 + hoverBoost * 0.5);
-  finalColor += vColor * coreBrightness * finalPulse;
-  
-  fragColor = vec4(finalColor, 0.8 + rim * 0.2);
+  // The hovered or chosen place grows to 1.3, past the 1.2 a compact layout pulses to.
+  float chosen = smoothstep(1.22, 1.3, vScale);
+  float d = sdTriangle(vCorner, TRIANGLE);
+  float px = max(fwidth(d), 1e-4);
+
+  float fill = 1.0 - smoothstep(-0.5, 0.5, d / px);
+  float ink = 1.0 - smoothstep(1.2, 2.0, d / px);
+  float ring = (1.0 - smoothstep(0.4, 1.0, abs(length(vCorner) - RING) / px)) * chosen;
+
+  vec3 color = mix(INK_COLOR, mix(vColor, LIT_COLOR, chosen), fill);
+  color = mix(color, RING_COLOR, ring * (1.0 - ink));
+  float alpha = max(ink, ring * 0.85);
+  if (alpha < 0.01) discard;
+  fragColor = vec4(color, alpha);
 }
 `;

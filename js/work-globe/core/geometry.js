@@ -45,56 +45,13 @@ export function createSphereGeometry(radius, segments, rings) {
   };
 }
 
-export function createPinGeometry(baseRadius = 0.02, height = 1.0, sides = 6) {
-  const positions = [];
-  const normals = [];
-  const indices = [];
-  
-  for (let i = 0; i < sides; i++) {
-    const angle = (i / sides) * Math.PI * 2;
-    const x = Math.cos(angle) * baseRadius;
-    const z = Math.sin(angle) * baseRadius;
-    positions.push(x, 0, z);
-    normals.push(0, -1, 0);
-  }
-  
-  const tipRadius = baseRadius * 0.2;
-  for (let i = 0; i < sides; i++) {
-    const angle = (i / sides) * Math.PI * 2;
-    const x = Math.cos(angle) * tipRadius;
-    const z = Math.sin(angle) * tipRadius;
-    positions.push(x, height, z);
-    normals.push(0, 1, 0);
-  }
-  
-  const tipIdx = positions.length / 3;
-  positions.push(0, height * 1.2, 0);
-  normals.push(0, 1, 0);
-  
-  for (let i = 0; i < sides; i++) {
-    const curr = i;
-    const next = (i + 1) % sides;
-    const currTop = sides + i;
-    const nextTop = sides + ((i + 1) % sides);
-    
-    indices.push(curr, next, nextTop);
-    indices.push(curr, nextTop, currTop);
-    
-    const idx = curr * 3;
-    const x = positions[idx];
-    const z = positions[idx + 2];
-    const nx = x / baseRadius;
-    const nz = z / baseRadius;
-    normals[idx] = nx;
-    normals[idx + 1] = 0.3;
-    normals[idx + 2] = nz;
-    
-    indices.push(currTop, nextTop, tipIdx);
-  }
-  
+// A place marker is a flat square lying on the globe at its place, x east and z south from -1 to 1.
+// The pin shader draws the legend's triangle inside it, so the symbol stays crisp at any size.
+export function createMarkerGeometry() {
+  const indices = [0, 1, 2, 0, 2, 3];
   return {
-    positions: new Float32Array(positions),
-    normals: new Float32Array(normals),
+    positions: new Float32Array([-1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1]),
+    normals: new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]),
     indices: new Uint16Array(indices),
     vertexCount: indices.length
   };

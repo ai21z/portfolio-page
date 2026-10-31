@@ -2,7 +2,7 @@ export const WORK_LOCATIONS = {
   greece: {
     name: 'Greece',
     imageCoords: { x: 777, y: 330 },
-    color: [0.48, 0.68, 0.54],
+    color: [0.176, 0.831, 0.686],
     entries: [
       {
         company: 'Environmental Engineering & Lab Work',
@@ -34,7 +34,7 @@ export const WORK_LOCATIONS = {
   spain: {
     name: 'Spain',
     imageCoords: { x: 689, y: 310 },
-    color: [1.0, 0.48, 0.2],
+    color: [0.176, 0.831, 0.686],
     entries: [
       {
         company: 'ADP (Lyric HCM)',

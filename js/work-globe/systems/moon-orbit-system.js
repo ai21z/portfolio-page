@@ -14,6 +14,19 @@ const D20_SPIN = 0.35;                       // radians per second
 const D20_AXIS = normalize3([0.4, 1.0, 0.25]);
 const TALOS_SWAY = 0.35;                     // radians either side of facing the viewer
 const TALOS_SWAY_SPEED = 0.4;                // radians of its phase per second
+// A chosen moon leaves its orbit for a dock beside the globe, on the side clear of the timeline and its
+// card, a little above the centre and in front of the globe's middle. On a screen too narrow for that,
+// the dock is above the globe instead.
+const DOCK_DEPTH = 0.3;       // toward the camera from the globe's centre, in globe radii
+const DOCK_RAISE = 0.12;      // above the centre, in clip space
+const DOCK_CLEAR = 0.2;       // the least clip-space gap from the globe's limb
+const DOCK_EDGE = 0.86;       // where the page's nav begins at the right, in clip space
+const DOCK_SPEED = 2.5;       // per second, the eased share of the way to the dock
+const DOCK_CLEARANCE = 1.22;  // the radius a docking moon keeps from the globe's centre on its way
+// Docked, the moon's face is aimed between the camera and the light, so it is seen nearly square and lit.
+// Keep this light aligned with moon-shaders.js.
+const LIGHT_DIR = normalize3([0.5, 0.3, 0.5]);
+const DOCK_LIGHT_LEAN = 0.5;  // how far the docked face leans from the camera toward the light
 
 function normalize3(v) {
   const l = Math.hypot(v[0], v[1], v[2]);
@@ -73,7 +86,9 @@ export class MoonOrbitSystem {
         hoverAmount: 0.0,
         targetHoverAmount: 0.0,
         spin: 0.0,   // the d20's turn about its axis, or the helmet's sway phase
-        sway: 1.0    // how far the helmet sways, eased to 0 when chosen
+        sway: 1.0,   // how far the helmet sways, eased to 0 when chosen
+        docked: false,
+        dock: 0.0    // the eased way from its orbit to its dock, 0 to 1
       });
     });
   }
@@ -120,6 +135,8 @@ export class MoonOrbitSystem {
         moon.spin += TALOS_SWAY_SPEED * dt;
       }
       moon.sway += ((moon.paused || still ? 0 : 1) - moon.sway) * ease(Math.min(1, 3 * dt));
+      const dockDiff = (moon.docked ? 1 : 0) - moon.dock;
+      moon.dock = Math.abs(dockDiff) < 0.001 ? (moon.docked ? 1 : 0) : moon.dock + dockDiff * ease(Math.min(1, DOCK_SPEED * dt));
 
       let targetScale = moon.targetScale;
 
@@ -156,10 +173,47 @@ export class MoonOrbitSystem {
     ];
   }
 
+  // Where the moon is drawn: on its orbit as the globe carries it, or on its way to or at its dock. On the
+  // way it keeps clear of the globe, so it passes round it and never through it.
+  getScenePosition(moon, modelMatrix) {
+    const worldPos = this.getWorldPosition(moon);
+    const orbit = modelMatrix ? mat4.transformPoint(modelMatrix, worldPos) : worldPos;
+    if (moon.dock <= 0 || !this.dockPos) return [orbit[0], orbit[1], orbit[2]];
+    const t = moon.dock * moon.dock * (3 - 2 * moon.dock);
+    const p = [0, 1, 2].map((k) => orbit[k] + (this.dockPos[k] - orbit[k]) * t);
+    const r = Math.hypot(p[0], p[1], p[2]);
+    return r < DOCK_CLEARANCE && r > 1e-6 ? p.map((v) => (v * DOCK_CLEARANCE) / r) : p;
+  }
+
+  // The dock for this projection, set beside the globe's limb as the camera sees it.
+  updateDock(projMatrix, cameraPos) {
+    const d = cameraPos[2];
+    const depth = d - DOCK_DEPTH;
+    const limbX = projMatrix[0] / Math.sqrt(d * d - 1);
+    const limbY = projMatrix[5] / Math.sqrt(d * d - 1);
+    let ndcX = Math.max(limbX + DOCK_CLEAR, (limbX + DOCK_EDGE) / 2);
+    let ndcY = DOCK_RAISE;
+    if (ndcX > DOCK_EDGE - 0.06) {
+      ndcX = Math.min(limbX * 0.6, 0.6);
+      ndcY = Math.min(limbY + DOCK_CLEAR, 0.82);
+    }
+    this.dockPos = [ndcX * depth / projMatrix[0], ndcY * depth / projMatrix[5], DOCK_DEPTH];
+  }
+
   // The moon's turn in the world: the d20 about its axis from its rest face, the helmet about the vertical.
-  getOrientation(moon) {
-    if (moon.shape === 'd20') return multiply3(axisRotation(D20_AXIS, moon.spin), D20_REST);
-    return axisRotation([0, 1, 0], TALOS_SWAY * moon.sway * Math.sin(moon.spin));
+  // Docked, either is turned to face between the camera and the light, so its face is seen lit beside the globe.
+  getOrientation(moon, position, cameraPos) {
+    const own = moon.shape === 'd20'
+      ? multiply3(axisRotation(D20_AXIS, moon.spin), D20_REST)
+      : axisRotation([0, 1, 0], TALOS_SWAY * moon.sway * Math.sin(moon.spin));
+    if (moon.dock <= 0) return own;
+    const t = moon.dock * moon.dock * (3 - 2 * moon.dock);
+    const view = normalize3([cameraPos[0] - position[0], cameraPos[1] - position[1], cameraPos[2] - position[2]]);
+    // The lean is level, so the face turns toward the light without tipping up and foreshortening.
+    const to = [view[0] + LIGHT_DIR[0] * DOCK_LIGHT_LEAN, view[1], view[2] + LIGHT_DIR[2] * DOCK_LIGHT_LEAN];
+    const yaw = Math.atan2(to[0], to[2]) * t;
+    const pitch = Math.atan2(to[1], Math.hypot(to[0], to[2])) * t;
+    return multiply3(axisRotation([0, 1, 0], yaw), multiply3(axisRotation([1, 0, 0], -pitch), own));
   }
 
   _cacheUniforms(program) {
@@ -186,21 +240,17 @@ export class MoonOrbitSystem {
     gl.uniformMatrix4fv(u.uProjection, false, projMatrix);
     gl.uniformMatrix4fv(u.uView, false, viewMatrix);
     gl.uniform3fv(u.uCameraPos, cameraPos);
+    this.updateDock(projMatrix, cameraPos);
 
     const m = this._moonModelMatrix;
 
     this.moons.forEach(moon => {
       const shape = this.shapes[moon.shape];
-      const worldPos = this.getWorldPosition(moon);
-
       const scale = moon.moonRadius * moon.scale * shape.scale;
-
-      const rotatedPos = modelMatrix
-        ? mat4.transformPoint(modelMatrix, worldPos)
-        : [...worldPos, 1];
+      const rotatedPos = this.getScenePosition(moon, modelMatrix);
 
       // Reuse pre-allocated matrix: the moon's turn, scaled, at its place.
-      const r = this.getOrientation(moon);
+      const r = this.getOrientation(moon, rotatedPos, cameraPos);
       m[0] = r[0] * scale; m[1] = r[1] * scale; m[2] = r[2] * scale; m[3] = 0;
       m[4] = r[3] * scale; m[5] = r[4] * scale; m[6] = r[5] * scale; m[7] = 0;
       m[8] = r[6] * scale; m[9] = r[7] * scale; m[10] = r[8] * scale; m[11] = 0;
@@ -223,9 +273,7 @@ export class MoonOrbitSystem {
     let closestDist = 0.2;
 
     this.moons.forEach(moon => {
-      const worldPos = this.getWorldPosition(moon);
-
-      const modelPos = mat4.transformPoint(modelMatrix, worldPos);
+      const modelPos = this.getScenePosition(moon, modelMatrix);
       const viewPos = mat4.transformPoint(viewMatrix, modelPos);
       const clipPos = mat4.transformPoint(projMatrix, viewPos);
 
@@ -256,20 +304,24 @@ export class MoonOrbitSystem {
     });
   }
 
-  getMoonWorldPosition(moon) {
-    if (!moon) return null;
-    return this.getWorldPosition(moon);
-  }
-
   pauseMoon(moon, paused) {
     if (moon) {
       moon.paused = paused;
     }
   }
 
+  // Released, every moon also leaves its dock for its orbit.
   pauseAll(paused) {
     this.moons.forEach(moon => {
       moon.paused = paused;
+      if (!paused) moon.docked = false;
+    });
+  }
+
+  // Sends the chosen moon to its dock and any other back to its orbit.
+  dockMoon(moon) {
+    this.moons.forEach(m => {
+      m.docked = (m === moon);
     });
   }
 }

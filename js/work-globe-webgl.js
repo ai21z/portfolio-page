@@ -1003,11 +1003,10 @@ function checkClickWithDepth(mouseX, mouseY) {
   if (moonOrbitSystem) {
     const moon = moonOrbitSystem.getMoonAtPosition(ndcX, ndcY, projectionMatrix, viewMatrix, modelMatrix);
     if (moon) {
-      // Get moon's world position
-      const moonWorldPos = moonOrbitSystem.getMoonWorldPosition(moon);
-      if (moonWorldPos) {
+      // Where the moon is drawn, on its orbit or at its dock
+      const modelPos = moonOrbitSystem.getScenePosition(moon, modelMatrix);
+      if (modelPos) {
         // Check if moon is occluded by globe
-        const modelPos = mat4.transformPoint(modelMatrix, moonWorldPos);
         const isOccluded = isOccludedByGlobe(modelPos, viewMatrix);
 
         if (isOccluded) {
@@ -1290,8 +1289,9 @@ function showProjectPanel(moon) {
     });
   }
 
-  // Pause moon orbit
+  // Hold the moon at its dock beside the globe while its card is open.
   moonOrbitSystem.pauseMoon(moon, true);
+  moonOrbitSystem.dockMoon(moon);
 
   // Add mobile-specific class
   if (isMobile) {
@@ -1402,7 +1402,7 @@ function startFocusTween(target) {
 
 function restoreMoons() {
   if (!moonOrbitSystem) return;
-  moonOrbitSystem.moons.forEach((m) => { m.paused = false; m.targetScale = 1.0; });
+  moonOrbitSystem.moons.forEach((m) => { m.paused = false; m.docked = false; m.targetScale = 1.0; });
 }
 
 function focusLocation(id) {
@@ -1423,14 +1423,16 @@ function focusMoon(id) {
   const moon = moonOrbitSystem.moons.find((m) => m.project && m.project.id === id);
   if (!moon) return;
   markWorkGlobeActivity();
-  // Freeze the focused orbit so the moon stays readable.
+  // Freeze the orbits and bring the focused moon to its dock beside the globe, where it stays readable
+  // and covers none of the map. The globe is left where it is.
+  // Hovered first, since hovering sets every moon's scale, then the focused moon grown and the other shrunk.
+  moonOrbitSystem.setHoveredMoon(moon);
   moonOrbitSystem.moons.forEach((m) => {
     m.paused = true;
     m.targetScale = (m === moon) ? 1.25 : 0.45;
   });
-  moonOrbitSystem.setHoveredMoon(moon);
+  moonOrbitSystem.dockMoon(moon);
   if (workPinSystem) workPinSystem.pins.forEach((p) => { p.hovered = false; });
-  startFocusTween(faceRotationFor(moonOrbitSystem.getWorldPosition(moon), rotation.y));
 }
 
 function onTimelineSelect(e) {

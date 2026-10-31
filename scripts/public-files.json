@@ -95,6 +95,7 @@
   "js/work-globe/core/geometry.js",
   "js/work-globe/core/gl-utils.js",
   "js/work-globe/core/math-utils.js",
+  "js/work-globe/core/moon-solids.js",
   "js/work-globe/core/palette.js",
   "js/work-globe/data/projects.js",
   "js/work-globe/data/timeline.js",

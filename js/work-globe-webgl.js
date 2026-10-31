@@ -114,8 +114,7 @@ function getWorkGlobeQuality() {
       myceliumBranchProb: 0.045,
       myceliumTubeSegments: 4,
       sporeParticles: mobile ? 900 : 1400,
-      dataParticles: mobile ? 120 : 180,
-      moonDetail: mobile ? 14 : 18
+      dataParticles: mobile ? 120 : 180
     }
     : mobile
       ? {
@@ -126,8 +125,7 @@ function getWorkGlobeQuality() {
       myceliumBranchProb: 0.06,
       myceliumTubeSegments: 5,
       sporeParticles: 1800,
-      dataParticles: 260,
-      moonDetail: 20
+      dataParticles: 260
     }
       : {
     sphereDetail: 40,
@@ -137,8 +135,7 @@ function getWorkGlobeQuality() {
     myceliumBranchProb: 0.08,
     myceliumTubeSegments: 6,
     sporeParticles: 4000,
-    dataParticles: 500,
-    moonDetail: 24
+    dataParticles: 500
   };
 
   return {
@@ -149,8 +146,7 @@ function getWorkGlobeQuality() {
     myceliumBranchProb: base.myceliumBranchProb * effectsScale,
     myceliumTubeSegments: scaleInt(base.myceliumTubeSegments, geometryScale, lowCost ? 2 : 4),
     sporeParticles: scaleInt(base.sporeParticles, particleScale, lowCost ? 240 : 700),
-    dataParticles: scaleInt(base.dataParticles, particleScale, lowCost ? 45 : 110),
-    moonDetail: scaleInt(base.moonDetail, geometryScale, lowCost ? 8 : 14)
+    dataParticles: scaleInt(base.dataParticles, particleScale, lowCost ? 45 : 110)
   };
 }
 
@@ -188,7 +184,7 @@ const WORK_PROGRAMS = {
   pin: { vs: PIN_VERTEX_SHADER, fs: PIN_FRAGMENT_SHADER,
     attribs: { position: 0, normal: 1, instancePos: 2, instanceColor: 3, instanceHeight: 4, instancePhase: 5 } },
   dataStream: { vs: DATA_STREAM_VERTEX_SHADER, fs: DATA_STREAM_FRAGMENT_SHADER, attribs: { position: 0, life: 1, phase: 2 } },
-  moon: { vs: MOON_VERTEX_SHADER, fs: MOON_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, uv: 2 } },
+  moon: { vs: MOON_VERTEX_SHADER, fs: MOON_FRAGMENT_SHADER, attribs: { position: 0, normal: 1, edge: 2, tint: 3 } },
   textBillboard: { vs: TEXT_BILLBOARD_VERTEX_SHADER, fs: TEXT_BILLBOARD_FRAGMENT_SHADER, attribs: { aPosition: 0, aUv: 1 } }
 };
 
@@ -375,7 +371,7 @@ function initWorkGlobe() {
 
   dataStreamSystem = new DataStreamSystem(gl, quality.dataParticles);
 
-  moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS, { sphereDetail: quality.moonDetail });
+  moonOrbitSystem = new MoonOrbitSystem(gl, PROJECTS);
 
   cameraDistance = isMobile ? 6 : 3.5;
 

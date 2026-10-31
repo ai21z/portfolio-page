@@ -11,7 +11,9 @@ export const PROJECTS = [
     orbitTilt: 0,
     rotationSpeed: 4.0,
 
-    color: [0.85, 0.52, 0.28],
+    // The legend's project amber, #d99a5e. The moon is the project's d20.
+    shape: 'd20',
+    color: [0.85, 0.60, 0.37],
     moonRadius: 0.08,
     glowIntensity: 0.3,
     pulseSpeed: 0.5
@@ -29,7 +31,9 @@ export const PROJECTS = [
     orbitTilt: 0,
     rotationSpeed: 4.0,
     
-    color: [0.48, 0.68, 0.54],
+    // The bronze of the Talos mark's brow bars, lifted for the light. The moon is the mark's helmet.
+    shape: 'talos',
+    color: [0.79, 0.61, 0.40],
     moonRadius: 0.08,
     glowIntensity: 0.3,
     pulseSpeed: 0.5

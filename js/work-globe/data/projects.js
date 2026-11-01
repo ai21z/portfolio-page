@@ -11,9 +11,9 @@ export const PROJECTS = [
     orbitTilt: 0,
     rotationSpeed: 4.0,
 
-    // The legend's project amber, #d99a5e. The moon is the project's d20.
+    // Aged ivory, #dbccad, an old carved die, so it stands apart from the Talos bronze. The moon is the project's d20.
     shape: 'd20',
-    color: [0.85, 0.60, 0.37],
+    color: [0.86, 0.80, 0.68],
     moonRadius: 0.08,
     glowIntensity: 0.3,
     pulseSpeed: 0.5

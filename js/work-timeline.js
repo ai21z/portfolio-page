@@ -95,7 +95,7 @@ export function initWorkTimeline() {
     if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
     activeLi = li;
     const driveHint = node.target
-      ? `${pressVerb()} → ${node.target.kind === 'moon' ? 'frame the moon' : 'locate on Earth'}`
+      ? `${pressVerb()} → ${node.target.kind === 'moon' ? 'bring the moon out' : 'locate on Earth'}`
       : 'credential · note only';
     note.innerHTML =
       '<div class="work-note-kicker">' + GLYPH_HINT[node.type] + '</div>' +
